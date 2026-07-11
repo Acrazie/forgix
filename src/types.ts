@@ -36,7 +36,7 @@ export interface TaskState {
   taskId: string;
   status: TaskStatus;
   resumeTo?: TaskStatus;
-  configSnapshot: EffectiveConfig;
+  configSnapshot: Record<string, unknown>;
   policySnapshot: Policy;
   issues: unknown[];
   reviewCycle: number;

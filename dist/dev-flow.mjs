@@ -128,6 +128,57 @@ function applyPolicy(config, policy) {
   return config;
 }
 
+// src/state.ts
+var TERMINAL = /* @__PURE__ */ new Set(["cancelled", "failed", "finished_local", "finished"]);
+var RESUMABLE = /* @__PURE__ */ new Set(["blocked", "ready_for_handoff"]);
+var ALLOWED = {
+  new: ["awaiting_mode_confirmation"],
+  awaiting_mode_confirmation: ["executing", "discovering", "cancelled"],
+  executing: ["validating", "blocked"],
+  validating: ["reviewing", "verifying", "resolving"],
+  reviewing: ["resolving", "verifying"],
+  resolving: ["validating", "blocked"],
+  verifying: ["handing_off", "finished_local", "ready_for_handoff", "resolving"],
+  handing_off: ["finished", "ready_for_handoff"]
+};
+function createState(input) {
+  return {
+    schemaVersion: 1,
+    taskId: input.taskId,
+    status: "new",
+    configSnapshot: input.configSnapshot,
+    policySnapshot: input.policySnapshot,
+    issues: [],
+    reviewCycle: 0,
+    remainingActions: [],
+    history: []
+  };
+}
+function transition(state, next, options = {}) {
+  if (TERMINAL.has(state.status) || !ALLOWED[state.status]?.includes(next)) {
+    throw new Error("Invalid state transition from " + state.status + " to " + next + ".");
+  }
+  if (RESUMABLE.has(next) && (!options.resumeTo || !options.remainingActions?.length)) {
+    throw new Error(next + " requires resumeTo and remainingActions.");
+  }
+  const resumable = options.resumeTo ? { resumeTo: options.resumeTo, remainingActions: options.remainingActions ?? [] } : { remainingActions: [] };
+  return {
+    ...state,
+    status: next,
+    ...resumable,
+    history: [...state.history, { from: state.status, to: next }]
+  };
+}
+function stable(value) {
+  return JSON.stringify(value, Object.keys(value).sort());
+}
+function compareSnapshot(state, current) {
+  const reasons = [];
+  if (stable(state.configSnapshot) !== stable(current.config)) reasons.push("Effective configuration changed.");
+  if (stable(state.policySnapshot) !== stable(current.policy)) reasons.push("Effective policy changed.");
+  return { changed: reasons.length > 0, reasons };
+}
+
 // src/cli.ts
 function main(argv = process.argv.slice(2)) {
   try {
@@ -146,7 +197,10 @@ export {
   InvocationError,
   PolicyError,
   applyPolicy,
+  compareSnapshot,
+  createState,
   main,
   parseInvocation,
-  resolveConfig
+  resolveConfig,
+  transition
 };

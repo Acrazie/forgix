@@ -6,6 +6,7 @@ export { EXIT_CODES } from "./exit-codes.js";
 export { resolveConfig } from "./config.js";
 export { InvocationError, parseInvocation } from "./parse.js";
 export { PolicyError, applyPolicy } from "./policy.js";
+export { compareSnapshot, createState, transition } from "./state.js";
 
 export function main(argv = process.argv.slice(2)): void {
   try {
