@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Codex Dev Flow task state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "taskId", "status", "configSnapshot", "policySnapshot", "issues", "reviewCycle", "remainingActions", "history"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["new", "awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "reviewing", "resolving", "verifying", "handing_off", "ready_for_handoff", "blocked", "cancelled", "failed", "finished_local", "finished"]
+    },
+    "resumeTo": { "type": "string" },
+    "configSnapshot": { "type": "object" },
+    "policySnapshot": { "type": "object" },
+    "issues": { "type": "array" },
+    "reviewCycle": { "type": "integer", "minimum": 0 },
+    "remainingActions": { "type": "array", "items": { "type": "string" } },
+    "history": { "type": "array" }
+  }
+}

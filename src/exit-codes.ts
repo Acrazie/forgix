@@ -1,0 +1,12 @@
+export const EXIT_CODES = {
+  SUCCESS: 0,
+  INVALID_INVOCATION: 2,
+  INVALID_CONFIGURATION: 3,
+  POLICY_CONTRADICTION: 4,
+  STATE_CONFLICT: 5,
+  BLOCKED: 6,
+  HANDOFF_REQUIRED: 7,
+  INTERNAL_ERROR: 10
+} as const;
+
+export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
