@@ -3,7 +3,9 @@ import { EXIT_CODES } from "./exit-codes.js";
 import { InvocationError, parseInvocation } from "./parse.js";
 
 export { EXIT_CODES } from "./exit-codes.js";
+export { resolveConfig } from "./config.js";
 export { InvocationError, parseInvocation } from "./parse.js";
+export { PolicyError, applyPolicy } from "./policy.js";
 
 export function main(argv = process.argv.slice(2)): void {
   try {

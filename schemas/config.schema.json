@@ -8,6 +8,30 @@
     "schemaVersion": {
       "type": "integer",
       "const": 1
+    },
+    "finish": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pullRequest": {
+          "type": "string",
+          "enum": ["optional", "required"]
+        }
+      }
+    },
+    "worktree": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["auto", "required"]
+        }
+      }
+    },
+    "merge": {
+      "type": "string",
+      "const": "never"
     }
   }
 }

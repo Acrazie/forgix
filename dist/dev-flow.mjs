@@ -55,6 +55,79 @@ function parseInvocation(argv) {
   return { command: "run", mode, objective: objectiveParts.join(" "), flags: {} };
 }
 
+// src/config.ts
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function copy(value) {
+  if (Array.isArray(value)) return value.map(copy);
+  if (isRecord(value)) return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, copy(entry)]));
+  return value;
+}
+function merge(target, incoming, source, provenance, prefix = "") {
+  for (const [key, incomingValue] of Object.entries(incoming)) {
+    const path = prefix ? prefix + "." + key : key;
+    const targetValue = target[key];
+    if (isRecord(targetValue) && isRecord(incomingValue)) {
+      merge(targetValue, incomingValue, source, provenance, path);
+      continue;
+    }
+    target[key] = copy(incomingValue);
+    if (isRecord(incomingValue)) {
+      for (const nested of Object.keys(incomingValue)) {
+        provenance[path + "." + nested] = source;
+      }
+    } else {
+      provenance[path] = source;
+    }
+  }
+}
+function resolveConfig(sources) {
+  const value = {};
+  const provenance = {};
+  for (const source of sources) merge(value, source.value, source.source, provenance);
+  return { value, provenance };
+}
+
+// src/policy.ts
+var PolicyError = class extends Error {
+  constructor(message, path, source) {
+    super(message);
+    this.path = path;
+    this.source = source;
+  }
+  path;
+  source;
+  exitCode = EXIT_CODES.POLICY_CONTRADICTION;
+};
+function readPath(value, path) {
+  return path.split(".").reduce((current, segment) => {
+    if (typeof current !== "object" || current === null || Array.isArray(current)) return void 0;
+    return current[segment];
+  }, value);
+}
+function applyPolicy(config, policy) {
+  for (const [path, required] of Object.entries(policy.requirements)) {
+    if (readPath(config.value, path) !== required) {
+      throw new PolicyError(
+        "Policy requires " + path + " to be " + JSON.stringify(required) + ".",
+        path,
+        config.provenance[path]
+      );
+    }
+  }
+  for (const [path, forbidden] of Object.entries(policy.prohibitions)) {
+    if (readPath(config.value, path) === forbidden) {
+      throw new PolicyError(
+        "Policy prohibits " + path + " from being " + JSON.stringify(forbidden) + ".",
+        path,
+        config.provenance[path]
+      );
+    }
+  }
+  return config;
+}
+
 // src/cli.ts
 function main(argv = process.argv.slice(2)) {
   try {
@@ -71,6 +144,9 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
 export {
   EXIT_CODES,
   InvocationError,
+  PolicyError,
+  applyPolicy,
   main,
-  parseInvocation
+  parseInvocation,
+  resolveConfig
 };
