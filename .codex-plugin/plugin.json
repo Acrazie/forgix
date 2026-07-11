@@ -1,0 +1,20 @@
+{
+  "name": "codex-dev-flow",
+  "version": "0.1.0",
+  "description": "Portable, evidence-based Codex development workflow.",
+  "author": {
+    "name": "codex-dev-flow contributors"
+  },
+  "license": "MIT",
+  "keywords": ["codex", "workflow", "testing", "review"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Dev Flow",
+    "shortDescription": "Evidence-based change workflow.",
+    "longDescription": "A portable Codex workflow for planned, tested, reviewed changes.",
+    "developerName": "codex-dev-flow contributors",
+    "category": "Productivity",
+    "capabilities": ["Write"],
+    "defaultPrompt": ["Use $dev-flow to plan and implement a change."]
+  }
+}
