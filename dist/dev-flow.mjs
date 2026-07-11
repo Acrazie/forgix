@@ -200,6 +200,15 @@ function nextCorrectionAction(input) {
   return "human_gate";
 }
 
+// src/worktree.ts
+function decideWorktree(context) {
+  if (context.mode === "critical") return { required: true, reason: "critical" };
+  if (context.requested) return { required: true, reason: "requested" };
+  if (context.concurrent) return { required: true, reason: "concurrent" };
+  if (!context.checkoutSafe) return { required: true, reason: "unsafe" };
+  return { required: false, reason: "none" };
+}
+
 // src/cli.ts
 function main(argv = process.argv.slice(2)) {
   try {
@@ -220,6 +229,7 @@ export {
   applyPolicy,
   compareSnapshot,
   createState,
+  decideWorktree,
   fingerprintFailure,
   main,
   nextCorrectionAction,

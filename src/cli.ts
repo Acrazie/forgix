@@ -8,6 +8,7 @@ export { InvocationError, parseInvocation } from "./parse.js";
 export { PolicyError, applyPolicy } from "./policy.js";
 export { compareSnapshot, createState, transition } from "./state.js";
 export { fingerprintFailure, nextCorrectionAction } from "./fingerprint.js";
+export { decideWorktree } from "./worktree.js";
 
 export function main(argv = process.argv.slice(2)): void {
   try {
