@@ -209,6 +209,19 @@ function decideWorktree(context) {
   return { required: false, reason: "none" };
 }
 
+// src/commands.ts
+import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+function discoverVerificationCommands(root) {
+  const path = fileURLToPath(root);
+  const agents = path + "/AGENTS.md";
+  const guided = existsSync(agents) ? readFileSync(agents, "utf8").match(/npm run [\w:-]+|npm test/g) ?? [] : [];
+  const manifest = path + "/package.json";
+  const scripts = existsSync(manifest) ? JSON.parse(readFileSync(manifest, "utf8")).scripts ?? {} : {};
+  if (guided.length) return { source: "AGENTS.md", commands: [...guided, ...scripts.test ? ["npm test"] : []] };
+  return { source: "limited", commands: [] };
+}
+
 // src/cli.ts
 function main(argv = process.argv.slice(2)) {
   try {
@@ -230,6 +243,7 @@ export {
   compareSnapshot,
   createState,
   decideWorktree,
+  discoverVerificationCommands,
   fingerprintFailure,
   main,
   nextCorrectionAction,
