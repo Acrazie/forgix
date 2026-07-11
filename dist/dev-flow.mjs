@@ -179,6 +179,22 @@ function compareSnapshot(state, current) {
   return { changed: reasons.length > 0, reasons };
 }
 
+// src/fingerprint.ts
+import { createHash, randomUUID } from "node:crypto";
+function fingerprintFailure(input) {
+  const canonical = {
+    check: input.check,
+    stage: input.stage,
+    errorType: input.errorType,
+    path: input.path,
+    symbol: input.symbol,
+    messagePattern: input.messagePattern,
+    rawMessage: "[redacted]"
+  };
+  const issueId = createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
+  return { issueId, occurrenceId: randomUUID(), canonical };
+}
+
 // src/cli.ts
 function main(argv = process.argv.slice(2)) {
   try {
@@ -199,6 +215,7 @@ export {
   applyPolicy,
   compareSnapshot,
   createState,
+  fingerprintFailure,
   main,
   parseInvocation,
   resolveConfig,
