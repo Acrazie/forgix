@@ -1,0 +1,58 @@
+import { EXIT_CODES } from "./exit-codes.js";
+import type { TaskMode } from "./types.js";
+
+export type ParsedInvocation =
+  | { command: "run"; mode: TaskMode | undefined; objective: string; flags: Record<string, never> }
+  | { command: "resume"; taskId: string }
+  | { command: "status"; taskId: string | undefined }
+  | { command: "config_show"; explain: boolean }
+  | { command: "config_validate"; json: boolean };
+
+export class InvocationError extends Error {
+  readonly exitCode = EXIT_CODES.INVALID_INVOCATION;
+}
+
+const MODES = new Set<TaskMode>(["quick", "standard", "critical"]);
+
+function invalid(message: string): never {
+  throw new InvocationError(message);
+}
+
+export function parseInvocation(argv: string[]): ParsedInvocation {
+  if (argv.length === 0) {
+    invalid("An objective or subcommand is required.");
+  }
+
+  const [first, ...rest] = argv;
+  if (!first) {
+    invalid("An objective or subcommand is required.");
+  }
+
+  if (first === "resume") {
+    if (rest.length !== 1 || !rest[0]) invalid("resume requires exactly one task id.");
+    return { command: "resume", taskId: rest[0] };
+  }
+
+  if (first === "status") {
+    if (rest.length > 1) invalid("status accepts at most one task id.");
+    return { command: "status", taskId: rest[0] };
+  }
+
+  if (first === "config") {
+    const [subcommand, ...flags] = rest;
+    if (subcommand === "show" && (flags.length === 0 || (flags.length === 1 && flags[0] === "--explain"))) {
+      return { command: "config_show", explain: flags[0] === "--explain" };
+    }
+    if (subcommand === "validate" && (flags.length === 0 || (flags.length === 1 && flags[0] === "--json"))) {
+      return { command: "config_validate", json: flags[0] === "--json" };
+    }
+    invalid("Invalid config invocation.");
+  }
+
+  const mode = MODES.has(first as TaskMode) ? (first as TaskMode) : undefined;
+  const objectiveParts = mode ? rest : argv;
+  if (objectiveParts.length === 0 || objectiveParts.some((part) => part.startsWith("--"))) {
+    invalid("A run requires an objective and no unsupported flags.");
+  }
+  return { command: "run", mode, objective: objectiveParts.join(" "), flags: {} };
+}
