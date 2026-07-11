@@ -7,7 +7,7 @@ export { resolveConfig } from "./config.js";
 export { InvocationError, parseInvocation } from "./parse.js";
 export { PolicyError, applyPolicy } from "./policy.js";
 export { compareSnapshot, createState, transition } from "./state.js";
-export { fingerprintFailure } from "./fingerprint.js";
+export { fingerprintFailure, nextCorrectionAction } from "./fingerprint.js";
 
 export function main(argv = process.argv.slice(2)): void {
   try {

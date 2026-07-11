@@ -19,3 +19,11 @@ test("failure identity ignores raw messages and line numbers", async () => {
   assert.notEqual(first.occurrenceId, second.occurrenceId);
   assert.equal(first.canonical.rawMessage, "[redacted]");
 });
+
+test("escalates repeated code corrections per stable issue", async () => {
+  const { nextCorrectionAction } = await import(bundle);
+  assert.equal(nextCorrectionAction({ codeChanges: 1, investigated: false }), "debug");
+  assert.equal(nextCorrectionAction({ codeChanges: 2, investigated: false }), "investigate");
+  assert.equal(nextCorrectionAction({ codeChanges: 2, investigated: true }), "retry");
+  assert.equal(nextCorrectionAction({ codeChanges: 3, investigated: true }), "human_gate");
+});

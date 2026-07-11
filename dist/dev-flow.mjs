@@ -194,6 +194,11 @@ function fingerprintFailure(input) {
   const issueId = createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
   return { issueId, occurrenceId: randomUUID(), canonical };
 }
+function nextCorrectionAction(input) {
+  if (input.codeChanges < 2) return "debug";
+  if (input.codeChanges === 2) return input.investigated ? "retry" : "investigate";
+  return "human_gate";
+}
 
 // src/cli.ts
 function main(argv = process.argv.slice(2)) {
@@ -217,6 +222,7 @@ export {
   createState,
   fingerprintFailure,
   main,
+  nextCorrectionAction,
   parseInvocation,
   resolveConfig,
   transition

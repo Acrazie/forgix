@@ -24,3 +24,9 @@ export function fingerprintFailure(input: FailureInput) {
   const issueId = createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
   return { issueId, occurrenceId: randomUUID(), canonical };
 }
+
+export function nextCorrectionAction(input: { codeChanges: number; investigated: boolean }): "debug" | "investigate" | "retry" | "human_gate" {
+  if (input.codeChanges < 2) return "debug";
+  if (input.codeChanges === 2) return input.investigated ? "retry" : "investigate";
+  return "human_gate";
+}
