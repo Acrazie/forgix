@@ -1,4 +1,2 @@
-.codex/tasks/
-.codex/dev-flow.local.yaml
-.worktrees/
 node_modules/
+.worktrees/
