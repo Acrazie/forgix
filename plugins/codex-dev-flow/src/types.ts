@@ -1,5 +1,58 @@
 export type TaskMode = "quick" | "standard" | "critical";
 
+export const ALLOWED_MODEL_IDS = ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] as const;
+export type ModelId = (typeof ALLOWED_MODEL_IDS)[number];
+
+export const REASONING_EFFORTS = ["low", "medium", "high", "max", "ultra"] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
+export type SubscriptionPlan = "auto" | "plus" | "pro_5x" | "pro_20x";
+export type ResolvedSubscriptionPlan = Exclude<SubscriptionPlan, "auto"> | "unknown";
+export type QuotaPressure = "normal" | "warning" | "critical" | "unknown";
+export type RoutingStage = "discover" | "plan" | "debug" | "review" | "verify";
+export type RiskLevel = "low" | "medium" | "high" | "critical";
+
+export interface ModelCapability {
+  id: ModelId;
+  supportedReasoningEfforts: ReasoningEffort[];
+}
+
+export interface QuotaSnapshot {
+  windowDurationMins?: number;
+  usedPercent?: number;
+  pressure: QuotaPressure;
+  source: "app-server" | "unknown";
+}
+
+export interface SanitizedAccount {
+  planType?: string;
+}
+
+export interface RoutingSnapshot {
+  schemaVersion: 1;
+  capturedAt: string;
+  plan: ResolvedSubscriptionPlan;
+  account: SanitizedAccount;
+  quota: QuotaSnapshot;
+  models: ModelCapability[];
+  warnings: string[];
+  provenance: {
+    plan: "config" | "account/read" | "unknown";
+    quota: "account/rateLimits/read" | "unknown";
+    models: "model/list" | "unknown";
+  };
+  subscriptionMultiplier?: number;
+}
+
+export interface RoutingDecision {
+  stage: RoutingStage;
+  model: ModelId | null;
+  effort: ReasoningEffort | null;
+  quotaPressure: QuotaPressure;
+  reason: string;
+  warnings: string[];
+}
+
 export type TaskStatus =
   | "new"
   | "awaiting_mode_confirmation"
@@ -21,6 +74,28 @@ export type TaskStatus =
 
 export interface EffectiveConfig {
   schemaVersion: number;
+  subscription?: SubscriptionConfig;
+}
+
+export interface SubscriptionConfig {
+  plan: SubscriptionPlan;
+  planOverride?: Exclude<SubscriptionPlan, "auto">;
+  multiplierOverride?: number;
+  quota: {
+    warningPercent: number;
+    criticalPercent: number;
+    unknownPolicy: "conservative";
+  };
+  modelAllowlist: ModelId[];
+  modelCosts: Record<ModelId, ModelCostProfile>;
+}
+
+export interface ModelCostProfile {
+  multiplier: number;
+  rateVersion: string;
+  inputCreditsPerMillion: number;
+  cachedInputCreditsPerMillion: number;
+  outputCreditsPerMillion: number;
 }
 
 export interface Policy {
@@ -42,6 +117,8 @@ export interface TaskState {
   reviewCycle: number;
   remainingActions: string[];
   history: unknown[];
+  routingSnapshot?: RoutingSnapshot;
+  routingDecisions?: RoutingDecision[];
 }
 
 export interface IssueIdentity {

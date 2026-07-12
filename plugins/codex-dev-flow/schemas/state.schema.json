@@ -18,5 +18,67 @@
     "reviewCycle": { "type": "integer", "minimum": 0 },
     "remainingActions": { "type": "array", "items": { "type": "string" } },
     "history": { "type": "array" }
+    ,"routingSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "capturedAt", "plan", "account", "quota", "models", "warnings", "provenance"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "capturedAt": { "type": "string" },
+        "plan": { "type": "string", "enum": ["plus", "pro_5x", "pro_20x", "unknown"] },
+        "account": { "type": "object", "additionalProperties": false, "properties": { "planType": { "type": "string" } } },
+        "quota": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pressure", "source"],
+          "properties": {
+            "windowDurationMins": { "type": "number" },
+            "usedPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "pressure": { "type": "string", "enum": ["normal", "warning", "critical", "unknown"] },
+            "source": { "type": "string", "enum": ["app-server", "unknown"] }
+          }
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "supportedReasoningEfforts"],
+            "properties": {
+              "id": { "type": "string", "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] },
+              "supportedReasoningEfforts": { "type": "array", "items": { "type": "string", "enum": ["low", "medium", "high", "max", "ultra"] } }
+            }
+          }
+        },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["plan", "quota", "models"],
+          "properties": {
+            "plan": { "type": "string", "enum": ["config", "account/read", "unknown"] },
+            "quota": { "type": "string", "enum": ["account/rateLimits/read", "unknown"] },
+            "models": { "type": "string", "enum": ["model/list", "unknown"] }
+          }
+        },
+        "subscriptionMultiplier": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      },
+    "routingDecisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stage", "model", "effort", "quotaPressure", "reason", "warnings"],
+        "properties": {
+          "stage": { "type": "string", "enum": ["discover", "plan", "debug", "review", "verify"] },
+          "model": { "type": ["string", "null"], "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", null] },
+          "effort": { "type": ["string", "null"], "enum": ["low", "medium", "high", "max", "ultra", null] },
+          "quotaPressure": { "type": "string", "enum": ["normal", "warning", "critical", "unknown"] },
+          "reason": { "type": "string" },
+          "warnings": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
   }
 }
