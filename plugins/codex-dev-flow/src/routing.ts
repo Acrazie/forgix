@@ -4,6 +4,7 @@ import {
   type ModelCapability,
   type ModelId,
   type QuotaPressure,
+  type QuotaWindowSnapshot,
   type ReasoningEffort,
   type ResolvedSubscriptionPlan,
   type RiskLevel,
@@ -59,14 +60,14 @@ export function classifyQuotaPressure(
   return "normal";
 }
 
-export function selectFiveHourWindow(rateLimits: unknown): { windowDurationMins: 300; usedPercent: number } | undefined {
-  const source = isRecord(rateLimits) && isRecord(rateLimits.rateLimits) ? rateLimits.rateLimits : rateLimits;
-  if (!isRecord(source)) return undefined;
-  for (const value of Object.values(source)) {
-    if (!isRecord(value) || value.windowDurationMins !== 300 || typeof value.usedPercent !== "number") continue;
-    if (Number.isFinite(value.usedPercent)) return { windowDurationMins: 300, usedPercent: value.usedPercent };
-  }
-  return undefined;
+export function selectFiveHourWindow(rateLimits: unknown): (QuotaWindowSnapshot & { windowDurationMins: 300 }) | undefined {
+  return collectQuotaWindows(rateLimits).find((window): window is QuotaWindowSnapshot & { windowDurationMins: 300 } => window.windowDurationMins === 300);
+}
+
+export function selectObservedQuotaWindow(rateLimits: unknown): QuotaWindowSnapshot | undefined {
+  return collectQuotaWindows(rateLimits)
+    .filter((window) => window.windowDurationMins !== 300)
+    .sort((left, right) => left.windowDurationMins - right.windowDurationMins)[0];
 }
 
 export function resolveSubscriptionPlan(configPlan: string | undefined, accountPlan: string | undefined): ResolvedSubscriptionPlan {
@@ -103,10 +104,12 @@ export function buildRoutingSnapshot(input: RawRoutingSnapshotInput, available =
   const configuredPlan = input.config?.planOverride ?? input.config?.plan;
   const plan = resolveSubscriptionPlan(configuredPlan, accountPlan);
   const window = selectFiveHourWindow(input.rateLimits);
+  const observedWindow = window ? undefined : selectObservedQuotaWindow(input.rateLimits);
   const pressure = classifyQuotaPressure(window?.usedPercent, input.config?.quota);
   const models = normalizeModels(input.models, input.config?.modelAllowlist);
   const warnings: string[] = [];
   if (pressure === "unknown") warnings.push("quota_unknown");
+  if (available && !window) warnings.push("five_hour_window_unavailable");
   if (models.length === 0) warnings.push("allowed_model_unavailable");
   if (!available && !warnings.includes("quota_unknown")) warnings.push("quota_unknown");
   const snapshot: RoutingSnapshot = {
@@ -115,9 +118,14 @@ export function buildRoutingSnapshot(input: RawRoutingSnapshotInput, available =
     plan,
     account,
     quota: {
-      ...(window ? { windowDurationMins: window.windowDurationMins, usedPercent: window.usedPercent } : {}),
+      ...(window ? {
+        windowDurationMins: window.windowDurationMins,
+        usedPercent: window.usedPercent,
+        ...(window.resetsAt !== undefined ? { resetsAt: window.resetsAt } : {})
+      } : {}),
       pressure,
-      source: available && window ? "app-server" : "unknown"
+      source: available && window ? "app-server" : "unknown",
+      ...(observedWindow ? { observedWindow } : {})
     },
     models,
     warnings,
@@ -215,7 +223,12 @@ function normalizeModels(input: unknown, allowlist: readonly ModelId[] | undefin
     if (!isRecord(candidate) || typeof candidate.id !== "string" || !isModelId(candidate.id)) continue;
     if (allowlist && !allowlist.includes(candidate.id)) continue;
     const efforts = Array.isArray(candidate.supportedReasoningEfforts)
-      ? candidate.supportedReasoningEfforts.filter((effort): effort is ReasoningEffort => typeof effort === "string" && REASONING_EFFORTS.includes(effort as ReasoningEffort))
+      ? candidate.supportedReasoningEfforts.flatMap((effort): ReasoningEffort[] => {
+        const value = typeof effort === "string"
+          ? effort
+          : isRecord(effort) && typeof effort.reasoningEffort === "string" ? effort.reasoningEffort : undefined;
+        return value && REASONING_EFFORTS.includes(value as ReasoningEffort) ? [value as ReasoningEffort] : [];
+      })
       : [];
     models.push({ id: candidate.id, supportedReasoningEfforts: efforts });
   }
@@ -234,4 +247,26 @@ function isModelId(value: string): value is ModelId {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function collectQuotaWindows(input: unknown, output: QuotaWindowSnapshot[] = [], seen = new Set<unknown>()): QuotaWindowSnapshot[] {
+  if (!isRecord(input) || seen.has(input)) return output;
+  seen.add(input);
+  if (
+    typeof input.windowDurationMins === "number"
+    && Number.isFinite(input.windowDurationMins)
+    && input.windowDurationMins > 0
+    && typeof input.usedPercent === "number"
+    && Number.isFinite(input.usedPercent)
+  ) {
+    output.push({
+      windowDurationMins: input.windowDurationMins,
+      usedPercent: input.usedPercent,
+      ...(typeof input.resetsAt === "number" && Number.isFinite(input.resetsAt) ? { resetsAt: input.resetsAt } : {})
+    });
+  }
+  for (const value of Object.values(input)) {
+    if (isRecord(value)) collectQuotaWindows(value, output, seen);
+  }
+  return output;
 }

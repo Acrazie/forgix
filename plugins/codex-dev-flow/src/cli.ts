@@ -1,8 +1,10 @@
 import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 import { captureRoutingSnapshot } from "./app-server.js";
 import { explainConfig, loadConfigSources, resolveConfig, type ConfigSource, type ResolvedConfig } from "./config.js";
 import { EXIT_CODES } from "./exit-codes.js";
 import { InvocationError, parseInvocation } from "./parse.js";
+import { applyFiveHourResetFallback, readFiveHourResetCache, writeFiveHourResetCache } from "./quota-cache.js";
 import { chooseRoute, type RouteTask } from "./routing.js";
 import type { CliResult, TaskMode } from "./types.js";
 
@@ -26,8 +28,10 @@ export {
   createUnavailableRoutingSnapshot,
   resolveSubscriptionPlan,
   resolveSubscriptionMultiplier,
-  selectFiveHourWindow
+  selectFiveHourWindow,
+  selectObservedQuotaWindow
 } from "./routing.js";
+export { applyFiveHourResetFallback, readFiveHourResetCache, writeFiveHourResetCache } from "./quota-cache.js";
 export { AppServerClient, AppServerError, captureRoutingSnapshot } from "./app-server.js";
 export { ROUTED_STAGES, delegateStage, isDelegableStage } from "./bridge.js";
 
@@ -35,6 +39,8 @@ export interface RunInvocationOptions {
   configSources?: ConfigSource[];
   appServer?: Parameters<typeof captureRoutingSnapshot>[0];
   captureSnapshot?: (options: Parameters<typeof captureRoutingSnapshot>[0]) => ReturnType<typeof captureRoutingSnapshot>;
+  quotaCachePath?: string | false;
+  nowEpochSeconds?: number;
 }
 
 export async function runInvocation(argv: string[], options: RunInvocationOptions = {}): Promise<CliResult> {
@@ -65,18 +71,52 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
       } : {})
     }
   });
+  const nowEpochSeconds = options.nowEpochSeconds ?? Math.floor(Date.now() / 1000);
+  const quotaCachePath = resolveQuotaCachePath(options);
+  let routingSnapshot = snapshotResult.snapshot;
+  if (quotaCachePath) {
+    if (
+      routingSnapshot.quota.source === "app-server"
+      && routingSnapshot.quota.windowDurationMins === 300
+      && routingSnapshot.quota.resetsAt !== undefined
+      && routingSnapshot.quota.resetsAt > nowEpochSeconds
+    ) {
+      try {
+        await writeFiveHourResetCache(quotaCachePath, {
+          windowDurationMins: 300,
+          resetsAt: routingSnapshot.quota.resetsAt
+        });
+      } catch {
+        routingSnapshot = appendRoutingWarning(routingSnapshot, "quota_cache_write_failed");
+      }
+    } else {
+      const cached = await readFiveHourResetCache(quotaCachePath, nowEpochSeconds);
+      routingSnapshot = applyFiveHourResetFallback(routingSnapshot, cached);
+    }
+  }
   const mode: TaskMode | undefined = invocation.command === "run" ? invocation.mode : undefined;
-  const decisions = ROUTING_TASKS.map((task) => chooseRoute(snapshotResult.snapshot, { ...task, critical: mode === "critical" }));
+  const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, { ...task, critical: mode === "critical" }));
   return {
     command: invocation.command,
     status: snapshotResult.available ? "routed" : "routed_with_warning",
     data: {
       ...(invocation.command === "run" ? { mode, objective: invocation.objective } : { taskId: invocation.taskId }),
-      routingSnapshot: snapshotResult.snapshot,
+      routingSnapshot,
       routingDecisions: decisions,
       ...(snapshotResult.error ? { warning: snapshotResult.error } : {})
     }
   };
+}
+
+function appendRoutingWarning(snapshot: Awaited<ReturnType<typeof captureRoutingSnapshot>>["snapshot"], warning: string) {
+  return snapshot.warnings.includes(warning) ? snapshot : { ...snapshot, warnings: [...snapshot.warnings, warning] };
+}
+
+function resolveQuotaCachePath(options: RunInvocationOptions): string | undefined {
+  if (options.quotaCachePath === false) return undefined;
+  if (typeof options.quotaCachePath === "string") return options.quotaCachePath;
+  if (options.captureSnapshot) return undefined;
+  return resolve(process.cwd(), ".codex", "tasks", "five-hour-quota-reset.json");
 }
 
 const ROUTING_TASKS: RouteTask[] = [

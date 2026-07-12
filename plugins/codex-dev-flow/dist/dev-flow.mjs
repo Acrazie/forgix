@@ -2986,7 +2986,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3013,7 +3013,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3644,7 +3644,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve(baseURI, relativeURI, options) {
+    function resolve2(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse(baseURI, schemelessOptions), parse(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
@@ -3902,7 +3902,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -14478,6 +14478,7 @@ var require_dist = __commonJS({
 
 // src/cli.ts
 import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 
 // src/app-server.ts
 import { spawn } from "node:child_process";
@@ -14528,13 +14529,10 @@ function classifyQuotaPressure(usedPercent, thresholds = {}) {
   return "normal";
 }
 function selectFiveHourWindow(rateLimits) {
-  const source = isRecord(rateLimits) && isRecord(rateLimits.rateLimits) ? rateLimits.rateLimits : rateLimits;
-  if (!isRecord(source)) return void 0;
-  for (const value of Object.values(source)) {
-    if (!isRecord(value) || value.windowDurationMins !== 300 || typeof value.usedPercent !== "number") continue;
-    if (Number.isFinite(value.usedPercent)) return { windowDurationMins: 300, usedPercent: value.usedPercent };
-  }
-  return void 0;
+  return collectQuotaWindows(rateLimits).find((window) => window.windowDurationMins === 300);
+}
+function selectObservedQuotaWindow(rateLimits) {
+  return collectQuotaWindows(rateLimits).filter((window) => window.windowDurationMins !== 300).sort((left, right) => left.windowDurationMins - right.windowDurationMins)[0];
 }
 function resolveSubscriptionPlan(configPlan, accountPlan) {
   if (configPlan === "plus" || configPlan === "pro_5x" || configPlan === "pro_20x") return configPlan;
@@ -14555,10 +14553,12 @@ function buildRoutingSnapshot(input, available = true) {
   const configuredPlan = input.config?.planOverride ?? input.config?.plan;
   const plan = resolveSubscriptionPlan(configuredPlan, accountPlan);
   const window = selectFiveHourWindow(input.rateLimits);
+  const observedWindow = window ? void 0 : selectObservedQuotaWindow(input.rateLimits);
   const pressure = classifyQuotaPressure(window?.usedPercent, input.config?.quota);
   const models = normalizeModels(input.models, input.config?.modelAllowlist);
   const warnings = [];
   if (pressure === "unknown") warnings.push("quota_unknown");
+  if (available && !window) warnings.push("five_hour_window_unavailable");
   if (models.length === 0) warnings.push("allowed_model_unavailable");
   if (!available && !warnings.includes("quota_unknown")) warnings.push("quota_unknown");
   const snapshot = {
@@ -14567,9 +14567,14 @@ function buildRoutingSnapshot(input, available = true) {
     plan,
     account,
     quota: {
-      ...window ? { windowDurationMins: window.windowDurationMins, usedPercent: window.usedPercent } : {},
+      ...window ? {
+        windowDurationMins: window.windowDurationMins,
+        usedPercent: window.usedPercent,
+        ...window.resetsAt !== void 0 ? { resetsAt: window.resetsAt } : {}
+      } : {},
       pressure,
-      source: available && window ? "app-server" : "unknown"
+      source: available && window ? "app-server" : "unknown",
+      ...observedWindow ? { observedWindow } : {}
     },
     models,
     warnings,
@@ -14645,7 +14650,10 @@ function normalizeModels(input, allowlist) {
   for (const candidate of candidates) {
     if (!isRecord(candidate) || typeof candidate.id !== "string" || !isModelId(candidate.id)) continue;
     if (allowlist && !allowlist.includes(candidate.id)) continue;
-    const efforts = Array.isArray(candidate.supportedReasoningEfforts) ? candidate.supportedReasoningEfforts.filter((effort) => typeof effort === "string" && REASONING_EFFORTS.includes(effort)) : [];
+    const efforts = Array.isArray(candidate.supportedReasoningEfforts) ? candidate.supportedReasoningEfforts.flatMap((effort) => {
+      const value = typeof effort === "string" ? effort : isRecord(effort) && typeof effort.reasoningEffort === "string" ? effort.reasoningEffort : void 0;
+      return value && REASONING_EFFORTS.includes(value) ? [value] : [];
+    }) : [];
     models.push({ id: candidate.id, supportedReasoningEfforts: efforts });
   }
   return models;
@@ -14660,6 +14668,21 @@ function isModelId(value) {
 }
 function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function collectQuotaWindows(input, output = [], seen = /* @__PURE__ */ new Set()) {
+  if (!isRecord(input) || seen.has(input)) return output;
+  seen.add(input);
+  if (typeof input.windowDurationMins === "number" && Number.isFinite(input.windowDurationMins) && input.windowDurationMins > 0 && typeof input.usedPercent === "number" && Number.isFinite(input.usedPercent)) {
+    output.push({
+      windowDurationMins: input.windowDurationMins,
+      usedPercent: input.usedPercent,
+      ...typeof input.resetsAt === "number" && Number.isFinite(input.resetsAt) ? { resetsAt: input.resetsAt } : {}
+    });
+  }
+  for (const value of Object.values(input)) {
+    if (isRecord(value)) collectQuotaWindows(value, output, seen);
+  }
+  return output;
 }
 
 // src/app-server.ts
@@ -14704,8 +14727,8 @@ var AppServerClient = class {
   request(method, params) {
     if (this.closed) return Promise.reject(new AppServerError("app-server is closed"));
     const id = this.nextId++;
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+    return new Promise((resolve2, reject) => {
+      this.pending.set(id, { resolve: resolve2, reject });
       try {
         this.process.stdin.write(JSON.stringify({ id, method, params }) + "\n");
       } catch (error) {
@@ -14752,12 +14775,12 @@ async function captureRoutingSnapshot(options = {}) {
   }
 }
 function withTimeout(promise, timeoutMs) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve2, reject) => {
     const timer = setTimeout(() => reject(new AppServerError("app-server timeout")), timeoutMs);
     promise.then(
       (value) => {
         clearTimeout(timer);
-        resolve(value);
+        resolve2(value);
       },
       (error) => {
         clearTimeout(timer);
@@ -14947,6 +14970,56 @@ function parseInvocation(argv) {
   return { command: "run", mode, objective: objectiveParts.join(" "), flags: {} };
 }
 
+// src/quota-cache.ts
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
+var FIVE_HOURS_SECONDS = 300 * 60;
+async function readFiveHourResetCache(path, nowEpochSeconds) {
+  try {
+    const parsed = JSON.parse(await readFile(path, "utf8"));
+    if (!isFiveHourResetCache(parsed) || parsed.resetsAt <= nowEpochSeconds || parsed.resetsAt > nowEpochSeconds + FIVE_HOURS_SECONDS) return void 0;
+    return parsed;
+  } catch {
+    return void 0;
+  }
+}
+async function writeFiveHourResetCache(path, value) {
+  if (value.windowDurationMins !== 300 || !Number.isFinite(value.resetsAt)) {
+    throw new Error("Invalid five-hour reset cache value.");
+  }
+  const cache = { schemaVersion: 1, ...value };
+  const temporaryPath = path + "." + process.pid + "." + randomUUID() + ".tmp";
+  await mkdir(dirname(path), { recursive: true, mode: 448 });
+  try {
+    await writeFile(temporaryPath, JSON.stringify(cache, null, 2) + "\n", { encoding: "utf8", mode: 384 });
+    await rename(temporaryPath, path);
+  } catch (error) {
+    await rm(temporaryPath, { force: true }).catch(() => void 0);
+    throw error;
+  }
+}
+function applyFiveHourResetFallback(snapshot, cached) {
+  if (!cached || snapshot.quota.source === "app-server") return snapshot;
+  return {
+    ...snapshot,
+    quota: {
+      windowDurationMins: 300,
+      resetsAt: cached.resetsAt,
+      pressure: "unknown",
+      source: "last-known",
+      ...snapshot.quota.observedWindow ? { observedWindow: snapshot.quota.observedWindow } : {}
+    },
+    warnings: snapshot.warnings.includes("quota_fallback_last_known") ? snapshot.warnings : [...snapshot.warnings, "quota_fallback_last_known"],
+    provenance: { ...snapshot.provenance, quota: "last-known-cache" }
+  };
+}
+function isFiveHourResetCache(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const candidate = value;
+  return candidate.schemaVersion === 1 && candidate.windowDurationMins === 300 && typeof candidate.resetsAt === "number" && Number.isFinite(candidate.resetsAt);
+}
+
 // src/policy.ts
 var PolicyError = class extends Error {
   constructor(message, path, source) {
@@ -15060,7 +15133,7 @@ function canonicalize(value) {
 }
 
 // src/fingerprint.ts
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomUUID as randomUUID2 } from "node:crypto";
 function fingerprintFailure(input) {
   const canonical = {
     check: input.check,
@@ -15072,7 +15145,7 @@ function fingerprintFailure(input) {
     rawMessage: "[redacted]"
   };
   const issueId = createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
-  return { issueId, occurrenceId: randomUUID(), canonical };
+  return { issueId, occurrenceId: randomUUID2(), canonical };
 }
 function nextCorrectionAction(input) {
   if (input.codeChanges < 2) return "debug";
@@ -15141,18 +15214,45 @@ async function runInvocation(argv, options = {}) {
       } : {}
     }
   });
+  const nowEpochSeconds = options.nowEpochSeconds ?? Math.floor(Date.now() / 1e3);
+  const quotaCachePath = resolveQuotaCachePath(options);
+  let routingSnapshot = snapshotResult.snapshot;
+  if (quotaCachePath) {
+    if (routingSnapshot.quota.source === "app-server" && routingSnapshot.quota.windowDurationMins === 300 && routingSnapshot.quota.resetsAt !== void 0 && routingSnapshot.quota.resetsAt > nowEpochSeconds) {
+      try {
+        await writeFiveHourResetCache(quotaCachePath, {
+          windowDurationMins: 300,
+          resetsAt: routingSnapshot.quota.resetsAt
+        });
+      } catch {
+        routingSnapshot = appendRoutingWarning(routingSnapshot, "quota_cache_write_failed");
+      }
+    } else {
+      const cached = await readFiveHourResetCache(quotaCachePath, nowEpochSeconds);
+      routingSnapshot = applyFiveHourResetFallback(routingSnapshot, cached);
+    }
+  }
   const mode = invocation.command === "run" ? invocation.mode : void 0;
-  const decisions = ROUTING_TASKS.map((task) => chooseRoute(snapshotResult.snapshot, { ...task, critical: mode === "critical" }));
+  const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, { ...task, critical: mode === "critical" }));
   return {
     command: invocation.command,
     status: snapshotResult.available ? "routed" : "routed_with_warning",
     data: {
       ...invocation.command === "run" ? { mode, objective: invocation.objective } : { taskId: invocation.taskId },
-      routingSnapshot: snapshotResult.snapshot,
+      routingSnapshot,
       routingDecisions: decisions,
       ...snapshotResult.error ? { warning: snapshotResult.error } : {}
     }
   };
+}
+function appendRoutingWarning(snapshot, warning) {
+  return snapshot.warnings.includes(warning) ? snapshot : { ...snapshot, warnings: [...snapshot.warnings, warning] };
+}
+function resolveQuotaCachePath(options) {
+  if (options.quotaCachePath === false) return void 0;
+  if (typeof options.quotaCachePath === "string") return options.quotaCachePath;
+  if (options.captureSnapshot) return void 0;
+  return resolve(process.cwd(), ".codex", "tasks", "five-hour-quota-reset.json");
 }
 var ROUTING_TASKS = [
   { stage: "discover", risk: "low", ambiguity: "low" },
@@ -15198,6 +15298,7 @@ export {
   PolicyError,
   ROUTED_STAGES,
   addRoutingDecision,
+  applyFiveHourResetFallback,
   applyPolicy,
   buildRoutingSnapshot,
   captureRoutingSnapshot,
@@ -15216,12 +15317,15 @@ export {
   main,
   nextCorrectionAction,
   parseInvocation,
+  readFiveHourResetCache,
   resolveConfig,
   resolveSubscriptionMultiplier,
   resolveSubscriptionPlan,
   runInvocation,
   selectFiveHourWindow,
+  selectObservedQuotaWindow,
   transition,
   validateConfigSource,
-  validateSchema
+  validateSchema,
+  writeFiveHourResetCache
 };

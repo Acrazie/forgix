@@ -17,11 +17,19 @@ export interface ModelCapability {
   supportedReasoningEfforts: ReasoningEffort[];
 }
 
+export interface QuotaWindowSnapshot {
+  windowDurationMins: number;
+  usedPercent: number;
+  resetsAt?: number;
+}
+
 export interface QuotaSnapshot {
   windowDurationMins?: number;
   usedPercent?: number;
+  resetsAt?: number;
   pressure: QuotaPressure;
-  source: "app-server" | "unknown";
+  source: "app-server" | "last-known" | "unknown";
+  observedWindow?: QuotaWindowSnapshot;
 }
 
 export interface SanitizedAccount {
@@ -38,7 +46,7 @@ export interface RoutingSnapshot {
   warnings: string[];
   provenance: {
     plan: "config" | "account/read" | "unknown";
-    quota: "account/rateLimits/read" | "unknown";
+    quota: "account/rateLimits/read" | "last-known-cache" | "unknown";
     models: "model/list" | "unknown";
   };
   subscriptionMultiplier?: number;

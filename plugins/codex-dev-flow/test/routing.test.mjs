@@ -26,15 +26,32 @@ function snapshot(overrides = {}) {
 }
 
 test("quota pressure uses only the exact five-hour window", async () => {
-  const { classifyQuotaPressure, selectFiveHourWindow } = await import(bundle);
+  const { buildRoutingSnapshot, chooseRoute, classifyQuotaPressure, selectFiveHourWindow } = await import(bundle);
   assert.equal(classifyQuotaPressure(49.99), "normal");
   assert.equal(classifyQuotaPressure(50), "warning");
   assert.equal(classifyQuotaPressure(80), "critical");
   assert.equal(selectFiveHourWindow({
     primary: { windowDurationMins: 10080, usedPercent: 99 },
-    secondary: { windowDurationMins: 300, usedPercent: 37 }
+    nested: { secondary: { windowDurationMins: 300, usedPercent: 37, resetsAt: 1781000000 } }
   }).usedPercent, 37);
+  assert.equal(selectFiveHourWindow({
+    primary: { windowDurationMins: 10080, usedPercent: 99 },
+    nested: { secondary: { windowDurationMins: 300, usedPercent: 37, resetsAt: 1781000000 } }
+  }).resetsAt, 1781000000);
   assert.equal(selectFiveHourWindow({ primary: { windowDurationMins: 10080, usedPercent: 99 } }), undefined);
+
+  const weeklyOnly = buildRoutingSnapshot({
+    rateLimits: { rateLimits: { primary: { windowDurationMins: 10080, usedPercent: 12, resetsAt: 1782000000 } } },
+    models: { data: [{ id: "gpt-5.6-luna", supportedReasoningEfforts: [{ reasoningEffort: "high", description: "deep" }] }] }
+  });
+  assert.deepEqual(weeklyOnly.snapshot.quota, {
+    pressure: "unknown",
+    source: "unknown",
+    observedWindow: { windowDurationMins: 10080, usedPercent: 12, resetsAt: 1782000000 }
+  });
+  assert.ok(weeklyOnly.snapshot.warnings.includes("five_hour_window_unavailable"));
+  assert.deepEqual(weeklyOnly.snapshot.models[0].supportedReasoningEfforts, ["high"]);
+  assert.equal(chooseRoute(weeklyOnly.snapshot, { stage: "review", risk: "high", ambiguity: "high" }).effort, "high");
 });
 
 test("chooseRoute is deterministic and stays inside the GPT-5.6 allowlist", async () => {

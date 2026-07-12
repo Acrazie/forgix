@@ -10,6 +10,8 @@ Configuration resolves defaults, user, repository, local, then flags. Repository
 
 V1 routing reads one `codex app-server` snapshot at the start of each run or resume. It calls `initialize`/`initialized`, `account/read`, `account/rateLimits/read`, and `model/list`. Only `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol` are accepted. The five-hour quota window is recognized only when `windowDurationMins` is exactly `300`; unknown quota is conservative.
 
+When the live response omits that exact window, DevFlow may reuse a non-expired five-hour reset timestamp from `.codex/tasks/five-hour-quota-reset.json`. It never reuses the cached usage percentage: pressure remains `unknown`, routing stays conservative, and `quota_fallback_last_known` is emitted. Cache read and write failures remain non-fatal. Another available window, such as the weekly window, is exposed as `observedWindow` for information only and never drives five-hour quota pressure. Model catalogs may provide reasoning efforts as strings or as `{ reasoningEffort, description }` objects; both shapes are normalized before routing.
+
 Example additive configuration:
 
 ```yaml

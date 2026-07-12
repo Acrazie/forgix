@@ -11,6 +11,8 @@ At the beginning of every run and resume, create exactly one routing snapshot th
 
 Use only `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol`. Recognize quota pressure from the exact five-hour window (`windowDurationMins === 300`), with warning at 50% and critical at 80%. Unknown quota is conservative. `max` and `ultra` require a critical task, normal quota, and explicit support in `model/list`.
 
+If the exact live five-hour window is absent, reuse only a non-expired cached five-hour reset timestamp. Never reuse a cached usage percentage. Keep pressure `unknown`, route conservatively, and report `quota_fallback_last_known`. Treat any other available window as informational only. Normalize both string and object-shaped `supportedReasoningEfforts` entries from `model/list`.
+
 Route only `discover`, `plan`, `debug`, `review`, and `verify`. Keep `execute`, `validate`, and parent-owned verification commands in the workflow parent; never delegate mutations.
 
 - If mode is absent, inspect read-only context, propose quick, standard, or critical, then follow effective confirmation policy.
