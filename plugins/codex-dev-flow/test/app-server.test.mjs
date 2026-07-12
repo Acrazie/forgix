@@ -20,6 +20,8 @@ test("app-server client performs one handshake and reads account, five-hour quot
   assert.deepEqual(result.snapshot.models.map((model) => model.id), [
     "gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"
   ]);
+  assert.deepEqual(result.snapshot.models[0].supportedReasoningEfforts, ["low", "medium", "high", "max"]);
+  assert.equal(result.snapshot.quota.resetsAt, 1780000000);
   assert.deepEqual(result.snapshot.warnings, []);
 });
 

@@ -11,10 +11,10 @@ const responses = {
   },
   "model/list": {
     data: [
-      { id: "gpt-5.6-luna", supportedReasoningEfforts: ["low", "medium", "high", "max"] },
-      { id: "gpt-5.6-terra", supportedReasoningEfforts: ["low", "medium", "high", "max"] },
-      { id: "gpt-5.6-sol", supportedReasoningEfforts: ["low", "medium", "high", "max", "ultra"] },
-      { id: "gpt-5.5", supportedReasoningEfforts: ["high"] }
+      { id: "gpt-5.6-luna", supportedReasoningEfforts: ["low", "medium", "high", "max"].map((reasoningEffort) => ({ reasoningEffort, description: reasoningEffort })) },
+      { id: "gpt-5.6-terra", supportedReasoningEfforts: ["low", "medium", "high", "max"].map((reasoningEffort) => ({ reasoningEffort, description: reasoningEffort })) },
+      { id: "gpt-5.6-sol", supportedReasoningEfforts: ["low", "medium", "high", "max", "ultra"].map((reasoningEffort) => ({ reasoningEffort, description: reasoningEffort })) },
+      { id: "gpt-5.5", supportedReasoningEfforts: [{ reasoningEffort: "high", description: "high" }] }
     ]
   }
 };
