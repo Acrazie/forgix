@@ -58,3 +58,25 @@ test("rejects an attempt to weaken a locked policy", async () => {
       error.source === "local"
   );
 });
+
+test("subscription config is strict, versioned, and explainable", async () => {
+  const { DEFAULT_CONFIG, explainConfig, resolveConfig, resolveSubscriptionMultiplier, validateSchema } = await import(bundle);
+  const valid = validateSchema("config", DEFAULT_CONFIG);
+  assert.equal(valid.valid, true);
+  assert.equal(validateSchema("config", {
+    schemaVersion: 1,
+    subscription: { ...DEFAULT_CONFIG.subscription, modelAllowlist: ["gpt-5.5"] }
+  }).valid, false);
+  assert.equal(validateSchema("config", {
+    schemaVersion: 1,
+    subscription: { ...DEFAULT_CONFIG.subscription, unexpected: true }
+  }).valid, false);
+  const explained = explainConfig(resolveConfig([
+    { source: "user", value: { subscription: { plan: "plus" } } }
+  ]));
+  assert.equal(explained.value.subscription.plan, "plus");
+  assert.equal(explained.provenance["subscription.plan"], "user");
+  assert.equal(explained.provenance["subscription.quota.warningPercent"], "defaults");
+  assert.equal(resolveSubscriptionMultiplier("pro_5x"), 5);
+  assert.equal(resolveSubscriptionMultiplier("pro_20x", 7), 7);
+});

@@ -31,3 +31,30 @@ test("detects changed configuration snapshots on resume", async () => {
     policy
   }).changed, true);
 });
+
+test("persists routing snapshot and decisions, and detects resume routing changes", async () => {
+  const { addRoutingDecision, createState, compareSnapshot } = await import(bundle);
+  const routingSnapshot = {
+    schemaVersion: 1,
+    capturedAt: "2026-07-12T10:00:00.000Z",
+    plan: "plus",
+    account: { planType: "plus" },
+    quota: { windowDurationMins: 300, usedPercent: 20, pressure: "normal", source: "app-server" },
+    models: [{ id: "gpt-5.6-luna", supportedReasoningEfforts: ["low", "medium"] }],
+    warnings: [],
+    provenance: { plan: "account/read", quota: "account/rateLimits/read", models: "model/list" }
+  };
+  const state = createState({ taskId: "task-route", configSnapshot: config, policySnapshot: policy, routingSnapshot });
+  assert.deepEqual(state.routingSnapshot, routingSnapshot);
+  const decision = {
+    stage: "discover",
+    model: "gpt-5.6-luna",
+    effort: "medium",
+    quotaPressure: "normal",
+    reason: "routine task on plus plan",
+    warnings: []
+  };
+  assert.deepEqual(addRoutingDecision(state, decision).routingDecisions, [decision]);
+  assert.equal(compareSnapshot(state, { config, policy, routingSnapshot: { ...routingSnapshot, capturedAt: "2026-07-12T11:00:00.000Z" } }).changed, false);
+  assert.equal(compareSnapshot(state, { config, policy, routingSnapshot: { ...routingSnapshot, plan: "pro_5x" } }).changed, true);
+});

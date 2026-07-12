@@ -1,0 +1,237 @@
+import {
+  ALLOWED_MODEL_IDS,
+  REASONING_EFFORTS,
+  type ModelCapability,
+  type ModelId,
+  type QuotaPressure,
+  type ReasoningEffort,
+  type ResolvedSubscriptionPlan,
+  type RiskLevel,
+  type RoutingDecision,
+  type RoutingSnapshot,
+  type RoutingStage,
+  type SubscriptionConfig
+} from "./types.js";
+
+export const MODEL_IDS = ALLOWED_MODEL_IDS;
+export const APP_SERVER_PROTOCOL_VERSION = "v2";
+export const MODEL_COST_MULTIPLIERS: Record<ModelId, number> = {
+  "gpt-5.6-luna": 1,
+  "gpt-5.6-terra": 2.5,
+  "gpt-5.6-sol": 5
+};
+
+export const MODEL_COST_PROFILES: SubscriptionConfig["modelCosts"] = {
+  "gpt-5.6-luna": {
+    multiplier: 1,
+    rateVersion: "2026-07-09",
+    inputCreditsPerMillion: 25,
+    cachedInputCreditsPerMillion: 2.5,
+    outputCreditsPerMillion: 150
+  },
+  "gpt-5.6-terra": {
+    multiplier: 2.5,
+    rateVersion: "2026-07-09",
+    inputCreditsPerMillion: 62.5,
+    cachedInputCreditsPerMillion: 6.25,
+    outputCreditsPerMillion: 375
+  },
+  "gpt-5.6-sol": {
+    multiplier: 5,
+    rateVersion: "2026-07-09",
+    inputCreditsPerMillion: 125,
+    cachedInputCreditsPerMillion: 12.5,
+    outputCreditsPerMillion: 750
+  }
+};
+
+const EFFORT_ORDER: ReasoningEffort[] = [...REASONING_EFFORTS];
+
+export function classifyQuotaPressure(
+  usedPercent: number | undefined,
+  thresholds: { warningPercent?: number; criticalPercent?: number } = {}
+): QuotaPressure {
+  if (usedPercent === undefined || !Number.isFinite(usedPercent)) return "unknown";
+  const warning = thresholds.warningPercent ?? 50;
+  const critical = thresholds.criticalPercent ?? 80;
+  if (usedPercent >= critical) return "critical";
+  if (usedPercent >= warning) return "warning";
+  return "normal";
+}
+
+export function selectFiveHourWindow(rateLimits: unknown): { windowDurationMins: 300; usedPercent: number } | undefined {
+  const source = isRecord(rateLimits) && isRecord(rateLimits.rateLimits) ? rateLimits.rateLimits : rateLimits;
+  if (!isRecord(source)) return undefined;
+  for (const value of Object.values(source)) {
+    if (!isRecord(value) || value.windowDurationMins !== 300 || typeof value.usedPercent !== "number") continue;
+    if (Number.isFinite(value.usedPercent)) return { windowDurationMins: 300, usedPercent: value.usedPercent };
+  }
+  return undefined;
+}
+
+export function resolveSubscriptionPlan(configPlan: string | undefined, accountPlan: string | undefined): ResolvedSubscriptionPlan {
+  if (configPlan === "plus" || configPlan === "pro_5x" || configPlan === "pro_20x") return configPlan;
+  if (accountPlan === "plus") return "plus";
+  if (accountPlan === "pro_5x" || accountPlan === "pro_20x") return accountPlan;
+  if (accountPlan === "pro") return "pro_5x";
+  return "unknown";
+}
+
+export function resolveSubscriptionMultiplier(plan: ResolvedSubscriptionPlan, override?: number): number {
+  if (override !== undefined && Number.isFinite(override) && override > 0) return override;
+  if (plan === "pro_20x") return 20;
+  if (plan === "pro_5x") return 5;
+  return 1;
+}
+
+export interface RawRoutingSnapshotInput {
+  account?: unknown;
+  rateLimits?: unknown;
+  models?: unknown;
+  config?: { plan?: string; planOverride?: string; multiplierOverride?: number; modelAllowlist?: readonly ModelId[]; quota?: { warningPercent?: number; criticalPercent?: number } };
+  capturedAt?: string;
+}
+
+export interface BuiltRoutingSnapshot {
+  available: boolean;
+  snapshot: RoutingSnapshot;
+}
+
+export function buildRoutingSnapshot(input: RawRoutingSnapshotInput, available = true): BuiltRoutingSnapshot {
+  const account = extractAccount(input.account);
+  const accountPlan = typeof account.planType === "string" ? account.planType : undefined;
+  const configuredPlan = input.config?.planOverride ?? input.config?.plan;
+  const plan = resolveSubscriptionPlan(configuredPlan, accountPlan);
+  const window = selectFiveHourWindow(input.rateLimits);
+  const pressure = classifyQuotaPressure(window?.usedPercent, input.config?.quota);
+  const models = normalizeModels(input.models, input.config?.modelAllowlist);
+  const warnings: string[] = [];
+  if (pressure === "unknown") warnings.push("quota_unknown");
+  if (models.length === 0) warnings.push("allowed_model_unavailable");
+  if (!available && !warnings.includes("quota_unknown")) warnings.push("quota_unknown");
+  const snapshot: RoutingSnapshot = {
+    schemaVersion: 1,
+    capturedAt: input.capturedAt ?? new Date().toISOString(),
+    plan,
+    account,
+    quota: {
+      ...(window ? { windowDurationMins: window.windowDurationMins, usedPercent: window.usedPercent } : {}),
+      pressure,
+      source: available && window ? "app-server" : "unknown"
+    },
+    models,
+    warnings,
+    provenance: {
+      plan: configuredPlan && configuredPlan !== "auto" ? "config" : accountPlan ? "account/read" : "unknown",
+      quota: available && window ? "account/rateLimits/read" : "unknown",
+      models: available && models.length ? "model/list" : "unknown"
+    },
+    subscriptionMultiplier: resolveSubscriptionMultiplier(plan, input.config?.multiplierOverride)
+  };
+  return { available, snapshot };
+}
+
+export function createUnavailableRoutingSnapshot(capturedAt = new Date().toISOString()): BuiltRoutingSnapshot {
+  return buildRoutingSnapshot({ capturedAt, config: { plan: "auto" } }, false);
+}
+
+export interface RouteTask {
+  stage: RoutingStage;
+  risk: RiskLevel;
+  ambiguity: RiskLevel;
+  critical?: boolean;
+}
+
+export function chooseRoute(snapshot: RoutingSnapshot, task: RouteTask): RoutingDecision {
+  const warnings = [...snapshot.warnings];
+  const pressure = snapshot.quota.pressure;
+  const available = snapshot.models.filter((model) => ALLOWED_MODEL_IDS.includes(model.id));
+  if (available.length === 0) {
+    if (!warnings.includes("allowed_model_unavailable")) warnings.push("allowed_model_unavailable");
+    return {
+      stage: task.stage,
+      model: null,
+      effort: null,
+      quotaPressure: pressure,
+      reason: "no allowlisted GPT-5.6 model available",
+      warnings
+    };
+  }
+
+  const unknownPlan = snapshot.plan === "unknown";
+  const conservative = pressure === "warning" || pressure === "critical" || pressure === "unknown" || unknownPlan;
+  if (pressure === "unknown" && !warnings.includes("quota_unknown")) warnings.push("quota_unknown");
+  if (unknownPlan && !warnings.includes("plan_unknown")) warnings.push("plan_unknown");
+  const demanding = task.risk === "high" || task.risk === "critical" || task.ambiguity === "high" || task.ambiguity === "critical";
+  if (conservative && !available.some((model) => model.id === "gpt-5.6-luna")) {
+    if (!warnings.includes("allowed_model_unavailable")) warnings.push("allowed_model_unavailable");
+    return {
+      stage: task.stage,
+      model: null,
+      effort: null,
+      quotaPressure: pressure,
+      reason: "conservative model unavailable under current quota policy",
+      warnings
+    };
+  }
+  const preferred: ModelId = conservative ? "gpt-5.6-luna" : demanding ? "gpt-5.6-sol" : snapshot.plan === "plus" ? "gpt-5.6-luna" : "gpt-5.6-terra";
+  const model = pickModel(available, preferred);
+  if (model !== preferred && demanding && !warnings.includes("allowed_model_unavailable")) warnings.push("allowed_model_unavailable");
+  if (conservative && model !== "gpt-5.6-luna" && !warnings.includes("allowed_model_unavailable")) warnings.push("allowed_model_unavailable");
+
+  const routine = !demanding;
+  const reason = conservative
+    ? pressure === "unknown" ? "conservative route because quota is unknown" : unknownPlan ? "conservative route because subscription plan is unknown" : "conservative route because quota pressure is " + pressure
+    : demanding ? "high-risk or ambiguous task" : "routine task on " + snapshot.plan + " plan";
+  const effort = chooseEffort(model, snapshot, task, conservative);
+  return { stage: task.stage, model, effort, quotaPressure: pressure, reason, warnings };
+}
+
+function chooseEffort(model: ModelId, snapshot: RoutingSnapshot, task: RouteTask, conservative: boolean): ReasoningEffort | null {
+  const capability = snapshot.models.find((candidate) => candidate.id === model);
+  if (!capability || capability.supportedReasoningEfforts.length === 0) return null;
+  const desired: ReasoningEffort = task.critical && !conservative
+    ? "ultra"
+    : conservative ? "high" : task.risk === "high" || task.risk === "critical" || task.ambiguity === "high" || task.ambiguity === "critical" ? "high" : "medium";
+  const desiredIndex = EFFORT_ORDER.indexOf(desired);
+  const supported = capability.supportedReasoningEfforts.filter((effort) => EFFORT_ORDER.includes(effort));
+  const notAboveDesired = supported.filter((effort) => EFFORT_ORDER.indexOf(effort) <= desiredIndex);
+  return notAboveDesired.at(-1) ?? supported[0] ?? null;
+}
+
+function pickModel(available: ModelCapability[], preferred: ModelId): ModelId {
+  const candidates: ModelId[] = [preferred, "gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"];
+  for (const candidate of candidates) if (available.some((model) => model.id === candidate)) return candidate;
+  return available[0]?.id ?? "gpt-5.6-luna";
+}
+
+function normalizeModels(input: unknown, allowlist: readonly ModelId[] | undefined): ModelCapability[] {
+  const candidates = Array.isArray(input)
+    ? input
+    : isRecord(input) && Array.isArray(input.models) ? input.models
+      : isRecord(input) && Array.isArray(input.data) ? input.data : [];
+  const models: ModelCapability[] = [];
+  for (const candidate of candidates) {
+    if (!isRecord(candidate) || typeof candidate.id !== "string" || !isModelId(candidate.id)) continue;
+    if (allowlist && !allowlist.includes(candidate.id)) continue;
+    const efforts = Array.isArray(candidate.supportedReasoningEfforts)
+      ? candidate.supportedReasoningEfforts.filter((effort): effort is ReasoningEffort => typeof effort === "string" && REASONING_EFFORTS.includes(effort as ReasoningEffort))
+      : [];
+    models.push({ id: candidate.id, supportedReasoningEfforts: efforts });
+  }
+  return models;
+}
+
+function extractAccount(input: unknown): { planType?: string } {
+  if (!isRecord(input)) return {};
+  const account = isRecord(input.account) ? input.account : input;
+  return typeof account.planType === "string" ? { planType: account.planType } : {};
+}
+
+function isModelId(value: string): value is ModelId {
+  return (ALLOWED_MODEL_IDS as readonly string[]).includes(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}

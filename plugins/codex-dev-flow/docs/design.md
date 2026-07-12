@@ -137,3 +137,9 @@ V1 includes automated tests for parsing, state transitions, policy enforcement, 
 - GitHub repository publication.
 - Python and Rust fixtures.
 - Stockli task-router migration. This happens only after successful dogfooding of the standalone plugin.
+
+## Subscription-Aware Routing V1
+
+Routing is additive to the workflow configuration. `subscription.plan` accepts `auto`, `plus`, `pro_5x`, and `pro_20x`; `planOverride` and `multiplierOverride` can force an effective plan or multiplier. Quota thresholds default to 50% warning and 80% critical, with conservative behavior when quota is unknown. Model cost profiles are versioned and overrideable; current GPT-5.6 token credit profiles are Luna 25/2.5/150, Terra 62.5/6.25/375, and Sol 125/12.5/750 credits per million input/cached-input/output tokens.
+
+Each `$dev-flow` run and resume starts one isolated app-server process and takes one `RoutingSnapshot`. The adapter performs the versioned handshake and reads account, rate limits, and model catalog. It accepts only GPT-5.6 Luna, Terra, and Sol; five-hour quota detection requires `windowDurationMins === 300`. `chooseRoute()` is pure and deterministic. Analysis/review stages use its `RoutingDecision`; execution, validation, and parent verification commands never delegate mutations.

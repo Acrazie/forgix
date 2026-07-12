@@ -1,9 +1,10 @@
-import type { Policy, TaskState, TaskStatus } from "./types.js";
+import type { Policy, RoutingDecision, RoutingSnapshot, TaskState, TaskStatus } from "./types.js";
 
 export interface CreateTaskInput {
   taskId: string;
   configSnapshot: Record<string, unknown>;
   policySnapshot: Policy;
+  routingSnapshot?: RoutingSnapshot;
 }
 
 export interface TransitionOptions {
@@ -35,7 +36,16 @@ export function createState(input: CreateTaskInput): TaskState {
     issues: [],
     reviewCycle: 0,
     remainingActions: [],
-    history: []
+    history: [],
+    ...(input.routingSnapshot ? { routingSnapshot: input.routingSnapshot } : {}),
+    routingDecisions: []
+  };
+}
+
+export function addRoutingDecision(state: TaskState, decision: RoutingDecision): TaskState {
+  return {
+    ...state,
+    routingDecisions: [...(state.routingDecisions ?? []), decision]
   };
 }
 
@@ -58,15 +68,31 @@ export function transition(state: TaskState, next: TaskStatus, options: Transiti
 }
 
 function stable(value: unknown): string {
-  return JSON.stringify(value, Object.keys(value as Record<string, unknown>).sort());
+  return JSON.stringify(canonicalize(value));
 }
 
 export function compareSnapshot(
-  state: Pick<TaskState, "configSnapshot" | "policySnapshot">,
-  current: { config: Record<string, unknown>; policy: Policy }
+  state: Pick<TaskState, "configSnapshot" | "policySnapshot" | "routingSnapshot">,
+  current: { config: Record<string, unknown>; policy: Policy; routingSnapshot?: RoutingSnapshot }
 ): { changed: boolean; reasons: string[] } {
   const reasons: string[] = [];
   if (stable(state.configSnapshot) !== stable(current.config)) reasons.push("Effective configuration changed.");
   if (stable(state.policySnapshot) !== stable(current.policy)) reasons.push("Effective policy changed.");
+  if (state.routingSnapshot && current.routingSnapshot && stableRoutingSnapshot(state.routingSnapshot) !== stableRoutingSnapshot(current.routingSnapshot)) {
+    reasons.push("Routing snapshot changed.");
+  }
   return { changed: reasons.length > 0, reasons };
+}
+
+function stableRoutingSnapshot(snapshot: RoutingSnapshot): string {
+  const { capturedAt: _capturedAt, ...behavior } = snapshot;
+  return stable(behavior);
+}
+
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (typeof value === "object" && value !== null) {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right)).map(([key, nested]) => [key, canonicalize(nested)]));
+  }
+  return value;
 }

@@ -32,6 +32,63 @@
     "merge": {
       "type": "string",
       "const": "never"
+    },
+    "subscription": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plan": {
+          "type": "string",
+          "enum": ["auto", "plus", "pro_5x", "pro_20x"]
+        },
+        "planOverride": {
+          "type": "string",
+          "enum": ["plus", "pro_5x", "pro_20x"]
+        },
+        "multiplierOverride": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "quota": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "warningPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "criticalPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "unknownPolicy": { "type": "string", "const": "conservative" }
+          }
+        },
+        "modelAllowlist": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"]
+          }
+        },
+        "modelCosts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "gpt-5.6-luna": { "$ref": "#/$defs/modelCost" },
+            "gpt-5.6-terra": { "$ref": "#/$defs/modelCost" },
+            "gpt-5.6-sol": { "$ref": "#/$defs/modelCost" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "modelCost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "multiplier": { "type": "number", "exclusiveMinimum": 0 },
+        "rateVersion": { "type": "string", "minLength": 1 },
+        "inputCreditsPerMillion": { "type": "number", "minimum": 0 },
+        "cachedInputCreditsPerMillion": { "type": "number", "minimum": 0 },
+        "outputCreditsPerMillion": { "type": "number", "minimum": 0 }
+      }
     }
   }
 }
