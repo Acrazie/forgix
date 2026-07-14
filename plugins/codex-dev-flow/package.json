@@ -4,6 +4,9 @@
   "private": true,
   "description": "Portable Codex development workflow plugin.",
   "type": "module",
+  "bin": {
+    "codex-dev-flow": "dist/dev-flow.mjs"
+  },
   "engines": {
     "node": ">=22.18.0"
   },

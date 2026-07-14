@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { chmod } from "node:fs/promises";
 
 await build({
   bundle: true,
@@ -9,6 +10,8 @@ await build({
   sourcemap: false,
   target: "node22.18",
   banner: {
-    js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);'
+    js: '#!/usr/bin/env node\nimport { createRequire } from "node:module"; const require = createRequire(import.meta.url);'
   }
 });
+
+await chmod("dist/dev-flow.mjs", 0o755);
