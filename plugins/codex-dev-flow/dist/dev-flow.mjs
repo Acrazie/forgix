@@ -14478,7 +14478,6 @@ var require_dist = __commonJS({
 });
 
 // src/cli.ts
-import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
 // src/app-server.ts
@@ -15432,7 +15431,7 @@ function main(argv = process.argv.slice(2)) {
 function isExitCodeError(error) {
   return typeof error === "object" && error !== null && "exitCode" in error && typeof error.exitCode === "number";
 }
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+if (import.meta.main) {
   main();
 }
 export {

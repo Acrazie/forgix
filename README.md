@@ -147,7 +147,7 @@ subscription:
 
 Use `$dev-flow config show --explain` to inspect each effective value and its source. Use `$dev-flow config validate` before committing repository configuration.
 
-Use standalone terminal command `codex-dev-flow init` for interactive repository configuration. It runs outside Codex and Claude Code, previews and validates `.codex/dev-flow.yaml`, then asks for confirmation. From a source checkout, expose command with `npm link` inside `plugins/codex-dev-flow`. Dev Flow uses only bundled skills by default; `integrations.plugins` and `integrations.skills` explicitly allow compatible external capabilities such as Impeccable.
+Use standalone terminal command `codex-dev-flow init` for interactive repository configuration. It runs outside Codex and Claude Code, previews and validates `.codex/dev-flow.yaml`, then asks for confirmation. Installing the Codex plugin exposes its skills inside Codex but does not add the standalone binary to your shell `PATH`. From a source checkout, expose the command with `npm link` inside `plugins/codex-dev-flow`, then run it from the project you want to configure. Dev Flow uses only bundled skills by default; `integrations.plugins` and `integrations.skills` explicitly allow compatible external capabilities such as Impeccable.
 
 ## Safety and evidence
 

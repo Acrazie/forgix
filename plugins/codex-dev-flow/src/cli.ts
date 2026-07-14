@@ -1,4 +1,3 @@
-import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 import { captureRoutingSnapshot } from "./app-server.js";
 import { explainConfig, loadConfigSources, resolveConfig, type ConfigSource, type ResolvedConfig } from "./config.js";
@@ -156,6 +155,6 @@ function isExitCodeError(error: unknown): error is { exitCode: number } {
   return typeof error === "object" && error !== null && "exitCode" in error && typeof error.exitCode === "number";
 }
 
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+if (import.meta.main) {
   main();
 }

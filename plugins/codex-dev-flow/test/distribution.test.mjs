@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 test("distribution bundle exists", () => {
   const bundle = new URL("../dist/dev-flow.mjs", import.meta.url);
@@ -13,6 +17,22 @@ test("distribution bundle imports as ESM", async () => {
   const bundle = new URL("../dist/dev-flow.mjs", import.meta.url);
   const module = await import(bundle);
   assert.equal(typeof module.main, "function");
+});
+
+test("package binary executes through a package-manager symlink", { skip: process.platform === "win32" }, () => {
+  const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-bin-"));
+  const binary = join(directory, "codex-dev-flow");
+  symlinkSync(fileURLToPath(new URL("../dist/dev-flow.mjs", import.meta.url)), binary);
+
+  try {
+    const result = spawnSync(binary, ["config", "validate", "--json"], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.command, "config_validate");
+    assert.equal(output.status, "valid");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test("public skill isolates external skills behind configured allowlists", () => {

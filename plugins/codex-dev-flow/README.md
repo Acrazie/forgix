@@ -28,10 +28,12 @@ subscription:
     unknownPolicy: conservative
 ```
 
-Install or link the package binary, then run `codex-dev-flow init` directly in a project terminal. No Codex or Claude Code session is required. For local development:
+Installing the Codex plugin exposes its skills inside Codex but does not add the standalone binary to your shell `PATH`. Link the package binary from this source checkout, then run `codex-dev-flow init` directly in the project terminal you want to configure. No Codex or Claude Code session is required:
 
 ```bash
+cd plugins/codex-dev-flow
 npm link
+cd /path/to/project
 codex-dev-flow init
 ```
 
