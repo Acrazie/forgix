@@ -23,6 +23,31 @@ If the exact live five-hour window is absent, reuse only a non-expired cached fi
 
 Route only `discover`, `plan`, `debug`, `review`, and `verify`. Keep `execute`, `validate`, and parent-owned verification commands in the workflow parent; never delegate mutations.
 
+## Durable workflow artifacts
+
+Keep resumable machine state under `.codex/tasks/`. Keep human-readable, versioned change records under `docs/dev-flow/` in the repository's active worktree.
+
+- Quick has no mandatory artifact. Create one only when repository policy or the user requires it.
+- Standard uses one change record at `docs/dev-flow/YYYY-MM-DD-<slug>.md`.
+- Critical uses `docs/dev-flow/YYYY-MM-DD-<slug>/spec.md`, `plan.md`, `risk-and-rollback.md`, and `verification.md`.
+- Create an ADR separately only when the change makes a durable architectural decision.
+
+For Standard, the parent workflow creates the change record after read-only discovery and planning, before implementation approval. Creating or updating required Dev Flow artifacts is the only permitted repository write before implementation approval. Delegated discovery, planning, review, and verification stages remain read-only and return content to the parent.
+
+The Standard change record must contain these sections:
+
+1. Context and outcome
+2. Scope and non-goals
+3. Constraints and decisions
+4. Acceptance criteria with stable identifiers
+5. Implementation plan mapping tasks to acceptance criteria
+6. Risks and rollback
+7. Verification evidence
+
+Show the saved artifact path when requesting approval. After approval, execute against that artifact. Keep plans at task and contract level; include complete code or brittle line references only when indispensable. Record approved scope changes in the artifact. Append final commands, results, skipped checks, and material deviations under verification evidence.
+
+On resume, reuse the existing artifact and reconcile it with task state; never create a duplicate for the same task. Artifacts belong to the active worktree and must be included in the resulting commit or handoff unless repository policy explicitly forbids versioning them.
+
 - If mode is absent, inspect read-only context, propose quick, standard, or critical, then follow effective confirmation policy.
 - Quick may write directly only for an explicit, bounded, non-destructive request.
 - Standard requires discovery, plan, approval, execution, review, and verification.

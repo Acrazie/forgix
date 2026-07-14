@@ -4,6 +4,10 @@
 
 A versioned task document: specification, plan, findings, or verification report.
 
+## Change record
+
+The single adaptive Standard-mode artifact containing stable intent, acceptance criteria, implementation tasks, rollback, and verification evidence.
+
 ## Configuration provenance
 
 The source that supplied an effective configuration value.

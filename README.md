@@ -87,6 +87,14 @@ request
 
 Dev Flow keeps local task state under `.codex/tasks/` and durable artifacts under `docs/dev-flow/`. Interrupted tasks can resume without rebuilding their context from scratch.
 
+## Adaptive artifacts
+
+- Quick creates no artifact by default.
+- Standard saves specification, acceptance criteria, plan, rollback, and final evidence in one `docs/dev-flow/YYYY-MM-DD-<slug>.md` change record before implementation approval.
+- Critical keeps separate `spec.md`, `plan.md`, `risk-and-rollback.md`, and `verification.md` files under a change directory.
+
+Artifact-only writes are allowed before Standard approval. Implementation still waits for explicit approval. Resume reuses the existing artifact, and the final commit or handoff includes it. See the [artifact contract](./plugins/codex-dev-flow/docs/artifacts.md).
+
 ## Commands
 
 ```text
@@ -161,6 +169,7 @@ If account, quota, or model information is unavailable, routing remains conserva
 ## Documentation
 
 - [Design](./plugins/codex-dev-flow/docs/design.md)
+- [Artifact contract](./plugins/codex-dev-flow/docs/artifacts.md)
 - [Architecture decision record](./plugins/codex-dev-flow/docs/adr/0001-hybrid-portable-workflow.md)
 - [Glossary](./plugins/codex-dev-flow/docs/glossary/dev-flow.md)
 - [Contributing](./CONTRIBUTING.md)
