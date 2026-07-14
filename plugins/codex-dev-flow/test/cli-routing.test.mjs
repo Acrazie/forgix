@@ -16,9 +16,9 @@ function routingResult() {
       account: { planType: "plus" },
       quota: { windowDurationMins: 300, usedPercent: 10, pressure: "normal", source: "app-server" },
       models: [
-        { id: "gpt-5.6-luna", supportedReasoningEfforts: ["low", "medium", "high", "max"] },
-        { id: "gpt-5.6-terra", supportedReasoningEfforts: ["low", "medium", "high", "max"] },
-        { id: "gpt-5.6-sol", supportedReasoningEfforts: ["low", "medium", "high", "max", "ultra"] }
+        { id: "gpt-5.6-luna", supportedReasoningEfforts: ["low", "medium", "high", "xhigh"] },
+        { id: "gpt-5.6-terra", supportedReasoningEfforts: ["low", "medium", "high", "xhigh"] },
+        { id: "gpt-5.6-sol", supportedReasoningEfforts: ["low", "medium", "high", "xhigh"] }
       ],
       warnings: [],
       provenance: { plan: "account/read", quota: "account/rateLimits/read", models: "model/list" }
@@ -36,15 +36,27 @@ test("run and resume capture one routing snapshot per invocation", async () => {
   const run = await runInvocation(["standard", "change", "thing"], { captureSnapshot });
   assert.equal(calls, 1);
   assert.equal(run.status, "routed");
-  assert.equal(run.data.routingDecisions.length, 5);
-  assert.deepEqual(run.data.routingDecisions.map((decision) => decision.stage), ["discover", "plan", "debug", "review", "verify"]);
+  assert.equal(run.data.routingDecisions.length, 6);
+  assert.deepEqual(run.data.routingDecisions.map((decision) => decision.stage), ["discover", "plan", "execute", "debug", "review", "verify"]);
+  assert.equal(run.data.routingPolicyVersion, "2026-07-14.skill-first.v1");
   await runInvocation(["resume", "task-1"], { captureSnapshot });
   assert.equal(calls, 2);
 });
 
+test("missing exact route reports routing_unavailable without fallback", async () => {
+  const { runInvocation } = await import(bundle);
+  const result = routingResult();
+  result.snapshot.models = result.snapshot.models.filter((model) => model.id === "gpt-5.6-luna");
+  const run = await runInvocation(["standard", "change", "thing"], { captureSnapshot: async () => result });
+  assert.equal(run.status, "routing_unavailable");
+  const plan = run.data.routingDecisions.find((decision) => decision.stage === "plan");
+  assert.equal(plan.model, null);
+  assert.ok(plan.warnings.includes("required_route_unavailable"));
+});
+
 test("config show explain stays read-only and exposes provenance", async () => {
   const { runInvocation } = await import(bundle);
-  const result = await runInvocation(["config", "show", "--explain"]);
+  const result = await runInvocation(["config", "show", "--explain"], { configSources: [] });
   assert.equal(result.data.provenance["subscription.quota.warningPercent"], "defaults");
   assert.equal(result.data.value.subscription.plan, "auto");
 });
@@ -91,8 +103,8 @@ test("a cached five-hour reset supplies safe fallback metadata without stale usa
     });
     assert.equal("usedPercent" in fallback.data.routingSnapshot.quota, false);
     assert.ok(fallback.data.routingSnapshot.warnings.includes("quota_fallback_last_known"));
-    assert.equal(fallback.data.routingDecisions[0].model, "gpt-5.6-luna");
-    assert.equal(fallback.data.routingDecisions[0].effort, "high");
+    assert.equal(fallback.data.routingDecisions[0].model, "gpt-5.6-terra");
+    assert.equal(fallback.data.routingDecisions[0].effort, "medium");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

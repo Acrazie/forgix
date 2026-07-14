@@ -17,6 +17,7 @@
     "check": "npm run typecheck && npm run build && npm test"
   },
   "dependencies": {
+    "@clack/prompts": "1.0.0",
     "ajv": "8.20.0",
     "yaml": "2.9.0"
   },

@@ -13,9 +13,11 @@ import {
   type RoutingStage,
   type SubscriptionConfig
 } from "./types.js";
+import type { TaskMode } from "./types.js";
 
 export const MODEL_IDS = ALLOWED_MODEL_IDS;
 export const APP_SERVER_PROTOCOL_VERSION = "v2";
+export const ROUTING_POLICY_VERSION = "2026-07-14.skill-first.v1";
 export const MODEL_COST_MULTIPLIERS: Record<ModelId, number> = {
   "gpt-5.6-luna": 1,
   "gpt-5.6-terra": 2.5,
@@ -47,6 +49,36 @@ export const MODEL_COST_PROFILES: SubscriptionConfig["modelCosts"] = {
 };
 
 const EFFORT_ORDER: ReasoningEffort[] = [...REASONING_EFFORTS];
+
+type MatrixPlan = Exclude<ResolvedSubscriptionPlan, "unknown">;
+type RouteTarget = { model: ModelId; effort: ReasoningEffort };
+
+const STANDARD_ROUTES: Record<MatrixPlan, Record<RoutingStage, RouteTarget>> = {
+  plus: {
+    discover: { model: "gpt-5.6-terra", effort: "medium" },
+    plan: { model: "gpt-5.6-sol", effort: "medium" },
+    execute: { model: "gpt-5.6-terra", effort: "high" },
+    review: { model: "gpt-5.6-sol", effort: "medium" },
+    verify: { model: "gpt-5.6-luna", effort: "medium" },
+    debug: { model: "gpt-5.6-sol", effort: "high" }
+  },
+  pro_5x: {
+    discover: { model: "gpt-5.6-terra", effort: "high" },
+    plan: { model: "gpt-5.6-sol", effort: "high" },
+    execute: { model: "gpt-5.6-terra", effort: "xhigh" },
+    review: { model: "gpt-5.6-sol", effort: "high" },
+    verify: { model: "gpt-5.6-luna", effort: "medium" },
+    debug: { model: "gpt-5.6-sol", effort: "xhigh" }
+  },
+  pro_20x: {
+    discover: { model: "gpt-5.6-sol", effort: "medium" },
+    plan: { model: "gpt-5.6-sol", effort: "xhigh" },
+    execute: { model: "gpt-5.6-sol", effort: "high" },
+    review: { model: "gpt-5.6-sol", effort: "xhigh" },
+    verify: { model: "gpt-5.6-terra", effort: "medium" },
+    debug: { model: "gpt-5.6-sol", effort: "xhigh" }
+  }
+};
 
 export function classifyQuotaPressure(
   usedPercent: number | undefined,
@@ -147,70 +179,41 @@ export interface RouteTask {
   stage: RoutingStage;
   risk: RiskLevel;
   ambiguity: RiskLevel;
-  critical?: boolean;
+  mode?: TaskMode;
 }
 
 export function chooseRoute(snapshot: RoutingSnapshot, task: RouteTask): RoutingDecision {
   const warnings = [...snapshot.warnings];
   const pressure = snapshot.quota.pressure;
-  const available = snapshot.models.filter((model) => ALLOWED_MODEL_IDS.includes(model.id));
-  if (available.length === 0) {
-    if (!warnings.includes("allowed_model_unavailable")) warnings.push("allowed_model_unavailable");
-    return {
-      stage: task.stage,
-      model: null,
-      effort: null,
-      quotaPressure: pressure,
-      reason: "no allowlisted GPT-5.6 model available",
-      warnings
-    };
-  }
-
   const unknownPlan = snapshot.plan === "unknown";
-  const conservative = pressure === "warning" || pressure === "critical" || pressure === "unknown" || unknownPlan;
   if (pressure === "unknown" && !warnings.includes("quota_unknown")) warnings.push("quota_unknown");
   if (unknownPlan && !warnings.includes("plan_unknown")) warnings.push("plan_unknown");
-  const demanding = task.risk === "high" || task.risk === "critical" || task.ambiguity === "high" || task.ambiguity === "critical";
-  if (conservative && !available.some((model) => model.id === "gpt-5.6-luna")) {
-    if (!warnings.includes("allowed_model_unavailable")) warnings.push("allowed_model_unavailable");
-    return {
-      stage: task.stage,
-      model: null,
-      effort: null,
-      quotaPressure: pressure,
-      reason: "conservative model unavailable under current quota policy",
-      warnings
-    };
+  const effectivePlan = effectiveMatrixPlan(snapshot.plan, pressure);
+  const base = STANDARD_ROUTES[effectivePlan][task.stage];
+  const elevated = task.mode === "critical" || task.risk === "high" || task.risk === "critical" || task.ambiguity === "high" || task.ambiguity === "critical";
+  const delta = elevated ? 1 : task.mode === "quick" ? -1 : 0;
+  const effort = shiftEffort(base.effort, delta);
+  const capability = snapshot.models.find((candidate) => candidate.id === base.model);
+  const exactAvailable = capability?.supportedReasoningEfforts.includes(effort) === true;
+  const reason = `${task.stage} route for ${effectivePlan} plan under ${pressure} quota`;
+  if (!exactAvailable) {
+    if (!warnings.includes("required_route_unavailable")) warnings.push("required_route_unavailable");
+    return { stage: task.stage, model: null, effort: null, quotaPressure: pressure, reason: `${reason}; exact ${base.model}/${effort} unavailable`, warnings };
   }
-  const preferred: ModelId = conservative ? "gpt-5.6-luna" : demanding ? "gpt-5.6-sol" : snapshot.plan === "plus" ? "gpt-5.6-luna" : "gpt-5.6-terra";
-  const model = pickModel(available, preferred);
-  if (model !== preferred && demanding && !warnings.includes("allowed_model_unavailable")) warnings.push("allowed_model_unavailable");
-  if (conservative && model !== "gpt-5.6-luna" && !warnings.includes("allowed_model_unavailable")) warnings.push("allowed_model_unavailable");
-
-  const routine = !demanding;
-  const reason = conservative
-    ? pressure === "unknown" ? "conservative route because quota is unknown" : unknownPlan ? "conservative route because subscription plan is unknown" : "conservative route because quota pressure is " + pressure
-    : demanding ? "high-risk or ambiguous task" : "routine task on " + snapshot.plan + " plan";
-  const effort = chooseEffort(model, snapshot, task, conservative);
-  return { stage: task.stage, model, effort, quotaPressure: pressure, reason, warnings };
+  return { stage: task.stage, model: base.model, effort, quotaPressure: pressure, reason, warnings };
 }
 
-function chooseEffort(model: ModelId, snapshot: RoutingSnapshot, task: RouteTask, conservative: boolean): ReasoningEffort | null {
-  const capability = snapshot.models.find((candidate) => candidate.id === model);
-  if (!capability || capability.supportedReasoningEfforts.length === 0) return null;
-  const desired: ReasoningEffort = task.critical && !conservative
-    ? "ultra"
-    : conservative ? "high" : task.risk === "high" || task.risk === "critical" || task.ambiguity === "high" || task.ambiguity === "critical" ? "high" : "medium";
-  const desiredIndex = EFFORT_ORDER.indexOf(desired);
-  const supported = capability.supportedReasoningEfforts.filter((effort) => EFFORT_ORDER.includes(effort));
-  const notAboveDesired = supported.filter((effort) => EFFORT_ORDER.indexOf(effort) <= desiredIndex);
-  return notAboveDesired.at(-1) ?? supported[0] ?? null;
+function effectiveMatrixPlan(plan: ResolvedSubscriptionPlan, pressure: QuotaPressure): MatrixPlan {
+  const known: MatrixPlan = plan === "unknown" ? "plus" : plan;
+  if (pressure === "critical" || pressure === "unknown") return "plus";
+  if (pressure !== "warning") return known;
+  if (known === "pro_20x") return "pro_5x";
+  return "plus";
 }
 
-function pickModel(available: ModelCapability[], preferred: ModelId): ModelId {
-  const candidates: ModelId[] = [preferred, "gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"];
-  for (const candidate of candidates) if (available.some((model) => model.id === candidate)) return candidate;
-  return available[0]?.id ?? "gpt-5.6-luna";
+function shiftEffort(effort: ReasoningEffort, delta: -1 | 0 | 1): ReasoningEffort {
+  const index = EFFORT_ORDER.indexOf(effort);
+  return EFFORT_ORDER[Math.max(0, Math.min(EFFORT_ORDER.length - 1, index + delta))] ?? effort;
 }
 
 function normalizeModels(input: unknown, allowlist: readonly ModelId[] | undefined): ModelCapability[] {

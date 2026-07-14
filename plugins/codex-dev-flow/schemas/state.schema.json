@@ -18,6 +18,7 @@
     "reviewCycle": { "type": "integer", "minimum": 0 },
     "remainingActions": { "type": "array", "items": { "type": "string" } },
     "history": { "type": "array" }
+    ,"routingPolicyVersion": { "type": "string", "minLength": 1 }
     ,"routingSnapshot": {
       "type": "object",
       "additionalProperties": false,
@@ -46,7 +47,7 @@
             "required": ["id", "supportedReasoningEfforts"],
             "properties": {
               "id": { "type": "string", "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] },
-              "supportedReasoningEfforts": { "type": "array", "items": { "type": "string", "enum": ["low", "medium", "high", "max", "ultra"] } }
+              "supportedReasoningEfforts": { "type": "array", "items": { "type": "string", "enum": ["low", "medium", "high", "xhigh"] } }
             }
           }
         },
@@ -71,9 +72,9 @@
         "additionalProperties": false,
         "required": ["stage", "model", "effort", "quotaPressure", "reason", "warnings"],
         "properties": {
-          "stage": { "type": "string", "enum": ["discover", "plan", "debug", "review", "verify"] },
+          "stage": { "type": "string", "enum": ["discover", "plan", "execute", "debug", "review", "verify"] },
           "model": { "type": ["string", "null"], "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", null] },
-          "effort": { "type": ["string", "null"], "enum": ["low", "medium", "high", "max", "ultra", null] },
+          "effort": { "type": ["string", "null"], "enum": ["low", "medium", "high", "xhigh", null] },
           "quotaPressure": { "type": "string", "enum": ["normal", "warning", "critical", "unknown"] },
           "reason": { "type": "string" },
           "warnings": { "type": "array", "items": { "type": "string" } }

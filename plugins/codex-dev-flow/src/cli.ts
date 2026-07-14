@@ -5,14 +5,14 @@ import { EXIT_CODES } from "./exit-codes.js";
 import { InvocationError, parseInvocation } from "./parse.js";
 import { runInit, type InitOptions } from "./init.js";
 import { applyFiveHourResetFallback, readFiveHourResetCache, writeFiveHourResetCache } from "./quota-cache.js";
-import { chooseRoute, type RouteTask } from "./routing.js";
+import { chooseRoute, ROUTING_POLICY_VERSION, type RouteTask } from "./routing.js";
 import type { CliResult, TaskMode } from "./types.js";
 
 export { EXIT_CODES } from "./exit-codes.js";
 export { resolveConfig } from "./config.js";
 export { DEFAULT_CONFIG, DEFAULT_SUBSCRIPTION_CONFIG, ConfigValidationError, explainConfig, loadConfigSources, validateConfigSource, validateSchema } from "./config.js";
 export { InvocationError, parseInvocation } from "./parse.js";
-export { runInit } from "./init.js";
+export { buildRoutingPreview, runInit } from "./init.js";
 export { PolicyError, applyPolicy } from "./policy.js";
 export { addRoutingDecision, compareSnapshot, createState, transition } from "./state.js";
 export { fingerprintFailure, nextCorrectionAction } from "./fingerprint.js";
@@ -23,6 +23,7 @@ export {
   MODEL_COST_PROFILES,
   MODEL_IDS,
   APP_SERVER_PROTOCOL_VERSION,
+  ROUTING_POLICY_VERSION,
   buildRoutingSnapshot,
   chooseRoute,
   classifyQuotaPressure,
@@ -98,13 +99,15 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
     }
   }
   const mode: TaskMode | undefined = invocation.command === "run" ? invocation.mode : undefined;
-  const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, { ...task, critical: mode === "critical" }));
+  const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, { ...task, ...(mode ? { mode } : {}) }));
+  const unavailable = decisions.some((decision) => decision.model === null || decision.effort === null);
   return {
     command: invocation.command,
-    status: snapshotResult.available ? "routed" : "routed_with_warning",
+    status: unavailable ? "routing_unavailable" : snapshotResult.available ? "routed" : "routed_with_warning",
     data: {
       ...(invocation.command === "run" ? { mode, objective: invocation.objective } : { taskId: invocation.taskId }),
       routingSnapshot,
+      routingPolicyVersion: ROUTING_POLICY_VERSION,
       routingDecisions: decisions,
       ...(snapshotResult.error ? { warning: snapshotResult.error } : {})
     }
@@ -123,11 +126,12 @@ function resolveQuotaCachePath(options: RunInvocationOptions): string | undefine
 }
 
 const ROUTING_TASKS: RouteTask[] = [
-  { stage: "discover", risk: "low", ambiguity: "low" },
+  { stage: "discover", risk: "medium", ambiguity: "medium" },
   { stage: "plan", risk: "medium", ambiguity: "medium" },
-  { stage: "debug", risk: "high", ambiguity: "high" },
-  { stage: "review", risk: "high", ambiguity: "medium" },
-  { stage: "verify", risk: "medium", ambiguity: "low" }
+  { stage: "execute", risk: "medium", ambiguity: "medium" },
+  { stage: "debug", risk: "medium", ambiguity: "medium" },
+  { stage: "review", risk: "medium", ambiguity: "medium" },
+  { stage: "verify", risk: "medium", ambiguity: "medium" }
 ];
 
 function resolveRuntimeConfig(sources: ConfigSource[] | undefined): ResolvedConfig {

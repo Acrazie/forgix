@@ -35,6 +35,13 @@ test("package binary executes through a package-manager symlink", { skip: proces
   }
 });
 
+test("init rejects non-interactive invocation explicitly", () => {
+  const bundle = fileURLToPath(new URL("../dist/dev-flow.mjs", import.meta.url));
+  const result = spawnSync(process.execPath, [bundle, "init"], { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
+  assert.equal(result.status, 10);
+  assert.match(result.stderr, /init requires an interactive terminal/);
+});
+
 test("public skill isolates external skills behind configured allowlists", () => {
   const skill = readFileSync(new URL("../skills/dev-flow/SKILL.md", import.meta.url), "utf8");
   assert.match(skill, /integrations\.plugins/);
@@ -42,6 +49,8 @@ test("public skill isolates external skills behind configured allowlists", () =>
   assert.match(skill, /Do not invoke skills from other plugins/);
   assert.match(skill, /standalone CLI command/);
   assert.match(skill, /codex-dev-flow init/);
+  assert.match(skill, /Do not refresh account, quota, or model data between skills/);
+  assert.match(skill, /Never substitute a fallback model or effort/);
 });
 
 test("package exposes the standalone codex-dev-flow binary", () => {

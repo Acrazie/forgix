@@ -46,6 +46,7 @@ test("persists routing snapshot and decisions, and detects resume routing change
   };
   const state = createState({ taskId: "task-route", configSnapshot: config, policySnapshot: policy, routingSnapshot });
   assert.deepEqual(state.routingSnapshot, routingSnapshot);
+  assert.equal(state.routingPolicyVersion, "2026-07-14.skill-first.v1");
   const decision = {
     stage: "discover",
     model: "gpt-5.6-luna",

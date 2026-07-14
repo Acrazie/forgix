@@ -3,13 +3,13 @@ export type TaskMode = "quick" | "standard" | "critical";
 export const ALLOWED_MODEL_IDS = ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] as const;
 export type ModelId = (typeof ALLOWED_MODEL_IDS)[number];
 
-export const REASONING_EFFORTS = ["low", "medium", "high", "max", "ultra"] as const;
+export const REASONING_EFFORTS = ["low", "medium", "high", "xhigh"] as const;
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
 export type SubscriptionPlan = "auto" | "plus" | "pro_5x" | "pro_20x";
 export type ResolvedSubscriptionPlan = Exclude<SubscriptionPlan, "auto"> | "unknown";
 export type QuotaPressure = "normal" | "warning" | "critical" | "unknown";
-export type RoutingStage = "discover" | "plan" | "debug" | "review" | "verify";
+export type RoutingStage = "discover" | "plan" | "execute" | "debug" | "review" | "verify";
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 
 export interface ModelCapability {
@@ -126,6 +126,7 @@ export interface TaskState {
   remainingActions: string[];
   history: unknown[];
   routingSnapshot?: RoutingSnapshot;
+  routingPolicyVersion?: string;
   routingDecisions?: RoutingDecision[];
 }
 

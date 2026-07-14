@@ -147,7 +147,7 @@ subscription:
 
 Use `$dev-flow config show --explain` to inspect each effective value and its source. Use `$dev-flow config validate` before committing repository configuration.
 
-Use standalone terminal command `codex-dev-flow init` for interactive repository configuration. It runs outside Codex and Claude Code, previews and validates `.codex/dev-flow.yaml`, then asks for confirmation. Installing the Codex plugin exposes its skills inside Codex but does not add the standalone binary to your shell `PATH`. From a source checkout, expose the command with `npm link` inside `plugins/codex-dev-flow`, then run it from the project you want to configure. Dev Flow uses only bundled skills by default; `integrations.plugins` and `integrations.skills` explicitly allow compatible external capabilities such as Impeccable.
+Use standalone terminal command `codex-dev-flow init` for interactive repository configuration. Its Clack TUI explains every choice, supports section revisits, previews the six automatic skill routes, validates `.codex/dev-flow.yaml`, and cancels safely with `Ctrl+C`. Installing the Codex plugin exposes its skills inside Codex but does not add the standalone binary to your shell `PATH`. From a source checkout, expose the command with `npm link` inside `plugins/codex-dev-flow`, then run it from the project you want to configure. Dev Flow uses only bundled skills by default; `integrations.plugins` and `integrations.skills` explicitly allow compatible external capabilities such as Impeccable.
 
 ## Safety and evidence
 
@@ -164,7 +164,7 @@ Dev Flow treats successful implementation and successful completion as different
 
 Version `0.1.0` provides the V1 lifecycle, strict configuration and policy schemas, worktree decisions, resumable state, failure fingerprinting, and subscription-aware analysis routing through `codex app-server`.
 
-If account, quota, or model information is unavailable, routing remains conservative and reports a warning. Execution and validation stay controlled by the parent workflow; delegated stages never mutate the repository.
+One initial account/quota/model snapshot freezes routing for the complete workflow. Unknown plans and critical or unknown quota use the Plus baseline. Missing exact routes block without fallback. Execution and validation stay controlled by the parent workflow; execution receives a route but delegated stages never mutate the repository.
 
 ## Documentation
 

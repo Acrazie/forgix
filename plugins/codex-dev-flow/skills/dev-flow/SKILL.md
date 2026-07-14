@@ -17,11 +17,13 @@ Use terminal command `codex-dev-flow init` to configure these allowlists interac
 
 At the beginning of every run and resume, create exactly one routing snapshot through `codex app-server`: complete `initialize`/`initialized`, then read `account/read`, `account/rateLimits/read`, and `model/list`. Keep the snapshot and routing decisions in durable task state. Never log or persist credentials or raw protocol payloads.
 
-Use only `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol`. Recognize quota pressure from the exact five-hour window (`windowDurationMins === 300`), with warning at 50% and critical at 80%. Unknown quota is conservative. `max` and `ultra` require a critical task, normal quota, and explicit support in `model/list`.
+Use only `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol`, with reasoning limited to `low`, `medium`, `high`, and `xhigh`. Ignore `max`, `ultra`, and unknown efforts from `model/list`. Recognize quota pressure from the exact five-hour window (`windowDurationMins === 300`), with warning at 50% and critical at 80%.
 
 If the exact live five-hour window is absent, reuse only a non-expired cached five-hour reset timestamp. Never reuse a cached usage percentage. Keep pressure `unknown`, route conservatively, and report `quota_fallback_last_known`. Treat any other available window as informational only. Normalize both string and object-shaped `supportedReasoningEfforts` entries from `model/list`.
 
-Route only `discover`, `plan`, `debug`, `review`, and `verify`. Keep `execute`, `validate`, and parent-owned verification commands in the workflow parent; never delegate mutations.
+Resolve all six skill routes exactly once from that immutable snapshot using routing policy `2026-07-14.skill-first.v1`: `discover`, `plan`, `execute`, `debug`, `review`, and `verify`. An unresolved account plan uses the Plus baseline. Warning quota lowers one subscription tier; critical or unknown quota uses the Plus row. Quick lowers reasoning one level; Critical or high risk/ambiguity raises it one level, capped at `xhigh`.
+
+Require the exact assigned model and reasoning effort in the initial catalog. Never substitute a fallback model or effort. Mark the route unavailable and block that skill when the exact assignment is absent. Keep `execute`, `validate`, and parent-owned verification commands in the workflow parent; route `execute` but never delegate mutations. Do not refresh account, quota, or model data between skills.
 
 ## Durable workflow artifacts
 

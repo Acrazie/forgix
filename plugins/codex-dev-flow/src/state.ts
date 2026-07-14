@@ -1,4 +1,5 @@
 import type { Policy, RoutingDecision, RoutingSnapshot, TaskState, TaskStatus } from "./types.js";
+import { ROUTING_POLICY_VERSION } from "./routing.js";
 
 export interface CreateTaskInput {
   taskId: string;
@@ -38,6 +39,7 @@ export function createState(input: CreateTaskInput): TaskState {
     remainingActions: [],
     history: [],
     ...(input.routingSnapshot ? { routingSnapshot: input.routingSnapshot } : {}),
+    routingPolicyVersion: ROUTING_POLICY_VERSION,
     routingDecisions: []
   };
 }
