@@ -96,6 +96,7 @@ $dev-flow resume <task-id>
 $dev-flow status [task-id]
 $dev-flow config show [--explain]
 $dev-flow config validate [--json]
+$dev-flow init
 ```
 
 `$dev-flow resume` resumes Dev Flow task state. It is separate from `codex resume`, which resumes a Codex conversation.
@@ -138,6 +139,8 @@ subscription:
 ```
 
 Use `$dev-flow config show --explain` to inspect each effective value and its source. Use `$dev-flow config validate` before committing repository configuration.
+
+Use `$dev-flow init` for an interactive repository wizard. It previews and validates `.codex/dev-flow.yaml` before confirmation. Dev Flow uses only bundled skills by default; `integrations.plugins` and `integrations.skills` explicitly allow compatible external capabilities such as Impeccable.
 
 ## Safety and evidence
 

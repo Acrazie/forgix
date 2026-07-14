@@ -33,6 +33,22 @@
       "type": "string",
       "const": "never"
     },
+    "integrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plugins": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/integrationId" }
+        },
+        "skills": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/integrationId" }
+        }
+      }
+    },
     "subscription": {
       "type": "object",
       "additionalProperties": false,
@@ -79,6 +95,10 @@
     }
   },
   "$defs": {
+    "integrationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*(?::[A-Za-z0-9][A-Za-z0-9._/-]*)?$"
+    },
     "modelCost": {
       "type": "object",
       "additionalProperties": false,

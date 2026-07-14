@@ -51,6 +51,7 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
   finish: { pullRequest: "optional" },
   worktree: { mode: "auto" },
   merge: "never",
+  integrations: { plugins: [], skills: [] },
   subscription: DEFAULT_SUBSCRIPTION_CONFIG
 };
 

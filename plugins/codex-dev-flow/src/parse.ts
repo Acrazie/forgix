@@ -2,6 +2,7 @@ import { EXIT_CODES } from "./exit-codes.js";
 import type { TaskMode } from "./types.js";
 
 export type ParsedInvocation =
+  | { command: "init" }
   | { command: "run"; mode: TaskMode | undefined; objective: string; flags: Record<string, never> }
   | { command: "resume"; taskId: string }
   | { command: "status"; taskId: string | undefined }
@@ -26,6 +27,11 @@ export function parseInvocation(argv: string[]): ParsedInvocation {
   const [first, ...rest] = argv;
   if (!first) {
     invalid("An objective or subcommand is required.");
+  }
+
+  if (first === "init") {
+    if (rest.length !== 0) invalid("init accepts no arguments.");
+    return { command: "init" };
   }
 
   if (first === "resume") {

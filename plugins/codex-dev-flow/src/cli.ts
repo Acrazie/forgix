@@ -4,6 +4,7 @@ import { captureRoutingSnapshot } from "./app-server.js";
 import { explainConfig, loadConfigSources, resolveConfig, type ConfigSource, type ResolvedConfig } from "./config.js";
 import { EXIT_CODES } from "./exit-codes.js";
 import { InvocationError, parseInvocation } from "./parse.js";
+import { runInit, type InitOptions } from "./init.js";
 import { applyFiveHourResetFallback, readFiveHourResetCache, writeFiveHourResetCache } from "./quota-cache.js";
 import { chooseRoute, type RouteTask } from "./routing.js";
 import type { CliResult, TaskMode } from "./types.js";
@@ -12,6 +13,7 @@ export { EXIT_CODES } from "./exit-codes.js";
 export { resolveConfig } from "./config.js";
 export { DEFAULT_CONFIG, DEFAULT_SUBSCRIPTION_CONFIG, ConfigValidationError, explainConfig, loadConfigSources, validateConfigSource, validateSchema } from "./config.js";
 export { InvocationError, parseInvocation } from "./parse.js";
+export { runInit } from "./init.js";
 export { PolicyError, applyPolicy } from "./policy.js";
 export { addRoutingDecision, compareSnapshot, createState, transition } from "./state.js";
 export { fingerprintFailure, nextCorrectionAction } from "./fingerprint.js";
@@ -37,6 +39,7 @@ export { ROUTED_STAGES, delegateStage, isDelegableStage } from "./bridge.js";
 
 export interface RunInvocationOptions {
   configSources?: ConfigSource[];
+  init?: InitOptions;
   appServer?: Parameters<typeof captureRoutingSnapshot>[0];
   captureSnapshot?: (options: Parameters<typeof captureRoutingSnapshot>[0]) => ReturnType<typeof captureRoutingSnapshot>;
   quotaCachePath?: string | false;
@@ -45,6 +48,7 @@ export interface RunInvocationOptions {
 
 export async function runInvocation(argv: string[], options: RunInvocationOptions = {}): Promise<CliResult> {
   const invocation = parseInvocation(argv);
+  if (invocation.command === "init") return runInit(options.init);
   if (invocation.command === "config_show" || invocation.command === "config_validate") {
     const config = resolveRuntimeConfig(options.configSources);
     return invocation.command === "config_show"
@@ -137,7 +141,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function main(argv = process.argv.slice(2)): void {
   void runInvocation(argv).then(
-    (result) => process.stdout.write(JSON.stringify(result) + "\n"),
+    (result) => {
+      if (result.command !== "init") process.stdout.write(JSON.stringify(result) + "\n");
+    },
     (error: unknown) => {
       const exitCode = error instanceof InvocationError || isExitCodeError(error) ? error.exitCode : EXIT_CODES.INTERNAL_ERROR;
       process.stderr.write((error instanceof Error ? error.message : "Unexpected error.") + "\n");

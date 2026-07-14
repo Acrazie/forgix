@@ -7,6 +7,16 @@ description: Use when planning, implementing, debugging, reviewing, or verifying
 
 Parse invocation with the bundled deterministic script before acting.
 
+## Skill isolation and configured integrations
+
+When `$dev-flow` is explicitly invoked, use only skills bundled with Codex Dev Flow by default. Do not invoke skills from other plugins or standalone skill sets merely because their descriptions match the task.
+
+External skills are allowed only when repository configuration explicitly lists either their plugin identifier in `integrations.plugins` or their fully qualified skill identifier in `integrations.skills`. Treat these entries as allowlists, not automatic activation: an allowed external skill must still be relevant to the requested task. System and developer instructions remain authoritative.
+
+Use `$dev-flow init` to configure these allowlists interactively. Tools are not skills and remain available under normal permission and policy rules.
+
+When parsed command is `init`, resolve `../../dist/dev-flow.mjs` relative to this skill file and run `node <resolved-path> init` from repository root in a foreground interactive terminal. Let user complete wizard in terminal; do not emulate its prompts in chat.
+
 At the beginning of every run and resume, create exactly one routing snapshot through `codex app-server`: complete `initialize`/`initialized`, then read `account/read`, `account/rateLimits/read`, and `model/list`. Keep the snapshot and routing decisions in durable task state. Never log or persist credentials or raw protocol payloads.
 
 Use only `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol`. Recognize quota pressure from the exact five-hour window (`windowDurationMins === 300`), with warning at 50% and critical at 80%. Unknown quota is conservative. `max` and `ultra` require a critical task, normal quota, and explicit support in `model/list`.

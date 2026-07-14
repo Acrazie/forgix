@@ -27,6 +27,24 @@ test("resolves config in source order and records leaf provenance", async () => 
   assert.equal(resolved.value.merge, "never");
 });
 
+test("accepts explicit external plugin and skill allowlists", async () => {
+  const { resolveConfig } = await import(bundle);
+  const resolved = resolveConfig([{
+    source: "repo",
+    value: {
+      schemaVersion: 1,
+      integrations: {
+        plugins: ["impeccable"],
+        skills: ["impeccable:frontend-design"]
+      }
+    }
+  }]);
+  assert.deepEqual(resolved.value.integrations, {
+    plugins: ["impeccable"],
+    skills: ["impeccable:frontend-design"]
+  });
+});
+
 test("rejects an attempt to weaken a locked policy", async () => {
   const { EXIT_CODES, PolicyError, applyPolicy, resolveConfig } = await import(bundle);
   const resolved = resolveConfig([

@@ -32,6 +32,8 @@ The plugin uses a hybrid architecture:
 
 Internal skills are `discover-change`, `plan-change`, `execute-change`, `debug-root-cause`, `review-change`, and `verify-change`.
 
+Explicit `$dev-flow` invocation isolates orchestration to those bundled skills by default. Repository configuration may allow external plugins or individual fully qualified skills through `integrations.plugins` and `integrations.skills`. Allowlisting makes an integration eligible; it does not activate an irrelevant skill. This prevents accidental cross-plugin orchestration while preserving deliberate combinations such as frontend work with Impeccable.
+
 ## Execution Policy
 
 `quick` performs an explicit, bounded, non-destructive write directly. It asks for confirmation if scope is ambiguous, destructive, or expands during execution.

@@ -14835,6 +14835,7 @@ var DEFAULT_CONFIG = {
   finish: { pullRequest: "optional" },
   worktree: { mode: "auto" },
   merge: "never",
+  integrations: { plugins: [], skills: [] },
   subscription: DEFAULT_SUBSCRIPTION_CONFIG
 };
 function validateSchema(name, value) {
@@ -14944,6 +14945,10 @@ function parseInvocation(argv) {
   if (!first) {
     invalid("An objective or subcommand is required.");
   }
+  if (first === "init") {
+    if (rest.length !== 0) invalid("init accepts no arguments.");
+    return { command: "init" };
+  }
   if (first === "resume") {
     if (rest.length !== 1 || !rest[0]) invalid("resume requires exactly one task id.");
     return { command: "resume", taskId: rest[0] };
@@ -14970,9 +14975,152 @@ function parseInvocation(argv) {
   return { command: "run", mode, objective: objectiveParts.join(" "), flags: {} };
 }
 
+// src/init.ts
+var import_yaml2 = __toESM(require_dist(), 1);
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import { mkdir, rename, unlink, writeFile } from "node:fs/promises";
+import { join as join2 } from "node:path";
+import { createInterface as createInterface2 } from "node:readline/promises";
+var INTEGRATION_ID = /^[A-Za-z0-9][A-Za-z0-9._/-]*(?::[A-Za-z0-9][A-Za-z0-9._/-]*)?$/;
+async function runInit(options = {}) {
+  const cwd = options.cwd ?? process.cwd();
+  const output = options.write ?? ((value) => process.stdout.write(value));
+  let closePrompt;
+  let ask = options.ask;
+  if (!ask) {
+    if (process.stdin.isTTY !== true || process.stdout.isTTY !== true) {
+      throw new Error("init requires an interactive terminal.");
+    }
+    const prompt = createInterface2({ input: process.stdin, output: process.stdout });
+    ask = (question) => prompt.question(question);
+    closePrompt = () => prompt.close();
+  }
+  const directory = join2(cwd, ".codex");
+  const path = join2(directory, "dev-flow.yaml");
+  const existed = existsSync2(path);
+  const current = existed ? readConfiguration(path) : {};
+  const worktree = record(current.worktree);
+  const finish = record(current.finish);
+  const subscription = record(current.subscription);
+  const quota = record(subscription.quota);
+  const integrations = record(current.integrations);
+  output("\nCodex Dev Flow initialization\n\n");
+  try {
+    const worktreeMode = await askChoice(ask, output, "Worktree mode", ["auto", "required"], stringValue(worktree.mode, "auto"));
+    const pullRequest = await askChoice(ask, output, "Pull request", ["optional", "required"], stringValue(finish.pullRequest, "optional"));
+    const plan = await askChoice(ask, output, "Subscription plan", ["auto", "plus", "pro_5x", "pro_20x"], stringValue(subscription.plan, "auto"));
+    let warningPercent;
+    let criticalPercent;
+    do {
+      warningPercent = await askNumber(ask, output, "Quota warning percent", numberValue(quota.warningPercent, 50));
+      criticalPercent = await askNumber(ask, output, "Quota critical percent", numberValue(quota.criticalPercent, 80));
+      if (warningPercent >= criticalPercent) output("Warning threshold must be lower than critical threshold.\n");
+    } while (warningPercent >= criticalPercent);
+    const plugins = await askIds(ask, output, "Allowed external plugins", stringArray(integrations.plugins));
+    const skills = await askIds(ask, output, "Allowed external skills", stringArray(integrations.skills));
+    const config = {
+      ...current,
+      schemaVersion: 1,
+      worktree: { ...worktree, mode: worktreeMode },
+      finish: { ...finish, pullRequest },
+      merge: "never",
+      subscription: {
+        ...subscription,
+        plan,
+        quota: { ...quota, warningPercent, criticalPercent, unknownPolicy: "conservative" }
+      },
+      integrations: { ...integrations, plugins, skills }
+    };
+    validateConfigSource(config, "init");
+    const yaml = (0, import_yaml2.stringify)(config, { lineWidth: 0 });
+    output(`
+Configuration preview (${path}):
+
+${yaml}
+`);
+    const confirmed = await askConfirm(ask, output, existed ? "Replace repository configuration" : "Write repository configuration");
+    if (!confirmed) {
+      output("Initialization cancelled.\n");
+      return { command: "init", status: "cancelled", data: { path } };
+    }
+    await mkdir(directory, { recursive: true });
+    const temporaryPath = `${path}.tmp-${process.pid}-${Date.now()}`;
+    try {
+      await writeFile(temporaryPath, yaml, { encoding: "utf8", mode: 384 });
+      await rename(temporaryPath, path);
+    } catch (error) {
+      await unlink(temporaryPath).catch(() => void 0);
+      throw error;
+    }
+    output(`Configuration ${existed ? "updated" : "created"}: ${path}
+`);
+    return { command: "init", status: existed ? "updated" : "created", data: { path, config } };
+  } finally {
+    closePrompt?.();
+  }
+}
+function readConfiguration(path) {
+  const parsed = (0, import_yaml2.parse)(readFileSync2(path, "utf8"));
+  if (!isRecord3(parsed)) throw new Error(`Invalid configuration at ${path}: root must be an object.`);
+  return parsed;
+}
+async function askChoice(ask, write, label, values, fallback) {
+  const defaultValue = values.includes(fallback) ? fallback : values[0];
+  if (!defaultValue) throw new Error(`No choices configured for ${label}.`);
+  for (; ; ) {
+    const answer = (await ask(`${label} [${values.join("/")}] (${defaultValue}): `)).trim();
+    const value = answer || defaultValue;
+    if (values.includes(value)) return value;
+    write(`Choose one of: ${values.join(", ")}.
+`);
+  }
+}
+async function askNumber(ask, write, label, fallback) {
+  for (; ; ) {
+    const answer = (await ask(`${label} (${fallback}): `)).trim();
+    const value = answer === "" ? fallback : Number(answer);
+    if (Number.isFinite(value) && value >= 0 && value <= 100) return value;
+    write("Enter a number from 0 to 100.\n");
+  }
+}
+async function askIds(ask, write, label, fallback) {
+  for (; ; ) {
+    const suffix = fallback.length > 0 ? ` (${fallback.join(", ")})` : " (none)";
+    const answer = (await ask(`${label}, comma-separated${suffix}: `)).trim();
+    const values = answer === "" ? fallback : [...new Set(answer.split(",").map((value) => value.trim()).filter(Boolean))];
+    const invalid2 = values.find((value) => !INTEGRATION_ID.test(value));
+    if (!invalid2) return values;
+    write(`Invalid integration identifier: ${invalid2}.
+`);
+  }
+}
+async function askConfirm(ask, write, label) {
+  for (; ; ) {
+    const answer = (await ask(`${label}? [y/N]: `)).trim().toLowerCase();
+    if (["y", "yes"].includes(answer)) return true;
+    if (["", "n", "no"].includes(answer)) return false;
+    write("Answer yes or no.\n");
+  }
+}
+function record(value) {
+  return isRecord3(value) ? value : {};
+}
+function stringValue(value, fallback) {
+  return typeof value === "string" ? value : fallback;
+}
+function numberValue(value, fallback) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+function stringArray(value) {
+  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+}
+function isRecord3(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 // src/quota-cache.ts
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir as mkdir2, readFile, rename as rename2, rm, writeFile as writeFile2 } from "node:fs/promises";
 import { dirname } from "node:path";
 var FIVE_HOURS_SECONDS = 300 * 60;
 async function readFiveHourResetCache(path, nowEpochSeconds) {
@@ -14990,10 +15138,10 @@ async function writeFiveHourResetCache(path, value) {
   }
   const cache = { schemaVersion: 1, ...value };
   const temporaryPath = path + "." + process.pid + "." + randomUUID() + ".tmp";
-  await mkdir(dirname(path), { recursive: true, mode: 448 });
+  await mkdir2(dirname(path), { recursive: true, mode: 448 });
   try {
-    await writeFile(temporaryPath, JSON.stringify(cache, null, 2) + "\n", { encoding: "utf8", mode: 384 });
-    await rename(temporaryPath, path);
+    await writeFile2(temporaryPath, JSON.stringify(cache, null, 2) + "\n", { encoding: "utf8", mode: 384 });
+    await rename2(temporaryPath, path);
   } catch (error) {
     await rm(temporaryPath, { force: true }).catch(() => void 0);
     throw error;
@@ -15163,14 +15311,14 @@ function decideWorktree(context) {
 }
 
 // src/commands.ts
-import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import { existsSync as existsSync3, readFileSync as readFileSync3 } from "node:fs";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 function discoverVerificationCommands(root) {
   const path = fileURLToPath2(root);
   const agents = path + "/AGENTS.md";
-  const guided = existsSync2(agents) ? readFileSync2(agents, "utf8").match(/npm run [\w:-]+|npm test/g) ?? [] : [];
+  const guided = existsSync3(agents) ? readFileSync3(agents, "utf8").match(/npm run [\w:-]+|npm test/g) ?? [] : [];
   const manifest = path + "/package.json";
-  const scripts = existsSync2(manifest) ? JSON.parse(readFileSync2(manifest, "utf8")).scripts ?? {} : {};
+  const scripts = existsSync3(manifest) ? JSON.parse(readFileSync3(manifest, "utf8")).scripts ?? {} : {};
   if (guided.length) return { source: "AGENTS.md", commands: [...guided, ...scripts.test ? ["npm test"] : []] };
   return { source: "limited", commands: [] };
 }
@@ -15191,6 +15339,7 @@ async function delegateStage(stage, runner, decision) {
 // src/cli.ts
 async function runInvocation(argv, options = {}) {
   const invocation = parseInvocation(argv);
+  if (invocation.command === "init") return runInit(options.init);
   if (invocation.command === "config_show" || invocation.command === "config_validate") {
     const config2 = resolveRuntimeConfig(options.configSources);
     return invocation.command === "config_show" ? { command: invocation.command, status: "ok", data: invocation.explain ? explainConfig(config2) : config2.value } : { command: invocation.command, status: "valid", data: { valid: true } };
@@ -15198,7 +15347,7 @@ async function runInvocation(argv, options = {}) {
   if (invocation.command === "status") return { command: "status", status: "read-only", data: { taskId: invocation.taskId } };
   const config = resolveRuntimeConfig(options.configSources);
   const capture = options.captureSnapshot ?? captureRoutingSnapshot;
-  const subscription = isRecord3(config.value.subscription) ? config.value.subscription : {};
+  const subscription = isRecord4(config.value.subscription) ? config.value.subscription : {};
   const snapshotResult = await capture({
     ...options.appServer ?? {},
     config: {
@@ -15206,7 +15355,7 @@ async function runInvocation(argv, options = {}) {
       ...typeof subscription.planOverride === "string" ? { planOverride: subscription.planOverride } : {},
       ...typeof subscription.multiplierOverride === "number" ? { multiplierOverride: subscription.multiplierOverride } : {},
       ...Array.isArray(subscription.modelAllowlist) ? { modelAllowlist: subscription.modelAllowlist.filter((model) => typeof model === "string") } : {},
-      ...isRecord3(subscription.quota) ? {
+      ...isRecord4(subscription.quota) ? {
         quota: {
           ...typeof subscription.quota.warningPercent === "number" ? { warningPercent: subscription.quota.warningPercent } : {},
           ...typeof subscription.quota.criticalPercent === "number" ? { criticalPercent: subscription.quota.criticalPercent } : {}
@@ -15264,12 +15413,14 @@ var ROUTING_TASKS = [
 function resolveRuntimeConfig(sources) {
   return resolveConfig(sources ?? loadConfigSources());
 }
-function isRecord3(value) {
+function isRecord4(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function main(argv = process.argv.slice(2)) {
   void runInvocation(argv).then(
-    (result) => process.stdout.write(JSON.stringify(result) + "\n"),
+    (result) => {
+      if (result.command !== "init") process.stdout.write(JSON.stringify(result) + "\n");
+    },
     (error) => {
       const exitCode = error instanceof InvocationError || isExitCodeError(error) ? error.exitCode : EXIT_CODES.INTERNAL_ERROR;
       process.stderr.write((error instanceof Error ? error.message : "Unexpected error.") + "\n");
@@ -15321,6 +15472,7 @@ export {
   resolveConfig,
   resolveSubscriptionMultiplier,
   resolveSubscriptionPlan,
+  runInit,
   runInvocation,
   selectFiveHourWindow,
   selectObservedQuotaWindow,

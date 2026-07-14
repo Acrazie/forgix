@@ -4,7 +4,7 @@ Portable Codex plugin for evidence-based software changes.
 
 Runtime requires Node.js 22.18 or newer. The distributed ESM bundle contains its runtime dependencies and performs no package installation, lifecycle hook, or network access.
 
-Public interface: $dev-flow, $dev-flow resume, $dev-flow status, and $dev-flow config.
+Public interface: $dev-flow, $dev-flow init, $dev-flow resume, $dev-flow status, and $dev-flow config.
 
 Configuration resolves defaults, user, repository, local, then flags. Repository policy applies afterward and cannot be weakened. Task state is local under .codex/tasks; durable artifacts live under docs/dev-flow. The workflow never merges automatically.
 
@@ -22,6 +22,17 @@ subscription:
     warningPercent: 50
     criticalPercent: 80
     unknownPolicy: conservative
+```
+
+Run `$dev-flow init` in a repository for an interactive configuration wizard. It writes `.codex/dev-flow.yaml` only after showing a validated preview and receiving confirmation. External skills stay disabled by default. Add whole plugins or specific skills explicitly:
+
+```yaml
+schemaVersion: 1
+integrations:
+  plugins:
+    - impeccable
+  skills:
+    - impeccable:frontend-design
 ```
 
 `discover`, `plan`, `debug`, `review`, and `verify` receive deterministic model/effort decisions. `execute`, `validate`, and verification commands remain controlled by the parent workflow. App-server failure continues with an explicit warning; it never silently selects another model family.
