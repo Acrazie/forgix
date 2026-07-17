@@ -14819,23 +14819,35 @@ function collectQuotaWindows(input, output = [], seen = /* @__PURE__ */ new Set(
 
 // src/app-server.ts
 var AppServerError = class extends Error {
-  constructor(message) {
+  constructor(message, kind = "unknown", stderr = "") {
     super(message);
+    this.kind = kind;
+    this.stderr = stderr;
   }
+  kind;
+  stderr;
 };
 var AppServerClient = class {
   process;
   pending = /* @__PURE__ */ new Map();
   nextId = 1;
   closed = false;
+  stderr = "";
   constructor(options = {}) {
     const args = options.args ?? ["app-server"];
     const spawnOptions = options.cwd ? { cwd: options.cwd, stdio: ["pipe", "pipe", "pipe"] } : { stdio: ["pipe", "pipe", "pipe"] };
     this.process = spawn(options.command ?? "codex", args, spawnOptions);
     const lines = createInterface({ input: this.process.stdout });
     lines.on("line", (line) => this.receive(line));
-    this.process.on("error", (error) => this.fail(new AppServerError(error.message)));
-    this.process.on("close", () => this.fail(new AppServerError("app-server closed before completing request")));
+    this.process.stderr.on("data", (chunk) => {
+      if (this.stderr.length >= MAX_STDERR_CHARS) return;
+      this.stderr = (this.stderr + String(chunk)).slice(0, MAX_STDERR_CHARS);
+    });
+    this.process.on("error", (error) => this.fail(new AppServerError(error.message, "spawn", this.stderr)));
+    this.process.on("close", () => {
+      const kind = looksLikePermissionFailure(this.stderr) ? "permission" : "closed";
+      this.fail(new AppServerError("app-server closed before completing request", kind, this.stderr));
+    });
   }
   async readSnapshot(config) {
     await this.request("initialize", {
@@ -14881,7 +14893,7 @@ var AppServerClient = class {
     if (!pending) return;
     this.pending.delete(message.id);
     if (message.error) {
-      pending.reject(new AppServerError(message.error.message ?? "app-server request failed"));
+      pending.reject(new AppServerError(message.error.message ?? "app-server request failed", "rpc"));
       return;
     }
     pending.resolve(message.result);
@@ -14898,9 +14910,11 @@ async function captureRoutingSnapshot(options = {}) {
   try {
     return await withTimeout(client.readSnapshot(options.config), timeoutMs);
   } catch (error) {
+    const failure = classifyAppServerFailure(error);
     return {
       ...createUnavailableRoutingSnapshot(),
-      error: error instanceof Error && error.message.toLowerCase().includes("timeout") ? "app-server timeout" : "app-server unavailable"
+      error: failure.code === "app_server_timeout" ? "app-server timeout" : "app-server unavailable",
+      failure
     };
   } finally {
     client.close();
@@ -14908,7 +14922,7 @@ async function captureRoutingSnapshot(options = {}) {
 }
 function withTimeout(promise, timeoutMs) {
   return new Promise((resolve2, reject) => {
-    const timer = setTimeout(() => reject(new AppServerError("app-server timeout")), timeoutMs);
+    const timer = setTimeout(() => reject(new AppServerError("app-server timeout", "timeout")), timeoutMs);
     promise.then(
       (value) => {
         clearTimeout(timer);
@@ -14920,6 +14934,29 @@ function withTimeout(promise, timeoutMs) {
       }
     );
   });
+}
+var MAX_STDERR_CHARS = 8192;
+function classifyAppServerFailure(error) {
+  if (error instanceof AppServerError) {
+    if (error.kind === "timeout") return { code: "app_server_timeout", retryableWithApproval: false };
+    if (error.kind === "spawn") return { code: "app_server_spawn_failed", retryableWithApproval: false };
+    if (error.kind === "rpc") return { code: "app_server_rpc_failed", retryableWithApproval: false };
+    if (error.kind === "permission" || looksLikePermissionFailure(error.stderr)) {
+      return {
+        code: "app_server_permission_denied",
+        ...mentionsCodexHome(error.stderr) ? { path: "~/.codex" } : {},
+        retryableWithApproval: true
+      };
+    }
+    if (error.kind === "closed") return { code: "app_server_closed", retryableWithApproval: false };
+  }
+  return { code: "app_server_unavailable", retryableWithApproval: false };
+}
+function looksLikePermissionFailure(value) {
+  return /operation not permitted|permission denied|\bEACCES\b|\bEPERM\b/i.test(value);
+}
+function mentionsCodexHome(value) {
+  return /(?:^|[\\/])\.codex(?:[\\/]|\b)/i.test(value);
 }
 
 // src/config.ts
@@ -16403,14 +16440,16 @@ async function runInvocation(argv, options = {}) {
   const mode = invocation.command === "run" ? invocation.mode : void 0;
   const decisions = ROUTING_TASKS2.map((task) => chooseRoute(routingSnapshot, { ...task, ...mode ? { mode } : {} }));
   const unavailable = decisions.some((decision) => decision.model === null || decision.effort === null);
+  const permissionRequired = snapshotResult.failure?.code === "app_server_permission_denied";
   return {
     command: invocation.command,
-    status: unavailable ? "routing_unavailable" : snapshotResult.available ? "routed" : "routed_with_warning",
+    status: permissionRequired ? "routing_permission_required" : unavailable ? "routing_unavailable" : snapshotResult.available ? "routed" : "routed_with_warning",
     data: {
       ...invocation.command === "run" ? { mode, objective: invocation.objective } : { taskId: invocation.taskId },
       routingSnapshot,
       routingPolicyVersion: ROUTING_POLICY_VERSION,
       routingDecisions: decisions,
+      ...snapshotResult.failure ? { routingFailure: snapshotResult.failure } : {},
       ...snapshotResult.error ? { warning: snapshotResult.error } : {}
     }
   };

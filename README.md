@@ -175,6 +175,8 @@ Version `0.1.0` provides the V1 lifecycle, strict configuration and policy schem
 
 One initial account/quota/model snapshot freezes routing for the complete workflow. Unknown plans and critical or unknown quota use the Plus baseline. Missing exact routes block without fallback. Execution and validation stay controlled by the parent workflow; execution receives a route but delegated stages never mutate the repository.
 
+`codex app-server` may need write access to SQLite state under `CODEX_HOME` (normally `~/.codex`). When a restrictive sandbox denies that write, Dev Flow reports `routing_permission_required`, asks before one elevated retry, and never escalates silently. Refused approval or failed retry leaves routing blocked with a structured diagnostic.
+
 ## Documentation
 
 - [Design](./plugins/codex-dev-flow/docs/design.md)

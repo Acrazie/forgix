@@ -101,14 +101,16 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
   const mode: TaskMode | undefined = invocation.command === "run" ? invocation.mode : undefined;
   const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, { ...task, ...(mode ? { mode } : {}) }));
   const unavailable = decisions.some((decision) => decision.model === null || decision.effort === null);
+  const permissionRequired = snapshotResult.failure?.code === "app_server_permission_denied";
   return {
     command: invocation.command,
-    status: unavailable ? "routing_unavailable" : snapshotResult.available ? "routed" : "routed_with_warning",
+    status: permissionRequired ? "routing_permission_required" : unavailable ? "routing_unavailable" : snapshotResult.available ? "routed" : "routed_with_warning",
     data: {
       ...(invocation.command === "run" ? { mode, objective: invocation.objective } : { taskId: invocation.taskId }),
       routingSnapshot,
       routingPolicyVersion: ROUTING_POLICY_VERSION,
       routingDecisions: decisions,
+      ...(snapshotResult.failure ? { routingFailure: snapshotResult.failure } : {}),
       ...(snapshotResult.error ? { warning: snapshotResult.error } : {})
     }
   };

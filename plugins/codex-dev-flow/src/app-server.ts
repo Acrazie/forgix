@@ -26,9 +26,27 @@ interface JsonRpcMessage {
 }
 
 export class AppServerError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly kind: "timeout" | "permission" | "spawn" | "rpc" | "closed" | "unknown" = "unknown",
+    readonly stderr = ""
+  ) {
     super(message);
   }
+}
+
+export type AppServerFailureCode =
+  | "app_server_timeout"
+  | "app_server_permission_denied"
+  | "app_server_spawn_failed"
+  | "app_server_rpc_failed"
+  | "app_server_closed"
+  | "app_server_unavailable";
+
+export interface AppServerFailure {
+  code: AppServerFailureCode;
+  retryableWithApproval: boolean;
+  path?: "~/.codex";
 }
 
 export class AppServerClient {
@@ -36,6 +54,7 @@ export class AppServerClient {
   private readonly pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
   private nextId = 1;
   private closed = false;
+  private stderr = "";
 
   constructor(options: AppServerOptions = {}) {
     const args = options.args ?? ["app-server"];
@@ -45,8 +64,15 @@ export class AppServerClient {
     this.process = spawn(options.command ?? "codex", args, spawnOptions);
     const lines = createInterface({ input: this.process.stdout });
     lines.on("line", (line) => this.receive(line));
-    this.process.on("error", (error) => this.fail(new AppServerError(error.message)));
-    this.process.on("close", () => this.fail(new AppServerError("app-server closed before completing request")));
+    this.process.stderr.on("data", (chunk: Buffer | string) => {
+      if (this.stderr.length >= MAX_STDERR_CHARS) return;
+      this.stderr = (this.stderr + String(chunk)).slice(0, MAX_STDERR_CHARS);
+    });
+    this.process.on("error", (error) => this.fail(new AppServerError(error.message, "spawn", this.stderr)));
+    this.process.on("close", () => {
+      const kind = looksLikePermissionFailure(this.stderr) ? "permission" : "closed";
+      this.fail(new AppServerError("app-server closed before completing request", kind, this.stderr));
+    });
   }
 
   async readSnapshot(config?: AppServerOptions["config"]): Promise<BuiltRoutingSnapshot> {
@@ -97,7 +123,7 @@ export class AppServerClient {
     if (!pending) return;
     this.pending.delete(message.id);
     if (message.error) {
-      pending.reject(new AppServerError(message.error.message ?? "app-server request failed"));
+      pending.reject(new AppServerError(message.error.message ?? "app-server request failed", "rpc"));
       return;
     }
     pending.resolve(message.result);
@@ -112,6 +138,7 @@ export class AppServerClient {
 
 export interface CapturedRoutingSnapshot extends BuiltRoutingSnapshot {
   error?: string;
+  failure?: AppServerFailure;
 }
 
 export async function captureRoutingSnapshot(options: AppServerOptions = {}): Promise<CapturedRoutingSnapshot> {
@@ -120,9 +147,11 @@ export async function captureRoutingSnapshot(options: AppServerOptions = {}): Pr
   try {
     return await withTimeout(client.readSnapshot(options.config), timeoutMs);
   } catch (error) {
+    const failure = classifyAppServerFailure(error);
     return {
       ...createUnavailableRoutingSnapshot(),
-      error: error instanceof Error && error.message.toLowerCase().includes("timeout") ? "app-server timeout" : "app-server unavailable"
+      error: failure.code === "app_server_timeout" ? "app-server timeout" : "app-server unavailable",
+      failure
     };
   } finally {
     client.close();
@@ -131,7 +160,7 @@ export async function captureRoutingSnapshot(options: AppServerOptions = {}): Pr
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new AppServerError("app-server timeout")), timeoutMs);
+    const timer = setTimeout(() => reject(new AppServerError("app-server timeout", "timeout")), timeoutMs);
     promise.then(
       (value) => {
         clearTimeout(timer);
@@ -143,4 +172,31 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
       }
     );
   });
+}
+
+const MAX_STDERR_CHARS = 8_192;
+
+function classifyAppServerFailure(error: unknown): AppServerFailure {
+  if (error instanceof AppServerError) {
+    if (error.kind === "timeout") return { code: "app_server_timeout", retryableWithApproval: false };
+    if (error.kind === "spawn") return { code: "app_server_spawn_failed", retryableWithApproval: false };
+    if (error.kind === "rpc") return { code: "app_server_rpc_failed", retryableWithApproval: false };
+    if (error.kind === "permission" || looksLikePermissionFailure(error.stderr)) {
+      return {
+        code: "app_server_permission_denied",
+        ...(mentionsCodexHome(error.stderr) ? { path: "~/.codex" as const } : {}),
+        retryableWithApproval: true
+      };
+    }
+    if (error.kind === "closed") return { code: "app_server_closed", retryableWithApproval: false };
+  }
+  return { code: "app_server_unavailable", retryableWithApproval: false };
+}
+
+function looksLikePermissionFailure(value: string): boolean {
+  return /operation not permitted|permission denied|\bEACCES\b|\bEPERM\b/i.test(value);
+}
+
+function mentionsCodexHome(value: string): boolean {
+  return /(?:^|[\\/])\.codex(?:[\\/]|\b)/i.test(value);
 }

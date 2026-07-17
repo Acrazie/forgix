@@ -51,6 +51,11 @@ test("public skill isolates external skills behind configured allowlists", () =>
   assert.match(skill, /codex-dev-flow init/);
   assert.match(skill, /Do not refresh account, quota, or model data between skills/);
   assert.match(skill, /Never substitute a fallback model or effort/);
+  assert.match(skill, /routing_permission_required/);
+  assert.match(skill, /explicit user approval/);
+  assert.match(skill, /Retry the same invocation at most once/);
+  assert.match(skill, /Never escalate silently/);
+  assert.match(skill, /If approval is denied or the retry fails, block/);
 });
 
 test("package exposes the standalone codex-dev-flow binary", () => {

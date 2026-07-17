@@ -6,6 +6,8 @@ const bundle = new URL("../dist/dev-flow.mjs", import.meta.url);
 const fixture = new URL("./fixtures/app-server-fixture.mjs", import.meta.url);
 const timeoutFixture = new URL("./fixtures/app-server-timeout.mjs", import.meta.url);
 const errorFixture = new URL("./fixtures/app-server-error.mjs", import.meta.url);
+const permissionFixture = new URL("./fixtures/app-server-permission.mjs", import.meta.url);
+const closedFixture = new URL("./fixtures/app-server-closed.mjs", import.meta.url);
 
 test("app-server client performs one handshake and reads account, five-hour quota, and model catalog", async () => {
   const { captureRoutingSnapshot } = await import(bundle);
@@ -36,6 +38,50 @@ test("app-server timeout is non-fatal and marks quota unknown", async () => {
   assert.equal(result.snapshot.quota.pressure, "unknown");
   assert.ok(result.snapshot.warnings.includes("quota_unknown"));
   assert.equal(result.snapshot.models.length, 0);
+  assert.deepEqual(result.failure, {
+    code: "app_server_timeout",
+    retryableWithApproval: false
+  });
+});
+
+test("app-server state permission failures are structured and actionable", async () => {
+  const { captureRoutingSnapshot } = await import(bundle);
+  const result = await captureRoutingSnapshot({
+    command: process.execPath,
+    args: [permissionFixture.pathname],
+    timeoutMs: 500
+  });
+  assert.equal(result.available, false);
+  assert.equal(result.error, "app-server unavailable");
+  assert.deepEqual(result.failure, {
+    code: "app_server_permission_denied",
+    path: "~/.codex",
+    retryableWithApproval: true
+  });
+  assert.equal(JSON.stringify(result).includes(process.env.HOME ?? "never-match"), false);
+});
+
+test("app-server spawn failures have a distinct non-retryable code", async () => {
+  const { captureRoutingSnapshot } = await import(bundle);
+  const result = await captureRoutingSnapshot({ command: "/definitely/missing/codex", timeoutMs: 500 });
+  assert.deepEqual(result.failure, {
+    code: "app_server_spawn_failed",
+    retryableWithApproval: false
+  });
+});
+
+test("premature close is classified without exposing bounded stderr", async () => {
+  const { captureRoutingSnapshot } = await import(bundle);
+  const result = await captureRoutingSnapshot({
+    command: process.execPath,
+    args: [closedFixture.pathname],
+    timeoutMs: 500
+  });
+  assert.deepEqual(result.failure, {
+    code: "app_server_closed",
+    retryableWithApproval: false
+  });
+  assert.equal(JSON.stringify(result).includes("secret-token"), false);
 });
 
 test("snapshot sanitization omits credentials and raw protocol payloads", async () => {
@@ -57,4 +103,6 @@ test("app-server errors do not leak raw protocol messages", async () => {
   const result = await captureRoutingSnapshot({ command: process.execPath, args: [errorFixture.pathname], timeoutMs: 500 });
   assert.equal(result.available, false);
   assert.equal(result.error?.includes("secret-token"), false);
+  assert.equal(JSON.stringify(result).includes("secret-token"), false);
+  assert.equal(result.failure?.code, "app_server_rpc_failed");
 });

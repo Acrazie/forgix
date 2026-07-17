@@ -17,6 +17,8 @@ Use terminal command `npx codex-dev-flow init` to configure these allowlists int
 
 At the beginning of every run and resume, create exactly one routing snapshot through `codex app-server`: complete `initialize`/`initialized`, then read `account/read`, `account/rateLimits/read`, and `model/list`. Keep the snapshot and routing decisions in durable task state. Never log or persist credentials or raw protocol payloads.
 
+The app-server may need write access to its SQLite state under `CODEX_HOME` (normally `~/.codex`). If the deterministic parser returns `routing_permission_required`, request explicit user approval to rerun the same parser invocation outside the restrictive sandbox. Retry the same invocation at most once. Never escalate silently. A failed first attempt does not count as a routing snapshot; persist only the successful retry snapshot. If approval is denied or the retry fails, block with the structured routing failure and an actionable explanation.
+
 Use only `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol`, with reasoning limited to `low`, `medium`, `high`, and `xhigh`. Ignore `max`, `ultra`, and unknown efforts from `model/list`. Recognize quota pressure from the exact five-hour window (`windowDurationMins === 300`), with warning at 50% and critical at 80%.
 
 If the exact live five-hour window is absent, reuse only a non-expired cached five-hour reset timestamp. Never reuse a cached usage percentage. Keep pressure `unknown`, route conservatively, and report `quota_fallback_last_known`. Treat any other available window as informational only. Normalize both string and object-shaped `supportedReasoningEfforts` entries from `model/list`.
@@ -57,4 +59,4 @@ On resume, reuse the existing artifact and reconcile it with task state; never c
 - Keep state under .codex/tasks and durable artifacts under docs/dev-flow.
 - Apply effective policy after configuration resolution. Never merge. Never claim success without evidence.
 - Resume dev-flow state with $dev-flow resume; this differs from codex resume.
-- If app-server is unavailable, continue with `quota_unknown` or `allowed_model_unavailable`; do not escalate cost automatically.
+- If app-server is unavailable for a reason other than the retryable state permission failure, continue with `quota_unknown` or `allowed_model_unavailable`; do not escalate cost automatically.

@@ -54,6 +54,27 @@ test("missing exact route reports routing_unavailable without fallback", async (
   assert.ok(plan.warnings.includes("required_route_unavailable"));
 });
 
+test("state permission failure requests approval instead of reporting generic routing unavailability", async () => {
+  const { runInvocation } = await import(bundle);
+  const unavailable = routingResult();
+  unavailable.available = false;
+  unavailable.error = "app-server unavailable";
+  unavailable.failure = {
+    code: "app_server_permission_denied",
+    path: "~/.codex",
+    retryableWithApproval: true
+  };
+  unavailable.snapshot.models = [];
+  unavailable.snapshot.quota = { pressure: "unknown", source: "unknown" };
+  unavailable.snapshot.warnings = ["quota_unknown", "allowed_model_unavailable"];
+  unavailable.snapshot.provenance = { plan: "unknown", quota: "unknown", models: "unknown" };
+
+  const run = await runInvocation(["standard", "change", "thing"], { captureSnapshot: async () => unavailable });
+  assert.equal(run.status, "routing_permission_required");
+  assert.deepEqual(run.data.routingFailure, unavailable.failure);
+  assert.ok(run.data.routingDecisions.every((decision) => decision.model === null && decision.effort === null));
+});
+
 test("config show explain stays read-only and exposes provenance", async () => {
   const { runInvocation } = await import(bundle);
   const result = await runInvocation(["config", "show", "--explain"], { configSources: [] });
