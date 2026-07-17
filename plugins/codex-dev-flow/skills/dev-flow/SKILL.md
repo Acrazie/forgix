@@ -13,7 +13,7 @@ When `$dev-flow` is explicitly invoked, use only skills bundled with Codex Dev F
 
 External skills are allowed only when repository configuration explicitly lists either their plugin identifier in `integrations.plugins` or their fully qualified skill identifier in `integrations.skills`. Treat these entries as allowlists, not automatic activation: an allowed external skill must still be relevant to the requested task. System and developer instructions remain authoritative.
 
-Use terminal command `codex-dev-flow init` to configure these allowlists interactively. This is a standalone CLI command, not a `$dev-flow` skill subcommand. If initialization is requested through chat, tell user to run that command in their project terminal; do not launch or emulate wizard. Tools are not skills and remain available under normal permission and policy rules.
+Use terminal command `npx codex-dev-flow init` to configure these allowlists interactively without a global installation. This is a standalone CLI command, not a `$dev-flow` skill subcommand. If initialization is requested through chat, tell user to run that command in their project terminal; do not launch or emulate wizard. Tools are not skills and remain available under normal permission and policy rules.
 
 At the beginning of every run and resume, create exactly one routing snapshot through `codex app-server`: complete `initialize`/`initialized`, then read `account/read`, `account/rateLimits/read`, and `model/list`. Keep the snapshot and routing decisions in durable task state. Never log or persist credentials or raw protocol payloads.
 

@@ -17,6 +17,17 @@ npm ci
 npm run check
 ```
 
+To test the terminal wizard from a source checkout, link the package during local development only:
+
+```bash
+cd plugins/codex-dev-flow
+npm link
+cd /path/to/project
+codex-dev-flow init
+```
+
+End users should run `npx codex-dev-flow init`; `npm link` is not part of the published installation flow.
+
 `npm run check` runs TypeScript checks, creates the bundled ESM distribution, and executes the test suite.
 
 ## Repository layout

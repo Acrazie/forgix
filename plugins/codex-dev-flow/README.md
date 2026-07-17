@@ -28,13 +28,11 @@ subscription:
     unknownPolicy: conservative
 ```
 
-Installing the Codex plugin exposes its skills inside Codex but does not add the standalone binary to your shell `PATH`. Link the package binary from this source checkout, then run `codex-dev-flow init` directly in the project terminal you want to configure. No Codex or Claude Code session is required:
+Installing the Codex plugin exposes its skills inside Codex but does not add the standalone binary to your shell `PATH`. Run the published CLI through npm directly in the project terminal you want to configure. No global installation, source checkout, Codex session, or Claude Code session is required:
 
 ```bash
-cd plugins/codex-dev-flow
-npm link
 cd /path/to/project
-codex-dev-flow init
+npx codex-dev-flow init
 ```
 
 The Clack-powered wizard uses arrow-key menus, explanatory hints, validation, and a final review screen. The review shows workflow settings plus automatic model/reasoning assignments for every skill. Choose Create/Update, cancel, or revisit any section. `Ctrl+C` cancels without changing files. The wizard writes `.codex/dev-flow.yaml` only after final confirmation. External skills stay disabled by default. Add whole plugins or specific skills explicitly:

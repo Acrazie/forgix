@@ -44,6 +44,15 @@ Then:
 
 See the official [Codex plugin documentation](https://learn.chatgpt.com/docs/plugins) for plugin-browser and permission details.
 
+Initialize Dev Flow configuration from the project directory without cloning this repository or linking a local package:
+
+```bash
+cd /path/to/project
+npx codex-dev-flow init
+```
+
+The npm CLI and the Codex plugin are complementary: `npx codex-dev-flow init` configures a repository from the terminal, while `$dev-flow` runs the installed workflow inside Codex.
+
 ## Quick start
 
 Describe the outcome you want. When no mode is supplied, Dev Flow inspects the request and proposes one.
@@ -147,7 +156,7 @@ subscription:
 
 Use `$dev-flow config show --explain` to inspect each effective value and its source. Use `$dev-flow config validate` before committing repository configuration.
 
-Use standalone terminal command `codex-dev-flow init` for interactive repository configuration. Its Clack TUI explains every choice, supports section revisits, previews the six automatic skill routes, validates `.codex/dev-flow.yaml`, and cancels safely with `Ctrl+C`. Installing the Codex plugin exposes its skills inside Codex but does not add the standalone binary to your shell `PATH`. From a source checkout, expose the command with `npm link` inside `plugins/codex-dev-flow`, then run it from the project you want to configure. Dev Flow uses only bundled skills by default; `integrations.plugins` and `integrations.skills` explicitly allow compatible external capabilities such as Impeccable.
+Use `npx codex-dev-flow init` for interactive repository configuration. Its Clack TUI explains every choice, supports section revisits, previews the six automatic skill routes, validates `.codex/dev-flow.yaml`, and cancels safely with `Ctrl+C`. Run it from the project you want to configure; no global installation or `npm link` is required. Installing the Codex plugin exposes `$dev-flow` inside Codex but does not add a standalone binary to your shell `PATH`. Dev Flow uses only bundled skills by default; `integrations.plugins` and `integrations.skills` explicitly allow compatible external capabilities such as Impeccable.
 
 ## Safety and evidence
 

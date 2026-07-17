@@ -1,11 +1,39 @@
 {
   "name": "codex-dev-flow",
   "version": "0.1.0",
-  "private": true,
   "description": "Portable Codex development workflow plugin.",
+  "license": "MIT",
+  "homepage": "https://github.com/Acrazie/codex-dev-flow#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Acrazie/codex-dev-flow.git",
+    "directory": "plugins/codex-dev-flow"
+  },
+  "bugs": {
+    "url": "https://github.com/Acrazie/codex-dev-flow/issues"
+  },
+  "keywords": [
+    "codex",
+    "workflow",
+    "cli",
+    "plugin",
+    "development"
+  ],
   "type": "module",
   "bin": {
     "codex-dev-flow": "dist/dev-flow.mjs"
+  },
+  "files": [
+    ".codex-plugin/",
+    "dist/",
+    "docs/",
+    "schemas/",
+    "skills/",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=22.18.0"
@@ -14,16 +42,16 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.mjs",
-    "check": "npm run typecheck && npm run build && npm test"
-  },
-  "dependencies": {
-    "@clack/prompts": "1.0.0",
-    "ajv": "8.20.0",
-    "yaml": "2.9.0"
+    "check": "npm run typecheck && npm run build && npm test",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run check"
   },
   "devDependencies": {
+    "@clack/prompts": "1.0.0",
     "@types/node": "26.1.1",
+    "ajv": "8.20.0",
     "esbuild": "0.28.1",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "yaml": "2.9.0"
   }
 }

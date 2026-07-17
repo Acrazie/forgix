@@ -55,5 +55,46 @@ test("public skill isolates external skills behind configured allowlists", () =>
 
 test("package exposes the standalone codex-dev-flow binary", () => {
   const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(manifest.private, undefined);
+  assert.equal(manifest.license, "MIT");
+  assert.equal(manifest.dependencies, undefined);
+  assert.equal(manifest.publishConfig.access, "public");
   assert.equal(manifest.bin["codex-dev-flow"], "dist/dev-flow.mjs");
+  assert.deepEqual(manifest.files, [".codex-plugin/", "dist/", "docs/", "schemas/", "skills/", "LICENSE", "README.md"]);
+  assert.equal(manifest.scripts.prepack, "npm run build");
+  assert.equal(manifest.scripts.prepublishOnly, "npm run check");
+  assert.equal(existsSync(new URL("../LICENSE", import.meta.url)), true);
+});
+
+test("npm package contains runtime assets and excludes development files", () => {
+  const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-pack-"));
+  const root = fileURLToPath(new URL("..", import.meta.url));
+
+  try {
+    const result = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+      cwd: root,
+      encoding: "utf8",
+      env: { ...process.env, npm_config_cache: directory }
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const [{ files }] = JSON.parse(result.stdout);
+    const paths = files.map(({ path }) => path);
+
+    for (const required of [
+      ".codex-plugin/plugin.json",
+      "dist/dev-flow.mjs",
+      "schemas/config.schema.json",
+      "skills/dev-flow/SKILL.md",
+      "LICENSE",
+      "README.md"
+    ]) {
+      assert.equal(paths.includes(required), true, `${required} must be published`);
+    }
+    assert.equal(paths.some((path) => path.startsWith("src/")), false);
+    assert.equal(paths.some((path) => path.startsWith("test/")), false);
+    assert.equal(paths.some((path) => path.startsWith(".github/")), false);
+    assert.equal(paths.includes(".codex/dev-flow.yaml"), false);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

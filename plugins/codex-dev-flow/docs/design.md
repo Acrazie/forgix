@@ -34,7 +34,7 @@ Internal skills are `discover-change`, `plan-change`, `execute-change`, `debug-r
 
 Explicit `$dev-flow` invocation isolates orchestration to those bundled skills by default. Repository configuration may allow external plugins or individual fully qualified skills through `integrations.plugins` and `integrations.skills`. Allowlisting makes an integration eligible; it does not activate an irrelevant skill. This prevents accidental cross-plugin orchestration while preserving deliberate combinations such as frontend work with Impeccable.
 
-Project initialization belongs to standalone `codex-dev-flow init` CLI. The package exposes this executable through its npm `bin` entry. It runs directly in user terminal and never depends on a Codex or Claude Code conversation host.
+Project initialization belongs to the standalone npm CLI, invoked without global installation as `npx codex-dev-flow init`. The package exposes `codex-dev-flow` through its npm `bin` entry. It runs in the current project terminal and never depends on a Codex or Claude Code conversation host. `npm link` is reserved for development from a source checkout.
 
 ## Execution Policy
 
