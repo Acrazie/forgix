@@ -29,6 +29,12 @@ An opt-in, local, gitignored post-task record containing a completed satisfactio
 survey, allowlisted execution metrics, and deterministic deviation facts. It is outside
 the lifecycle, never changes task outcome, and is never uploaded automatically.
 
+## Cachebuster
+
+The timestamp-derived suffix in the Codex plugin manifest version that gives one plugin
+snapshot a new installation identity without treating the suffix as a separate semantic
+product version.
+
 ## Configuration provenance
 
 The source that supplied an effective configuration value.
@@ -102,6 +108,13 @@ An identifier for one observation of an issue in one workflow run.
 
 A schema-approved requirement, prohibition, bound, or lock applied after configuration resolution.
 
+## Partial release
+
+A release whose Git, npm-registry, GitHub Release, or local Codex installation actions
+have not all reached their intended state. It is resumed by reconciling external state
+and performing only the missing idempotent action, never by rolling back published
+artifacts.
+
 ## Phase contract
 
 The uniform declaration of a macro-phase's intent, preconditions, consumed and produced
@@ -111,6 +124,24 @@ metrics.
 ## Ready for handoff
 
 A resumable state where code and verification are complete but an external Git or GitHub action cannot run.
+
+## Release preparation
+
+The reversible portion of an interactive release: discovery, version recommendation,
+preflight, temporary metadata generation, validation, package inspection, notes preview,
+and final maintainer confirmation.
+
+## Release publication
+
+The irreversible portion of an interactive release beginning with the first successful
+remote push and continuing through applicable npm publication, GitHub Release creation,
+and optional local Codex plugin refresh.
+
+## Release target
+
+The maintainer-selected artifact set for one release: Codex plugin, npm package, or both.
+It determines version mutation, tag namespace, validation, publication, and recovery
+steps.
 
 ## Root cause ID
 

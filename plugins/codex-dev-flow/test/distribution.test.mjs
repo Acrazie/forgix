@@ -66,8 +66,8 @@ test("package exposes the standalone codex-dev-flow binary", () => {
   assert.equal(manifest.publishConfig.access, "public");
   assert.equal(manifest.bin["codex-dev-flow"], "dist/dev-flow.mjs");
   assert.deepEqual(manifest.files, [".codex-plugin/", "dist/", "docs/", "schemas/", "skills/", "LICENSE", "README.md"]);
-  assert.equal(manifest.scripts.prepack, "npm run build");
-  assert.equal(manifest.scripts.prepublishOnly, "npm run check");
+  assert.equal(manifest.scripts.prepack, "bun run build");
+  assert.equal(manifest.scripts.prepublishOnly, "bun run check");
   assert.equal(existsSync(new URL("../LICENSE", import.meta.url)), true);
 });
 
@@ -76,14 +76,16 @@ test("npm package contains runtime assets and excludes development files", () =>
   const root = fileURLToPath(new URL("..", import.meta.url));
 
   try {
-    const result = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+    const result = spawnSync("bun", ["pm", "pack", "--dry-run", "--ignore-scripts"], {
       cwd: root,
       encoding: "utf8",
-      env: { ...process.env, npm_config_cache: directory }
+      env: { ...process.env, BUN_INSTALL_CACHE_DIR: directory }
     });
     assert.equal(result.status, 0, result.stderr);
-    const [{ files }] = JSON.parse(result.stdout);
-    const paths = files.map(({ path }) => path);
+    const paths = result.stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
 
     for (const required of [
       ".codex-plugin/plugin.json",
@@ -93,7 +95,7 @@ test("npm package contains runtime assets and excludes development files", () =>
       "LICENSE",
       "README.md"
     ]) {
-      assert.equal(paths.includes(required), true, `${required} must be published`);
+      assert.equal(paths.some((path) => path.endsWith(required)), true, `${required} must be published`);
     }
     assert.equal(paths.some((path) => path.startsWith("src/")), false);
     assert.equal(paths.some((path) => path.startsWith("test/")), false);

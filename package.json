@@ -1,0 +1,8 @@
+{
+  "name": "codex-dev-flow-repository",
+  "private": true,
+  "packageManager": "bun@1.3.14",
+  "scripts": {
+    "release": "bun run --cwd plugins/codex-dev-flow release"
+  }
+}

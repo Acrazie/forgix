@@ -5,30 +5,31 @@ Thanks for helping improve Codex Dev Flow. This guide covers repository developm
 ## Prerequisites
 
 - Node.js 22.18 or newer.
-- npm.
+- Bun 1.3 or newer.
 - Git.
+- GitHub CLI (`gh`) for releases.
 
 ## Set up the project
 
 ```bash
 git clone https://github.com/Acrazie/codex-dev-flow.git
 cd codex-dev-flow/plugins/codex-dev-flow
-npm ci
-npm run check
+bun install --frozen-lockfile
+bun run check
 ```
 
 To test the terminal wizard from a source checkout, link the package during local development only:
 
 ```bash
 cd plugins/codex-dev-flow
-npm link
+bun link
 cd /path/to/project
 codex-dev-flow init
 ```
 
 End users should run `npx codex-dev-flow init`; `npm link` is not part of the published installation flow.
 
-`npm run check` runs TypeScript checks, creates the bundled ESM distribution, and executes the test suite.
+`bun run check` runs TypeScript checks, creates the bundled ESM distribution, and executes the test suite.
 
 ## Repository layout
 
@@ -57,7 +58,7 @@ Keep `$dev-flow` as the only public workflow. Internal stage skills are implemen
 
 ```bash
 cd plugins/codex-dev-flow
-npm run check
+bun run check
 ```
 
 For configuration work, also validate the built CLI:
@@ -80,18 +81,34 @@ Architecture changes should update [the design document](./plugins/codex-dev-flo
 
 ## Tests
 
-Tests use Node.js's built-in test runner. Name new files `test/*.test.mjs` so the project test script discovers them.
+Runtime tests use Node.js's built-in test runner. Release orchestration tests use Bun.
 
 Prefer tests that assert public behavior or stable invariants. Avoid coupling tests to incidental implementation details.
 
 Useful commands:
 
 ```bash
-npm run typecheck
-npm run build
-npm test
-npm run check
+bun run typecheck
+bun run build
+bun run test
+bun run release:test
+bun run check
 ```
+
+## Releases
+
+From repository root:
+
+```bash
+bun run release
+```
+
+Interactive flow selects plugin, npm, or combined release; previews without durable
+changes; checks GitHub/npm authentication; validates release; and asks before publishing.
+It requires clean, synchronized `main`. Missing auth prints corrective command. Partial
+publication is detected on next run and can resume without creating another version.
+Release automation is supported on macOS, expected to work on Linux, and not guaranteed
+on Windows.
 
 ## Pull requests
 
