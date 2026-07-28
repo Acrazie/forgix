@@ -1,4 +1,5 @@
 .codex/tasks/
+.codex/benchmarks/
 .codex/dev-flow.local.yaml
 .worktrees/
 node_modules/

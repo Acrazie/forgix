@@ -5,58 +5,227 @@ description: Use when planning, implementing, debugging, reviewing, or verifying
 
 # Dev Flow
 
-Parse invocation with the bundled deterministic script before acting.
+Follow [lifecycle contract](../../docs/lifecycle-contract.md): exactly INTAKE, SHAPE,
+GATE, BUILD, ASSURE, HANDOFF. Macro-phase derives from internal status; never invent or
+persist another phase. Canonical registry, strict V2 state, durable state store, adaptive
+INTAKE runtime, and local benchmark store are available primitives; full provider
+orchestration remains incomplete. Never claim a durable transition, Approval binding,
+or handoff receipt without deterministic evidence.
+
+Parse invocation with bundled deterministic script before acting.
 
 ## Skill isolation and configured integrations
 
-When `$dev-flow` is explicitly invoked, use only skills bundled with Codex Dev Flow by default. Do not invoke skills from other plugins or standalone skill sets merely because their descriptions match the task.
+When `$dev-flow` is explicitly invoked, use bundled Dev Flow skills by default.
+Do not invoke skills from other plugins merely because descriptions match.
 
-External skills are allowed only when repository configuration explicitly lists either their plugin identifier in `integrations.plugins` or their fully qualified skill identifier in `integrations.skills`. Treat these entries as allowlists, not automatic activation: an allowed external skill must still be relevant to the requested task. System and developer instructions remain authoritative.
+External skills are eligible only when repository configuration lists plugin identifier
+in `integrations.plugins` or fully qualified skill identifier in `integrations.skills`.
+Allowlisting is not activation; selected skill must still be relevant. System,
+developer, repository, and effective policy instructions remain authoritative.
 
-Use terminal command `npx codex-dev-flow init` to configure these allowlists interactively without a global installation. This is a standalone CLI command, not a `$dev-flow` skill subcommand. If initialization is requested through chat, tell user to run that command in their project terminal; do not launch or emulate wizard. Tools are not skills and remain available under normal permission and policy rules.
+Use terminal command `npx codex-dev-flow init` for interactive configuration. This is a
+standalone CLI command, not a `$dev-flow` subcommand. If requested in chat, tell user to
+run it in project terminal; do not emulate wizard.
 
-At the beginning of every run and resume, create exactly one routing snapshot through `codex app-server`: complete `initialize`/`initialized`, then read `account/read`, `account/rateLimits/read`, and `model/list`. Keep the snapshot and routing decisions in durable task state. Never log or persist credentials or raw protocol payloads.
+## INTAKE and routing
 
-The app-server may need write access to its SQLite state under `CODEX_HOME` (normally `~/.codex`). If the deterministic parser returns `routing_permission_required`, request explicit user approval to rerun the same parser invocation outside the restrictive sandbox. Retry the same invocation at most once. Never escalate silently. A failed first attempt does not count as a routing snapshot; persist only the successful retry snapshot. If approval is denied or the retry fails, block with the structured routing failure and an actionable explanation.
+INTAKE owns product intent; SHAPE owns deep technical discovery. Optimize tokens without
+weakening user authority, privacy, or truthful completion.
 
-Use only `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol`, with reasoning limited to `low`, `medium`, `high`, and `xhigh`. Ignore `max`, `ultra`, and unknown efforts from `model/list`. Recognize quota pressure from the exact five-hour window (`windowDurationMins === 300`), with warning at 50% and critical at 80%.
+1. Parse invocation. For new runs, persist whether leading `--benchmark` is enabled.
+2. Read only cheap entry sources: applicable guidance, effective Dev Flow
+   config/policy, primary manifests, Git/workspace identity, and documents explicitly
+   cited by user. Do not scan implementation code merely to avoid an INTAKE question.
+3. In same model processing of initial request, emit structured Intake Brief,
+   completeness result, and at most one Decision Question. Complete explicit requests
+   may emit zero questions; never add a separate sufficiency model call.
+4. Ask only information with declared `decisionKey`, missing information, and possible
+   output impact. Question has 2–3 mutually exclusive options, recommended option first,
+   one-line impact per option, recommendation basis/confidence, and free-form answer.
+   Persist exact active question before display.
+   Use interactive question UI when available; text fallback must preserve same options,
+   recommendation, impacts, and free-form path. Preserve user's dominant language;
+   internal IDs remain English.
+5. User must answer or cancel. Silence, “decide for me”, and requests to advance never
+   choose a default. Free-form response remains authoritative; normalize it without
+   inventing meaning. One response may resolve multiple explicit decisions.
+6. Process each answer once: update compact brief and normalized decisions, evaluate
+   semantic sufficiency, then emit at most one next question. No transcript,
+   re-summarization, or second routine model call.
+   Off-topic/insufficient answer keeps same decision active and rephrases it. After two
+   insufficient answers, explain exact block and offer answer or cancellation.
+7. Do not repeat answered/duplicate questions unless a persisted dependency invalidation
+   explains why. After five distinct answered questions, display one compact checkpoint;
+   no hard question cap.
+8. Invalid structured output: deterministic syntax repair when possible, otherwise one
+   targeted semantic retry. Second semantic failure creates typed
+   `semantic_output_invalid` block.
 
-If the exact live five-hour window is absent, reuse only a non-expired cached five-hour reset timestamp. Never reuse a cached usage percentage. Keep pressure `unknown`, route conservatively, and report `quota_fallback_last_known`. Treat any other available window as informational only. Normalize both string and object-shaped `supportedReasoningEfforts` entries from `model/list`.
+User may revise an earlier answer. Persist selective invalidation and recompute only
+dependent decisions. Do not recap after each answer. Show compact checkpoint only at
+five-question boundaries, contradiction/interpretation confirmation when necessary, and
+Intake Brief once at exit.
 
-Resolve all six skill routes exactly once from that immutable snapshot using routing policy `2026-07-14.skill-first.v1`: `discover`, `plan`, `execute`, `debug`, `review`, and `verify`. An unresolved account plan uses the Plus baseline. Warning quota lowers one subscription tier; critical or unknown quota uses the Plus row. Quick lowers reasoning one level; Critical or high risk/ambiguity raises it one level, capped at `xhigh`.
+Every persisted string passes bounds and secret redaction. Never request or store
+credentials, raw prompts, code, diffs, or external payloads. A repository fact may
+populate a decision with repository provenance; reversible model hypothesis may not.
 
-Require the exact assigned model and reasoning effort in the initial catalog. Never substitute a fallback model or effort. Mark the route unavailable and block that skill when the exact assignment is absent. Keep `execute`, `validate`, and parent-owned verification commands in the workflow parent; route `execute` but never delegate mutations. Do not refresh account, quota, or model data between skills.
+`intake_complete` requires semantic sufficiency plus deterministic presence of canonical
+objective, observable success signal/method, coherent mode/risk, no contradiction or
+active question, and typed SHAPE ownership for remaining technical unknowns.
+Standard/Critical automatically enter SHAPE when guard passes. Quick enters BUILD only
+when bounded, non-destructive, technically localizable, executable without design
+choice, and verifiable. User request to advance cannot bypass missing context; record
+`advance.rejected` and re-ask exact missing decision. INTAKE answer is never GATE
+Approval.
 
-## Durable workflow artifacts
+Later missing product intent, success, determining constraint, or mode context persists
+selective invalidation and returns with `intake_reopened`. Pure technical uncertainty
+stays in SHAPE. SHAPE receives only Intake Brief, normalized decisions,
+provenance/freshness refs, and typed technical unknowns—not interview transcript.
 
-Keep resumable machine state under `.codex/tasks/`. Keep human-readable, versioned change records under `docs/dev-flow/` in the repository's active worktree.
+After complete INTAKE, resolve routing and workspace. Critical worktree must be ready
+before any repository write.
 
-- Quick has no mandatory artifact. Create one only when repository policy or the user requires it.
-- Standard uses one change record at `docs/dev-flow/YYYY-MM-DD-<slug>.md`.
-- Critical uses `docs/dev-flow/YYYY-MM-DD-<slug>/spec.md`, `plan.md`, `risk-and-rollback.md`, and `verification.md`.
-- Create an ADR separately only when the change makes a durable architectural decision.
+At beginning of every run/resume, create exactly one routing snapshot through `codex
+app-server`: complete `initialize`/`initialized`, then read `account/read`,
+`account/rateLimits/read`, and `model/list`. Persist no credentials or raw protocol
+payloads.
 
-For Standard, the parent workflow creates the change record after read-only discovery and planning, before implementation approval. Creating or updating required Dev Flow artifacts is the only permitted repository write before implementation approval. Delegated discovery, planning, review, and verification stages remain read-only and return content to the parent.
+If parser returns `routing_permission_required`, request explicit user approval to rerun
+same invocation outside restrictive sandbox. Retry the same invocation at most once.
+Never escalate silently. Failed first attempt is not snapshot; persist only successful
+retry. If approval is denied or the retry fails, block with structured diagnostic.
 
-The Standard change record must contain these sections:
+Use only `gpt-5.6-luna`, `gpt-5.6-terra`, `gpt-5.6-sol`; efforts `low`, `medium`, `high`,
+`xhigh`. Recognize quota pressure only from exact five-hour window
+`windowDurationMins === 300`, warning at 50%, critical at 80%.
 
-1. Context and outcome
-2. Scope and non-goals
-3. Constraints and decisions
-4. Acceptance criteria with stable identifiers
-5. Implementation plan mapping tasks to acceptance criteria
-6. Risks and rollback
-7. Verification evidence
+If live five-hour window absent, reuse only non-expired cached reset timestamp. Never
+reuse cached usage percentage. Keep pressure `unknown`, route conservatively, report
+`quota_fallback_last_known`. Other windows stay informational. Normalize string and
+object `supportedReasoningEfforts` entries.
 
-Show the saved artifact path when requesting approval. After approval, execute against that artifact. Keep plans at task and contract level; include complete code or brittle line references only when indispensable. Record approved scope changes in the artifact. Append final commands, results, skipped checks, and material deviations under verification evidence.
+Resolve six stage routes once from immutable snapshot using policy
+`2026-07-14.skill-first.v1`: `discover`, `plan`, `execute`, `debug`, `review`, `verify`.
+Unknown plan uses Plus baseline. Warning quota lowers one subscription tier; critical or
+unknown quota uses Plus. Quick lowers reasoning one level; Critical or high
+risk/ambiguity raises one, capped `xhigh`.
 
-On resume, reuse the existing artifact and reconcile it with task state; never create a duplicate for the same task. Artifacts belong to the active worktree and must be included in the resulting commit or handoff unless repository policy explicitly forbids versioning them.
+Require exact assigned model/effort in initial catalog.
+Never substitute a fallback model or effort. Missing assignment blocks that skill.
+Do not refresh account, quota, or model data between skills. Parent owns execute,
+validate, and verification commands; route execute but never delegate mutations.
 
-- If mode is absent, inspect read-only context, propose quick, standard, or critical, then follow effective confirmation policy.
-- Quick may write directly only for an explicit, bounded, non-destructive request.
-- Standard requires discovery, plan, approval, execution, review, and verification.
-- Critical requires a worktree, threat model, rollback analysis, human gates, and read-only reviewers.
-- Keep state under .codex/tasks and durable artifacts under docs/dev-flow.
-- Apply effective policy after configuration resolution. Never merge. Never claim success without evidence.
-- Resume dev-flow state with $dev-flow resume; this differs from codex resume.
-- If app-server is unavailable for a reason other than the retryable state permission failure, continue with `quota_unknown` or `allowed_model_unavailable`; do not escalate cost automatically.
+## SHAPE
+
+Quick has no mandatory artifact while `quick_scope_bounded` remains true. It records
+SHAPE N/A. Standard and Critical use read-only `discover-change`, then `plan-change`,
+until material uncertainty is resolved or blocked.
+
+Produce one logical canonical change artifact projection: objective, constraints, scope,
+non-goals, stable acceptance criteria, confirmed mode/risk, executable atomic plan, and
+applicable risk/rollback controls. Artifact identity and digest matter; filename does
+not. Standard has no canonical single-file layout. Critical risk records may be separate
+when repository policy requires it.
+
+Parent alone writes artifact. Delegated stages return structured content and stay
+read-only. Context Capsule contains compact provenance/freshness references, never
+duplicate approved prose or detailed evidence. Current runtime does not yet persist full
+capsule; never imply it did.
+
+## GATE
+
+Quick records GATE N/A only while bounded exemption remains valid. Standard and Critical
+require pre-build Approval. Bind Approval to gate type, actor, time, artifact identity,
+and canonical contract digest—not boolean approval or path. Critical also requires
+completion-evidence Approval after verification.
+
+Material objective, scope, acceptance-criteria, mode, risk, plan-behavior, or required
+Critical-control change invalidates affected Approval before further writes. Present
+structured delta for reapproval. If deterministic Approval persistence is unavailable,
+record limitation and do not claim bound Approval exists.
+
+## BUILD
+
+Use `execute-change` for one approved atomic task at a time. Parent is sole writer. After
+each task, run targeted validation before next task. Fresh fingerprints and policy decide
+broader checks.
+
+Correctable local validation failure enters build resolution; use `debug-root-cause`
+after two failed code corrections. Material contract change stops writes and returns to
+SHAPE/GATE. Scope expansion never inherits old Approval.
+
+## ASSURE
+
+Quick always verifies and reviews only when policy/risk requires it. Therefore Quick
+routes `validating -> reviewing -> verifying` when review applies, otherwise
+`validating -> verifying`. Standard runs one structured review over changed/impacted
+surfaces, then verification. Critical uses
+independent read-only assurance lanes by applicable risk; omit lane only with structured
+evidence-backed N/A, and activate on ambiguity.
+
+Review consumes compact Diff Capsule: approved criteria/risks, changed surfaces,
+dependency impact, and fresh validation evidence. Known deterministic failure blocks
+expensive review. Findings keep stable identities. Code corrections return through
+validation; review-only corrections return through review; evidence-only corrections
+return through verification.
+
+Use `verify-change` to map every acceptance criterion to fresh evidence. Narrow green
+check proves only covered behavior. Critical proceeds to completion GATE; other modes
+proceed to HANDOFF only when verification complete.
+
+## HANDOFF
+
+Resolve every commit/push/PR action as required, selected, or not selected. Reconcile
+local/remote state before each side effect. Persisted identities and receipts are target
+requirements; without evidence, never claim idempotency or completion. Never merge.
+
+- no external intent -> `finished_local`;
+- selected/required actions all receipted -> `finished`;
+- recoverable missing permission/action -> `ready_for_handoff`;
+- non-recoverable required-outcome failure -> `failed`.
+
+`ready_for_handoff` is stable and resumable, not terminal. Resume reconciles first and
+may become `finished` directly only if matching receipts already prove completion.
+
+### Opt-in local benchmark
+
+Benchmark is out-of-band and never changes lifecycle outcome.
+
+- Offer only when persisted `benchmarkEnabled=true` and truthful outcome is
+  `finished_local`, `finished`, or `failed`. Never offer for blocked,
+  ready-for-handoff, or cancelled.
+- Ask exactly three deterministic, no-model questions: satisfaction 1–5; conformance
+  yes/partial/no; plugin value useful/neutral/counterproductive. Optional comment follows.
+- No response or incomplete three required answers means no record and total exclusion.
+- Compute deviation facts deterministically against Intake Brief for Quick or approved
+  Change Artifact for Standard/Critical. New file is deviation only when forbidden or
+  unplanned by that authority.
+- Write complete allowlisted/redacted record atomically to
+  `.codex/benchmarks/<task-id>.json`. Never upload it. Write failure is non-fatal.
+- `npx codex-dev-flow benchmark summary` aggregates complete local records without model
+  calls.
+
+## Resume, evidence, and artifacts
+
+Target local state lives under `.codex/tasks/`; versioned artifact belongs to active
+worktree and follows repository retention into commit or handoff. Reuse existing artifact
+identity; never duplicate task artifact. Legacy paths such as
+`docs/dev-flow/YYYY-MM-DD-<slug>.md`, `spec.md`, `plan.md`,
+`risk-and-rollback.md`, and `verification.md` are repository choices only.
+
+Resume must validate/migrate state, reconcile config/policy/routing/artifact/Git/evidence,
+selectively invalidate stale projections, then continue first unproved action. Current
+runtime cannot yet enforce full V2 resume. Report that limitation instead of fabricating
+durability.
+
+Never claim success without fresh evidence. Record commands, results, skipped checks,
+material deviations, issue identities, and remaining actions. Detailed contract/evidence
+has one owner; compact state stores references. Definitions:
+[glossary](../../docs/glossary/dev-flow.md). Decisions:
+[Context Capsule](../../docs/adr/0002-share-an-invalidable-context-capsule.md),
+[Approval](../../docs/adr/0003-bind-approvals-to-canonical-contracts.md),
+[assurance](../../docs/adr/0004-scale-assurance-lanes-by-applicable-risk.md),
+[handoff](../../docs/adr/0005-make-handoff-intent-aware-and-idempotent.md).

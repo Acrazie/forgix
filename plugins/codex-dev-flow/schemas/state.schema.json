@@ -1,25 +1,357 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Codex Dev Flow task state",
+  "title": "Codex Dev Flow task state V2",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "taskId", "status", "configSnapshot", "policySnapshot", "issues", "reviewCycle", "remainingActions", "history"],
+  "required": ["schemaVersion", "taskId", "status", "revision", "mode", "modeEvidenceRef", "modeConfirmed", "configSnapshot", "policySnapshot", "issues", "reviewCycle", "remainingActions", "history"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": { "type": "integer", "const": 2 },
     "taskId": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 0 },
+    "mode": { "type": "string", "enum": ["quick", "standard", "critical"] },
+    "modeEvidenceRef": { "type": "string", "minLength": 1 },
+    "modeConfirmed": { "type": "boolean" },
+    "contractDigest": { "type": "string", "minLength": 1 },
+    "verificationRequirements": { "$ref": "#/$defs/verificationRequirements" },
+    "pendingGate": { "type": "string", "enum": ["pre_build", "critical_completion"] },
     "status": {
       "type": "string",
-      "enum": ["new", "awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "reviewing", "resolving", "verifying", "handing_off", "ready_for_handoff", "blocked", "cancelled", "failed", "finished_local", "finished"]
+      "enum": ["new", "awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off", "ready_for_handoff", "blocked", "cancelled", "failed", "finished_local", "finished"]
     },
-    "resumeTo": { "type": "string" },
+    "resumeTo": {
+      "type": "string",
+      "enum": ["awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off"]
+    },
     "configSnapshot": { "type": "object" },
     "policySnapshot": { "type": "object" },
     "issues": { "type": "array" },
     "reviewCycle": { "type": "integer", "minimum": 0 },
-    "remainingActions": { "type": "array", "items": { "type": "string" } },
-    "history": { "type": "array" }
-    ,"routingPolicyVersion": { "type": "string", "minLength": 1 }
-    ,"routingSnapshot": {
+    "remainingActions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "historySummary": { "$ref": "#/$defs/historySummary" },
+    "activeArtifact": { "$ref": "#/$defs/activeArtifact" },
+    "activeWorktree": { "$ref": "#/$defs/activeWorktree" },
+    "contextCapsule": { "$ref": "#/$defs/contextCapsule" },
+    "history": {
+      "type": "array",
+      "items": { "oneOf": [{ "$ref": "#/$defs/transitionEvent" }, { "$ref": "#/$defs/workflowEvent" }] }
+    },
+    "routingPolicyVersion": { "type": "string", "minLength": 1 },
+    "routingSnapshot": { "$ref": "#/$defs/routingSnapshot" },
+    "routingDecisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/routingDecision" }
+    },
+    "intake": { "$ref": "#/$defs/intakeState" },
+    "benchmarkEnabled": { "type": "boolean" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "blocked" } }, "required": ["status"] },
+      "then": {
+        "required": ["resumeTo"],
+        "properties": {
+          "resumeTo": { "$ref": "#/$defs/resumeTarget" },
+          "remainingActions": { "type": "array", "minItems": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "ready_for_handoff" } }, "required": ["status"] },
+      "then": {
+        "required": ["resumeTo"],
+        "properties": {
+          "resumeTo": { "const": "handing_off" },
+          "remainingActions": { "type": "array", "minItems": 1 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "not": { "enum": ["blocked", "ready_for_handoff"] } } },
+        "required": ["status"]
+      },
+      "then": { "not": { "required": ["resumeTo"] } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "awaiting_approval" } }, "required": ["status"] },
+      "then": {
+        "required": ["pendingGate", "contractDigest"],
+        "properties": {
+          "pendingGate": { "type": "string", "enum": ["pre_build", "critical_completion"] },
+          "contractDigest": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    {
+      "if": { "required": ["pendingGate"] },
+      "then": {
+        "properties": { "status": { "type": "string", "enum": ["awaiting_approval", "blocked"] } }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "cancelled" } }, "required": ["status"] },
+      "then": {
+        "properties": {
+          "history": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": ["type", "to", "terminalSource"],
+              "properties": {
+                "type": { "const": "state.transition" },
+                "to": { "const": "cancelled" },
+                "terminalSource": { "$ref": "#/$defs/nonTerminalStatus" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "failed" } }, "required": ["status"] },
+      "then": {
+        "properties": {
+          "history": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": ["type", "to", "terminalSource"],
+              "properties": {
+                "type": { "const": "state.transition" },
+                "to": { "const": "failed" },
+                "terminalSource": { "$ref": "#/$defs/nonTerminalStatus" }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "eventAt": {
+      "type": "string",
+      "oneOf": [
+        { "pattern": "^(?!0000)(?:[0-9]{4}-(?:(?:01|03|05|07|08|10|12)-(?:0[1-9]|[12][0-9]|3[01])|(?:04|06|09|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8])))T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$" },
+        { "pattern": "^(?!0000)(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$" }
+      ]
+    },
+    "historyReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ref"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["task", "mode-evidence", "migration-source", "migration-target", "artifact", "worktree", "context-capsule", "context", "issue", "correction", "gate", "scope", "handoff", "evidence", "receipt", "command", "criterion", "decision", "policy", "config", "git", "symbol"] },
+        "ref": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]*$" },
+        "fingerprint": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]*$" }
+      }
+    },
+    "transitionEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "from", "to", "revision", "sourceFingerprint"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "at": { "$ref": "#/$defs/eventAt" },
+        "type": { "const": "state.transition" },
+        "from": { "$ref": "#/$defs/status" },
+        "to": { "$ref": "#/$defs/status" },
+        "mode": { "type": "string", "enum": ["quick", "standard", "critical"] },
+        "revision": { "type": "integer", "minimum": 1 },
+        "sourceFingerprint": { "type": "string", "minLength": 1 },
+        "terminalSource": { "$ref": "#/$defs/nonTerminalStatus" },
+        "terminalResumeTo": { "$ref": "#/$defs/resumeTarget" },
+        "gateContext": { "type": "string", "enum": ["pre_build", "critical_completion"] },
+        "contractDigest": { "type": "string", "minLength": 1 },
+        "guardEvidence": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/guardEvidence" } },
+        "gateDecision": { "$ref": "#/$defs/gateDecision" },
+        "legacyData": { "type": "object" }
+      },
+      "dependentRequired": { "sequence": ["at"], "at": ["sequence"] }
+    },
+    "workflowEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "at", "type", "refs"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "at": { "$ref": "#/$defs/eventAt" },
+        "type": { "type": "string", "enum": ["task.created", "state.migrated", "task.blocked", "task.resumed", "gate.recorded", "scope.approved", "artifact.recorded", "issue.recorded", "correction.recorded", "handoff.attempted", "handoff.result", "context.updated", "intake.question_recorded", "intake.answer_recorded", "intake.checkpoint", "advance.rejected", "intake.reopened"] },
+        "refs": { "type": "array", "minItems": 1, "maxItems": 16, "items": { "$ref": "#/$defs/historyReference" } }
+      }
+    },
+    "historySummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["removedCount", "firstSequence", "lastSequence", "firstAt", "lastAt", "typeCounts", "modeConfirmed"],
+      "properties": {
+        "removedCount": { "type": "integer", "minimum": 1 },
+        "firstSequence": { "type": "integer", "minimum": 1 },
+        "lastSequence": { "type": "integer", "minimum": 1 },
+        "firstAt": { "$ref": "#/$defs/eventAt" },
+        "lastAt": { "$ref": "#/$defs/eventAt" },
+        "typeCounts": { "type": "object", "minProperties": 1, "additionalProperties": { "type": "integer", "minimum": 1 } },
+        "modeConfirmed": { "type": "boolean" },
+        "lastTransition": {
+          "type": "object", "additionalProperties": false, "required": ["sequence", "revision", "to"],
+          "properties": {
+            "sequence": { "type": "integer", "minimum": 1 },
+            "revision": { "type": "integer", "minimum": 1 },
+            "to": { "$ref": "#/$defs/status" }
+          }
+        },
+        "activeGate": { "$ref": "#/$defs/historyGateAnchor" }
+      }
+    },
+    "historyGateAnchor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["gateContext", "contractDigest", "entrySequence", "entryRevision", "entryFrom", "sourceFingerprint"],
+      "properties": {
+        "gateContext": { "type": "string", "enum": ["pre_build", "critical_completion"] },
+        "contractDigest": { "type": "string", "minLength": 1 },
+        "entrySequence": { "type": "integer", "minimum": 1 },
+        "entryRevision": { "type": "integer", "minimum": 1 },
+        "entryFrom": { "type": "string", "enum": ["planning", "verifying"] },
+        "sourceFingerprint": { "type": "string", "minLength": 1 },
+        "verificationReceipt": { "$ref": "#/$defs/evaluatorReceipt" }
+      }
+    },
+    "activeArtifact": {
+      "type": "object", "additionalProperties": false, "required": ["artifactId", "ownerRef", "fingerprint"],
+      "properties": {
+        "artifactId": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "ownerRef": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "fingerprint": { "type": "string", "minLength": 1, "maxLength": 1024 }
+      }
+    },
+    "activeWorktree": {
+      "type": "object", "additionalProperties": false, "required": ["worktreeRef", "gitFingerprint"],
+      "properties": {
+        "worktreeRef": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "gitFingerprint": { "type": "string", "minLength": 1, "maxLength": 1024 }
+      }
+    },
+    "contextCapsule": {
+      "type": "object", "additionalProperties": false, "required": ["schemaVersion", "entries", "fingerprints"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "entries": { "type": "array", "maxItems": 128, "items": { "$ref": "#/$defs/contextCapsuleEntry" } },
+        "fingerprints": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/contextCapsuleFingerprint" } }
+      }
+    },
+    "contextCapsuleEntry": {
+      "type": "object", "additionalProperties": false, "required": ["section", "ownerRef", "provenanceRef", "fingerprintRefs"],
+      "properties": {
+        "section": { "type": "string", "enum": ["objective", "approved_scope", "risk", "relevant_code", "constraints", "acceptance", "decision", "evidence"] },
+        "ownerRef": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "provenanceRef": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "fingerprintRefs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 1024 } }
+      }
+    },
+    "contextCapsuleFingerprint": {
+      "type": "object", "additionalProperties": false, "required": ["id", "kind", "value", "provenanceRef"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "kind": { "type": "string", "enum": ["git", "config", "policy", "artifact", "worktree"] },
+        "value": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "provenanceRef": { "type": "string", "minLength": 1, "maxLength": 1024 }
+      }
+    },
+    "verificationRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "sourceDigest", "requirementsDigest", "criterionIds", "mandatoryCheckIds"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "sourceDigest": { "type": "string", "minLength": 1 },
+        "requirementsDigest": { "type": "string", "minLength": 1 },
+        "criterionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "mandatoryCheckIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "guardId": {
+      "type": "string",
+      "enum": ["task_initialized", "effective_constraints_valid", "mode_confirmed", "intake_complete", "intake_reopened", "routing_ready", "quick_scope_bounded", "critical_workspace_ready", "discovery_sufficient", "contract_complete", "approval_current", "task_authorized", "validation_fresh", "review_satisfied", "verification_complete", "correction_budget_available", "resume_metadata_valid", "resume_reconciled", "terminal_source_recorded", "gate_context_valid", "handoff_intent_resolved", "handoff_reconciled", "critical_completion_approved"]
+    },
+    "guardEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "guard", "stateRevision", "stateFingerprint", "observedFingerprint", "evidenceRefs", "provenance", "result"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "guard": { "$ref": "#/$defs/guardId" },
+        "stateRevision": { "type": "integer", "minimum": 0 },
+        "stateFingerprint": { "type": "string", "minLength": 1 },
+        "observedFingerprint": { "type": "string", "minLength": 1 },
+        "evidenceRefs": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "provenance": { "type": "string", "enum": ["deterministic-check", "human-approval", "repository-observation", "migration-history"] },
+        "result": { "type": "string", "enum": ["passed", "not_applicable"] },
+        "evaluatorReceipt": { "$ref": "#/$defs/evaluatorReceipt" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "allOf": [
+              { "properties": { "guard": { "enum": ["intake_complete", "verification_complete", "handoff_intent_resolved", "handoff_reconciled", "critical_completion_approved"] } }, "required": ["guard"] },
+              {
+                "not": {
+                  "properties": {
+                    "guard": { "const": "intake_complete" },
+                    "provenance": { "const": "migration-history" }
+                  },
+                  "required": ["guard", "provenance"]
+                }
+              }
+            ]
+          },
+          "then": { "properties": { "evaluatorReceipt": { "$ref": "#/$defs/evaluatorReceipt" } }, "required": ["evaluatorReceipt"] },
+          "else": { "not": { "required": ["evaluatorReceipt"] } }
+        }
+      ]
+    },
+    "evaluatorReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "evaluator", "outcome", "stateRevision", "stateFingerprint", "inputDigest", "evidenceRefs", "subjectIds", "completedIds", "receiptDigest"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "evaluator": { "type": "string", "enum": ["intake", "verification", "handoff_intent", "handoff_reconciliation", "critical_completion"] },
+        "outcome": { "type": "string", "enum": ["intake_complete", "complete", "local_only", "external_selected", "action_required", "approved"] },
+        "stateRevision": { "type": "integer", "minimum": 0 },
+        "stateFingerprint": { "type": "string", "minLength": 1 },
+        "inputDigest": { "type": "string", "minLength": 1 },
+        "evidenceRefs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "subjectIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "completedIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "receiptDigest": { "type": "string", "minLength": 1 }
+      }
+    },
+    "gateDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "gate", "decision", "stateRevision", "stateFingerprint", "evidenceRef", "contractDigest"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "gate": { "type": "string", "enum": ["pre_build", "critical_completion"] },
+        "decision": { "type": "string", "enum": ["approved", "rejected", "change_requested"] },
+        "stateRevision": { "type": "integer", "minimum": 0 },
+        "stateFingerprint": { "type": "string", "minLength": 1 },
+        "evidenceRef": { "type": "string", "minLength": 1 },
+        "contractDigest": { "type": "string", "minLength": 1 }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["new", "awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off", "ready_for_handoff", "blocked", "cancelled", "failed", "finished_local", "finished"]
+    },
+    "nonTerminalStatus": {
+      "type": "string",
+      "enum": ["new", "awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off", "ready_for_handoff", "blocked"]
+    },
+    "resumeTarget": {
+      "type": "string",
+      "enum": ["awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off"]
+    },
+    "routingSnapshot": {
       "type": "object",
       "additionalProperties": false,
       "required": ["schemaVersion", "capturedAt", "plan", "account", "quota", "models", "warnings", "provenance"],
@@ -27,7 +359,11 @@
         "schemaVersion": { "type": "integer", "const": 1 },
         "capturedAt": { "type": "string" },
         "plan": { "type": "string", "enum": ["plus", "pro_5x", "pro_20x", "unknown"] },
-        "account": { "type": "object", "additionalProperties": false, "properties": { "planType": { "type": "string" } } },
+        "account": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "planType": { "type": "string" } }
+        },
         "quota": {
           "type": "object",
           "additionalProperties": false,
@@ -35,8 +371,19 @@
           "properties": {
             "windowDurationMins": { "type": "number" },
             "usedPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "resetsAt": { "type": "number" },
             "pressure": { "type": "string", "enum": ["normal", "warning", "critical", "unknown"] },
-            "source": { "type": "string", "enum": ["app-server", "unknown"] }
+            "source": { "type": "string", "enum": ["app-server", "last-known", "unknown"] },
+            "observedWindow": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["windowDurationMins", "usedPercent"],
+              "properties": {
+                "windowDurationMins": { "type": "number" },
+                "usedPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+                "resetsAt": { "type": "number" }
+              }
+            }
           }
         },
         "models": {
@@ -47,7 +394,10 @@
             "required": ["id", "supportedReasoningEfforts"],
             "properties": {
               "id": { "type": "string", "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] },
-              "supportedReasoningEfforts": { "type": "array", "items": { "type": "string", "enum": ["low", "medium", "high", "xhigh"] } }
+              "supportedReasoningEfforts": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["low", "medium", "high", "xhigh"] }
+              }
             }
           }
         },
@@ -58,28 +408,203 @@
           "required": ["plan", "quota", "models"],
           "properties": {
             "plan": { "type": "string", "enum": ["config", "account/read", "unknown"] },
-            "quota": { "type": "string", "enum": ["account/rateLimits/read", "unknown"] },
+            "quota": { "type": "string", "enum": ["account/rateLimits/read", "last-known-cache", "unknown"] },
             "models": { "type": "string", "enum": ["model/list", "unknown"] }
           }
         },
         "subscriptionMultiplier": { "type": "number", "exclusiveMinimum": 0 }
-        }
-      },
-    "routingDecisions": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["stage", "model", "effort", "quotaPressure", "reason", "warnings"],
-        "properties": {
-          "stage": { "type": "string", "enum": ["discover", "plan", "execute", "debug", "review", "verify"] },
-          "model": { "type": ["string", "null"], "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", null] },
-          "effort": { "type": ["string", "null"], "enum": ["low", "medium", "high", "xhigh", null] },
-          "quotaPressure": { "type": "string", "enum": ["normal", "warning", "critical", "unknown"] },
-          "reason": { "type": "string" },
-          "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "routingDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "model", "effort", "quotaPressure", "reason", "warnings"],
+      "properties": {
+        "stage": { "type": "string", "enum": ["discover", "plan", "execute", "debug", "review", "verify"] },
+        "model": { "type": ["string", "null"], "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", null] },
+        "effort": { "type": ["string", "null"], "enum": ["low", "medium", "high", "xhigh", null] },
+        "quotaPressure": { "type": "string", "enum": ["normal", "warning", "critical", "unknown"] },
+        "reason": { "type": "string" },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "intakeState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "brief", "decisions", "answeredDecisionKeys", "invalidations", "contradictions", "semanticComplete", "deterministicComplete", "checkpointDue", "semanticRetryCount", "metrics"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "brief": { "$ref": "#/$defs/intakeBrief" },
+        "activeQuestion": { "$ref": "#/$defs/decisionQuestion" },
+        "decisions": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/intakeDecision" }
+        },
+        "answeredDecisionKeys": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/intakeText" }
+        },
+        "invalidations": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/intakeInvalidation" }
+        },
+        "contradictions": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/intakeText" }
+        },
+        "semanticComplete": { "type": "boolean" },
+        "deterministicComplete": { "type": "boolean" },
+        "checkpointDue": { "type": "boolean" },
+        "semanticRetryCount": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "blockedReason": { "type": "string", "enum": ["semantic_output_invalid", "answer_required"] },
+        "metrics": { "$ref": "#/$defs/intakeMetrics" }
+      }
+    },
+    "intakeBrief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "mode", "risk", "provenance", "technicalUnknowns"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "objective": { "$ref": "#/$defs/intakeText" },
+        "successSignal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["description", "observationMethod"],
+          "properties": {
+            "description": { "$ref": "#/$defs/intakeText" },
+            "observationMethod": { "$ref": "#/$defs/intakeText" },
+            "validator": { "$ref": "#/$defs/intakeText" },
+            "guardrails": { "$ref": "#/$defs/intakeTextList" }
+          }
+        },
+        "mode": { "type": "string", "enum": ["quick", "standard", "critical"] },
+        "risk": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceRefs", "capturedAt", "freshnessRefs"],
+          "properties": {
+            "sourceRefs": { "$ref": "#/$defs/intakeTextList" },
+            "capturedAt": { "$ref": "#/$defs/eventAt" },
+            "freshnessRefs": { "$ref": "#/$defs/intakeTextList" }
+          }
+        },
+        "successValidator": { "$ref": "#/$defs/intakeText" },
+        "successGuardrails": { "$ref": "#/$defs/intakeTextList" },
+        "determiningConstraints": { "$ref": "#/$defs/intakeTextList" },
+        "affectedUsers": { "$ref": "#/$defs/intakeTextList" },
+        "motivation": { "$ref": "#/$defs/intakeText" },
+        "urgency": { "$ref": "#/$defs/intakeText" },
+        "scopeBoundaries": { "$ref": "#/$defs/intakeTextList" },
+        "technicalUnknowns": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "kind", "description", "owner"],
+            "properties": {
+              "key": { "$ref": "#/$defs/intakeText" },
+              "kind": { "type": "string", "enum": ["code", "dependency", "architecture", "validation", "operations"] },
+              "description": { "$ref": "#/$defs/intakeText" },
+              "owner": { "const": "shape" }
+            }
+          }
         }
       }
+    },
+    "decisionQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "id", "decisionKey", "missingInformation", "determiningImpact", "prompt", "options", "recommendedOptionId", "recommendationBasis", "recommendationConfidence", "freeFormAllowed", "clarificationCount"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "id": { "$ref": "#/$defs/intakeText" },
+        "decisionKey": { "$ref": "#/$defs/intakeText" },
+        "missingInformation": { "$ref": "#/$defs/intakeText" },
+        "determiningImpact": { "$ref": "#/$defs/intakeText" },
+        "prompt": { "$ref": "#/$defs/intakeText" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label", "impact"],
+            "properties": {
+              "id": { "$ref": "#/$defs/intakeText" },
+              "label": { "$ref": "#/$defs/intakeText" },
+              "impact": { "$ref": "#/$defs/intakeText" }
+            }
+          }
+        },
+        "recommendedOptionId": { "$ref": "#/$defs/intakeText" },
+        "recommendationBasis": { "$ref": "#/$defs/intakeText" },
+        "recommendationConfidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "freeFormAllowed": { "const": true },
+        "clarificationCount": { "type": "integer", "minimum": 0, "maximum": 2 }
+      }
+    },
+    "intakeDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "value", "source", "provenanceRef", "recommendationDisposition", "dependsOn"],
+      "properties": {
+        "key": { "$ref": "#/$defs/intakeText" },
+        "value": { "$ref": "#/$defs/intakeText" },
+        "source": { "type": "string", "enum": ["user", "repository"] },
+        "provenanceRef": { "$ref": "#/$defs/intakeText" },
+        "recommendationDisposition": { "type": "string", "enum": ["accepted", "modified", "not_applicable"] },
+        "dependsOn": { "$ref": "#/$defs/intakeTextList" }
+      }
+    },
+    "intakeInvalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisionKey", "reason", "at"],
+      "properties": {
+        "decisionKey": { "$ref": "#/$defs/intakeText" },
+        "reason": { "$ref": "#/$defs/intakeText" },
+        "at": { "$ref": "#/$defs/eventAt" }
+      }
+    },
+    "intakeMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modelCalls", "questionsAsked", "questionsAvoided", "distinctQuestions", "recommendationsAccepted", "recommendationsModified", "zeroQuestionPath", "lateReopenings", "modeChanges"],
+      "properties": {
+        "modelCalls": { "type": "integer", "minimum": 0 },
+        "questionsAsked": { "type": "integer", "minimum": 0 },
+        "questionsAvoided": { "type": "integer", "minimum": 0 },
+        "distinctQuestions": { "type": "integer", "minimum": 0 },
+        "recommendationsAccepted": { "type": "integer", "minimum": 0 },
+        "recommendationsModified": { "type": "integer", "minimum": 0 },
+        "zeroQuestionPath": { "type": "boolean" },
+        "lateReopenings": { "type": "integer", "minimum": 0 },
+        "modeChanges": { "type": "integer", "minimum": 0 },
+        "inputTokens": { "type": "integer", "minimum": 0 },
+        "outputTokens": { "type": "integer", "minimum": 0 },
+        "latencyMs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "intakeText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "pattern": "^[^\\u0000\\r\\n]+$"
+    },
+    "intakeTextList": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/intakeText" }
     }
   }
 }

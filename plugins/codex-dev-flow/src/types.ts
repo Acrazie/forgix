@@ -11,6 +11,9 @@ export type ResolvedSubscriptionPlan = Exclude<SubscriptionPlan, "auto"> | "unkn
 export type QuotaPressure = "normal" | "warning" | "critical" | "unknown";
 export type RoutingStage = "discover" | "plan" | "execute" | "debug" | "review" | "verify";
 export type RiskLevel = "low" | "medium" | "high" | "critical";
+export type { TaskStatus } from "./state-machine.js";
+import type { TaskStatus } from "./state-machine.js";
+import type { GuardId } from "./state-machine.js";
 
 export interface ModelCapability {
   id: ModelId;
@@ -61,25 +64,6 @@ export interface RoutingDecision {
   warnings: string[];
 }
 
-export type TaskStatus =
-  | "new"
-  | "awaiting_mode_confirmation"
-  | "discovering"
-  | "planning"
-  | "awaiting_approval"
-  | "executing"
-  | "validating"
-  | "reviewing"
-  | "resolving"
-  | "verifying"
-  | "handing_off"
-  | "ready_for_handoff"
-  | "blocked"
-  | "cancelled"
-  | "failed"
-  | "finished_local"
-  | "finished";
-
 export interface EffectiveConfig {
   schemaVersion: number;
   subscription?: SubscriptionConfig;
@@ -115,19 +99,354 @@ export interface Policy {
 }
 
 export interface TaskState {
-  schemaVersion: number;
+  schemaVersion: 2;
   taskId: string;
   status: TaskStatus;
+  revision: number;
+  mode: TaskMode;
+  modeEvidenceRef: string;
+  modeConfirmed: boolean;
+  contractDigest?: string;
+  verificationRequirements?: VerificationRequirements;
+  pendingGate?: ApprovalGate;
   resumeTo?: TaskStatus;
   configSnapshot: Record<string, unknown>;
   policySnapshot: Policy;
   issues: unknown[];
   reviewCycle: number;
   remainingActions: string[];
-  history: unknown[];
+  history: DurableHistoryEvent[];
+  historySummary?: HistorySummary;
+  activeArtifact?: ActiveArtifactReference;
+  activeWorktree?: ActiveWorktreeReference;
+  contextCapsule?: ContextCapsule;
   routingSnapshot?: RoutingSnapshot;
   routingPolicyVersion?: string;
   routingDecisions?: RoutingDecision[];
+  intake?: IntakeState;
+  benchmarkEnabled?: boolean;
+}
+
+export type IntakeDecisionSource = "user" | "repository";
+export type RecommendationDisposition = "accepted" | "modified" | "not_applicable";
+export type DecisionQuestionConfidence = "high" | "medium" | "low";
+export type TechnicalUnknownKind = "code" | "dependency" | "architecture" | "validation" | "operations";
+
+export interface IntakeSuccessSignal {
+  description: string;
+  observationMethod: string;
+  validator?: string;
+  guardrails?: string[];
+}
+
+export interface IntakeProvenance {
+  sourceRefs: string[];
+  capturedAt: string;
+  freshnessRefs: string[];
+}
+
+export interface IntakeBrief {
+  schemaVersion: 1;
+  objective?: string;
+  successSignal?: IntakeSuccessSignal;
+  mode: TaskMode;
+  risk: RiskLevel;
+  provenance: IntakeProvenance;
+  successValidator?: string;
+  successGuardrails?: string[];
+  determiningConstraints?: string[];
+  affectedUsers?: string[];
+  motivation?: string;
+  urgency?: string;
+  scopeBoundaries?: string[];
+  technicalUnknowns: TechnicalUnknown[];
+}
+
+export interface TechnicalUnknown {
+  key: string;
+  kind: TechnicalUnknownKind;
+  description: string;
+  owner: "shape";
+}
+
+export interface DecisionQuestionOption {
+  id: string;
+  label: string;
+  impact: string;
+}
+
+export interface DecisionQuestion {
+  schemaVersion: 1;
+  id: string;
+  decisionKey: string;
+  missingInformation: string;
+  determiningImpact: string;
+  prompt: string;
+  options: [DecisionQuestionOption, DecisionQuestionOption] | [DecisionQuestionOption, DecisionQuestionOption, DecisionQuestionOption];
+  recommendedOptionId: string;
+  recommendationBasis: string;
+  recommendationConfidence: DecisionQuestionConfidence;
+  freeFormAllowed: true;
+  clarificationCount: number;
+}
+
+export interface NormalizedIntakeDecision {
+  key: string;
+  value: string;
+  source: IntakeDecisionSource;
+  provenanceRef: string;
+  recommendationDisposition: RecommendationDisposition;
+  dependsOn: string[];
+}
+
+export interface IntakeInvalidation {
+  decisionKey: string;
+  reason: string;
+  at: string;
+}
+
+export interface IntakeMetrics {
+  modelCalls: number;
+  questionsAsked: number;
+  questionsAvoided: number;
+  distinctQuestions: number;
+  recommendationsAccepted: number;
+  recommendationsModified: number;
+  zeroQuestionPath: boolean;
+  lateReopenings: number;
+  modeChanges: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  latencyMs?: number;
+}
+
+export interface IntakeState {
+  schemaVersion: 1;
+  brief: IntakeBrief;
+  activeQuestion?: DecisionQuestion;
+  decisions: NormalizedIntakeDecision[];
+  answeredDecisionKeys: string[];
+  invalidations: IntakeInvalidation[];
+  contradictions: string[];
+  semanticComplete: boolean;
+  deterministicComplete: boolean;
+  checkpointDue: boolean;
+  semanticRetryCount: number;
+  blockedReason?: "semantic_output_invalid" | "answer_required";
+  metrics: IntakeMetrics;
+}
+
+export interface BenchmarkSurveyAnswers {
+  satisfaction: 1 | 2 | 3 | 4 | 5;
+  conformance: "yes" | "partial" | "no";
+  pluginValue: "useful" | "neutral" | "counterproductive";
+  comment?: string;
+}
+
+export interface BenchmarkDeviationFact {
+  code: "unplanned_new_file" | "forbidden_new_file" | "missing_validation" | "missing_handoff";
+  surfaceRef: string;
+}
+
+export interface BenchmarkRecord {
+  schemaVersion: 1;
+  taskId: string;
+  recordedAt: string;
+  mode: TaskMode;
+  outcome: "finished_local" | "finished" | "failed";
+  authority: "intake_brief" | "approved_change_artifact";
+  survey: BenchmarkSurveyAnswers;
+  deviations: BenchmarkDeviationFact[];
+}
+
+export interface HistorySummary {
+  removedCount: number;
+  firstSequence: number;
+  lastSequence: number;
+  firstAt: string;
+  lastAt: string;
+  typeCounts: Record<string, number>;
+  modeConfirmed: boolean;
+  lastTransition?: {
+    sequence: number;
+    revision: number;
+    to: TaskStatus;
+  };
+  activeGate?: HistoryGateAnchor;
+}
+
+export type HistoryReferenceKind =
+  | "task"
+  | "mode-evidence"
+  | "migration-source"
+  | "migration-target"
+  | "artifact"
+  | "worktree"
+  | "context-capsule"
+  | "context"
+  | "issue"
+  | "correction"
+  | "gate"
+  | "scope"
+  | "handoff"
+  | "evidence"
+  | "receipt"
+  | "command"
+  | "criterion"
+  | "decision"
+  | "policy"
+  | "config"
+  | "git"
+  | "symbol";
+
+export interface HistoryReference {
+  kind: HistoryReferenceKind;
+  ref: string;
+  fingerprint?: string;
+}
+
+export interface HistoryGateAnchor {
+  gateContext: ApprovalGate;
+  contractDigest: string;
+  entrySequence: number;
+  entryRevision: number;
+  entryFrom: "planning" | "verifying";
+  sourceFingerprint: string;
+  verificationReceipt?: EvaluatorReceiptRecord;
+}
+
+export type WorkflowHistoryEventType =
+  | "task.created"
+  | "state.migrated"
+  | "task.blocked"
+  | "task.resumed"
+  | "gate.recorded"
+  | "scope.approved"
+  | "artifact.recorded"
+  | "issue.recorded"
+  | "correction.recorded"
+  | "handoff.attempted"
+  | "handoff.result"
+  | "context.updated"
+  | "intake.question_recorded"
+  | "intake.answer_recorded"
+  | "intake.checkpoint"
+  | "advance.rejected"
+  | "intake.reopened";
+
+export interface WorkflowHistoryEvent {
+  sequence: number;
+  at: string;
+  type: WorkflowHistoryEventType;
+  refs: HistoryReference[];
+}
+
+export interface ActiveArtifactReference {
+  artifactId: string;
+  ownerRef: string;
+  fingerprint: string;
+}
+
+export interface ActiveWorktreeReference {
+  worktreeRef: string;
+  gitFingerprint: string;
+}
+
+export type ContextCapsuleSection =
+  | "objective"
+  | "approved_scope"
+  | "risk"
+  | "relevant_code"
+  | "constraints"
+  | "acceptance"
+  | "decision"
+  | "evidence";
+
+export interface ContextCapsuleEntry {
+  section: ContextCapsuleSection;
+  ownerRef: string;
+  provenanceRef: string;
+  fingerprintRefs: string[];
+}
+
+export interface ContextCapsuleFingerprint {
+  id: string;
+  kind: "git" | "config" | "policy" | "artifact" | "worktree";
+  value: string;
+  provenanceRef: string;
+}
+
+export interface ContextCapsule {
+  schemaVersion: 1;
+  entries: ContextCapsuleEntry[];
+  fingerprints: ContextCapsuleFingerprint[];
+}
+
+export interface VerificationRequirements {
+  schemaVersion: 1;
+  sourceDigest: string;
+  requirementsDigest: string;
+  criterionIds: readonly string[];
+  mandatoryCheckIds: readonly string[];
+}
+
+export interface StateHistoryEvent {
+  sequence: number;
+  at: string;
+  type: "state.transition";
+  from: TaskStatus;
+  to: TaskStatus;
+  mode?: TaskMode;
+  revision: number;
+  sourceFingerprint: string;
+  terminalSource?: TaskStatus;
+  terminalResumeTo?: TaskStatus;
+  gateContext?: ApprovalGate;
+  contractDigest?: string;
+  guardEvidence?: GuardEvidenceRecord[];
+  gateDecision?: GateDecisionRecord;
+  legacyData?: Record<string, unknown>;
+}
+
+export type DurableHistoryEvent = StateHistoryEvent | WorkflowHistoryEvent;
+
+export type ApprovalGate = "pre_build" | "critical_completion";
+
+export interface GuardEvidenceRecord {
+  schemaVersion: 1;
+  guard: GuardId;
+  stateRevision: number;
+  stateFingerprint: string;
+  observedFingerprint: string;
+  evidenceRefs: readonly string[];
+  provenance: "deterministic-check" | "human-approval" | "repository-observation" | "migration-history";
+  result: "passed" | "not_applicable";
+  evaluatorReceipt?: EvaluatorReceiptRecord;
+}
+
+export type TrustedEvaluator = "intake" | "verification" | "handoff_intent" | "handoff_reconciliation" | "critical_completion";
+
+export interface EvaluatorReceiptRecord {
+  schemaVersion: 1;
+  evaluator: TrustedEvaluator;
+  outcome: "intake_complete" | "complete" | "local_only" | "external_selected" | "action_required" | "approved";
+  stateRevision: number;
+  stateFingerprint: string;
+  inputDigest: string;
+  evidenceRefs: readonly string[];
+  subjectIds: readonly string[];
+  completedIds: readonly string[];
+  receiptDigest: string;
+}
+
+export interface GateDecisionRecord {
+  schemaVersion: 1;
+  gate: ApprovalGate;
+  decision: "approved" | "rejected" | "change_requested";
+  stateRevision: number;
+  stateFingerprint: string;
+  evidenceRef: string;
+  contractDigest: string;
 }
 
 export interface IssueIdentity {

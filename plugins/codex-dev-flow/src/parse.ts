@@ -3,9 +3,10 @@ import type { TaskMode } from "./types.js";
 
 export type ParsedInvocation =
   | { command: "init" }
-  | { command: "run"; mode: TaskMode | undefined; objective: string; flags: Record<string, never> }
+  | { command: "run"; mode: TaskMode | undefined; objective: string; flags: { benchmark?: true } }
   | { command: "resume"; taskId: string }
   | { command: "status"; taskId: string | undefined }
+  | { command: "benchmark_summary" }
   | { command: "config_show"; explain: boolean }
   | { command: "config_validate"; json: boolean };
 
@@ -44,6 +45,11 @@ export function parseInvocation(argv: string[]): ParsedInvocation {
     return { command: "status", taskId: rest[0] };
   }
 
+  if (first === "benchmark") {
+    if (rest.length === 1 && rest[0] === "summary") return { command: "benchmark_summary" };
+    invalid("benchmark requires exactly the summary subcommand.");
+  }
+
   if (first === "config") {
     const [subcommand, ...flags] = rest;
     if (subcommand === "show" && (flags.length === 0 || (flags.length === 1 && flags[0] === "--explain"))) {
@@ -55,10 +61,13 @@ export function parseInvocation(argv: string[]): ParsedInvocation {
     invalid("Invalid config invocation.");
   }
 
-  const mode = MODES.has(first as TaskMode) ? (first as TaskMode) : undefined;
-  const objectiveParts = mode ? rest : argv;
+  const benchmark = first === "--benchmark";
+  const runArgs = benchmark ? rest : argv;
+  const runFirst = runArgs[0];
+  const mode = MODES.has(runFirst as TaskMode) ? (runFirst as TaskMode) : undefined;
+  const objectiveParts = mode ? runArgs.slice(1) : runArgs;
   if (objectiveParts.length === 0 || objectiveParts.some((part) => part.startsWith("--"))) {
     invalid("A run requires an objective and no unsupported flags.");
   }
-  return { command: "run", mode, objective: objectiveParts.join(" "), flags: {} };
+  return { command: "run", mode, objective: objectiveParts.join(" "), flags: benchmark ? { benchmark: true } : {} };
 }

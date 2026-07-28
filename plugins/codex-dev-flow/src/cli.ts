@@ -1,11 +1,14 @@
 import { resolve } from "node:path";
 import { captureRoutingSnapshot } from "./app-server.js";
+import { createBenchmarkStore } from "./benchmark.js";
 import { explainConfig, loadConfigSources, resolveConfig, type ConfigSource, type ResolvedConfig } from "./config.js";
 import { EXIT_CODES } from "./exit-codes.js";
 import { InvocationError, parseInvocation } from "./parse.js";
 import { runInit, type InitOptions } from "./init.js";
 import { applyFiveHourResetFallback, readFiveHourResetCache, writeFiveHourResetCache } from "./quota-cache.js";
 import { chooseRoute, ROUTING_POLICY_VERSION, type RouteTask } from "./routing.js";
+import { deriveMacroPhase } from "./state-machine.js";
+import { StateStoreError, createTaskStateStore } from "./state-store.js";
 import type { CliResult, TaskMode } from "./types.js";
 
 export { EXIT_CODES } from "./exit-codes.js";
@@ -14,8 +17,64 @@ export { DEFAULT_CONFIG, DEFAULT_SUBSCRIPTION_CONFIG, ConfigValidationError, exp
 export { InvocationError, parseInvocation } from "./parse.js";
 export { buildRoutingPreview, runInit } from "./init.js";
 export { PolicyError, applyPolicy } from "./policy.js";
-export { addRoutingDecision, compareSnapshot, createState, transition } from "./state.js";
+export {
+  STATE_MACHINE,
+  TASK_STATUSES,
+  StateMigrationError,
+  HISTORY_LIMIT,
+  HISTORY_REFERENCE_LIMIT,
+  HISTORY_REFERENCE_TOTAL_CHARS,
+  addRoutingDecision,
+  compareSnapshot,
+  createGateDecision,
+  createGuardAttestation,
+  createState,
+  deriveMacroPhase,
+  evaluateCriticalCompletionApproval,
+  evaluateHandoffIntent,
+  evaluateHandoffReconciliation,
+  evaluateVerification,
+  guardStateFingerprint,
+  migrateStateToV2,
+  recordHistoryEvent,
+  updateResumeContext,
+  transition
+} from "./state.js";
+export { GUARD_IDS, MACRO_PHASES, buildStateMachineProjection } from "./state-machine.js";
+export {
+  LIFECYCLE_METRICS,
+  buildBaselineReport,
+  createLifecycleMetricEvent,
+  createMetricRunId,
+  summarizeLifecycleTrace,
+  tryCreateLifecycleMetricEvent,
+  validateBaselineReport
+} from "./metrics.js";
 export { fingerprintFailure, nextCorrectionAction } from "./fingerprint.js";
+export {
+  attestIntakeComplete,
+  attestIntakeReopened,
+  applyInitialIntakeEvaluation,
+  applyIntakeResponse,
+  createIntakeState,
+  evaluateIntakeCompleteness,
+  invalidateIntakeDecisions,
+  isQuickEligible,
+  recordInvalidIntakeModelOutput,
+  rejectPrematureAdvance,
+  routeLateUnknown,
+  setDecisionQuestion
+} from "./intake.js";
+export {
+  BENCHMARK_DIRECTORY,
+  BenchmarkStore,
+  classifyBenchmarkDeviations,
+  createBenchmarkRecord,
+  createBenchmarkStore,
+  shouldOfferBenchmarkSurvey,
+  summarizeBenchmarkRecords,
+  tryWriteBenchmarkRecord
+} from "./benchmark.js";
 export { decideWorktree } from "./worktree.js";
 export { discoverVerificationCommands } from "./commands.js";
 export {
@@ -36,6 +95,13 @@ export {
 export { applyFiveHourResetFallback, readFiveHourResetCache, writeFiveHourResetCache } from "./quota-cache.js";
 export { AppServerClient, AppServerError, captureRoutingSnapshot } from "./app-server.js";
 export { ROUTED_STAGES, delegateStage, isDelegableStage } from "./bridge.js";
+export {
+  STATE_FILENAME,
+  STATE_V1_BACKUP_FILENAME,
+  StateStoreError,
+  TaskStateStore,
+  createTaskStateStore
+} from "./state-store.js";
 
 export interface RunInvocationOptions {
   configSources?: ConfigSource[];
@@ -44,6 +110,7 @@ export interface RunInvocationOptions {
   captureSnapshot?: (options: Parameters<typeof captureRoutingSnapshot>[0]) => ReturnType<typeof captureRoutingSnapshot>;
   quotaCachePath?: string | false;
   nowEpochSeconds?: number;
+  workspaceRoot?: string;
 }
 
 export async function runInvocation(argv: string[], options: RunInvocationOptions = {}): Promise<CliResult> {
@@ -55,8 +122,29 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
       ? { command: invocation.command, status: "ok", data: invocation.explain ? explainConfig(config) : config.value }
       : { command: invocation.command, status: "valid", data: { valid: true } };
   }
-  if (invocation.command === "status") return { command: "status", status: "read-only", data: { taskId: invocation.taskId } };
+  if (invocation.command === "benchmark_summary") {
+    const summary = await createBenchmarkStore(options.workspaceRoot ?? process.cwd()).summary();
+    return { command: "benchmark_summary", status: "ok", data: summary };
+  }
+  if (invocation.command === "status") {
+    if (!invocation.taskId) return { command: "status", status: "read-only", data: { taskId: undefined } };
+    const loaded = await createTaskStateStore(options.workspaceRoot ?? process.cwd()).load(invocation.taskId);
+    return {
+      command: "status",
+      status: loaded.state.status,
+      data: {
+        taskId: invocation.taskId,
+        mode: loaded.state.mode,
+        macroPhase: deriveMacroPhase(loaded.state),
+        benchmarkEnabled: loaded.state.benchmarkEnabled ?? false,
+        migrationRequired: loaded.migrationRequired
+      }
+    };
+  }
 
+  const resumedState = invocation.command === "resume"
+    ? await loadResumeStateIfPresent(options.workspaceRoot ?? process.cwd(), invocation.taskId)
+    : undefined;
   const config = resolveRuntimeConfig(options.configSources);
   const capture = options.captureSnapshot ?? captureRoutingSnapshot;
   const subscription = isRecord(config.value.subscription) ? config.value.subscription : {};
@@ -98,7 +186,7 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
       routingSnapshot = applyFiveHourResetFallback(routingSnapshot, cached);
     }
   }
-  const mode: TaskMode | undefined = invocation.command === "run" ? invocation.mode : undefined;
+  const mode: TaskMode | undefined = invocation.command === "run" ? invocation.mode : resumedState?.mode;
   const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, { ...task, ...(mode ? { mode } : {}) }));
   const unavailable = decisions.some((decision) => decision.model === null || decision.effort === null);
   const permissionRequired = snapshotResult.failure?.code === "app_server_permission_denied";
@@ -106,7 +194,12 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
     command: invocation.command,
     status: permissionRequired ? "routing_permission_required" : unavailable ? "routing_unavailable" : snapshotResult.available ? "routed" : "routed_with_warning",
     data: {
-      ...(invocation.command === "run" ? { mode, objective: invocation.objective } : { taskId: invocation.taskId }),
+      ...(invocation.command === "run"
+        ? { mode, objective: invocation.objective, benchmarkEnabled: invocation.flags.benchmark === true }
+        : {
+            taskId: invocation.taskId,
+            benchmarkEnabled: resumedState?.benchmarkEnabled ?? false
+          }),
       routingSnapshot,
       routingPolicyVersion: ROUTING_POLICY_VERSION,
       routingDecisions: decisions,
@@ -138,6 +231,15 @@ const ROUTING_TASKS: RouteTask[] = [
 
 function resolveRuntimeConfig(sources: ConfigSource[] | undefined): ResolvedConfig {
   return resolveConfig(sources ?? loadConfigSources());
+}
+
+async function loadResumeStateIfPresent(workspaceRoot: string, taskId: string) {
+  try {
+    return (await createTaskStateStore(workspaceRoot).load(taskId)).state;
+  } catch (error) {
+    if (error instanceof StateStoreError && error.code === "state_not_found") return undefined;
+    throw error;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

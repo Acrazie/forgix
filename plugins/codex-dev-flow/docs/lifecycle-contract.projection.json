@@ -1,0 +1,1890 @@
+{
+  "macroPhases": [
+    "INTAKE",
+    "SHAPE",
+    "GATE",
+    "BUILD",
+    "ASSURE",
+    "HANDOFF"
+  ],
+  "guards": [
+    "task_initialized",
+    "effective_constraints_valid",
+    "mode_confirmed",
+    "intake_complete",
+    "intake_reopened",
+    "routing_ready",
+    "quick_scope_bounded",
+    "critical_workspace_ready",
+    "discovery_sufficient",
+    "contract_complete",
+    "approval_current",
+    "task_authorized",
+    "validation_fresh",
+    "review_satisfied",
+    "verification_complete",
+    "correction_budget_available",
+    "resume_metadata_valid",
+    "resume_reconciled",
+    "terminal_source_recorded",
+    "gate_context_valid",
+    "handoff_intent_resolved",
+    "handoff_reconciled",
+    "critical_completion_approved"
+  ],
+  "states": [
+    {
+      "status": "new",
+      "macroPhase": "INTAKE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "task_initialized",
+            "effective_constraints_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "request",
+          "constraints"
+        ],
+        "produces": [
+          "intake.brief",
+          "intake.decisions",
+          "intake.question",
+          "classification",
+          "routing",
+          "workspace",
+          "freshness.config",
+          "freshness.policy"
+        ],
+        "invalidates": [
+          "intake.dependent-decisions",
+          "classification",
+          "routing",
+          "workspace",
+          "approvals"
+        ]
+      },
+      "events": [
+        "task.initialized",
+        "intake.question_recorded",
+        "intake.answer_recorded",
+        "intake.checkpoint",
+        "advance.rejected",
+        "intake.reopened",
+        "mode.proposed",
+        "mode.confirmed",
+        "routing.captured",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "awaiting_mode_confirmation",
+      "macroPhase": "INTAKE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "executing",
+          "guards": [
+            "intake_complete",
+            "mode_confirmed",
+            "routing_ready",
+            "quick_scope_bounded"
+          ],
+          "modes": [
+            "quick"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "discovering",
+          "guards": [
+            "intake_complete",
+            "mode_confirmed",
+            "routing_ready"
+          ],
+          "modes": [
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": [
+            {
+              "guard": "critical_workspace_ready",
+              "when": {
+                "mode": "critical"
+              }
+            }
+          ]
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "request",
+          "constraints"
+        ],
+        "produces": [
+          "intake.brief",
+          "intake.decisions",
+          "intake.question",
+          "classification",
+          "routing",
+          "workspace",
+          "freshness.config",
+          "freshness.policy"
+        ],
+        "invalidates": [
+          "intake.dependent-decisions",
+          "classification",
+          "routing",
+          "workspace",
+          "approvals"
+        ]
+      },
+      "events": [
+        "task.initialized",
+        "intake.question_recorded",
+        "intake.answer_recorded",
+        "intake.checkpoint",
+        "advance.rejected",
+        "intake.reopened",
+        "mode.proposed",
+        "mode.confirmed",
+        "routing.captured",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "discovering",
+      "macroPhase": "SHAPE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "planning",
+          "guards": [
+            "discovery_sufficient"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "intake.brief",
+          "intake.decisions",
+          "intake.technical-unknowns",
+          "constraints",
+          "classification",
+          "routing",
+          "workspace"
+        ],
+        "produces": [
+          "discovery",
+          "contract",
+          "freshness.git",
+          "freshness.artifact"
+        ],
+        "invalidates": [
+          "discovery",
+          "contract",
+          "approvals",
+          "build",
+          "assurance",
+          "handoff"
+        ]
+      },
+      "events": [
+        "discovery.updated",
+        "contract.projected",
+        "evidence.invalidated",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "planning",
+      "macroPhase": "SHAPE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "discovering",
+          "guards": [],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_approval",
+          "guards": [
+            "discovery_sufficient",
+            "contract_complete"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "intake.brief",
+          "intake.decisions",
+          "intake.technical-unknowns",
+          "constraints",
+          "classification",
+          "routing",
+          "workspace"
+        ],
+        "produces": [
+          "discovery",
+          "contract",
+          "freshness.git",
+          "freshness.artifact"
+        ],
+        "invalidates": [
+          "discovery",
+          "contract",
+          "approvals",
+          "build",
+          "assurance",
+          "handoff"
+        ]
+      },
+      "events": [
+        "discovery.updated",
+        "contract.projected",
+        "evidence.invalidated",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "awaiting_approval",
+      "macroPhase": "GATE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "planning",
+          "guards": [
+            "gate_context_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "resolving_assure",
+          "guards": [
+            "gate_context_valid",
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "verifying",
+          "guards": [
+            "gate_context_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "executing",
+          "guards": [
+            "gate_context_valid",
+            "approval_current",
+            "task_authorized"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "handing_off",
+          "guards": [
+            "gate_context_valid",
+            "verification_complete",
+            "critical_completion_approved",
+            "handoff_intent_resolved"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "ready_for_handoff",
+          "guards": [
+            "gate_context_valid",
+            "verification_complete",
+            "critical_completion_approved",
+            "handoff_intent_resolved"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "finished_local",
+          "guards": [
+            "gate_context_valid",
+            "verification_complete",
+            "critical_completion_approved",
+            "handoff_intent_resolved"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "classification",
+          "assurance.verificationEvidence"
+        ],
+        "produces": [
+          "approvals"
+        ],
+        "invalidates": [
+          "approvals"
+        ]
+      },
+      "events": [
+        "approval.requested",
+        "approval.recorded",
+        "approval.invalidated",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "executing",
+      "macroPhase": "BUILD",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "validating",
+          "guards": [
+            "task_authorized"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "planning",
+          "guards": [],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "approvals",
+          "discovery",
+          "workspace",
+          "freshness"
+        ],
+        "produces": [
+          "build",
+          "issues.active",
+          "freshness.git",
+          "freshness.commands"
+        ],
+        "invalidates": [
+          "build.validationEvidence",
+          "assurance",
+          "handoff.receipts",
+          "approvals"
+        ]
+      },
+      "events": [
+        "task.started",
+        "checkpoint.recorded",
+        "validation.completed",
+        "finding.observed",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "validating",
+      "macroPhase": "BUILD",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "executing",
+          "guards": [
+            "validation_fresh",
+            "task_authorized"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "resolving_build",
+          "guards": [
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "reviewing",
+          "guards": [
+            "validation_fresh"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "verifying",
+          "guards": [
+            "validation_fresh",
+            "review_satisfied"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "planning",
+          "guards": [],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "approvals",
+          "discovery",
+          "workspace",
+          "freshness"
+        ],
+        "produces": [
+          "build",
+          "issues.active",
+          "freshness.git",
+          "freshness.commands"
+        ],
+        "invalidates": [
+          "build.validationEvidence",
+          "assurance",
+          "handoff.receipts",
+          "approvals"
+        ]
+      },
+      "events": [
+        "task.started",
+        "checkpoint.recorded",
+        "validation.completed",
+        "finding.observed",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "resolving_build",
+      "macroPhase": "BUILD",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "validating",
+          "guards": [
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "planning",
+          "guards": [],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "approvals",
+          "discovery",
+          "workspace",
+          "freshness"
+        ],
+        "produces": [
+          "build",
+          "issues.active",
+          "freshness.git",
+          "freshness.commands"
+        ],
+        "invalidates": [
+          "build.validationEvidence",
+          "assurance",
+          "handoff.receipts",
+          "approvals"
+        ]
+      },
+      "events": [
+        "task.started",
+        "checkpoint.recorded",
+        "validation.completed",
+        "finding.observed",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "reviewing",
+      "macroPhase": "ASSURE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "resolving_assure",
+          "guards": [
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "verifying",
+          "guards": [
+            "review_satisfied"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "planning",
+          "guards": [],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "build",
+          "issues.active",
+          "freshness"
+        ],
+        "produces": [
+          "assurance",
+          "issues.active",
+          "freshness.commands"
+        ],
+        "invalidates": [
+          "assurance.findings",
+          "assurance.verificationEvidence",
+          "handoff.receipts",
+          "approvals"
+        ]
+      },
+      "events": [
+        "review.completed",
+        "finding.observed",
+        "finding.resolved",
+        "verification.completed",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "resolving_assure",
+      "macroPhase": "ASSURE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "validating",
+          "guards": [
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "reviewing",
+          "guards": [
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "verifying",
+          "guards": [
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "planning",
+          "guards": [],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "build",
+          "issues.active",
+          "freshness"
+        ],
+        "produces": [
+          "assurance",
+          "issues.active",
+          "freshness.commands"
+        ],
+        "invalidates": [
+          "assurance.findings",
+          "assurance.verificationEvidence",
+          "handoff.receipts",
+          "approvals"
+        ]
+      },
+      "events": [
+        "review.completed",
+        "finding.observed",
+        "finding.resolved",
+        "verification.completed",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "verifying",
+      "macroPhase": "ASSURE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "resolving_assure",
+          "guards": [
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "planning",
+          "guards": [],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_approval",
+          "guards": [
+            "verification_complete"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "handing_off",
+          "guards": [
+            "verification_complete",
+            "handoff_intent_resolved"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "ready_for_handoff",
+          "guards": [
+            "verification_complete",
+            "handoff_intent_resolved"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "finished_local",
+          "guards": [
+            "verification_complete",
+            "handoff_intent_resolved"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "build",
+          "issues.active",
+          "freshness"
+        ],
+        "produces": [
+          "assurance",
+          "issues.active",
+          "freshness.commands"
+        ],
+        "invalidates": [
+          "assurance.findings",
+          "assurance.verificationEvidence",
+          "handoff.receipts",
+          "approvals"
+        ]
+      },
+      "events": [
+        "review.completed",
+        "finding.observed",
+        "finding.resolved",
+        "verification.completed",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "handing_off",
+      "macroPhase": "HANDOFF",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "ready_for_handoff",
+          "guards": [
+            "handoff_intent_resolved",
+            "handoff_reconciled"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "finished",
+          "guards": [
+            "handoff_intent_resolved",
+            "handoff_reconciled"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "assurance.verificationEvidence",
+          "workspace",
+          "handoff"
+        ],
+        "produces": [
+          "handoff.identities",
+          "handoff.receipts"
+        ],
+        "invalidates": [
+          "handoff.receipts"
+        ]
+      },
+      "events": [
+        "handoff.reconciled",
+        "handoff.attempted",
+        "handoff.receipt_recorded",
+        "task.finished",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "ready_for_handoff",
+      "macroPhase": "HANDOFF",
+      "stable": true,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "handing_off",
+          "guards": [
+            "handoff_intent_resolved",
+            "handoff_reconciled"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "finished",
+          "guards": [
+            "handoff_intent_resolved",
+            "handoff_reconciled"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "intake_reopened"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "assurance.verificationEvidence",
+          "workspace",
+          "handoff"
+        ],
+        "produces": [
+          "handoff.identities",
+          "handoff.receipts"
+        ],
+        "invalidates": [
+          "handoff.receipts"
+        ]
+      },
+      "events": [
+        "handoff.reconciled",
+        "handoff.attempted",
+        "handoff.receipt_recorded",
+        "task.finished",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "blocked",
+      "macroPhase": "resumeTo",
+      "stable": true,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "awaiting_mode_confirmation",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "task_initialized",
+            "effective_constraints_valid"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "discovering",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "mode_confirmed",
+            "routing_ready"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": [
+            {
+              "guard": "critical_workspace_ready",
+              "when": {
+                "mode": "critical"
+              }
+            }
+          ]
+        },
+        {
+          "target": "planning",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "discovery_sufficient"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "awaiting_approval",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "contract_complete"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "executing",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "approval_current",
+            "task_authorized"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "validating",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "task_authorized"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "resolving_build",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "reviewing",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "validation_fresh"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "resolving_assure",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "correction_budget_available"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "verifying",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "review_satisfied"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "handing_off",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "handoff_intent_resolved",
+            "handoff_reconciled"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ],
+          "modes": [
+            "quick",
+            "standard",
+            "critical"
+          ],
+          "conditionalGuards": []
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "resumeTo",
+          "remainingActions",
+          "freshness"
+        ],
+        "produces": [
+          "issues.active"
+        ],
+        "invalidates": [
+          "source-phase-dependent"
+        ]
+      },
+      "events": [
+        "task.blocked",
+        "task.resumed",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "cancelled",
+      "macroPhase": "terminalSource",
+      "stable": true,
+      "terminal": true,
+      "transitions": [],
+      "capsule": {
+        "consumes": [
+          "terminal.source",
+          "freshness"
+        ],
+        "produces": [
+          "terminal.summary"
+        ],
+        "invalidates": []
+      },
+      "events": [
+        "task.cancelled"
+      ]
+    },
+    {
+      "status": "failed",
+      "macroPhase": "terminalSource",
+      "stable": true,
+      "terminal": true,
+      "transitions": [],
+      "capsule": {
+        "consumes": [
+          "terminal.source",
+          "issues.active",
+          "freshness"
+        ],
+        "produces": [
+          "terminal.summary"
+        ],
+        "invalidates": []
+      },
+      "events": [
+        "task.failed"
+      ]
+    },
+    {
+      "status": "finished_local",
+      "macroPhase": "HANDOFF",
+      "stable": true,
+      "terminal": true,
+      "transitions": [],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "assurance.verificationEvidence",
+          "workspace",
+          "handoff"
+        ],
+        "produces": [
+          "handoff.identities",
+          "handoff.receipts"
+        ],
+        "invalidates": [
+          "handoff.receipts"
+        ]
+      },
+      "events": [
+        "task.finished_local"
+      ]
+    },
+    {
+      "status": "finished",
+      "macroPhase": "HANDOFF",
+      "stable": true,
+      "terminal": true,
+      "transitions": [],
+      "capsule": {
+        "consumes": [
+          "contract",
+          "assurance.verificationEvidence",
+          "workspace",
+          "handoff"
+        ],
+        "produces": [
+          "handoff.identities",
+          "handoff.receipts"
+        ],
+        "invalidates": [
+          "handoff.receipts"
+        ]
+      },
+      "events": [
+        "task.finished"
+      ]
+    }
+  ]
+}
