@@ -6,33 +6,33 @@ function read(relativePath) {
   return readFileSync(new URL(relativePath, import.meta.url), "utf8");
 }
 
-test("public workflow defines adaptive versioned artifacts", () => {
+test("public workflow defines logical versioned artifacts", () => {
   const skill = read("../skills/dev-flow/SKILL.md");
 
   assert.match(skill, /Quick.*no mandatory artifact/is);
-  assert.match(skill, /docs\/dev-flow\/YYYY-MM-DD-<slug>\.md/);
-  assert.match(skill, /before implementation approval/i);
-  assert.match(skill, /only permitted repository write/i);
-  assert.match(skill, /active worktree/i);
+  assert.match(skill, /logical canonical change artifact projection/i);
+  assert.match(skill, /Artifact identity and digest/i);
+  assert.match(skill, /require pre-build Approval/i);
+  assert.match(skill, /Parent alone writes artifact/i);
+  assert.match(skill, /belongs to active\s+worktree/i);
   assert.match(skill, /commit or handoff/i);
-  assert.match(skill, /reuse the existing artifact/i);
-  assert.match(skill, /spec\.md/);
-  assert.match(skill, /plan\.md/);
-  assert.match(skill, /risk-and-rollback\.md/);
-  assert.match(skill, /verification\.md/);
+  assert.match(skill, /Reuse existing artifact\s+identity/i);
+  assert.match(skill, /repository choices only/i);
 });
 
-test("standard change record has a stable minimum contract", () => {
+test("logical change artifact has a stable minimum contract", () => {
   const skill = read("../skills/dev-flow/SKILL.md");
 
   for (const section of [
-    "Context and outcome",
-    "Scope and non-goals",
-    "Constraints and decisions",
-    "Acceptance criteria",
-    "Implementation plan",
-    "Risks and rollback",
-    "Verification evidence"
+    "objective",
+    "constraints",
+    "scope",
+    "non-goals",
+    "stable acceptance criteria",
+    "confirmed mode/risk",
+    "executable atomic plan",
+    "risk/rollback controls",
+    "Artifact identity and digest"
   ]) {
     assert.match(skill, new RegExp(section, "i"));
   }
@@ -48,12 +48,15 @@ test("stage skills preserve and consume the artifact contract", () => {
   assert.match(discover, /artifact-ready specification evidence/i);
   assert.match(plan, /acceptance criterion/i);
   assert.match(plan, /Do not embed complete implementations/i);
-  assert.match(execute, /approved artifact/i);
-  assert.match(review, /approved artifact/i);
-  assert.match(verify, /verification evidence/i);
+  assert.match(execute, /artifact identity\/digest/i);
+  assert.match(execute, /matching Approval/i);
+  assert.match(review, /artifact\s+identity\/digest/i);
+  assert.match(review, /unapproved deviations/i);
+  assert.match(verify, /acceptance-criterion-to-evidence map/i);
+  assert.match(verify, /logical artifact/i);
 });
 
-test("artifact documentation exposes standard and critical layouts", () => {
+test("artifact documentation keeps legacy layouts non-canonical", () => {
   const documentation = read("../docs/artifacts.md");
 
   assert.match(documentation, /docs\/dev-flow\/YYYY-MM-DD-<slug>\.md/);
@@ -61,4 +64,7 @@ test("artifact documentation exposes standard and critical layouts", () => {
   assert.match(documentation, /plan\.md/);
   assert.match(documentation, /risk-and-rollback\.md/);
   assert.match(documentation, /verification\.md/);
+  assert.match(documentation, /supported repository choices, not canonical mode\s+requirements/i);
+  assert.match(documentation, /no canonical filename or monolithic Markdown template/i);
+  assert.match(documentation, /Physical separation is policy-selected, not lifecycle-selected/i);
 });
