@@ -20,6 +20,7 @@ import {
   captureFileSnapshots,
   createReleasePlan,
   incrementVersion,
+  normalizeGitOutput,
   parsePorcelainPaths,
   parseReleaseCommit,
   parseStableVersion,
@@ -91,7 +92,7 @@ function runCheck(
 }
 
 function git(args: readonly string[]): string {
-  return requireCommand("git", args, { cwd: repoRoot }).stdout.trim();
+  return normalizeGitOutput(requireCommand("git", args, { cwd: repoRoot }).stdout);
 }
 
 function assertSupportedPlatform(): void {

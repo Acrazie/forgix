@@ -165,6 +165,10 @@ export function allowedReleasePaths(target: ReleaseTarget): ReadonlySet<string> 
   return paths;
 }
 
+export function normalizeGitOutput(output: string): string {
+  return output.trimEnd();
+}
+
 export function parsePorcelainPaths(output: string): string[] {
   return output
     .split("\n")

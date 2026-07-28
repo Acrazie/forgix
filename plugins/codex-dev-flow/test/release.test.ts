@@ -10,6 +10,7 @@ import {
   formatCachebuster,
   incrementVersion,
   missingPublicationSteps,
+  normalizeGitOutput,
   parsePorcelainPaths,
   parseReleaseCommit,
   parseStableVersion,
@@ -115,6 +116,14 @@ describe("release plans", () => {
 });
 
 describe("release safety", () => {
+  test("preserves porcelain status columns while trimming command output", () => {
+    const output = normalizeGitOutput(" M plugins/codex-dev-flow/.codex-plugin/plugin.json\n");
+    assert.equal(output, " M plugins/codex-dev-flow/.codex-plugin/plugin.json");
+    assert.deepEqual(parsePorcelainPaths(output), [
+      "plugins/codex-dev-flow/.codex-plugin/plugin.json"
+    ]);
+  });
+
   test("parses porcelain output and rejects paths outside target allowlist", () => {
     const paths = parsePorcelainPaths(
       " M plugins/codex-dev-flow/package.json\n?? plugins/codex-dev-flow/bun.lock\n M README.md\n"
