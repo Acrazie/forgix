@@ -1,91 +1,84 @@
 # Codex Dev Flow Design
 
-## Status
+## Status and authority
 
-Approved design. Implementation has not started.
+This document is a public design projection of the normative
+[lifecycle contract](lifecycle-contract.md). It deliberately separates shipped
+capabilities, partial primitives, and future targets.
+
+- **Available:** plugin skills, deterministic invocation parsing, strict configuration
+  and policy resolution, routing snapshots and decisions, issue fingerprinting,
+  worktree decisions, verification-command discovery, standalone `init` CLI,
+  canonical 18-state registry, strict durable V2 state, adaptive INTAKE, local benchmark
+  storage/summary, guard-specific
+  evaluator receipts, macro-phase derivation, pure V1→V2 migration, complete path tests,
+  redacted metric events, and reproducible P0 contract-fixture baseline.
+- **Partial:** evaluator/metric contracts exist without full command/provider
+  orchestration. Full provider reconciliation and actionable resume remain incomplete.
+- **Current target:** invalidable Context Capsule, content-bound Approvals, full
+  orchestration, risk-adaptive assurance, and idempotent handoff.
 
 ## Goal
 
-`codex-dev-flow` is a portable Codex plugin for disciplined software changes. Its only public workflow is `$dev-flow`. It replaces the lifecycle value of Superpowers without depending on Superpowers.
+`codex-dev-flow` is a portable Codex plugin for disciplined software changes. Its public
+workflow surface is `$dev-flow`; internal stage skills support that workflow rather than
+acting as separate product commands.
 
-## Public Interface
+Quota and token use are optimization goals. Reliability and absence of false success
+remain hard constraints.
+
+## Public interface
 
 ```text
 $dev-flow [quick|standard|critical] "<objective>"
+$dev-flow --benchmark [quick|standard|critical] "<objective>"
 $dev-flow resume <task-id>
 $dev-flow status [task-id]
 $dev-flow config show --explain
 $dev-flow config validate
+npx codex-dev-flow benchmark summary
 ```
 
-When the mode is omitted, `$dev-flow` performs read-only classification and proposes `quick`, `standard`, or `critical`. Confirmation follows the effective policy. `$dev-flow resume` resumes a durable dev-flow task state; it is distinct from `codex resume`, which resumes a Codex conversation.
+The deterministic parser recognizes these forms. `status <task-id>` reads durable V2
+state; actionable resume reconciliation remains incomplete. Mode classification and full
+lifecycle orchestration remain skill-directed.
 
-Modes, subcommands, and flags are parsed by a deterministic, versioned script.
-
-## Plugin Architecture
-
-The plugin uses a hybrid architecture:
-
-- Skills own reasoning, discovery, planning, execution, debugging, review, and verification.
-- Scripts own deterministic parsing, configuration resolution, policy enforcement, state validation, issue fingerprinting, and artifact handling.
-- `$dev-flow` is the sole public entry point. Internal stages are not user-facing commands.
-
-Internal skills are `discover-change`, `plan-change`, `execute-change`, `debug-root-cause`, `review-change`, and `verify-change`.
-
-Explicit `$dev-flow` invocation isolates orchestration to those bundled skills by default. Repository configuration may allow external plugins or individual fully qualified skills through `integrations.plugins` and `integrations.skills`. Allowlisting makes an integration eligible; it does not activate an irrelevant skill. This prevents accidental cross-plugin orchestration while preserving deliberate combinations such as frontend work with Impeccable.
-
-Project initialization belongs to the standalone npm CLI, invoked without global installation as `npx codex-dev-flow init`. The package exposes `codex-dev-flow` through its npm `bin` entry. It runs in the current project terminal and never depends on a Codex or Claude Code conversation host. `npm link` is reserved for development from a source checkout.
-
-## Execution Policy
-
-`quick` performs an explicit, bounded, non-destructive write directly. It asks for confirmation if scope is ambiguous, destructive, or expands during execution.
-
-`standard` requires discovery, planning, approval before implementation, review, and verification. Read-only subagents are optional and only support independent research.
-
-`critical` adds a mandatory worktree, threat model, rollback analysis, human gates, and parallel read-only reviewers. No subagent writes files.
-
-Worktree policy is `auto`: create one when the task is critical, explicitly requests it, the repository policy requires it, a concurrent dev-flow task is detected, or the current checkout is unsafe. A worktree is otherwise optional. Never merge automatically.
-
-## Durable Artifacts and Local State
-
-Local, gitignored state lives at:
+Project initialization belongs to the standalone npm CLI:
 
 ```text
-.codex/tasks/<task-id>/state.yaml
+npx codex-dev-flow init
 ```
 
-Versioned task artifacts live at:
+## Architecture
+
+[ADR 0001](adr/0001-hybrid-portable-workflow.md) selects a hybrid architecture:
+
+- skills own scoped reasoning for discovery, planning, execution, debugging, review,
+  and verification;
+- deterministic code owns parsing, configuration, policy, routing, fingerprints,
+  worktree decisions, state validation, and eventually artifact/evidence arbitration;
+- the parent `$dev-flow` workflow owns orchestration and every repository write;
+- delegated stages are read-only except the single parent-owned BUILD writer.
+
+Bundled internal skills are `discover-change`, `plan-change`, `execute-change`,
+`debug-root-cause`, `review-change`, and `verify-change`. External plugins or skills are
+eligible only when explicitly allowlisted through `integrations.plugins` or
+`integrations.skills`; allowlisting never makes an irrelevant skill active.
+
+## Canonical lifecycle
+
+The public lifecycle has exactly six macro-phases:
 
 ```text
-docs/dev-flow/<task-id>/spec.md
-docs/dev-flow/<task-id>/plan.md
-docs/dev-flow/<task-id>/findings.md
-docs/dev-flow/<task-id>/verification.md
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> HANDOFF
 ```
 
-`quick` normally omits durable artifacts. `standard` and `critical` version them with the task branch and PR.
+Macro-phase is derived from internal status and is never persisted. Quick records SHAPE
+and GATE as not applicable only while its bounded, non-destructive guard remains true.
+Standard traverses all six phases. Critical adds worktree readiness, risk records,
+pre-build and completion Approvals, and independent read-only assurance lanes.
 
-## Configuration and Policy
-
-Configuration sources resolve in this order:
-
-```text
-internal defaults < user < repository < local < invocation flags
-```
-
-```text
-~/.codex/dev-flow.yaml
-.codex/dev-flow.yaml
-.codex/dev-flow.local.yaml
-```
-
-The local file is gitignored. A strict, versioned JSON Schema validates every source and rejects unknown keys, invalid types, and forbidden values. `config show --explain` reports each effective value and its provenance.
-
-Policy is separate from configuration. It has schema-limited `requirements`, `prohibitions`, `bounds`, and `locks`. Configuration is resolved first, then policy is applied. Local configuration and flags may strengthen a locked rule but cannot weaken it. A contradiction blocks before writing and reports the requested value, provenance, and violated policy.
-
-Non-bypassable invariants include `merge: never`, a mandatory critical worktree, required human gates, and evidence before a success claim. A policy may require a pull request but never grants Git or GitHub permission.
-
-## State Machine
+### Internal states
 
 ```text
 new
@@ -95,8 +88,9 @@ planning
 awaiting_approval
 executing
 validating
+resolving_build
 reviewing
-resolving
+resolving_assure
 verifying
 handing_off
 ready_for_handoff
@@ -107,45 +101,111 @@ finished_local
 finished
 ```
 
-`awaiting_mode_confirmation` transitions to `executing` for an accepted quick task, to `discovering` for standard, and to worktree creation followed by `discovering` for critical. Rejection transitions to `cancelled`.
+The canonical transition table, named guards, state-to-phase derivation, mode paths, and
+BUILD/ASSURE correction loops live only in the
+[lifecycle contract](lifecycle-contract.md). Public prose must not invent shortcuts.
 
-Correctable failures from validation, review, or verification transition to `resolving`. `blocked` and `ready_for_handoff` are stable, resumable states with `resume_to`. `blocked` is only for an obstacle that prevents implementation or verification. `ready_for_handoff` means code and proofs are complete but a Git or GitHub authorization is missing. `cancelled`, `failed`, `finished_local`, and `finished` are terminal.
+`blocked` and `ready_for_handoff` are stable, resumable, non-terminal states.
+`cancelled`, `failed`, `finished_local`, and `finished` are terminal. A terminal
+`cancelled` or `failed` event records its source state so the last active macro-phase is
+derived without persisting it. `ready_for_handoff` resumes by reconciliation before any
+external side effect.
 
-`finished` requires every effective policy, including a required PR. `finished_local` is allowed only when no external handoff is required.
+## Uniform phase contract
 
-## Reliability and Review
+Every macro-phase declares:
 
-Failures and findings use a deterministic, versioned fingerprint script.
+- intent and preconditions;
+- Context/Diff Capsule fields consumed and produced;
+- sole owners and consumers;
+- events and proof required for exit;
+- correctable errors, block/resume rules, and invalidation;
+- quota, token, reliability, and false-success metrics.
 
-- `issue_id` is stable between runs.
-- `occurrence_id` is unique to one run.
-- `root_cause_id` associates multiple issues after investigation.
+The Context Capsule shares compact provenance and freshness references; it does not own
+approved scope or detailed evidence. See
+[ADR 0002](adr/0002-share-an-invalidable-context-capsule.md) and the
+[glossary](glossary/dev-flow.md).
 
-The fingerprint script hashes a sanitized canonical payload and stores both payload and hash. For failures, identity uses check, test or stage, error type, relative path, symbol, and normalized message pattern. For findings, identity uses rule, category, symbolic location, and problem type. Raw messages, line numbers, and evidence are metadata, not sufficient identity.
+Metrics accept only allowlisted numeric/enumerated data and hashed task identity.
+Measured, estimated, and unavailable values remain distinct. See
+[measurement protocol](metrics-protocol.md).
 
-Corrections are counted per stable issue. Transient reruns without code changes use a separate counter. Two failed corrections trigger root-cause debugging or reconsideration of the plan. A third correction requires recorded investigation. If it fails, a human gate on the specification, plan, or architecture is required before a fourth attempt. Review is limited to three global cycles.
+## Mode and execution policy
 
-Standard review checks specification conformance, correctness and regressions, security, missing tests, and maintainability. Critical review runs independent read-only reviewers for correctness, security and data integrity, and tests and maintainability. Findings include severity, location, evidence, impact, reproduction, recommended fix, and confidence.
+- **Quick:** explicit, bounded, non-destructive work may enter BUILD directly after
+  confirmed INTAKE. Ambiguity, expansion, destructive impact, or policy sends it through
+  SHAPE/GATE before further writes.
+- **Standard:** read-only SHAPE, complete canonical contract, content-bound pre-build
+  Approval, one atomic BUILD task at a time, structured review, verification, and
+  HANDOFF.
+- **Critical:** safe worktree before repository mutation, threat/operational/rollback
+  records, required pre-build Approval, independent applicable assurance lanes, fresh
+  verification, and completion-evidence Approval before HANDOFF.
 
-## Finishing
+Configuration resolves before policy. Policy may strengthen but never weaken locked
+rules. `merge: never`, evidence before success, Critical isolation, and required human
+gates are non-bypassable target invariants.
 
-Commit, push, and PR creation are configurable preferences or repository requirements. New verification failures block finish. A documented pre-existing failure may allow a draft PR. Missing Git or GitHub authorization produces `ready_for_handoff`, not a false success.
+## Artifacts and local state
 
-## Validation Strategy
+One logical versioned change artifact owns detailed contract prose and evidence
+references. Its physical layout is selected by repository policy, not by Standard or
+Critical mode. `.codex/tasks/<task-id>/state.yaml` is the target location for compact,
+gitignored resumable state; current runtime does not yet persist the complete V2 state.
 
-V1 includes automated tests for parsing, state transitions, policy enforcement, configuration provenance, resume compatibility, and fingerprints. It includes one complete Node fixture repository to validate project discovery and command selection. Python and Rust fixtures follow after field validation.
+The parent workflow alone writes artifacts. Approval is bound to canonical artifact
+identity and digest, not a filename or boolean. See the
+[artifact contract](artifacts.md) and
+[ADR 0003](adr/0003-bind-approvals-to-canonical-contracts.md).
 
-## Deferred Work
+## Reliability and assurance
 
-- Plugin scaffold and skills.
-- GitHub repository publication.
-- Python and Rust fixtures.
-- Stockli task-router migration. This happens only after successful dogfooding of the standalone plugin.
+Failures and findings use stable deterministic fingerprints when supported by current
+helpers. The target correction policy counts attempts per stable issue, requires
+root-cause investigation after two failed corrections, and blocks for human action when
+the correction budget is exhausted.
 
-## Subscription-Aware Routing V1
+ASSURE consumes a compact Diff Capsule. Standard runs one structured risk-aware review.
+Critical activates independent lanes by applicable risk; omission requires structured
+evidence, and ambiguity activates the lane. See
+[ADR 0004](adr/0004-scale-assurance-lanes-by-applicable-risk.md).
 
-Routing is additive to the workflow configuration. `subscription.plan` accepts `auto`, `plus`, `pro_5x`, and `pro_20x`; `planOverride` and `multiplierOverride` can force an effective plan or multiplier. Quota thresholds default to 50% warning and 80% critical, with conservative behavior when quota is unknown. Model cost profiles are versioned and overrideable; current GPT-5.6 token credit profiles are Luna 25/2.5/150, Terra 62.5/6.25/375, and Sol 125/12.5/750 credits per million input/cached-input/output tokens.
+Fresh verification must map every acceptance criterion to evidence. A green narrow
+test proves only its covered behavior, never the complete lifecycle.
 
-Each `$dev-flow` run and resume starts one isolated app-server process and takes one `RoutingSnapshot`. The adapter performs the versioned handshake and reads account, rate limits, and model catalog. It accepts only GPT-5.6 Luna, Terra, and Sol; five-hour quota detection requires `windowDurationMins === 300`. `chooseRoute()` is pure and deterministic. Analysis/review stages use its `RoutingDecision`; execution, validation, and parent verification commands never delegate mutations.
+## Handoff
 
-The app-server can require write access to SQLite state under `CODEX_HOME`, normally `~/.codex`. The adapter classifies timeout, permission, spawn, RPC, and premature-close failures without exposing raw stderr or protocol payloads. A state permission failure returns `routing_permission_required`. Orchestration may retry the same invocation once outside the restrictive sandbox only after explicit user approval. The failed attempt is not a snapshot; only a successful retry is frozen and persisted. Denied approval or failed retry blocks routing without substituting another model or effort.
+Commit, push, and pull-request intent is explicit. `finished_local` means no external
+action is selected or required; `finished` means every selected/required action has a
+receipt. Recoverable missing permission produces `ready_for_handoff`, never success.
+Retries reconcile identities and existing results before side effects. Automatic merge
+is forbidden. See
+[ADR 0005](adr/0005-make-handoff-intent-aware-and-idempotent.md).
+
+Current Git/provider orchestration, receipt persistence, and reconciliation are roadmap
+targets, not shipped end-to-end behavior.
+
+## Configuration and routing available today
+
+Configuration resolves in this order:
+
+```text
+internal defaults < user < repository < local < invocation flags
+```
+
+Strict schemas reject unknown or forbidden values. Policy applies afterward and cannot
+grant Git/GitHub permission.
+
+One `codex app-server` snapshot per run/resume supplies account, five-hour quota, and
+model catalog observations. Routing is pure and deterministic, accepts only the exact
+configured model/effort pairs, and blocks unavailable assignments instead of silently
+substituting them. Parent workflow retains mutation and validation. Permission-related
+app-server startup may receive one explicitly approved retry; silent elevation is
+forbidden.
+
+## Validation boundary
+
+Current automated checks cover primitives, documentation contracts, and complete
+in-memory Quick, Standard, Critical, correction, resume, gate, and HANDOFF paths. They do
+not prove complete repository/provider orchestration or runtime token/latency telemetry.

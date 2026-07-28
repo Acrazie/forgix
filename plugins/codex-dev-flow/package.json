@@ -40,6 +40,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "baseline:p0": "npm run build && node scripts/generate-p0-baseline.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.mjs",
     "check": "npm run typecheck && npm run build && npm test",

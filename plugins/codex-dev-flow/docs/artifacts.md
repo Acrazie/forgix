@@ -1,70 +1,91 @@
-# Dev Flow Artifacts
+# Dev Flow Artifact Contract
 
-Dev Flow separates local machine state from versioned change records. `.codex/tasks/` stores resumable task state. `docs/dev-flow/` stores reviewable intent, plans, risks, and evidence in the active worktree.
+## Status
 
-## Mode Matrix
+This document projects the artifact rules from the normative
+[lifecycle contract](lifecycle-contract.md). It describes the roadmap target, not a
+claim that the current runtime already persists or reconciles these records. P0.3 now
+provides strict in-memory V2 state and registry contracts; durable artifact/state
+alignment and command reconciliation remain roadmap units P1 and P3.
 
-| Mode | Required artifact |
-| --- | --- |
-| Quick | None by default |
-| Standard | One adaptive change record |
-| Critical | Separate specification, plan, risk, and verification records |
+## Ownership model
 
-Repository policy may require more evidence. It may not silently weaken Critical requirements.
+Dev Flow separates three kinds of data:
 
-## Standard
+- one versioned change artifact owns detailed objective, scope, non-goals, acceptance
+  criteria, implementation plan, risks, and detailed evidence references;
+- local task state under `.codex/tasks/` will own compact status, checkpoints, events,
+  fingerprints, and references needed to resume;
+- the Context Capsule is a compact invalidable projection. It never becomes a second
+  owner for approved prose or detailed evidence.
 
-Use one file:
+The change artifact is a logical contract with a stable `artifactIdentity` and canonical
+digest. It may be one file, several files, or a repository-native record selected by
+repository policy. Dev Flow must not infer Approval identity from a pathname or from a
+mutable `approved: true` flag. See [ADR 0002](adr/0002-share-an-invalidable-context-capsule.md)
+and [ADR 0003](adr/0003-bind-approvals-to-canonical-contracts.md).
 
-```text
-docs/dev-flow/YYYY-MM-DD-<slug>.md
-```
+## Required logical projection
 
-Create it after discovery and planning, before requesting implementation approval. Artifact creation and updates are the only repository writes allowed before that approval.
+Before a Standard or Critical pre-build gate, the artifact projection contains:
 
-Minimum template:
+1. objective and effective constraints;
+2. scope and non-goals;
+3. stable acceptance criteria;
+4. confirmed mode and risk;
+5. an executable plan mapping each atomic task to acceptance criteria;
+6. risks and rollback controls required by applicable policy;
+7. artifact identity and canonical digest.
 
-```markdown
-# Change title
+Critical also requires applicable threat, operational-risk, and rollback records. Their
+physical filenames are not fixed by the lifecycle contract.
 
-## Context and outcome
+During BUILD and ASSURE, detailed evidence stays with its versioned owner. Compact state
+stores fingerprints and references. Verification produces an acceptance-criterion to
+fresh-evidence map. Handoff adds external receipts without rewriting approved intent.
 
-## Scope and non-goals
+## Mode rules
 
-## Constraints and decisions
+- **Quick:** no mandatory artifact while scope remains explicit, bounded,
+  non-destructive, and policy-compatible. If Quick escalates through SHAPE/GATE, it uses
+  the same logical contract as Standard.
+- **Standard:** one logical change artifact is mandatory before implementation Approval;
+  no canonical filename or monolithic Markdown template is imposed.
+- **Critical:** the same logical artifact plus required risk records and separate human
+  gates. Physical separation is policy-selected, not lifecycle-selected.
 
-## Acceptance criteria
-- AC-1: ...
+Repository policy may require stronger retention or a specific projection. It cannot
+weaken Critical requirements or evidence freshness.
 
-## Implementation plan
-- Task 1 (covers AC-1): ...
+## Lifecycle rules
 
-## Risks and rollback
+- SHAPE authors the canonical contract; GATE owns immutable Approval records.
+- The parent workflow is the sole artifact writer. Delegated discovery, planning,
+  review, and verification return structured content and remain read-only.
+- Approval binds gate type, actor, time, artifact identity, and canonical digest.
+- Material changes to objective, scope, acceptance criteria, mode, risk, plan behavior,
+  or required Critical controls invalidate affected Approval records before BUILD.
+- Resume reuses the artifact identity, reconciles its fingerprint, and selectively
+  invalidates dependent capsule data. It never creates a duplicate artifact for one
+  task.
+- The artifact belongs to the active worktree and follows repository retention policy
+  into the resulting commit or handoff.
+- A separate ADR records only a durable architectural decision.
 
-## Verification evidence
-Pending implementation.
-```
+## Legacy layouts
 
-Keep the plan at task and contract level. Add full code or exact line references only when the implementation depends on them. During verification, replace the pending marker with commands, results, skipped checks, and material deviations.
+Earlier documentation prescribed a monolithic Standard record at
+`docs/dev-flow/YYYY-MM-DD-<slug>.md` and a fixed Critical directory containing
+`spec.md`, `plan.md`, `risk-and-rollback.md`, and `verification.md`. Those layouts are
+supported repository choices, not canonical mode requirements. Existing repositories
+may keep them, but orchestration must reason from artifact identity, canonical fields,
+and policy rather than those paths.
 
-## Critical
+## Implementation boundary
 
-Use one directory:
+Current release contains skills and partial deterministic primitives, but not complete
+artifact persistence, Approval binding, Context Capsule invalidation, or resume
+reconciliation. Until those roadmap units land, documentation and skills express the
+target contract; they do not prove end-to-end enforcement.
 
-```text
-docs/dev-flow/YYYY-MM-DD-<slug>/
-  spec.md
-  plan.md
-  risk-and-rollback.md
-  verification.md
-```
-
-These files support separate human gates for behavior, execution, operational risk, and completion evidence.
-
-## Lifecycle Rules
-
-- Delegated stages return content; the parent workflow owns artifact writes.
-- Resume reuses the existing artifact for the task.
-- Approved scope changes update acceptance criteria and plan before execution continues.
-- The resulting commit or handoff includes the artifacts.
-- Create a separate ADR only for a durable architectural decision.
+Definitions: [Artifact, Approval, Change artifact, Context Capsule, and Gate](glossary/dev-flow.md).

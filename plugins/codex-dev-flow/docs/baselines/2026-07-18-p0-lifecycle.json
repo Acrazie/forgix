@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "baselineId": "p0-contract-lifecycle-2026-07-18",
+  "capturedAt": "2026-07-18T00:00:00.000Z",
+  "contractVersion": "P0",
+  "source": "contract_fixture",
+  "limitations": [
+    "contract_fixture_not_runtime",
+    "token_telemetry_unavailable",
+    "latency_telemetry_unavailable"
+  ],
+  "samples": [
+    {
+      "schemaVersion": 1,
+      "sampleIdHash": "98d262323db24a53bf317e0d1181e7fa373e268fcc7f5a3445bb2811da14418e",
+      "mode": "quick",
+      "source": "contract_fixture",
+      "statuses": [
+        "new",
+        "awaiting_mode_confirmation",
+        "executing",
+        "validating",
+        "verifying",
+        "finished_local"
+      ],
+      "phases": [
+        "INTAKE",
+        "BUILD",
+        "ASSURE",
+        "HANDOFF"
+      ],
+      "transitions": 5,
+      "gates": 0,
+      "blocks": 0,
+      "resumes": 0,
+      "validationRuns": 1,
+      "reviewRuns": 0,
+      "buildResolutionCycles": 0,
+      "assureResolutionCycles": 0,
+      "terminalStatus": "finished_local",
+      "falseSuccessDetections": 0,
+      "falseSuccessDetectionSource": "contract_tests",
+      "tokenUsage": {
+        "availability": "unavailable"
+      },
+      "latency": {
+        "availability": "unavailable"
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "sampleIdHash": "7558f8ea43aa0f257aaedbe84c81f92f401a174d7950b27c8b58b42800ba6f92",
+      "mode": "standard",
+      "source": "contract_fixture",
+      "statuses": [
+        "new",
+        "awaiting_mode_confirmation",
+        "discovering",
+        "planning",
+        "awaiting_approval",
+        "executing",
+        "validating",
+        "reviewing",
+        "verifying",
+        "finished_local"
+      ],
+      "phases": [
+        "INTAKE",
+        "SHAPE",
+        "GATE",
+        "BUILD",
+        "ASSURE",
+        "HANDOFF"
+      ],
+      "transitions": 9,
+      "gates": 1,
+      "blocks": 0,
+      "resumes": 0,
+      "validationRuns": 1,
+      "reviewRuns": 1,
+      "buildResolutionCycles": 0,
+      "assureResolutionCycles": 0,
+      "terminalStatus": "finished_local",
+      "falseSuccessDetections": 0,
+      "falseSuccessDetectionSource": "contract_tests",
+      "tokenUsage": {
+        "availability": "unavailable"
+      },
+      "latency": {
+        "availability": "unavailable"
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "sampleIdHash": "3130340b7474dd1b5f04f24183e991a3b34aaddae4568535474ed109cbd7eeaf",
+      "mode": "critical",
+      "source": "contract_fixture",
+      "statuses": [
+        "new",
+        "awaiting_mode_confirmation",
+        "discovering",
+        "planning",
+        "awaiting_approval",
+        "executing",
+        "validating",
+        "reviewing",
+        "verifying",
+        "awaiting_approval",
+        "blocked",
+        "awaiting_approval",
+        "finished_local"
+      ],
+      "phases": [
+        "INTAKE",
+        "SHAPE",
+        "GATE",
+        "BUILD",
+        "ASSURE",
+        "HANDOFF"
+      ],
+      "transitions": 12,
+      "gates": 2,
+      "blocks": 1,
+      "resumes": 1,
+      "validationRuns": 1,
+      "reviewRuns": 1,
+      "buildResolutionCycles": 0,
+      "assureResolutionCycles": 0,
+      "terminalStatus": "finished_local",
+      "falseSuccessDetections": 0,
+      "falseSuccessDetectionSource": "contract_tests",
+      "tokenUsage": {
+        "availability": "unavailable"
+      },
+      "latency": {
+        "availability": "unavailable"
+      }
+    }
+  ]
+}

@@ -8,118 +8,123 @@
   />
 </p>
 
-> A portable Codex plugin for planned, tested, reviewed, and evidence-backed software changes.
+> Portable Codex plugin for planned, reviewed, and evidence-backed software changes.
 
-Codex Dev Flow turns a software change into a controlled lifecycle: understand the repository, agree on a plan, implement one scoped task at a time, review the result, and verify every completion claim with evidence.
+Codex Dev Flow exposes one `$dev-flow` workflow and six internal lifecycle skills. Its
+target lifecycle optimizes quota and token use while treating reliability and absence of
+false success as hard constraints.
 
-## Why use it?
+## Implementation status
 
-- Match process depth to change risk with `quick`, `standard`, and `critical` modes.
-- Require approval before implementation for non-trivial changes.
-- Keep repository policy stronger than user or invocation preferences.
-- Preserve resumable task state and durable planning artifacts.
-- Separate implementation, review, and verification concerns.
-- Never merge automatically.
+Version `0.1.0` is a partial foundation, not complete end-to-end lifecycle orchestration.
 
-## Requirements
+- **Available:** installed skills; deterministic invocation parsing; strict configuration
+  and policy schemas; subscription-aware routing; issue fingerprinting; worktree
+  decisions; verification-command discovery; standalone `init` CLI.
+- **Available primitives:** canonical 18-state registry, strict durable V2 state,
+  adaptive INTAKE, local opt-in benchmark feedback, state-bound guard attestations,
+  macro-phase derivation, and pure V1→V2 migration.
+- **Still partial:** full provider orchestration, actionable resume reconciliation,
+  content-bound Approvals, and handoff receipts.
 
-- A Codex environment with plugin support.
-- Node.js 22.18 or newer for the bundled runtime.
-- Git for repository and worktree operations.
+Read the [normative lifecycle contract](./plugins/codex-dev-flow/docs/lifecycle-contract.md).
+Current green tests prove covered primitives only, not complete provider orchestration.
 
 ## Install
 
-Add this repository as a Codex plugin marketplace:
+Requirements: Codex plugin support, Node.js 22.18 or newer for bundled runtime, and Git
+for repository/worktree operations.
 
 ```bash
 codex plugin marketplace add Acrazie/codex-dev-flow
 ```
 
-Then:
+Then open `/plugins`, select the **Acrazie** marketplace, install **Codex Dev Flow**, and
+start a new Codex session.
 
-1. Start Codex with `codex`.
-2. Open the plugin browser with `/plugins`.
-3. Select the **Acrazie** marketplace and install **Codex Dev Flow**.
-4. Start a new Codex session so the bundled skills become available.
-
-See the official [Codex plugin documentation](https://learn.chatgpt.com/docs/plugins) for plugin-browser and permission details.
-
-Initialize Dev Flow configuration from the project directory without cloning this repository or linking a local package:
+Initialize repository configuration from a project directory:
 
 ```bash
 cd /path/to/project
 npx codex-dev-flow init
 ```
 
-The npm CLI and the Codex plugin are complementary: `npx codex-dev-flow init` configures a repository from the terminal, while `$dev-flow` runs the installed workflow inside Codex.
+The npm CLI configures a repository. `$dev-flow` runs the installed workflow inside
+Codex. Installing the plugin does not add a standalone binary to shell `PATH`.
 
 ## Quick start
 
-Describe the outcome you want. When no mode is supplied, Dev Flow inspects the request and proposes one.
-
 ```text
 $dev-flow Add request rate limiting to the public API
-```
-
-Choose a mode explicitly when the risk is already clear:
-
-```text
 $dev-flow quick Fix the typo in the installation heading
 $dev-flow standard Add pagination to the users endpoint
 $dev-flow critical Rotate the authentication scheme without downtime
+$dev-flow --benchmark standard Add pagination and collect local feedback
 ```
 
-## Choose a mode
+When mode is omitted, skill workflow inspects cheap read-only context and proposes one.
+Full provider orchestration remains incomplete.
 
-| Mode | Best for | Workflow |
+| Mode | Intended use | Contract path |
 | --- | --- | --- |
-| `quick` | Explicit, bounded, non-destructive edits | Confirm when needed, implement, verify |
-| `standard` | Normal feature, fix, or refactor work | Discover, plan, approve, execute, review, verify |
-| `critical` | Security-sensitive, destructive, or high-impact changes | Isolated worktree, threat model, rollback analysis, human gates, review, verification |
+| `quick` | Explicit, bounded, non-destructive edit | INTAKE, BUILD, ASSURE, HANDOFF; SHAPE/GATE recorded N/A while bounded guard remains true |
+| `standard` | Normal feature, fix, or refactor | All six phases with pre-build Approval, review, and verification |
+| `critical` | Security-sensitive, destructive, or high-impact work | All six phases with worktree, risk records, human gates, independent applicable assurance lanes |
 
-Scope expansion, destructive behavior, or policy conflicts always trigger a stop or confirmation instead of being silently accepted.
+Ambiguity, scope expansion, destructive impact, or policy conflict stops or escalates
+work; it never silently weakens process.
 
-## Lifecycle
+## Canonical lifecycle
 
 ```text
-request
-  -> discover
-  -> plan
-  -> approve
-  -> execute
-  -> validate
-  -> review
-  -> resolve findings
-  -> verify
-  -> hand off
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> HANDOFF
 ```
 
-Dev Flow keeps local task state under `.codex/tasks/` and durable artifacts under `docs/dev-flow/`. Interrupted tasks can resume without rebuilding their context from scratch.
+These six macro-phases are public. Internal statuses provide precise progress and derive
+macro-phase; macro-phase is never persisted independently. BUILD contains execute,
+validate, and build-resolution loops. ASSURE contains review, assurance resolution, and
+verification. HANDOFF distinguishes local completion, resumable external delivery, and
+receipted external completion.
 
-## Adaptive artifacts
+Exact states, guards, transitions, mode paths, failures, resume rules, capsule fields,
+and metrics live in the [lifecycle contract](./plugins/codex-dev-flow/docs/lifecycle-contract.md).
+Metric privacy/label rules and fixture baseline live in the
+[measurement protocol](./plugins/codex-dev-flow/docs/metrics-protocol.md).
 
-- Quick creates no artifact by default.
-- Standard saves specification, acceptance criteria, plan, rollback, and final evidence in one `docs/dev-flow/YYYY-MM-DD-<slug>.md` change record before implementation approval.
-- Critical keeps separate `spec.md`, `plan.md`, `risk-and-rollback.md`, and `verification.md` files under a change directory.
+## Artifacts and state
 
-Artifact-only writes are allowed before Standard approval. Implementation still waits for explicit approval. Resume reuses the existing artifact, and the final commit or handoff includes it. See the [artifact contract](./plugins/codex-dev-flow/docs/artifacts.md).
+Target contract uses one logical versioned change artifact as sole owner of detailed
+scope, criteria, plan, risks, and evidence references. Standard does **not** mandate one
+fixed Markdown path or template. Critical requires risk records, but filenames/layout
+come from repository policy. Quick has no mandatory artifact while its bounded-scope
+exemption remains valid.
+
+Local `.codex/tasks/` state will hold compact status, fingerprints, checkpoints, events,
+and references—not duplicate approved prose or detailed evidence. Complete persistence,
+selective invalidation, and real resume are not yet implemented. See the
+[artifact contract](./plugins/codex-dev-flow/docs/artifacts.md),
+[Context Capsule decision](./plugins/codex-dev-flow/docs/adr/0002-share-an-invalidable-context-capsule.md),
+and [Approval decision](./plugins/codex-dev-flow/docs/adr/0003-bind-approvals-to-canonical-contracts.md).
 
 ## Commands
 
 ```text
 $dev-flow <objective>
 $dev-flow quick|standard|critical <objective>
+$dev-flow --benchmark [quick|standard|critical] <objective>
 $dev-flow resume <task-id>
 $dev-flow status [task-id]
 $dev-flow config show [--explain]
 $dev-flow config validate [--json]
+npx codex-dev-flow benchmark summary
 ```
 
-`$dev-flow resume` resumes Dev Flow task state. It is separate from `codex resume`, which resumes a Codex conversation.
+Parser supports these surfaces. `$dev-flow resume` is distinct from `codex resume`;
+full workflow reconciliation remains incomplete.
 
 ## Configuration
 
-Configuration resolves from broad defaults to local overrides:
+Configuration resolves broad defaults to local overrides:
 
 ```text
 internal defaults
@@ -129,9 +134,8 @@ internal defaults
   < invocation flags
 ```
 
-Repository policy is applied afterward and cannot be weakened by local configuration or flags.
-
-Minimal repository configuration:
+Repository policy applies afterward and cannot be weakened by local configuration or
+flags.
 
 ```yaml
 schemaVersion: 1
@@ -140,12 +144,6 @@ worktree:
 finish:
   pullRequest: optional
 merge: never
-```
-
-Example subscription-aware routing configuration:
-
-```yaml
-schemaVersion: 1
 subscription:
   plan: auto
   quota:
@@ -154,37 +152,42 @@ subscription:
     unknownPolicy: conservative
 ```
 
-Use `$dev-flow config show --explain` to inspect each effective value and its source. Use `$dev-flow config validate` before committing repository configuration.
+Use `$dev-flow config show --explain` for effective-value provenance and `$dev-flow
+config validate` for schema validation. `npx codex-dev-flow init` provides an interactive
+configuration wizard. Bundled skills are isolated by default; `integrations.plugins`
+and `integrations.skills` explicitly allow compatible external capabilities.
 
-Use `npx codex-dev-flow init` for interactive repository configuration. Its Clack TUI explains every choice, supports section revisits, previews the six automatic skill routes, validates `.codex/dev-flow.yaml`, and cancels safely with `Ctrl+C`. Run it from the project you want to configure; no global installation or `npm link` is required. Installing the Codex plugin exposes `$dev-flow` inside Codex but does not add a standalone binary to your shell `PATH`. Dev Flow uses only bundled skills by default; `integrations.plugins` and `integrations.skills` explicitly allow compatible external capabilities such as Impeccable.
+## Routing available today
 
-## Safety and evidence
+One `codex app-server` snapshot freezes account, exact five-hour quota observation, model
+catalog, and six stage routes for a run/resume. Unknown or critical quota routes
+conservatively. Missing exact model/effort assignment blocks without fallback.
+Execution and validation remain parent-owned.
 
-Dev Flow treats successful implementation and successful completion as different claims.
+If restrictive sandbox denies app-server state writes under `CODEX_HOME`, result is
+`routing_permission_required`. Workflow may ask for one elevated retry; it never
+escalates silently or persists failed attempt as snapshot.
 
-- New validation, review, or verification failures block completion.
-- A documented pre-existing failure may permit a draft hand-off, never a false success.
-- Missing Git or GitHub authorization produces a resumable `ready_for_handoff` state.
-- Critical changes require worktree isolation and explicit human gates.
-- The workflow may create a commit, push, or pull request only when configuration, repository policy, and granted permissions allow it.
-- The workflow never merges automatically.
+## Safety target
 
-## Current scope
+- Fresh validation/review/verification failure blocks completion.
+- Pre-existing failure may support only explicitly incomplete/draft handoff, never
+  success.
+- Critical requires safe worktree and content-bound human gates.
+- Missing external permission yields `ready_for_handoff`, not completion.
+- Commit, push, or pull request requires effective intent, policy, and permission.
+- Automatic merge is forbidden.
 
-Version `0.1.0` provides the V1 lifecycle, strict configuration and policy schemas, worktree decisions, resumable state, failure fingerprinting, and subscription-aware analysis routing through `codex app-server`.
-
-One initial account/quota/model snapshot freezes routing for the complete workflow. Unknown plans and critical or unknown quota use the Plus baseline. Missing exact routes block without fallback. Execution and validation stay controlled by the parent workflow; execution receives a route but delegated stages never mutate the repository.
-
-`codex app-server` may need write access to SQLite state under `CODEX_HOME` (normally `~/.codex`). When a restrictive sandbox denies that write, Dev Flow reports `routing_permission_required`, asks before one elevated retry, and never escalates silently. Refused approval or failed retry leaves routing blocked with a structured diagnostic.
+Some items above are contractual targets awaiting executable enforcement. See
+[risk-adaptive assurance ADR](./plugins/codex-dev-flow/docs/adr/0004-scale-assurance-lanes-by-applicable-risk.md)
+and [idempotent handoff ADR](./plugins/codex-dev-flow/docs/adr/0005-make-handoff-intent-aware-and-idempotent.md).
 
 ## Documentation
 
+- [Lifecycle contract](./plugins/codex-dev-flow/docs/lifecycle-contract.md)
 - [Design](./plugins/codex-dev-flow/docs/design.md)
 - [Artifact contract](./plugins/codex-dev-flow/docs/artifacts.md)
-- [Architecture decision record](./plugins/codex-dev-flow/docs/adr/0001-hybrid-portable-workflow.md)
+- [Measurement protocol](./plugins/codex-dev-flow/docs/metrics-protocol.md)
+- [ADR index](./plugins/codex-dev-flow/docs/adr/)
 - [Glossary](./plugins/codex-dev-flow/docs/glossary/dev-flow.md)
 - [Contributing](./CONTRIBUTING.md)
-
-## Contributing
-
-Development setup, architecture boundaries, tests, and pull-request expectations live in [CONTRIBUTING.md](./CONTRIBUTING.md).

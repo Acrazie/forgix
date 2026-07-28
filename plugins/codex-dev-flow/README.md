@@ -1,24 +1,100 @@
 # Codex Dev Flow
 
-Portable Codex plugin for evidence-based software changes.
+Portable Codex plugin for evidence-based software changes. Runtime requires Node.js
+22.18 or newer. Distributed ESM bundle contains runtime dependencies and performs no
+package installation, lifecycle hook, or network access by itself.
 
-Runtime requires Node.js 22.18 or newer. The distributed ESM bundle contains its runtime dependencies and performs no package installation, lifecycle hook, or network access.
+## Status
 
-Conversation workflow: `$dev-flow`, `$dev-flow resume`, `$dev-flow status`, and `$dev-flow config`.
+Release `0.1.0` ships skills and deterministic primitives, not complete lifecycle
+orchestration.
 
-Standalone terminal CLI: `codex-dev-flow init`.
+- Available: invocation/config/policy parsing, adaptive/resumable INTAKE primitives,
+  opt-in local benchmark records/summary, app-server routing snapshots, issue
+  fingerprints, worktree decisions, verification-command discovery, `init` CLI,
+  canonical registry, strict durable V2 state, guard-specific evaluator
+  receipts, macro-phase derivation, pure V1→V2 migration, complete state-machine path
+  tests, and redacted lifecycle measurement primitives/P0 fixture baseline.
+- Partial: evaluator contracts exist but are not wired to full command/provider
+  orchestration. Status reads durable state; actionable resume reconciliation,
+  full-path orchestration, artifact reconciliation, and handoff receipts remain
+  incomplete.
+- Target: six-phase lifecycle defined by
+  [docs/lifecycle-contract.md](docs/lifecycle-contract.md).
 
-Configuration resolves defaults, user, repository, local, then flags. Repository policy applies afterward and cannot be weakened. Task state is local under .codex/tasks; durable artifacts live under docs/dev-flow. The workflow never merges automatically.
+Green tests prove covered primitives and complete in-memory state paths. They do not
+prove full repository/provider orchestration.
 
-Artifact depth follows mode. Quick has no mandatory artifact. Standard creates one `docs/dev-flow/YYYY-MM-DD-<slug>.md` change record before implementation approval. Critical creates separate `spec.md`, `plan.md`, `risk-and-rollback.md`, and `verification.md` records. Resume reuses existing records. See [docs/artifacts.md](docs/artifacts.md).
+## Interfaces
 
-V1 routing reads exactly one `codex app-server` snapshot at the start of each run or resume. It calls `initialize`/`initialized`, `account/read`, `account/rateLimits/read`, and `model/list`, then freezes all six skill routes for the workflow. It never refreshes quota between skills. Only `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol` plus `low`, `medium`, `high`, and `xhigh` reasoning are accepted. The five-hour quota window is recognized only when `windowDurationMins` is exactly `300`.
+Conversation surface:
 
-`codex app-server` may initialize SQLite state under `CODEX_HOME` (normally `~/.codex`). In a sandbox that permits reads but denies writes there, Dev Flow reports `routing_permission_required` with `app_server_permission_denied`. The conversation workflow must ask for approval before retrying the same invocation outside that sandbox, retries at most once, and never persists the failed attempt as its routing snapshot. Denied approval or a failed retry leaves the workflow blocked with an actionable diagnostic; no model fallback or silent privilege escalation occurs.
+```text
+$dev-flow [quick|standard|critical] <objective>
+$dev-flow --benchmark [quick|standard|critical] <objective>
+$dev-flow resume <task-id>
+$dev-flow status [task-id]
+$dev-flow config show [--explain]
+$dev-flow config validate [--json]
+npx codex-dev-flow benchmark summary
+```
 
-When the live response omits that exact window, DevFlow may reuse a non-expired five-hour reset timestamp from `.codex/tasks/five-hour-quota-reset.json`. It never reuses the cached usage percentage: pressure remains `unknown`, routing stays conservative, and `quota_fallback_last_known` is emitted. Cache read and write failures remain non-fatal. Another available window, such as the weekly window, is exposed as `observedWindow` for information only and never drives five-hour quota pressure. Model catalogs may provide reasoning efforts as strings or as `{ reasoningEffort, description }` objects; both shapes are normalized before routing.
+Standalone configuration CLI:
 
-Example additive configuration:
+```bash
+cd /path/to/project
+npx codex-dev-flow init
+```
+
+Installing plugin exposes skills inside Codex; it does not install shell command
+globally. Parser recognizes status/resume surfaces; task status can load persisted V2
+state, while full resume reconciliation remains incomplete.
+
+## Lifecycle contract
+
+```text
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> HANDOFF
+```
+
+Macro-phase derives from internal status and is never persisted. Quick may record SHAPE
+and GATE as N/A only for bounded, non-destructive work. Standard traverses all phases.
+Critical adds safe worktree, risk records, content-bound pre-build and completion gates,
+and independent applicable assurance lanes.
+
+INTAKE asks zero or more lazy Decision Questions. Each question supplies 2–3 choices,
+justified recommendation, and free-form input; user must answer or cancel. Complete
+Standard/Critical intake advances automatically to SHAPE. Requests to advance cannot
+bypass missing context.
+
+Leading `--benchmark` opts a new task into three deterministic post-task questions.
+Complete answers stay local under gitignored `.codex/benchmarks/`; non-response creates
+no record. No A/B or duplicate model execution occurs.
+
+Exact states, named guards, correction loops, terminality, resume, capsule ownership,
+and phase metrics are normative only in [docs/lifecycle-contract.md](docs/lifecycle-contract.md).
+Measurement labels, privacy boundary, and P0 fixture baseline are defined in
+[docs/metrics-protocol.md](docs/metrics-protocol.md).
+
+## Artifact contract
+
+Target lifecycle uses one logical versioned change artifact as sole owner of detailed
+scope, criteria, plan, risks, and evidence references. Standard has no canonical
+filename or mandatory monolithic template. Critical risk records may be physically
+separate when repository policy chooses. Quick has no mandatory artifact while its
+bounded-scope guard remains true.
+
+Compact task state under `.codex/tasks/` will reference artifact identity and freshness;
+it must not duplicate detailed prose/evidence. Complete persistence is not shipped yet.
+See [docs/artifacts.md](docs/artifacts.md),
+[ADR 0002](docs/adr/0002-share-an-invalidable-context-capsule.md), and
+[ADR 0003](docs/adr/0003-bind-approvals-to-canonical-contracts.md).
+
+## Configuration and isolation
+
+Configuration resolves defaults, user, repository, local, then flags. Repository policy
+applies afterward and cannot be weakened. Strict schemas reject unknown values.
+External skills stay disabled unless `integrations.plugins` or `integrations.skills`
+explicitly allow them. Allowlisting eligibility does not activate irrelevant skills.
 
 ```yaml
 schemaVersion: 1
@@ -30,33 +106,32 @@ subscription:
     unknownPolicy: conservative
 ```
 
-Installing the Codex plugin exposes its skills inside Codex but does not add the standalone binary to your shell `PATH`. Run the published CLI through npm directly in the project terminal you want to configure. No global installation, source checkout, Codex session, or Claude Code session is required:
+## Routing available today
 
-```bash
-cd /path/to/project
-npx codex-dev-flow init
-```
+One V1 routing snapshot is captured at start of each run/resume through `codex
+app-server`: `initialize`/`initialized`, `account/read`, `account/rateLimits/read`, and
+`model/list`. Snapshot freezes six routes; quota is not refreshed between skills.
 
-The Clack-powered wizard uses arrow-key menus, explanatory hints, validation, and a final review screen. The review shows workflow settings plus automatic model/reasoning assignments for every skill. Choose Create/Update, cancel, or revisit any section. `Ctrl+C` cancels without changing files. The wizard writes `.codex/dev-flow.yaml` only after final confirmation. External skills stay disabled by default. Add whole plugins or specific skills explicitly:
+Accepted models are `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol`; accepted efforts
+are `low`, `medium`, `high`, and `xhigh`. Five-hour pressure uses only an exact 300-minute
+window. A cached reset timestamp may be reused, never cached percentage. Unknown quota
+routes conservatively. Missing exact model/effort blocks without fallback.
 
-```yaml
-schemaVersion: 1
-integrations:
-  plugins:
-    - impeccable
-  skills:
-    - impeccable:frontend-design
-```
+Parent workflow retains execute, validate, and verification-command mutations. Routed
+read-only stages do not mutate repository.
 
-`discover`, `plan`, `execute`, `debug`, `review`, and `verify` receive deterministic model/effort decisions. `execute`, `validate`, and verification commands remain controlled by the parent workflow; execution is routed but never delegated. Unknown plans use the Plus baseline. Warning quota lowers one plan tier; critical or unknown quota uses Plus. Missing exact model/effort assignments are unavailable and block instead of falling back.
+If app-server needs denied SQLite writes under `CODEX_HOME`, result is
+`routing_permission_required`. Workflow must request explicit approval before one retry,
+never escalate silently, and persist only a successful snapshot.
 
-Standard normal-quota routing policy `2026-07-14.skill-first.v1`:
+## Reliability target
 
-| Skill | Plus | Pro 5x | Pro 20x |
-| --- | --- | --- | --- |
-| Discover | Terra / medium | Terra / high | Sol / medium |
-| Plan | Sol / medium | Sol / high | Sol / xhigh |
-| Execute | Terra / high | Terra / xhigh | Sol / high |
-| Review | Sol / medium | Sol / high | Sol / xhigh |
-| Verify | Luna / medium | Luna / medium | Terra / medium |
-| Debug root cause | Sol / high | Sol / xhigh | Sol / xhigh |
+No success without fresh acceptance-criterion evidence. Missing external permission
+means `ready_for_handoff`; local-only completion means `finished_local`; fully receipted
+selected/required external work means `finished`. Resume reconciles before side effects.
+Automatic merge is forbidden.
+
+Risk-adaptive assurance and idempotent handoff are accepted designs, not yet complete
+runtime behavior. See [ADR 0004](docs/adr/0004-scale-assurance-lanes-by-applicable-risk.md),
+[ADR 0005](docs/adr/0005-make-handoff-intent-aware-and-idempotent.md), and the
+[glossary](docs/glossary/dev-flow.md).
