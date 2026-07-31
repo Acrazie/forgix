@@ -1,6 +1,6 @@
 {
   "name": "codex-dev-flow",
-  "version": "0.2.0+codex.20260728131011",
+  "version": "0.2.1+codex.20260731175436",
   "description": "Portable, evidence-based Codex development workflow.",
   "author": {
     "name": "codex-dev-flow contributors"
