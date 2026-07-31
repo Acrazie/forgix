@@ -72,21 +72,19 @@ credentials, raw prompts, code, diffs, or external payloads. A repository fact m
 populate a decision with repository provenance; reversible model hypothesis may not.
 
 `intake_complete` requires semantic sufficiency plus deterministic presence of canonical
-objective, observable success signal/method, coherent mode/risk, no contradiction or
-active question, and typed SHAPE ownership for remaining technical unknowns.
-Standard/Critical automatically enter SHAPE when guard passes. Quick enters BUILD only
-when bounded, non-destructive, technically localizable, executable without design
-choice, and verifiable. User request to advance cannot bypass missing context; record
+objective, observable success signal/method, coherent risk, no contradiction or active
+question, and typed SHAPE ownership for remaining technical unknowns. Every task enters
+SHAPE when guard passes. User request to advance cannot bypass missing context; record
 `advance.rejected` and re-ask exact missing decision. INTAKE answer is never GATE
 Approval.
 
-Later missing product intent, success, determining constraint, or mode context persists
+Later missing product intent, success, or determining constraint context persists
 selective invalidation and returns with `intake_reopened`. Pure technical uncertainty
 stays in SHAPE. SHAPE receives only Intake Brief, normalized decisions,
 provenance/freshness refs, and typed technical unknowns—not interview transcript.
 
-After complete INTAKE, resolve routing and workspace. Critical worktree must be ready
-before any repository write.
+After complete INTAKE, resolve routing and workspace. Risk/policy-required worktree must
+be ready before any repository write.
 
 At beginning of every run/resume, create exactly one routing snapshot through `codex
 app-server`: complete `initialize`/`initialized`, then read `account/read`,
@@ -110,8 +108,7 @@ object `supportedReasoningEfforts` entries.
 Resolve six stage routes once from immutable snapshot using policy
 `2026-07-14.skill-first.v1`: `discover`, `plan`, `execute`, `debug`, `review`, `verify`.
 Unknown plan uses Plus baseline. Warning quota lowers one subscription tier; critical or
-unknown quota uses Plus. Quick lowers reasoning one level; Critical or high
-risk/ambiguity raises one, capped `xhigh`.
+unknown quota uses Plus. High risk/ambiguity raises reasoning one level, capped `xhigh`.
 
 Require exact assigned model/effort in initial catalog.
 Never substitute a fallback model or effort. Missing assignment blocks that skill.
@@ -120,30 +117,57 @@ validate, and verification commands; route execute but never delegate mutations.
 
 ## SHAPE
 
-Quick has no mandatory artifact while `quick_scope_bounded` remains true. It records
-SHAPE N/A. Standard and Critical use read-only `discover-change`, then `plan-change`,
-until material uncertainty is resolved or blocked.
+Every task uses adaptive SHAPE:
 
-Produce one logical canonical change artifact projection: objective, constraints, scope,
-non-goals, stable acceptance criteria, confirmed mode/risk, executable atomic plan, and
-applicable risk/rollback controls. Artifact identity and digest matter; filename does
-not. Standard has no canonical single-file layout. Critical risk records may be separate
-when repository policy requires it.
+```text
+Discovery -> Quick|Plan choice -> Planning
+```
 
-Parent alone writes artifact. Delegated stages return structured content and stay
-read-only. Context Capsule contains compact provenance/freshness references, never
-duplicate approved prose or detailed evidence. Current runtime does not yet persist full
-capsule; never imply it did.
+Discovery alone reads repository. It consumes compact Intake output plus current
+Discovery Targets and resolves related targets in one session. Evidence carries exact
+provenance, source-granular fingerprints, and explicit dependency nodes. Widen only for
+uncertainty capable of changing scope, risk, acceptance, plan, validation, or profile
+recommendation.
+
+A product-impacting technical alternative creates one rich Decision Escalation and
+enters `awaiting_intake_decision`. Intake presents explicit choice without repeating
+technical discovery. Answer selectively invalidates dependency closure and resumes
+Discovery or Planning. Pure technical uncertainty never reopens Intake. SHAPE has no
+reset-all operation.
+
+`discovery_sufficient` combines model semantic judgment with deterministic checks:
+targets resolved, no active escalation/block/stale evidence, fingerprints fresh,
+dependency graph valid. No routine second model call.
+
+After sufficiency, present compact evidence-backed Quick/Plan checkpoint. Quick is
+recommended for localized linear work; Plan for material dependencies, migration,
+sequencing, or coordination. Explicit plan request/policy lock may preselect Plan;
+otherwise answer is mandatory and crash-resumable.
+
+Planning never reads repository. Missing evidence returns one material Discovery Target.
+Quick and Plan share canonical contract: scope/non-goals as applicable, stable criteria,
+ordered tasks, criterion-linked validation, risks/controls, explicit dependencies, and
+digest. Quick keeps compact state only. Plan creates one parent-rendered Proposed
+Markdown; Implementation Guide requires evidence-linked material reason.
+
+`contract_complete` combines semantic implementability with deterministic freshness,
+coverage, dependency, profile, and digest checks. Nominal cost is one Discovery session
+plus one Planning session. Additional calls require new material/invalidated target.
+Soft-budget checkpoint preserves all work and asks continue, reduce scope, or cancel.
+
+Parent alone writes ShapeState and Plan projection. Manual projection drift returns to
+Planning for explicit integrate/regenerate reconciliation and invalidates Approval on
+material change.
 
 ## GATE
 
-Quick records GATE N/A only while bounded exemption remains valid. Standard and Critical
-require pre-build Approval. Bind Approval to gate type, actor, time, artifact identity,
-and canonical contract digest—not boolean approval or path. Critical also requires
-completion-evidence Approval after verification.
+Quick and Plan both enter GATE with canonical contract. Bind Approval to gate type,
+actor, time, artifact identity, and canonical contract digest—not boolean approval or
+path. Risk/policy decides stronger or completion Approval; preparation profile never
+weakens safety.
 
-Material objective, scope, acceptance-criteria, mode, risk, plan-behavior, or required
-Critical-control change invalidates affected Approval before further writes. Present
+Material objective, scope, acceptance-criteria, profile, risk, plan-behavior, or required
+policy-control change invalidates affected Approval before further writes. Present
 structured delta for reapproval. If deterministic Approval persistence is unavailable,
 record limitation and do not claim bound Approval exists.
 
@@ -159,12 +183,10 @@ SHAPE/GATE. Scope expansion never inherits old Approval.
 
 ## ASSURE
 
-Quick always verifies and reviews only when policy/risk requires it. Therefore Quick
-routes `validating -> reviewing -> verifying` when review applies, otherwise
-`validating -> verifying`. Standard runs one structured review over changed/impacted
-surfaces, then verification. Critical uses
-independent read-only assurance lanes by applicable risk; omit lane only with structured
-evidence-backed N/A, and activate on ambiguity.
+Every profile verifies. Review lanes derive only from policy/risk: localized low-risk
+work may route `validating -> verifying`; broader applicable risk routes through one or
+more read-only review lanes before verification. Omit lane only with structured
+evidence-backed N/A; ambiguity activates lane.
 
 Review consumes compact Diff Capsule: approved criteria/risks, changed surfaces,
 dependency impact, and fresh validation evidence. Known deterministic failure blocks
@@ -173,8 +195,8 @@ validation; review-only corrections return through review; evidence-only correct
 return through verification.
 
 Use `verify-change` to map every acceptance criterion to fresh evidence. Narrow green
-check proves only covered behavior. Critical proceeds to completion GATE; other modes
-proceed to HANDOFF only when verification complete.
+check proves only covered behavior. Policy may require completion GATE; otherwise
+verification proceeds to HANDOFF.
 
 ## HANDOFF
 
@@ -200,9 +222,8 @@ Benchmark is out-of-band and never changes lifecycle outcome.
 - Ask exactly three deterministic, no-model questions: satisfaction 1–5; conformance
   yes/partial/no; plugin value useful/neutral/counterproductive. Optional comment follows.
 - No response or incomplete three required answers means no record and total exclusion.
-- Compute deviation facts deterministically against Intake Brief for Quick or approved
-  Change Artifact for Standard/Critical. New file is deviation only when forbidden or
-  unplanned by that authority.
+- Compute deviation facts deterministically against canonical Shape contract for both
+  profiles. New file is deviation only when forbidden or unplanned by that authority.
 - Write complete allowlisted/redacted record atomically to
   `.codex/benchmarks/<task-id>.json`. Never upload it. Write failure is non-fatal.
 - `npx codex-dev-flow benchmark summary` aggregates complete local records without model
@@ -216,9 +237,9 @@ identity; never duplicate task artifact. Legacy paths such as
 `docs/dev-flow/YYYY-MM-DD-<slug>.md`, `spec.md`, `plan.md`,
 `risk-and-rollback.md`, and `verification.md` are repository choices only.
 
-Resume must validate/migrate state, reconcile config/policy/routing/artifact/Git/evidence,
+Resume must validate strict V3 state, reconcile config/policy/routing/artifact/Git/evidence,
 selectively invalidate stale projections, then continue first unproved action. Current
-runtime cannot yet enforce full V2 resume. Report that limitation instead of fabricating
+runtime cannot yet enforce full provider resume. Report that limitation instead of fabricating
 durability.
 
 Never claim success without fresh evidence. Record commands, results, skipped checks,

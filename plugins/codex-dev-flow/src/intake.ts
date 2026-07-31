@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { createGuardAttestation, recordHistoryEvent } from "./state.js";
 import { deriveMacroPhase } from "./state-machine.js";
-import { validateStateV2 } from "./state-validator.js";
+import { validateStateV3 } from "./state-validator.js";
 import type {
   DecisionQuestion,
   IntakeBrief,
@@ -10,7 +10,6 @@ import type {
   IntakeState,
   NormalizedIntakeDecision,
   RiskLevel,
-  TaskMode,
   TaskState,
   TechnicalUnknown
 } from "./types.js";
@@ -24,7 +23,6 @@ const DELEGATION_ANSWER = /^(?:you decide|decide for me|choose for me|à toi de 
 const ADVANCE_ANSWER = /^(?:next|continue|go ahead|shape|(?:passe|passer|avance|avancer).*(?:étape|etape|stage|shape|suite).*)$/i;
 
 export interface CreateIntakeInput {
-  mode: TaskMode;
   risk: RiskLevel;
   objective?: string;
   successSignal?: IntakeBrief["successSignal"];
@@ -57,18 +55,9 @@ export interface IntakeResponseResult {
   checkpoint?: {
     objective?: string;
     success?: string;
-    mode: TaskMode;
     risk: RiskLevel;
     answeredDecisionKeys: string[];
   };
-}
-
-export interface QuickEligibilityInput {
-  boundedScope: boolean;
-  nonDestructive: boolean;
-  technicallyLocalizable: boolean;
-  executableWithoutDesignDecision: boolean;
-  verifiable: boolean;
 }
 
 export function applyInitialIntakeEvaluation(
@@ -79,14 +68,13 @@ export function applyInitialIntakeEvaluation(
   assertIntakeWritable(state);
   if (state.intake?.activeQuestion) throw new Error("Initial Intake evaluation cannot replace an active question.");
   const intake = state.intake ?? createIntakeState({
-    mode: state.mode,
-    risk: defaultRisk(state.mode),
+    risk: state.risk,
     sourceRefs: ["request"],
     freshnessRefs: ["state:configSnapshot", "state:policySnapshot"],
     ...(at ? { capturedAt: at } : {})
   });
   const brief = sanitizeBrief(evaluation.brief);
-  if (brief.mode !== state.mode) throw new Error("Intake Brief mode must match task mode.");
+  if (brief.risk !== state.risk) throw new Error("Intake Brief risk must match task risk.");
   const decisions = evaluation.resolvedDecisions.map(validateDecision);
   if (decisions.some((decision) => decision.source === "user" && decision.provenanceRef !== "request")) {
     throw new Error("Initial user decisions must be attributable to explicit request.");
@@ -133,7 +121,6 @@ export function createIntakeState(input: CreateIntakeInput): IntakeState {
     schemaVersion: 1,
     ...(input.objective ? { objective: input.objective } : {}),
     ...(input.successSignal ? { successSignal: input.successSignal } : {}),
-    mode: input.mode,
     risk: input.risk,
     provenance: {
       sourceRefs: input.sourceRefs ?? [],
@@ -160,8 +147,7 @@ export function createIntakeState(input: CreateIntakeInput): IntakeState {
 export function setDecisionQuestion(state: TaskState, question: DecisionQuestion, at?: string): TaskState {
   assertIntakeWritable(state);
   const intake = state.intake ?? createIntakeState({
-    mode: state.mode,
-    risk: defaultRisk(state.mode),
+    risk: state.risk,
     sourceRefs: ["request"],
     freshnessRefs: ["state:configSnapshot", "state:policySnapshot"],
     ...(at ? { capturedAt: at } : {})
@@ -213,14 +199,9 @@ export function applyIntakeResponse(
 
   const brief = sanitizeBrief(evaluation.brief);
   const resolved = evaluation.resolvedDecisions.map(validateDecision);
-  const modeDecision = resolved.find((decision) => decision.key === "mode" && decision.source === "user");
-  const modeChanged = brief.mode !== state.mode;
-  if (modeChanged && !modeDecision) {
-    throw new Error("Intake Brief mode change requires an explicit user mode decision.");
-  }
-  if (modeChanged && state.history.some((event) => event.type === "state.transition" && event.mode === undefined)) {
-    throw new Error("Mode change requires transition history with mode provenance.");
-  }
+  const riskDecision = resolved.find((decision) => decision.key === "risk" && decision.source === "user");
+  const riskChanged = brief.risk !== state.risk;
+  if (riskChanged && !riskDecision) throw new Error("Intake Brief risk change requires an explicit user decision.");
   const resolutionKeys = new Set(resolved.map((item) => item.key));
   const activeResolved = resolutionKeys.has(intake.activeQuestion.decisionKey);
   let nextQuestion: DecisionQuestion | undefined;
@@ -247,10 +228,7 @@ export function applyIntakeResponse(
 
   const answeredDecisionKeys = unique([...intake.answeredDecisionKeys, ...resolved.map((item) => item.key)]);
   const contradictions = evaluation.contradictions.map(sanitizeText).filter(Boolean);
-  const metrics = {
-    ...updateMetrics(intake.metrics, resolved, evaluation),
-    modeChanges: intake.metrics.modeChanges + (modeChanged ? 1 : 0)
-  };
+  const metrics = updateMetrics(intake.metrics, resolved, evaluation);
   const checkpointDue = metrics.distinctQuestions > 0
     && metrics.distinctQuestions % 5 === 0
     && answeredDecisionKeys.length >= metrics.distinctQuestions;
@@ -275,11 +253,7 @@ export function applyIntakeResponse(
   candidate.deterministicComplete = completeness.complete;
   const updated: TaskState = {
     ...state,
-    ...(modeChanged ? {
-      mode: brief.mode,
-      modeEvidenceRef: modeDecision?.provenanceRef ?? state.modeEvidenceRef,
-      routingDecisions: []
-    } : {}),
+    ...(riskChanged ? { risk: brief.risk, routingDecisions: [] } : {}),
     intake: candidate
   };
   assertTaskState(updated);
@@ -304,7 +278,6 @@ export function applyIntakeResponse(
       checkpoint: {
         ...(brief.objective ? { objective: brief.objective } : {}),
         ...(brief.successSignal ? { success: brief.successSignal.description } : {}),
-        mode: brief.mode,
         risk: brief.risk,
         answeredDecisionKeys
       }
@@ -319,7 +292,6 @@ export function evaluateIntakeCompleteness(intake: IntakeState): IntakeCompleten
   if (!intake.brief.successSignal || !nonEmpty(intake.brief.successSignal.description) || !nonEmpty(intake.brief.successSignal.observationMethod)) {
     missingDecisionKeys.push("success_signal");
   }
-  if (!["quick", "standard", "critical"].includes(intake.brief.mode)) missingDecisionKeys.push("mode");
   if (!["low", "medium", "high", "critical"].includes(intake.brief.risk)) missingDecisionKeys.push("risk");
   if (intake.activeQuestion) reasons.push(`active_question:${intake.activeQuestion.decisionKey}`);
   if (intake.contradictions.length) reasons.push("contradictions");
@@ -442,14 +414,6 @@ export function recordInvalidIntakeModelOutput(
   return { state: updated, action: "block" };
 }
 
-export function isQuickEligible(input: QuickEligibilityInput): boolean {
-  return input.boundedScope
-    && input.nonDestructive
-    && input.technicallyLocalizable
-    && input.executableWithoutDesignDecision
-    && input.verifiable;
-}
-
 function validateDecisionQuestion(question: DecisionQuestion, intake: IntakeState): DecisionQuestion {
   if (question.schemaVersion !== 1) throw new Error("Decision Question schemaVersion must be 1.");
   const id = sanitizeText(question.id);
@@ -535,7 +499,6 @@ function sanitizeBrief(value: IntakeBrief): IntakeBrief {
         ...(value.successSignal.guardrails?.length ? { guardrails: sanitizeList(value.successSignal.guardrails) } : {})
       }
     } : {}),
-    mode: value.mode,
     risk: value.risk,
     provenance: {
       sourceRefs: sanitizeList(value.provenance?.sourceRefs ?? []),
@@ -551,7 +514,6 @@ function sanitizeBrief(value: IntakeBrief): IntakeBrief {
     ...optionalText("urgency", value.urgency),
     ...optionalList("scopeBoundaries", value.scopeBoundaries)
   };
-  if (!["quick", "standard", "critical"].includes(brief.mode)) throw new Error("Intake Brief mode is invalid.");
   if (!["low", "medium", "high", "critical"].includes(brief.risk)) throw new Error("Intake Brief risk is invalid.");
   return brief;
 }
@@ -588,8 +550,7 @@ function emptyMetrics(): IntakeMetrics {
     recommendationsAccepted: 0,
     recommendationsModified: 0,
     zeroQuestionPath: true,
-    lateReopenings: 0,
-    modeChanges: 0
+    lateReopenings: 0
   };
 }
 
@@ -599,7 +560,7 @@ function assertIntakeWritable(state: TaskState): void {
 }
 
 function assertTaskState(state: TaskState): void {
-  const result = validateStateV2(state);
+  const result = validateStateV3(state);
   if (!result.valid) throw new Error(`Task state is invalid: ${JSON.stringify(result.errors.slice(0, 3))}`);
 }
 
@@ -643,10 +604,6 @@ function compactEventRef(value: string): string {
 function normalizeAt(value?: string): string {
   if (value && !Number.isNaN(Date.parse(value))) return new Date(value).toISOString();
   return new Date().toISOString();
-}
-
-function defaultRisk(mode: TaskMode): RiskLevel {
-  return mode === "critical" ? "critical" : mode === "standard" ? "medium" : "low";
 }
 
 function unique(values: readonly string[]): string[] {

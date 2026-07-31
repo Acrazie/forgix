@@ -4747,8 +4747,8 @@ var require_multipleOf = __commonJS({
         const { gen, data, schemaCode, it: it2 } = cxt;
         const prec = it2.opts.multipleOfPrecision;
         const res = gen.let("res");
-        const invalid3 = prec ? (0, codegen_1._)`Math.abs(Math.round(${res}) - ${res}) > 1e-${prec}` : (0, codegen_1._)`${res} !== parseInt(${res})`;
-        cxt.fail$data((0, codegen_1._)`(${schemaCode} === 0 || (${res} = ${data}/${schemaCode}, ${invalid3}))`);
+        const invalid2 = prec ? (0, codegen_1._)`Math.abs(Math.round(${res}) - ${res}) > 1e-${prec}` : (0, codegen_1._)`${res} !== parseInt(${res})`;
+        cxt.fail$data((0, codegen_1._)`(${schemaCode} === 0 || (${res} = ${data}/${schemaCode}, ${invalid2}))`);
       }
     };
     exports.default = def;
@@ -7388,9 +7388,9 @@ var require_directives = __commonJS({
         this.tags = Object.assign({}, _Directives.defaultTags, tags);
       }
       clone() {
-        const copy3 = new _Directives(this.yaml, this.tags);
-        copy3.docStart = this.docStart;
-        return copy3;
+        const copy4 = new _Directives(this.yaml, this.tags);
+        copy4.docStart = this.docStart;
+        return copy4;
       }
       /**
        * During parsing, get a Directives instance for the current document and
@@ -7699,10 +7699,10 @@ var require_Node = __commonJS({
       }
       /** Create a copy of this node.  */
       clone() {
-        const copy3 = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
+        const copy4 = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
         if (this.range)
-          copy3.range = this.range.slice();
-        return copy3;
+          copy4.range = this.range.slice();
+        return copy4;
       }
       /** A plain JavaScript representation of this node. */
       toJS(doc, { mapAsMap, maxAliasCount, onAnchor, reviver } = {}) {
@@ -7994,13 +7994,13 @@ var require_Collection = __commonJS({
        * @param schema - If defined, overwrites the original's schema
        */
       clone(schema) {
-        const copy3 = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
+        const copy4 = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
         if (schema)
-          copy3.schema = schema;
-        copy3.items = copy3.items.map((it2) => identity.isNode(it2) || identity.isPair(it2) ? it2.clone(schema) : it2);
+          copy4.schema = schema;
+        copy4.items = copy4.items.map((it2) => identity.isNode(it2) || identity.isPair(it2) ? it2.clone(schema) : it2);
         if (this.range)
-          copy3.range = this.range.slice();
-        return copy3;
+          copy4.range = this.range.slice();
+        return copy4;
       }
       /**
        * Adds a value to the collection. For `!!map` and `!!omap` the value must
@@ -10419,9 +10419,9 @@ var require_Schema = __commonJS({
         this.sortMapEntries = typeof sortMapEntries === "function" ? sortMapEntries : sortMapEntries === true ? sortMapEntriesByKey : null;
       }
       clone() {
-        const copy3 = Object.create(_Schema.prototype, Object.getOwnPropertyDescriptors(this));
-        copy3.tags = this.tags.slice();
-        return copy3;
+        const copy4 = Object.create(_Schema.prototype, Object.getOwnPropertyDescriptors(this));
+        copy4.tags = this.tags.slice();
+        return copy4;
       }
     };
     exports.Schema = Schema;
@@ -10564,21 +10564,21 @@ var require_Document = __commonJS({
        * Custom Node values that inherit from `Object` still refer to their original instances.
        */
       clone() {
-        const copy3 = Object.create(_Document.prototype, {
+        const copy4 = Object.create(_Document.prototype, {
           [identity.NODE_TYPE]: { value: identity.DOC }
         });
-        copy3.commentBefore = this.commentBefore;
-        copy3.comment = this.comment;
-        copy3.errors = this.errors.slice();
-        copy3.warnings = this.warnings.slice();
-        copy3.options = Object.assign({}, this.options);
+        copy4.commentBefore = this.commentBefore;
+        copy4.comment = this.comment;
+        copy4.errors = this.errors.slice();
+        copy4.warnings = this.warnings.slice();
+        copy4.options = Object.assign({}, this.options);
         if (this.directives)
-          copy3.directives = this.directives.clone();
-        copy3.schema = this.schema.clone();
-        copy3.contents = identity.isNode(this.contents) ? this.contents.clone(copy3.schema) : this.contents;
+          copy4.directives = this.directives.clone();
+        copy4.schema = this.schema.clone();
+        copy4.contents = identity.isNode(this.contents) ? this.contents.clone(copy4.schema) : this.contents;
         if (this.range)
-          copy3.range = this.range.slice();
-        return copy3;
+          copy4.range = this.range.slice();
+        return copy4;
       }
       /** Adds a value to the document. */
       add(value) {
@@ -14753,8 +14753,8 @@ function chooseRoute(snapshot, task) {
   if (unknownPlan && !warnings.includes("plan_unknown")) warnings.push("plan_unknown");
   const effectivePlan = effectiveMatrixPlan(snapshot.plan, pressure);
   const base = STANDARD_ROUTES[effectivePlan][task.stage];
-  const elevated = task.mode === "critical" || task.risk === "high" || task.risk === "critical" || task.ambiguity === "high" || task.ambiguity === "critical";
-  const delta = elevated ? 1 : task.mode === "quick" ? -1 : 0;
+  const elevated = task.risk === "high" || task.risk === "critical" || task.ambiguity === "high" || task.ambiguity === "critical";
+  const delta = elevated ? 1 : 0;
   const effort = shiftEffort(base.effort, delta);
   const capability = snapshot.models.find((candidate) => candidate.id === base.model);
   const exactAvailable = capability?.supportedReasoningEfforts.includes(effort) === true;
@@ -14977,15 +14977,15 @@ function createBenchmarkRecord(input) {
   assertSafeTaskId(input.taskId);
   if (!ELIGIBLE_OUTCOMES.has(input.outcome)) throw new Error("Benchmark survey is available only after finished_local, finished, or failed.");
   const survey = validateSurvey(input.survey);
-  const authority = input.mode === "quick" ? input.intakeBrief : input.approvedChangeArtifact;
-  if (!authority) throw new Error(input.mode === "quick" ? "Quick benchmark requires Intake Brief authority." : "Standard/Critical benchmark requires approved Change Artifact authority.");
+  const authority = input.canonicalChangeContract;
+  if (!authority) throw new Error("Benchmark requires canonical Shape contract authority.");
   return {
     schemaVersion: 1,
     taskId: input.taskId,
     recordedAt: normalizeAt(input.recordedAt),
-    mode: input.mode,
+    preparationProfile: input.preparationProfile,
     outcome: input.outcome,
-    authority: input.mode === "quick" ? "intake_brief" : "approved_change_artifact",
+    authority: "canonical_change_contract",
     survey,
     deviations: classifyBenchmarkDeviations(authority, input.actual)
   };
@@ -15147,7 +15147,7 @@ function sanitizeBenchmarkRecord(value) {
     schemaVersion: 1,
     taskId: value.taskId,
     recordedAt: value.recordedAt,
-    mode: value.mode,
+    preparationProfile: value.preparationProfile,
     outcome: value.outcome,
     authority: value.authority,
     survey: validateSurvey(value.survey),
@@ -15157,15 +15157,14 @@ function sanitizeBenchmarkRecord(value) {
 function validateRecord(value) {
   if (!isRecord2(value)) throw new Error("Benchmark record must be an object.");
   const keys = Object.keys(value);
-  const allowed = /* @__PURE__ */ new Set(["schemaVersion", "taskId", "recordedAt", "mode", "outcome", "authority", "survey", "deviations"]);
+  const allowed = /* @__PURE__ */ new Set(["schemaVersion", "taskId", "recordedAt", "preparationProfile", "outcome", "authority", "survey", "deviations"]);
   if (keys.some((key) => !allowed.has(key))) throw new Error("Benchmark record contains unsupported data.");
   if (value.schemaVersion !== 1 || typeof value.taskId !== "string") throw new Error("Benchmark record identity is invalid.");
   assertSafeTaskId(value.taskId);
   if (typeof value.recordedAt !== "string" || Number.isNaN(Date.parse(value.recordedAt))) throw new Error("Benchmark recordedAt is invalid.");
-  if (!["quick", "standard", "critical"].includes(value.mode)) throw new Error("Benchmark mode is invalid.");
+  if (!["quick", "plan"].includes(value.preparationProfile)) throw new Error("Benchmark preparation profile is invalid.");
   if (typeof value.outcome !== "string" || !ELIGIBLE_OUTCOMES.has(value.outcome)) throw new Error("Benchmark outcome is invalid.");
-  const expectedAuthority = value.mode === "quick" ? "intake_brief" : "approved_change_artifact";
-  if (value.authority !== expectedAuthority) throw new Error("Benchmark authority does not match mode.");
+  if (value.authority !== "canonical_change_contract") throw new Error("Benchmark authority must be canonical Shape contract.");
   validateSurvey(value.survey);
   if (!Array.isArray(value.deviations) || value.deviations.length > MAX_FILES + 2) throw new Error("Benchmark deviations are invalid.");
   for (const deviation of value.deviations) {
@@ -15343,7 +15342,6 @@ function explainConfig(config) {
 var InvocationError = class extends Error {
   exitCode = EXIT_CODES.INVALID_INVOCATION;
 };
-var MODES = /* @__PURE__ */ new Set(["quick", "standard", "critical"]);
 function invalid(message) {
   throw new InvocationError(message);
 }
@@ -15383,13 +15381,10 @@ function parseInvocation(argv) {
   }
   const benchmark = first === "--benchmark";
   const runArgs = benchmark ? rest : argv;
-  const runFirst = runArgs[0];
-  const mode = MODES.has(runFirst) ? runFirst : void 0;
-  const objectiveParts = mode ? runArgs.slice(1) : runArgs;
-  if (objectiveParts.length === 0 || objectiveParts.some((part) => part.startsWith("--"))) {
+  if (runArgs.length === 0 || runArgs.some((part) => part.startsWith("--"))) {
     invalid("A run requires an objective and no unsupported flags.");
   }
-  return { command: "run", mode, objective: objectiveParts.join(" "), flags: benchmark ? { benchmark: true } : {} };
+  return { command: "run", objective: runArgs.join(" "), flags: benchmark ? { benchmark: true } : {} };
 }
 
 // node_modules/@clack/core/dist/index.mjs
@@ -16173,7 +16168,7 @@ async function runInit(options = {}) {
       const config = buildConfiguration(current, draft);
       validateConfigSource(config, "init");
       prompts.note(renderConfigurationSummary(path, draft), "Configuration summary");
-      prompts.note(renderRoutingSummary(draft.plan, "standard", "normal"), `Automatic routing \xB7 ${ROUTING_POLICY_VERSION}`);
+      prompts.note(renderRoutingSummary(draft.plan, "normal"), `Automatic routing \xB7 ${ROUTING_POLICY_VERSION}`);
       const action = await required(prompts, prompts.select({
         message: existed ? "Review complete. What should Dev Flow do?" : "Configuration ready. What should Dev Flow do?",
         initialValue: "write",
@@ -16216,7 +16211,7 @@ async function runInit(options = {}) {
     throw error;
   }
 }
-function buildRoutingPreview(plan, mode = "standard", pressure = "normal") {
+function buildRoutingPreview(plan, pressure = "normal") {
   const resolvedPlan = plan === "auto" ? "unknown" : plan;
   const models = ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"].map((id) => ({
     id,
@@ -16231,7 +16226,7 @@ function buildRoutingPreview(plan, mode = "standard", pressure = "normal") {
     models,
     warnings: [],
     provenance: { plan: plan === "auto" ? "unknown" : "config", quota: "unknown", models: "model/list" }
-  }, { ...task, mode }));
+  }, task));
 }
 async function collectWorkflow(prompts, draft) {
   prompts.note("Choose how Dev Flow isolates changes and whether completion requires a pull request.", "1/3 \xB7 Workflow behavior");
@@ -16329,13 +16324,13 @@ function renderConfigurationSummary(path, draft) {
     `Model costs: Luna ${MODEL_COST_MULTIPLIERS["gpt-5.6-luna"]}x \xB7 Terra ${MODEL_COST_MULTIPLIERS["gpt-5.6-terra"]}x \xB7 Sol ${MODEL_COST_MULTIPLIERS["gpt-5.6-sol"]}x`
   ].join("\n");
 }
-function renderRoutingSummary(plan, mode, pressure) {
+function renderRoutingSummary(plan, pressure) {
   const labels = { discover: "Discover", plan: "Plan", execute: "Execute", review: "Review", verify: "Verify", debug: "Debug root cause" };
-  const routes = buildRoutingPreview(plan, mode, pressure).map(
+  const routes = buildRoutingPreview(plan, pressure).map(
     (decision) => `${labels[decision.stage]}: ${decision.model ?? "unavailable"} \xB7 ${decision.effort ?? "unavailable"}`
   );
   return [
-    `Baseline: ${plan === "auto" ? "Plus until account detection" : plan} \xB7 ${mode} \xB7 ${pressure} quota`,
+    `Baseline: ${plan === "auto" ? "Plus until account detection" : plan} \xB7 ${pressure} quota`,
     ...routes,
     "Live availability is captured once when a Dev Flow workflow starts; exact unavailable routes block instead of falling back."
   ].join("\n");
@@ -16358,8 +16353,8 @@ async function idsPrompt(prompts, message, fallback, placeholder) {
     defaultValue: fallback.join(", "),
     placeholder,
     validate: (value) => {
-      const invalid3 = parseIds(value).find((id) => !INTEGRATION_ID.test(id));
-      return invalid3 ? `Invalid integration identifier: ${invalid3}` : void 0;
+      const invalid2 = parseIds(value).find((id) => !INTEGRATION_ID.test(id));
+      return invalid2 ? `Invalid integration identifier: ${invalid2}` : void 0;
     }
   }));
   return parseIds(answer);
@@ -16476,13 +16471,12 @@ var MACRO_PHASES = Object.freeze(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE", 
 var GUARD_IDS = Object.freeze([
   "task_initialized",
   "effective_constraints_valid",
-  "mode_confirmed",
   "intake_complete",
   "intake_reopened",
   "routing_ready",
-  "quick_scope_bounded",
-  "critical_workspace_ready",
+  "workspace_ready",
   "discovery_sufficient",
+  "profile_selected",
   "contract_complete",
   "approval_current",
   "task_authorized",
@@ -16496,346 +16490,97 @@ var GUARD_IDS = Object.freeze([
   "gate_context_valid",
   "handoff_intent_resolved",
   "handoff_reconciled",
-  "critical_completion_approved"
+  "completion_approved"
 ]);
 var CAPSULE = {
   INTAKE: {
-    consumes: ["request", "constraints"],
-    produces: ["intake.brief", "intake.decisions", "intake.question", "classification", "routing", "workspace", "freshness.config", "freshness.policy"],
-    invalidates: ["intake.dependent-decisions", "classification", "routing", "workspace", "approvals"]
+    consumes: ["request", "constraints", "shape.decision-escalation"],
+    produces: ["intake.brief", "intake.decisions", "intake.question", "risk", "routing", "workspace", "freshness.config", "freshness.policy"],
+    invalidates: ["intake.dependent-decisions", "shape.dependency-closure", "approvals"]
   },
   SHAPE: {
-    consumes: ["intake.brief", "intake.decisions", "intake.technical-unknowns", "constraints", "classification", "routing", "workspace"],
-    produces: ["discovery", "contract", "freshness.git", "freshness.artifact"],
-    invalidates: ["discovery", "contract", "approvals", "build", "assurance", "handoff"]
+    consumes: ["intake.brief", "intake.decisions", "intake.technical-unknowns", "risk", "constraints", "routing", "workspace", "shape.state"],
+    produces: ["shape.targets", "shape.evidence", "shape.profile-choice", "shape.contract", "shape.projection", "freshness.sources"],
+    invalidates: ["shape.dependency-closure", "approvals", "build", "assurance", "handoff"]
   },
-  GATE: {
-    consumes: ["contract", "classification", "assurance.verificationEvidence"],
-    produces: ["approvals"],
-    invalidates: ["approvals"]
-  },
-  BUILD: {
-    consumes: ["contract", "approvals", "discovery", "workspace", "freshness"],
-    produces: ["build", "issues.active", "freshness.git", "freshness.commands"],
-    invalidates: ["build.validationEvidence", "assurance", "handoff.receipts", "approvals"]
-  },
-  ASSURE: {
-    consumes: ["contract", "build", "issues.active", "freshness"],
-    produces: ["assurance", "issues.active", "freshness.commands"],
-    invalidates: ["assurance.findings", "assurance.verificationEvidence", "handoff.receipts", "approvals"]
-  },
-  HANDOFF: {
-    consumes: ["contract", "assurance.verificationEvidence", "workspace", "handoff"],
-    produces: ["handoff.identities", "handoff.receipts"],
-    invalidates: ["handoff.receipts"]
-  }
+  GATE: { consumes: ["shape.contract", "risk", "assurance.verificationEvidence"], produces: ["approvals"], invalidates: ["approvals"] },
+  BUILD: { consumes: ["shape.contract", "approvals", "shape.evidence", "workspace", "freshness"], produces: ["build", "issues.active", "freshness.git", "freshness.commands"], invalidates: ["build.validationEvidence", "assurance", "handoff.receipts", "approvals"] },
+  ASSURE: { consumes: ["shape.contract", "build", "issues.active", "freshness"], produces: ["assurance", "issues.active", "freshness.commands"], invalidates: ["assurance.findings", "assurance.verificationEvidence", "handoff.receipts", "approvals"] },
+  HANDOFF: { consumes: ["shape.contract", "assurance.verificationEvidence", "workspace", "handoff"], produces: ["handoff.identities", "handoff.receipts"], invalidates: ["handoff.receipts"] }
 };
 var EVENTS = {
-  INTAKE: ["task.initialized", "intake.question_recorded", "intake.answer_recorded", "intake.checkpoint", "advance.rejected", "intake.reopened", "mode.proposed", "mode.confirmed", "routing.captured", "state.transition"],
-  SHAPE: ["discovery.updated", "contract.projected", "evidence.invalidated", "state.transition"],
+  INTAKE: ["task.initialized", "intake.question_recorded", "intake.answer_recorded", "intake.checkpoint", "advance.rejected", "intake.reopened", "routing.captured", "state.transition"],
+  SHAPE: ["discovery.target_recorded", "discovery.evidence_recorded", "discovery.completed", "profile.choice_requested", "profile.choice_recorded", "decision.escalated", "contract.projected", "projection.reconciliation_requested", "evidence.invalidated", "shape.checkpoint", "state.transition"],
   GATE: ["approval.requested", "approval.recorded", "approval.invalidated", "state.transition"],
   BUILD: ["task.started", "checkpoint.recorded", "validation.completed", "finding.observed", "state.transition"],
   ASSURE: ["review.completed", "finding.observed", "finding.resolved", "verification.completed", "state.transition"],
   HANDOFF: ["handoff.reconciled", "handoff.attempted", "handoff.receipt_recorded", "task.finished", "state.transition"]
 };
-var ALL_MODES = ["quick", "standard", "critical"];
-var G3 = (...guards) => ({ guards, conditionalGuards: [], modes: ALL_MODES });
-var GM = (modes, ...guards) => ({ guards, conditionalGuards: [], modes });
-var GC = (guards, conditionalGuards, modes = ALL_MODES) => ({ guards, conditionalGuards, modes });
-var CRITICAL_WORKSPACE = { guard: "critical_workspace_ready", when: { mode: "critical" } };
+var G3 = (...guards) => ({ guards });
+var TERMINALS = { blocked: G3("resume_metadata_valid"), cancelled: G3("terminal_source_recorded"), failed: G3("terminal_source_recorded") };
 var STATE_MACHINE_DEFINITION = {
-  new: {
-    macroPhase: "INTAKE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.INTAKE,
-    events: EVENTS.INTAKE,
-    transitions: {
-      awaiting_mode_confirmation: G3("task_initialized", "effective_constraints_valid"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  awaiting_mode_confirmation: {
-    macroPhase: "INTAKE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.INTAKE,
-    events: EVENTS.INTAKE,
-    transitions: {
-      executing: GM(["quick"], "intake_complete", "mode_confirmed", "routing_ready", "quick_scope_bounded"),
-      discovering: GC(["intake_complete", "mode_confirmed", "routing_ready"], [CRITICAL_WORKSPACE], ["standard", "critical"]),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  discovering: {
-    macroPhase: "SHAPE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.SHAPE,
-    events: EVENTS.SHAPE,
-    transitions: {
-      planning: G3("discovery_sufficient"),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  planning: {
-    macroPhase: "SHAPE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.SHAPE,
-    events: EVENTS.SHAPE,
-    transitions: {
-      discovering: G3(),
-      awaiting_approval: G3("discovery_sufficient", "contract_complete"),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  awaiting_approval: {
-    macroPhase: "GATE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.GATE,
-    events: EVENTS.GATE,
-    transitions: {
-      planning: G3("gate_context_valid"),
-      resolving_assure: G3("gate_context_valid", "correction_budget_available"),
-      verifying: G3("gate_context_valid"),
-      executing: G3("gate_context_valid", "approval_current", "task_authorized"),
-      handing_off: G3("gate_context_valid", "verification_complete", "critical_completion_approved", "handoff_intent_resolved"),
-      ready_for_handoff: G3("gate_context_valid", "verification_complete", "critical_completion_approved", "handoff_intent_resolved"),
-      finished_local: G3("gate_context_valid", "verification_complete", "critical_completion_approved", "handoff_intent_resolved"),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  executing: {
-    macroPhase: "BUILD",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.BUILD,
-    events: EVENTS.BUILD,
-    transitions: {
-      validating: G3("task_authorized"),
-      planning: G3(),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  validating: {
-    macroPhase: "BUILD",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.BUILD,
-    events: EVENTS.BUILD,
-    transitions: {
-      executing: G3("validation_fresh", "task_authorized"),
-      resolving_build: G3("correction_budget_available"),
-      reviewing: G3("validation_fresh"),
-      verifying: G3("validation_fresh", "review_satisfied"),
-      planning: G3(),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  resolving_build: {
-    macroPhase: "BUILD",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.BUILD,
-    events: EVENTS.BUILD,
-    transitions: {
-      validating: G3("correction_budget_available"),
-      planning: G3(),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  reviewing: {
-    macroPhase: "ASSURE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.ASSURE,
-    events: EVENTS.ASSURE,
-    transitions: {
-      resolving_assure: G3("correction_budget_available"),
-      verifying: G3("review_satisfied"),
-      planning: G3(),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  resolving_assure: {
-    macroPhase: "ASSURE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.ASSURE,
-    events: EVENTS.ASSURE,
-    transitions: {
-      validating: G3("correction_budget_available"),
-      reviewing: G3("correction_budget_available"),
-      verifying: G3("correction_budget_available"),
-      planning: G3(),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  verifying: {
-    macroPhase: "ASSURE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.ASSURE,
-    events: EVENTS.ASSURE,
-    transitions: {
-      resolving_assure: G3("correction_budget_available"),
-      planning: G3(),
-      awaiting_approval: G3("verification_complete"),
-      handing_off: G3("verification_complete", "handoff_intent_resolved"),
-      ready_for_handoff: G3("verification_complete", "handoff_intent_resolved"),
-      finished_local: G3("verification_complete", "handoff_intent_resolved"),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  handing_off: {
-    macroPhase: "HANDOFF",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.HANDOFF,
-    events: EVENTS.HANDOFF,
-    transitions: {
-      ready_for_handoff: G3("handoff_intent_resolved", "handoff_reconciled"),
-      finished: G3("handoff_intent_resolved", "handoff_reconciled"),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  ready_for_handoff: {
-    macroPhase: "HANDOFF",
-    stable: true,
-    terminal: false,
-    capsule: CAPSULE.HANDOFF,
-    events: EVENTS.HANDOFF,
-    transitions: {
-      handing_off: G3("handoff_intent_resolved", "handoff_reconciled"),
-      finished: G3("handoff_intent_resolved", "handoff_reconciled"),
-      awaiting_mode_confirmation: G3("intake_reopened"),
-      blocked: G3("resume_metadata_valid"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  blocked: {
-    macroPhase: "resumeTo",
-    stable: true,
-    terminal: false,
-    capsule: { consumes: ["resumeTo", "remainingActions", "freshness"], produces: ["issues.active"], invalidates: ["source-phase-dependent"] },
-    events: ["task.blocked", "task.resumed", "state.transition"],
-    transitions: {
-      awaiting_mode_confirmation: G3("resume_metadata_valid", "resume_reconciled", "task_initialized", "effective_constraints_valid"),
-      discovering: GC(["resume_metadata_valid", "resume_reconciled", "mode_confirmed", "routing_ready"], [CRITICAL_WORKSPACE]),
-      planning: G3("resume_metadata_valid", "resume_reconciled", "discovery_sufficient"),
-      awaiting_approval: G3("resume_metadata_valid", "resume_reconciled", "contract_complete"),
-      executing: G3("resume_metadata_valid", "resume_reconciled", "approval_current", "task_authorized"),
-      validating: G3("resume_metadata_valid", "resume_reconciled", "task_authorized"),
-      resolving_build: G3("resume_metadata_valid", "resume_reconciled", "correction_budget_available"),
-      reviewing: G3("resume_metadata_valid", "resume_reconciled", "validation_fresh"),
-      resolving_assure: G3("resume_metadata_valid", "resume_reconciled", "correction_budget_available"),
-      verifying: G3("resume_metadata_valid", "resume_reconciled", "review_satisfied"),
-      handing_off: G3("resume_metadata_valid", "resume_reconciled", "handoff_intent_resolved", "handoff_reconciled"),
-      cancelled: G3("terminal_source_recorded"),
-      failed: G3("terminal_source_recorded")
-    }
-  },
-  cancelled: {
-    macroPhase: "terminalSource",
-    stable: true,
-    terminal: true,
-    transitions: {},
-    capsule: { consumes: ["terminal.source", "freshness"], produces: ["terminal.summary"], invalidates: [] },
-    events: ["task.cancelled"]
-  },
-  failed: {
-    macroPhase: "terminalSource",
-    stable: true,
-    terminal: true,
-    transitions: {},
-    capsule: { consumes: ["terminal.source", "issues.active", "freshness"], produces: ["terminal.summary"], invalidates: [] },
-    events: ["task.failed"]
-  },
-  finished_local: {
-    macroPhase: "HANDOFF",
-    stable: true,
-    terminal: true,
-    transitions: {},
-    capsule: CAPSULE.HANDOFF,
-    events: ["task.finished_local"]
-  },
-  finished: {
-    macroPhase: "HANDOFF",
-    stable: true,
-    terminal: true,
-    transitions: {},
-    capsule: CAPSULE.HANDOFF,
-    events: ["task.finished"]
-  }
+  new: { macroPhase: "INTAKE", stable: false, terminal: false, capsule: CAPSULE.INTAKE, events: EVENTS.INTAKE, transitions: { intaking: G3("task_initialized", "effective_constraints_valid"), ...TERMINALS } },
+  intaking: { macroPhase: "INTAKE", stable: false, terminal: false, capsule: CAPSULE.INTAKE, events: EVENTS.INTAKE, transitions: { discovering: G3("intake_complete", "routing_ready", "workspace_ready"), ...TERMINALS } },
+  discovering: { macroPhase: "SHAPE", stable: false, terminal: false, capsule: CAPSULE.SHAPE, events: EVENTS.SHAPE, transitions: { awaiting_profile_choice: G3("discovery_sufficient"), awaiting_intake_decision: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
+  awaiting_profile_choice: { macroPhase: "SHAPE", stable: false, terminal: false, capsule: CAPSULE.SHAPE, events: EVENTS.SHAPE, transitions: { planning: G3("profile_selected"), discovering: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
+  planning: { macroPhase: "SHAPE", stable: false, terminal: false, capsule: CAPSULE.SHAPE, events: EVENTS.SHAPE, transitions: { discovering: G3(), awaiting_intake_decision: G3(), awaiting_approval: G3("discovery_sufficient", "profile_selected", "contract_complete"), intaking: G3("intake_reopened"), ...TERMINALS } },
+  awaiting_intake_decision: { macroPhase: "INTAKE", stable: false, terminal: false, capsule: CAPSULE.INTAKE, events: EVENTS.INTAKE, transitions: { discovering: G3("intake_complete"), planning: G3("intake_complete", "discovery_sufficient", "profile_selected"), ...TERMINALS } },
+  awaiting_approval: { macroPhase: "GATE", stable: false, terminal: false, capsule: CAPSULE.GATE, events: EVENTS.GATE, transitions: {
+    planning: G3("gate_context_valid"),
+    resolving_assure: G3("gate_context_valid", "correction_budget_available"),
+    verifying: G3("gate_context_valid"),
+    executing: G3("gate_context_valid", "approval_current", "task_authorized"),
+    handing_off: G3("gate_context_valid", "verification_complete", "completion_approved", "handoff_intent_resolved"),
+    ready_for_handoff: G3("gate_context_valid", "verification_complete", "completion_approved", "handoff_intent_resolved"),
+    finished_local: G3("gate_context_valid", "verification_complete", "completion_approved", "handoff_intent_resolved"),
+    intaking: G3("intake_reopened"),
+    ...TERMINALS
+  } },
+  executing: { macroPhase: "BUILD", stable: false, terminal: false, capsule: CAPSULE.BUILD, events: EVENTS.BUILD, transitions: { validating: G3("task_authorized"), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
+  validating: { macroPhase: "BUILD", stable: false, terminal: false, capsule: CAPSULE.BUILD, events: EVENTS.BUILD, transitions: { executing: G3("validation_fresh", "task_authorized"), resolving_build: G3("correction_budget_available"), reviewing: G3("validation_fresh"), verifying: G3("validation_fresh", "review_satisfied"), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
+  resolving_build: { macroPhase: "BUILD", stable: false, terminal: false, capsule: CAPSULE.BUILD, events: EVENTS.BUILD, transitions: { validating: G3("correction_budget_available"), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
+  reviewing: { macroPhase: "ASSURE", stable: false, terminal: false, capsule: CAPSULE.ASSURE, events: EVENTS.ASSURE, transitions: { resolving_assure: G3("correction_budget_available"), verifying: G3("review_satisfied"), validating: G3(), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
+  resolving_assure: { macroPhase: "ASSURE", stable: false, terminal: false, capsule: CAPSULE.ASSURE, events: EVENTS.ASSURE, transitions: { reviewing: G3("correction_budget_available"), validating: G3(), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
+  verifying: { macroPhase: "ASSURE", stable: false, terminal: false, capsule: CAPSULE.ASSURE, events: EVENTS.ASSURE, transitions: { validating: G3("correction_budget_available"), reviewing: G3(), planning: G3(), awaiting_approval: G3("verification_complete"), handing_off: G3("verification_complete", "handoff_intent_resolved"), ready_for_handoff: G3("verification_complete", "handoff_intent_resolved"), finished_local: G3("verification_complete", "handoff_intent_resolved"), intaking: G3("intake_reopened"), ...TERMINALS } },
+  handing_off: { macroPhase: "HANDOFF", stable: false, terminal: false, capsule: CAPSULE.HANDOFF, events: EVENTS.HANDOFF, transitions: { finished: G3("handoff_intent_resolved", "handoff_reconciled"), ready_for_handoff: G3("handoff_intent_resolved", "handoff_reconciled"), finished_local: G3("handoff_intent_resolved"), intaking: G3("intake_reopened"), ...TERMINALS } },
+  ready_for_handoff: { macroPhase: "HANDOFF", stable: true, terminal: false, capsule: CAPSULE.HANDOFF, events: EVENTS.HANDOFF, transitions: { handing_off: G3("handoff_intent_resolved", "handoff_reconciled"), intaking: G3("intake_reopened"), ...TERMINALS } },
+  blocked: { macroPhase: "resumeTo", stable: true, terminal: false, capsule: { consumes: ["resume.metadata", "freshness"], produces: ["resume.reconciliation"], invalidates: [] }, events: ["task.resumed", "state.transition"], transitions: {
+    intaking: G3("resume_metadata_valid", "resume_reconciled", "task_initialized", "effective_constraints_valid"),
+    discovering: G3("resume_metadata_valid", "resume_reconciled", "intake_complete", "routing_ready", "workspace_ready"),
+    awaiting_profile_choice: G3("resume_metadata_valid", "resume_reconciled", "discovery_sufficient"),
+    planning: G3("resume_metadata_valid", "resume_reconciled", "discovery_sufficient", "profile_selected"),
+    awaiting_intake_decision: G3("resume_metadata_valid", "resume_reconciled"),
+    awaiting_approval: G3("resume_metadata_valid", "resume_reconciled", "contract_complete"),
+    executing: G3("resume_metadata_valid", "resume_reconciled", "approval_current", "task_authorized"),
+    validating: G3("resume_metadata_valid", "resume_reconciled", "task_authorized"),
+    resolving_build: G3("resume_metadata_valid", "resume_reconciled", "correction_budget_available"),
+    reviewing: G3("resume_metadata_valid", "resume_reconciled", "validation_fresh"),
+    resolving_assure: G3("resume_metadata_valid", "resume_reconciled", "correction_budget_available"),
+    verifying: G3("resume_metadata_valid", "resume_reconciled", "review_satisfied"),
+    handing_off: G3("resume_metadata_valid", "resume_reconciled", "handoff_intent_resolved", "handoff_reconciled"),
+    cancelled: G3("terminal_source_recorded"),
+    failed: G3("terminal_source_recorded")
+  } },
+  cancelled: { macroPhase: "terminalSource", stable: true, terminal: true, transitions: {}, capsule: { consumes: ["terminal.source", "freshness"], produces: ["terminal.summary"], invalidates: [] }, events: ["task.cancelled"] },
+  failed: { macroPhase: "terminalSource", stable: true, terminal: true, transitions: {}, capsule: { consumes: ["terminal.source", "issues.active", "freshness"], produces: ["terminal.summary"], invalidates: [] }, events: ["task.failed"] },
+  finished_local: { macroPhase: "HANDOFF", stable: true, terminal: true, transitions: {}, capsule: CAPSULE.HANDOFF, events: ["task.finished_local"] },
+  finished: { macroPhase: "HANDOFF", stable: true, terminal: true, transitions: {}, capsule: CAPSULE.HANDOFF, events: ["task.finished"] }
 };
 var STATE_MACHINE = deepFreeze(STATE_MACHINE_DEFINITION);
 var TASK_STATUSES = Object.freeze(Object.keys(STATE_MACHINE));
 function buildStateMachineProjection() {
-  return {
-    macroPhases: [...MACRO_PHASES],
-    guards: [...GUARD_IDS],
-    states: TASK_STATUSES.map((status) => {
-      const state = STATE_MACHINE[status];
-      return {
-        status,
-        macroPhase: state.macroPhase,
-        stable: state.stable,
-        terminal: state.terminal,
-        transitions: Object.entries(state.transitions).map(([target, transition2]) => ({
-          target,
-          guards: [...transition2.guards],
-          modes: [...transition2.modes],
-          conditionalGuards: transition2.conditionalGuards.map((conditional) => ({
-            guard: conditional.guard,
-            when: { ...conditional.when }
-          }))
-        })),
-        capsule: {
-          consumes: [...state.capsule.consumes],
-          produces: [...state.capsule.produces],
-          invalidates: [...state.capsule.invalidates]
-        },
-        events: [...state.events]
-      };
-    })
-  };
+  return { macroPhases: [...MACRO_PHASES], guards: [...GUARD_IDS], states: TASK_STATUSES.map((status) => {
+    const state = STATE_MACHINE[status];
+    return {
+      status,
+      macroPhase: state.macroPhase,
+      stable: state.stable,
+      terminal: state.terminal,
+      transitions: Object.entries(state.transitions).map(([target, transition2]) => ({ target, guards: [...transition2.guards] })),
+      capsule: { consumes: [...state.capsule.consumes], produces: [...state.capsule.produces], invalidates: [...state.capsule.invalidates] },
+      events: [...state.events]
+    };
+  }) };
 }
 function isTaskStatus(value) {
   return typeof value === "string" && Object.hasOwn(STATE_MACHINE, value);
@@ -16849,18 +16594,12 @@ function derive(status, state, seen) {
   const rule = STATE_MACHINE[status].macroPhase;
   if (rule !== "resumeTo" && rule !== "terminalSource") return rule;
   if (rule === "resumeTo") {
-    if (!state.resumeTo || !isOperationalResumeTarget(state.resumeTo)) {
-      throw new Error(`Cannot derive macro-phase for blocked: invalid resumeTo ${String(state.resumeTo)}.`);
-    }
+    if (!state.resumeTo || !isOperationalResumeTarget(state.resumeTo)) throw new Error(`Cannot derive macro-phase for blocked: invalid resumeTo ${String(state.resumeTo)}.`);
     return derive(state.resumeTo, state, seen);
   }
-  const event = [...state.history].reverse().find(
-    (candidate) => isRecord5(candidate) && candidate.type === "state.transition"
-  );
+  const event = [...state.history].reverse().find((candidate) => isRecord5(candidate) && candidate.type === "state.transition");
   const source = event?.terminalSource;
-  if (event?.to !== status || !isTaskStatus(source) || event.from !== source || STATE_MACHINE[source].terminal) {
-    throw new Error(`Cannot derive macro-phase for ${status}: valid terminal source event missing.`);
-  }
+  if (event?.to !== status || !isTaskStatus(source) || event.from !== source || STATE_MACHINE[source].terminal) throw new Error(`Cannot derive macro-phase for ${status}: valid terminal source event missing.`);
   if (source === "blocked") {
     const terminalResumeTo = event.terminalResumeTo;
     if (!isTaskStatus(terminalResumeTo) || !isOperationalResumeTarget(terminalResumeTo)) throw new Error(`Cannot derive macro-phase for ${status}: blocked terminal source lacks operational resumeTo.`);
@@ -16888,7 +16627,908 @@ import * as nodeFs from "node:fs/promises";
 import { isAbsolute, join as join4, relative, resolve as resolve2, sep } from "node:path";
 
 // src/state.ts
+import { createHash as createHash2 } from "node:crypto";
+
+// src/shape.ts
 import { createHash } from "node:crypto";
+
+// src/shape-dependencies.ts
+var DEPENDENCY_NODE_KINDS = Object.freeze([
+  "decision",
+  "source",
+  "evidence",
+  "criterion",
+  "task",
+  "risk",
+  "validation",
+  "guide",
+  "projection"
+]);
+var ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]{0,255}$/;
+var MAX_NODES = 4096;
+var MAX_EDGES_PER_NODE = 128;
+function validateDependencyGraph(input) {
+  if (!input || input.schemaVersion !== 1 || !Array.isArray(input.nodes)) {
+    throw new Error("Dependency graph must use schemaVersion 1 and contain nodes.");
+  }
+  if (input.nodes.length > MAX_NODES) throw new Error(`Dependency graph exceeds ${MAX_NODES} nodes.`);
+  const nodes = /* @__PURE__ */ new Map();
+  for (const candidate of input.nodes) {
+    if (!candidate || !ID_PATTERN.test(candidate.id)) throw new Error("Dependency node id is invalid.");
+    if (!DEPENDENCY_NODE_KINDS.includes(candidate.kind)) {
+      throw new Error(`Dependency node ${candidate.id} kind is invalid.`);
+    }
+    if (nodes.has(candidate.id)) throw new Error(`Duplicate dependency node ${candidate.id}.`);
+    if (!Array.isArray(candidate.dependsOn) || candidate.dependsOn.length > MAX_EDGES_PER_NODE) {
+      throw new Error(`Dependency node ${candidate.id} dependencies are invalid.`);
+    }
+    if (new Set(candidate.dependsOn).size !== candidate.dependsOn.length) {
+      throw new Error(`Dependency node ${candidate.id} contains duplicate dependencies.`);
+    }
+    if (candidate.dependsOn.some((id) => !ID_PATTERN.test(id))) {
+      throw new Error(`Dependency node ${candidate.id} contains an invalid dependency id.`);
+    }
+    if (candidate.dependsOn.includes(candidate.id)) {
+      throw new Error(`Dependency node ${candidate.id} cannot depend on itself.`);
+    }
+    nodes.set(candidate.id, {
+      id: candidate.id,
+      kind: candidate.kind,
+      dependsOn: [...candidate.dependsOn]
+    });
+  }
+  for (const node of nodes.values()) {
+    for (const dependency of node.dependsOn) {
+      if (!nodes.has(dependency)) {
+        throw new Error(`Dependency node ${node.id} references unknown dependency ${dependency}.`);
+      }
+    }
+  }
+  const visiting = /* @__PURE__ */ new Set();
+  const visited = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (visited.has(id)) return;
+    if (visiting.has(id)) throw new Error(`Dependency graph contains a cycle at ${id}.`);
+    visiting.add(id);
+    for (const dependency of nodes.get(id)?.dependsOn ?? []) visit(dependency);
+    visiting.delete(id);
+    visited.add(id);
+  };
+  for (const id of nodes.keys()) visit(id);
+  return {
+    schemaVersion: 1,
+    nodes: [...nodes.values()].sort((left, right) => left.id.localeCompare(right.id))
+  };
+}
+function dependencyClosure(graph, roots) {
+  const validated = validateDependencyGraph(graph);
+  const known = new Set(validated.nodes.map((node) => node.id));
+  const uniqueRoots = [...new Set(roots)];
+  for (const root of uniqueRoots) {
+    if (!known.has(root)) throw new Error(`Dependency closure root ${root} does not exist.`);
+  }
+  const dependants = /* @__PURE__ */ new Map();
+  for (const node of validated.nodes) {
+    for (const dependency of node.dependsOn) {
+      const current = dependants.get(dependency) ?? [];
+      current.push(node.id);
+      dependants.set(dependency, current);
+    }
+  }
+  const output = /* @__PURE__ */ new Set();
+  const queue = [...uniqueRoots];
+  while (queue.length) {
+    const current = queue.shift();
+    if (output.has(current)) continue;
+    output.add(current);
+    for (const dependant of dependants.get(current) ?? []) queue.push(dependant);
+  }
+  return [...output].sort();
+}
+
+// src/shape-freshness.ts
+var TOKEN = /^[^\r\n\0]{1,1024}$/;
+function isSourceFingerprintFresh(fingerprint2, observed, now = (/* @__PURE__ */ new Date()).toISOString()) {
+  validateSourceFingerprint(fingerprint2);
+  const observation = typeof observed === "string" ? { value: observed } : observed;
+  if (!observation || observation.value !== fingerprint2.value) return false;
+  if (fingerprint2.kind === "command" && observation.inputDigest !== fingerprint2.inputDigest) return false;
+  if (fingerprint2.kind === "external" && fingerprint2.expiresAt !== void 0) {
+    const nowEpoch = Date.parse(now);
+    const expiresEpoch = Date.parse(fingerprint2.expiresAt);
+    if (!Number.isFinite(nowEpoch) || !Number.isFinite(expiresEpoch)) throw new Error("Freshness timestamp is invalid.");
+    if (nowEpoch >= expiresEpoch) return false;
+  }
+  return true;
+}
+function reconcileShapeFreshness(input) {
+  const graph = validateDependencyGraph(input.graph);
+  const fingerprints = /* @__PURE__ */ new Map();
+  for (const fingerprint2 of input.fingerprints) {
+    validateSourceFingerprint(fingerprint2);
+    if (fingerprints.has(fingerprint2.id)) throw new Error(`Duplicate source fingerprint ${fingerprint2.id}.`);
+    fingerprints.set(fingerprint2.id, fingerprint2);
+  }
+  const staleFingerprintIds = [...fingerprints.values()].filter((fingerprint2) => {
+    const observed = input.observedValues[fingerprint2.id];
+    return observed === void 0 || !isSourceFingerprintFresh(fingerprint2, observed, input.now);
+  }).map((fingerprint2) => fingerprint2.id).sort();
+  const staleSet = new Set(staleFingerprintIds);
+  const staleEvidenceIds = [];
+  const reusedEvidenceIds = [];
+  const staleRoots = /* @__PURE__ */ new Set();
+  const evidenceIds = /* @__PURE__ */ new Set();
+  const graphNodes = new Map(graph.nodes.map((node) => [node.id, node]));
+  for (const fingerprint2 of fingerprints.values()) {
+    if (graphNodes.get(fingerprint2.dependencyNodeId)?.kind !== "source") {
+      throw new Error(`Source fingerprint ${fingerprint2.id} requires a source dependency node.`);
+    }
+  }
+  for (const item of input.evidence) {
+    validateEvidence(item, fingerprints, graphNodes);
+    if (evidenceIds.has(item.id)) throw new Error(`Duplicate evidence item ${item.id}.`);
+    evidenceIds.add(item.id);
+    if (item.sourceFingerprintIds.some((id) => staleSet.has(id))) {
+      staleEvidenceIds.push(item.id);
+      staleRoots.add(item.dependencyNodeId);
+      for (const sourceId of item.sourceFingerprintIds.filter((id) => staleSet.has(id))) {
+        staleRoots.add(fingerprints.get(sourceId).dependencyNodeId);
+      }
+    } else {
+      reusedEvidenceIds.push(item.id);
+    }
+  }
+  return {
+    staleFingerprintIds,
+    staleEvidenceIds: staleEvidenceIds.sort(),
+    reusedEvidenceIds: reusedEvidenceIds.sort(),
+    invalidatedNodeIds: staleRoots.size ? dependencyClosure(graph, [...staleRoots]) : [],
+    refreshTargetIds: staleEvidenceIds.map((id) => `refresh:${id}`).sort()
+  };
+}
+function validateSourceFingerprint(fingerprint2) {
+  if (!fingerprint2 || !TOKEN.test(fingerprint2.id) || !TOKEN.test(fingerprint2.value) || !TOKEN.test(fingerprint2.provenanceRef) || !TOKEN.test(fingerprint2.dependencyNodeId)) {
+    throw new Error("Source fingerprint is malformed.");
+  }
+  if (!["git_blob", "content", "command", "external"].includes(fingerprint2.kind)) {
+    throw new Error(`Source fingerprint ${fingerprint2.id} kind is invalid.`);
+  }
+  if (fingerprint2.kind === "command" && !TOKEN.test(fingerprint2.inputDigest ?? "")) {
+    throw new Error(`Command fingerprint ${fingerprint2.id} requires inputDigest.`);
+  }
+  if (fingerprint2.kind === "external") {
+    if (!fingerprint2.observedAt || !Number.isFinite(Date.parse(fingerprint2.observedAt))) {
+      throw new Error(`External fingerprint ${fingerprint2.id} requires observedAt.`);
+    }
+    if (fingerprint2.expiresAt !== void 0 && !Number.isFinite(Date.parse(fingerprint2.expiresAt))) {
+      throw new Error(`External fingerprint ${fingerprint2.id} expiresAt is invalid.`);
+    }
+  }
+}
+function validateEvidence(item, fingerprints, graphNodes) {
+  if (!item || !TOKEN.test(item.id) || !TOKEN.test(item.fact) || !TOKEN.test(item.dependencyNodeId)) {
+    throw new Error("Evidence item is malformed.");
+  }
+  if (!Array.isArray(item.provenanceRefs) || !item.provenanceRefs.length || item.provenanceRefs.some((ref) => !TOKEN.test(ref))) {
+    throw new Error(`Evidence item ${item.id} requires provenance.`);
+  }
+  if (!Array.isArray(item.sourceFingerprintIds) || !item.sourceFingerprintIds.length) {
+    throw new Error(`Evidence item ${item.id} requires source fingerprints.`);
+  }
+  if (item.sourceFingerprintIds.some((id) => !fingerprints.has(id))) {
+    throw new Error(`Evidence item ${item.id} references unknown source fingerprint.`);
+  }
+  if (graphNodes.get(item.dependencyNodeId)?.kind !== "evidence") {
+    throw new Error(`Evidence item ${item.id} requires an evidence dependency node.`);
+  }
+}
+
+// src/shape.ts
+var TOKEN2 = /^[^\r\n\0]{1,1024}$/;
+var ID = /^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]{0,255}$/;
+var RISKS = ["low", "medium", "high", "critical"];
+var IMPACTS = ["scope", "risk", "acceptance", "plan", "validation", "profile_recommendation"];
+var GUIDE_REASONS = [
+  "architectural_boundary",
+  "compatibility_migration",
+  "non_obvious_order",
+  "security_concurrency_performance",
+  "mandatory_repository_pattern",
+  "complex_rollback_deployment"
+];
+var MAX_ITEMS = 4096;
+function createShapeState(input) {
+  if (!RISKS.includes(input.risk) || !TOKEN2.test(input.intakeBriefRef)) {
+    throw new Error("Shape state requires risk and Intake Brief reference.");
+  }
+  validateBudgetLimits(input.budget ?? {});
+  return {
+    schemaVersion: 1,
+    risk: input.risk,
+    intakeBriefRef: input.intakeBriefRef,
+    discoveryTargets: [],
+    evidence: [],
+    sourceFingerprints: [],
+    decisionEscalations: [],
+    dependencyGraph: { schemaVersion: 1, nodes: [] },
+    invalidations: [],
+    budget: {
+      limits: { ...input.budget ?? {} },
+      usage: { reasoningCalls: 0, inputTokens: 0, outputTokens: 0, contextBytes: 0 },
+      continuations: 0
+    },
+    semanticRetryCounts: { discovery: 0, planning: 0 },
+    evaluatorReceipts: []
+  };
+}
+function applyDiscoveryEvaluation(state, evaluation) {
+  assertShapeStateEnvelope(state);
+  if (!evaluation || !Array.isArray(evaluation.targets) || !Array.isArray(evaluation.evidence) || !Array.isArray(evaluation.sourceFingerprints) || !Array.isArray(evaluation.dependencyNodes)) {
+    throw new Error("Discovery evaluation is structurally invalid.");
+  }
+  for (const target of evaluation.targets) validateDiscoveryTarget(target);
+  const discoveryTargets = mergeById(state.discoveryTargets, evaluation.targets);
+  const evidence = mergeById(state.evidence, evaluation.evidence);
+  const sourceFingerprints = mergeById(state.sourceFingerprints, evaluation.sourceFingerprints);
+  const dependencyGraph = validateDependencyGraph({
+    schemaVersion: 1,
+    nodes: mergeById(state.dependencyGraph.nodes, evaluation.dependencyNodes)
+  });
+  if ([discoveryTargets.length, evidence.length, sourceFingerprints.length, dependencyGraph.nodes.length].some((size) => size > MAX_ITEMS)) {
+    throw new Error("Discovery evaluation exceeds SHAPE item bounds.");
+  }
+  const candidate = recordShapeUsage({
+    ...state,
+    discoveryTargets,
+    evidence,
+    sourceFingerprints,
+    dependencyGraph
+  }, evaluation.usage ?? { reasoningCalls: 1 });
+  validateShapeEvidence(candidate);
+  const completeness = evaluateDiscoveryCompleteness(candidate);
+  const semanticContradictions = completeness.reasons.filter((reason) => reason !== "budget_checkpoint");
+  if (evaluation.semanticSufficient && semanticContradictions.length) {
+    throw new Error(`Discovery semantic sufficiency contradicts unresolved targets: ${semanticContradictions.join(", ")}.`);
+  }
+  if (!evaluation.semanticSufficient) return withoutDiscoveryReceipts(candidate);
+  return candidate;
+}
+function evaluateDiscoveryCompleteness(state) {
+  assertShapeStateEnvelope(state);
+  const reasons = [];
+  const unresolved = state.discoveryTargets.filter((target) => target.status !== "resolved");
+  if (unresolved.length) reasons.push(...unresolved.map((target) => `target:${target.id}:${target.status}`));
+  for (const target of state.discoveryTargets.filter((item) => item.status === "resolved")) {
+    if (!target.evidenceIds.length) reasons.push(`target:${target.id}:missing_evidence`);
+    for (const evidenceId of target.evidenceIds) {
+      if (!state.evidence.some((evidence) => evidence.id === evidenceId)) reasons.push(`target:${target.id}:unknown_evidence:${evidenceId}`);
+    }
+  }
+  if (!state.discoveryTargets.length) reasons.push("no_discovery_target");
+  if (state.activeEscalationId) reasons.push("active_escalation");
+  if (state.budget.checkpoint) reasons.push("budget_checkpoint");
+  try {
+    validateShapeEvidence(state);
+    const observedValues = Object.fromEntries(state.sourceFingerprints.map((fingerprint2) => [
+      fingerprint2.id,
+      fingerprint2.kind === "command" ? { value: fingerprint2.value, inputDigest: fingerprint2.inputDigest } : fingerprint2.value
+    ]));
+    const freshness = reconcileShapeFreshness({
+      graph: state.dependencyGraph,
+      fingerprints: state.sourceFingerprints,
+      evidence: state.evidence,
+      observedValues
+    });
+    if (freshness.staleEvidenceIds.length) reasons.push(...freshness.staleEvidenceIds.map((id) => `stale_evidence:${id}`));
+  } catch (error) {
+    reasons.push(error instanceof Error ? error.message : "invalid_evidence");
+  }
+  return { complete: reasons.length === 0, reasons: [...new Set(reasons)].sort() };
+}
+function attestDiscoverySufficient(state) {
+  const completeness = evaluateDiscoveryCompleteness(state);
+  if (!completeness.complete) throw new Error(`Discovery is incomplete: ${completeness.reasons.join(", ")}.`);
+  const completedIds = state.discoveryTargets.map((target) => target.id).sort();
+  const evidenceRefs = state.evidence.map((item) => item.id).sort();
+  const inputDigest = digest({
+    intakeBriefRef: state.intakeBriefRef,
+    risk: state.risk,
+    discoveryTargets: state.discoveryTargets,
+    evidence: state.evidence,
+    sourceFingerprints: state.sourceFingerprints,
+    dependencyGraph: state.dependencyGraph
+  });
+  const receipt = {
+    schemaVersion: 1,
+    evaluator: "discovery",
+    outcome: "discovery_sufficient",
+    inputDigest,
+    evidenceRefs,
+    subjectIds: completedIds,
+    completedIds,
+    receiptDigest: ""
+  };
+  receipt.receiptDigest = digest({ ...receipt, receiptDigest: void 0 });
+  return receipt;
+}
+function createDecisionEscalation(state, input) {
+  assertShapeStateEnvelope(state);
+  if (state.activeEscalationId) throw new Error("Only one Decision Escalation may be active.");
+  const target = state.discoveryTargets.find((item) => item.id === input.targetId);
+  if (!target || !["open", "blocked", "stale"].includes(target.status)) {
+    throw new Error("Decision Escalation requires an unresolved Discovery Target.");
+  }
+  if (!ID.test(input.id) || !ID.test(input.decisionKey) || !TOKEN2.test(input.productImpact) || !TOKEN2.test(input.recommendationBasis) || !["discovering", "planning"].includes(input.priorRole)) {
+    throw new Error("Decision Escalation identity or impact is invalid.");
+  }
+  if (state.decisionEscalations.some((item) => item.id === input.id || item.decisionKey === input.decisionKey)) {
+    throw new Error("Decision Escalation identity already exists.");
+  }
+  if (input.options.length < 2 || input.options.length > 3 || new Set(input.options.map((option) => option.id)).size !== input.options.length) {
+    throw new Error("Decision Escalation requires two or three distinct options.");
+  }
+  for (const option of input.options) {
+    if (!ID.test(option.id) || !TOKEN2.test(option.label) || !TOKEN2.test(option.impact)) {
+      throw new Error("Decision Escalation option is invalid.");
+    }
+  }
+  if (!input.options.some((option) => option.id === input.recommendedOptionId)) {
+    throw new Error("Decision Escalation recommendation must reference an option.");
+  }
+  if (!input.evidenceIds.length || input.evidenceIds.some((id) => !state.evidence.some((item) => item.id === id))) {
+    throw new Error("Decision Escalation requires known technical evidence.");
+  }
+  dependencyClosure(state.dependencyGraph, input.affectedDependencyRootIds);
+  const escalation = {
+    schemaVersion: 1,
+    ...copy2(input),
+    status: "active"
+  };
+  return {
+    ...withoutDiscoveryReceipts(state),
+    discoveryTargets: state.discoveryTargets.map(
+      (item) => item.id === target.id ? { ...item, status: "escalated" } : item
+    ),
+    decisionEscalations: [...state.decisionEscalations, escalation],
+    activeEscalationId: escalation.id
+  };
+}
+function resolveDecisionEscalation(state, input) {
+  assertShapeStateEnvelope(state);
+  const escalation = state.decisionEscalations.find((item) => item.id === input.escalationId);
+  if (!escalation || escalation.status !== "active" || state.activeEscalationId !== escalation.id) {
+    throw new Error("Active Decision Escalation does not exist.");
+  }
+  if (!escalation.options.some((option) => option.id === input.selectedOptionId) || !TOKEN2.test(input.evidenceRef)) {
+    throw new Error("Decision Escalation requires explicit selected option and evidence.");
+  }
+  const invalidatedNodeIds = dependencyClosure(state.dependencyGraph, escalation.affectedDependencyRootIds);
+  const invalidatedSet = new Set(invalidatedNodeIds);
+  const { activeEscalationId: _activeEscalationId, ...base } = withoutDiscoveryReceipts(state);
+  const nextState = {
+    ...base,
+    discoveryTargets: state.discoveryTargets.map(
+      (target) => target.id === escalation.targetId ? { ...target, status: "stale" } : target
+    ),
+    decisionEscalations: state.decisionEscalations.map(
+      (item) => item.id === escalation.id ? { ...item, status: "resolved", selectedOptionId: input.selectedOptionId, answerEvidenceRef: input.evidenceRef } : item
+    ),
+    invalidations: [...state.invalidations, {
+      rootIds: [...escalation.affectedDependencyRootIds],
+      invalidatedNodeIds,
+      reason: `decision:${escalation.decisionKey}`
+    }],
+    evidence: state.evidence.filter((item) => !invalidatedSet.has(item.dependencyNodeId))
+  };
+  const needsDiscovery = nextState.discoveryTargets.some((target) => ["open", "stale", "blocked"].includes(target.status));
+  return { state: nextState, resumeRole: needsDiscovery ? "discovering" : escalation.priorRole, invalidatedNodeIds };
+}
+function requestPreparationProfileChoice(state, input) {
+  assertShapeStateEnvelope(state);
+  validateDiscoveryReceipt(state, input.discoveryReceipt);
+  if (state.preparationProfileChoice) throw new Error("Preparation profile choice already exists.");
+  if (!["quick", "plan"].includes(input.recommendation) || !TOKEN2.test(input.recommendationBasis)) {
+    throw new Error("Preparation profile recommendation is invalid.");
+  }
+  validateCheckpoint(input.checkpoint);
+  if (input.preselectedProfile && !TOKEN2.test(input.selectionEvidenceRef ?? "")) {
+    throw new Error("Preselected preparation profile requires evidence.");
+  }
+  if (input.preselectedProfile && input.preselectedProfile !== "plan") {
+    throw new Error("Only explicit durable-plan request or policy may preselect Plan.");
+  }
+  const selected = input.preselectedProfile;
+  return {
+    ...state,
+    evaluatorReceipts: [...state.evaluatorReceipts, copy2(input.discoveryReceipt)],
+    preparationProfileChoice: {
+      schemaVersion: 1,
+      status: selected ? "selected" : "pending",
+      recommendation: input.recommendation,
+      recommendationBasis: input.recommendationBasis,
+      discoveryReceiptDigest: input.discoveryReceipt.receiptDigest,
+      checkpoint: copy2(input.checkpoint),
+      ...selected ? { selectedProfile: selected, selectionEvidenceRef: input.selectionEvidenceRef } : {}
+    }
+  };
+}
+function selectPreparationProfile(state, input) {
+  assertShapeStateEnvelope(state);
+  const choice = state.preparationProfileChoice;
+  if (!choice || choice.status !== "pending") throw new Error("Pending preparation profile choice does not exist.");
+  if (!state.evaluatorReceipts.some(
+    (receipt) => receipt.evaluator === "discovery" && receipt.receiptDigest === choice.discoveryReceiptDigest
+  )) throw new Error("Preparation profile choice is stale because Discovery changed.");
+  if (!["quick", "plan"].includes(input.profile) || !TOKEN2.test(input.evidenceRef)) {
+    throw new Error("Preparation profile requires explicit profile and evidence.");
+  }
+  return {
+    ...state,
+    preparationProfileChoice: {
+      ...choice,
+      status: "selected",
+      selectedProfile: input.profile,
+      selectionEvidenceRef: input.evidenceRef
+    }
+  };
+}
+function applyPlanningEvaluation(state, evaluation) {
+  assertShapeStateEnvelope(state);
+  const choice = state.preparationProfileChoice;
+  if (!choice || choice.status !== "selected" || !choice.selectedProfile) {
+    throw new Error("Planning requires selected preparation profile.");
+  }
+  const discoveryReceipt = state.evaluatorReceipts.find((receipt2) => receipt2.evaluator === "discovery");
+  if (!discoveryReceipt) throw new Error("Planning requires current Discovery receipt.");
+  if (!evaluation || !Array.isArray(evaluation.dependencyNodes)) throw new Error("Planning evaluation is structurally invalid.");
+  const dependencyGraph = validateDependencyGraph({
+    schemaVersion: 1,
+    nodes: mergeById(state.dependencyGraph.nodes, evaluation.dependencyNodes)
+  });
+  let candidate = recordShapeUsage({ ...state, dependencyGraph }, evaluation.usage ?? { reasoningCalls: 1 });
+  if (evaluation.missingEvidenceTarget) {
+    if (evaluation.semanticImplementable || evaluation.contract) {
+      throw new Error("Missing Planning evidence cannot accompany implementable contract.");
+    }
+    validateDiscoveryTarget(evaluation.missingEvidenceTarget);
+    if (evaluation.missingEvidenceTarget.status !== "open" || evaluation.missingEvidenceTarget.evidenceIds.length) {
+      throw new Error("Missing Planning evidence must create one open Discovery Target.");
+    }
+    return {
+      ...withoutPlanningReceipts(candidate),
+      discoveryTargets: mergeById(candidate.discoveryTargets, [evaluation.missingEvidenceTarget])
+    };
+  }
+  if (!evaluation.contract) throw new Error("Planning evaluation requires contract or missing-evidence target.");
+  if (evaluation.contract.profile !== choice.selectedProfile) {
+    throw new Error("Planning contract profile does not match selected profile.");
+  }
+  const contract = {
+    ...copy2(evaluation.contract),
+    risk: state.risk,
+    intakeBriefRef: state.intakeBriefRef,
+    discoveryReceiptDigest: discoveryReceipt.receiptDigest,
+    digest: ""
+  };
+  contract.digest = digest(contractProjectionForDigest(contract));
+  candidate = { ...withoutPlanningReceipts(candidate), contract };
+  const completeness = evaluateContractCompleteness(candidate);
+  if (evaluation.semanticImplementable && !completeness.complete) {
+    throw new Error(`Planning semantic implementability contradicts contract: ${completeness.reasons.join(", ")}.`);
+  }
+  if (!evaluation.semanticImplementable) {
+    const { contract: _contract, ...withoutContract } = candidate;
+    return withoutContract;
+  }
+  const receipt = attestContractComplete(candidate);
+  return {
+    ...candidate,
+    evaluatorReceipts: [
+      ...candidate.evaluatorReceipts.filter((item) => item.evaluator !== "planning"),
+      receipt
+    ]
+  };
+}
+function evaluateContractCompleteness(state) {
+  assertShapeStateEnvelope(state);
+  const contract = state.contract;
+  const reasons = [];
+  const choice = state.preparationProfileChoice;
+  if (!choice || choice.status !== "selected" || !choice.selectedProfile) reasons.push("profile_not_selected");
+  if (!contract) return { complete: false, reasons: [...reasons, "contract_missing"].sort() };
+  if (contract.schemaVersion !== 1 || !ID.test(contract.artifactId) || !Number.isInteger(contract.revision) || contract.revision < 1) {
+    reasons.push("contract_identity");
+  }
+  if (contract.profile !== choice?.selectedProfile) reasons.push("profile_mismatch");
+  if (contract.risk !== state.risk || contract.intakeBriefRef !== state.intakeBriefRef) reasons.push("intake_binding");
+  const discoveryReceipt = state.evaluatorReceipts.find((receipt) => receipt.evaluator === "discovery");
+  if (!discoveryReceipt || contract.discoveryReceiptDigest !== discoveryReceipt.receiptDigest) reasons.push("discovery_binding");
+  if (!Array.isArray(contract.scope) || !contract.scope.length || contract.scope.some((item) => !TOKEN2.test(item))) reasons.push("scope");
+  if (contract.profile === "plan" && (!Array.isArray(contract.nonGoals) || !contract.nonGoals.length)) reasons.push("plan_non_goals");
+  if (!contract.acceptanceCriteria.length) reasons.push("acceptance_criteria");
+  if (!contract.tasks.length) reasons.push("tasks");
+  if (!contract.validations.length) reasons.push("validations");
+  const criterionIds = uniqueIds(contract.acceptanceCriteria, "criterion", reasons);
+  const taskIds = uniqueIds(contract.tasks, "task", reasons);
+  const validationIds = uniqueIds(contract.validations, "validation", reasons);
+  const riskIds = uniqueIds(contract.risks, "risk", reasons);
+  const evidenceIds = new Set(state.evidence.map((item) => item.id));
+  const graphNodes = new Map(state.dependencyGraph.nodes.map((node) => [node.id, node]));
+  for (const criterion of contract.acceptanceCriteria) {
+    validateContractItem(criterion, "criterion", graphNodes, reasons);
+    if (!criterion.validationIds.length || criterion.validationIds.some((id) => !validationIds.has(id))) {
+      reasons.push(`criterion:${criterion.id}:validation_coverage`);
+    }
+    if (!contract.tasks.some((task) => task.criterionIds.includes(criterion.id))) {
+      reasons.push(`criterion:${criterion.id}:task_coverage`);
+    }
+  }
+  for (const task of contract.tasks) {
+    validateContractItem(task, "task", graphNodes, reasons);
+    if (!task.criterionIds.length || task.criterionIds.some((id) => !criterionIds.has(id))) {
+      reasons.push(`task:${task.id}:criterion_coverage`);
+    }
+    if (task.dependsOnTaskIds.some((id) => !taskIds.has(id) || id === task.id)) {
+      reasons.push(`task:${task.id}:dependencies`);
+    }
+  }
+  for (const validation of contract.validations) {
+    validateContractItem(validation, "validation", graphNodes, reasons);
+    if (!validation.criterionIds.length || validation.criterionIds.some((id) => !criterionIds.has(id))) {
+      reasons.push(`validation:${validation.id}:criterion_coverage`);
+    }
+  }
+  for (const risk of contract.risks) {
+    validateContractItem(risk, "risk", graphNodes, reasons);
+    if (!TOKEN2.test(risk.control)) reasons.push(`risk:${risk.id}:control`);
+  }
+  if (contract.guide) {
+    if (contract.profile !== "plan") reasons.push("quick_guide_forbidden");
+    if (graphNodes.get(contract.guide.dependencyNodeId)?.kind !== "guide") reasons.push("guide_dependency_node");
+    if (!contract.guide.content.length || contract.guide.content.some((item) => !TOKEN2.test(item))) reasons.push("guide_content");
+    if (!contract.guide.requiredBecause.length) reasons.push("guide_reason");
+    for (const reason of contract.guide.requiredBecause) {
+      if (!GUIDE_REASONS.includes(reason.kind)) reasons.push("guide_reason_kind");
+      if (!reason.evidenceIds.length && !reason.riskIds.length) reasons.push("Guide reason requires evidence or risk");
+      if (reason.evidenceIds.some((id) => !evidenceIds.has(id)) || reason.riskIds.some((id) => !riskIds.has(id))) {
+        reasons.push("guide_reason_reference");
+      }
+    }
+  }
+  try {
+    validateDependencyGraph(state.dependencyGraph);
+  } catch (error) {
+    reasons.push(error instanceof Error ? error.message : "dependency_graph");
+  }
+  if (contract.digest !== digest(contractProjectionForDigest(contract))) reasons.push("contract_digest");
+  if (state.budget.checkpoint) reasons.push("budget_checkpoint");
+  return { complete: reasons.length === 0, reasons: [...new Set(reasons)].sort() };
+}
+function attestContractComplete(state) {
+  const completeness = evaluateContractCompleteness(state);
+  if (!completeness.complete || !state.contract) {
+    throw new Error(`Contract is incomplete: ${completeness.reasons.join(", ")}.`);
+  }
+  const subjectIds = [
+    ...state.contract.acceptanceCriteria.map((item) => item.id),
+    ...state.contract.tasks.map((item) => item.id),
+    ...state.contract.validations.map((item) => item.id)
+  ].sort();
+  const inputDigest = digest({
+    contract: state.contract,
+    dependencyGraph: state.dependencyGraph,
+    profileChoice: state.preparationProfileChoice
+  });
+  const receipt = {
+    schemaVersion: 1,
+    evaluator: "planning",
+    outcome: "contract_complete",
+    inputDigest,
+    evidenceRefs: state.evidence.map((item) => item.id).sort(),
+    subjectIds,
+    completedIds: subjectIds,
+    receiptDigest: ""
+  };
+  receipt.receiptDigest = digest({ ...receipt, receiptDigest: void 0 });
+  return receipt;
+}
+function recordShapeUsage(state, usage) {
+  assertShapeStateEnvelope(state);
+  const increment = {
+    reasoningCalls: nonNegativeInteger(usage.reasoningCalls ?? 0, "reasoningCalls"),
+    inputTokens: nonNegativeInteger(usage.inputTokens ?? 0, "inputTokens"),
+    outputTokens: nonNegativeInteger(usage.outputTokens ?? 0, "outputTokens"),
+    contextBytes: nonNegativeInteger(usage.contextBytes ?? 0, "contextBytes")
+  };
+  const nextUsage = {
+    reasoningCalls: state.budget.usage.reasoningCalls + increment.reasoningCalls,
+    inputTokens: state.budget.usage.inputTokens + increment.inputTokens,
+    outputTokens: state.budget.usage.outputTokens + increment.outputTokens,
+    contextBytes: state.budget.usage.contextBytes + increment.contextBytes
+  };
+  const reason = budgetReason(state.budget.limits, nextUsage);
+  return {
+    ...state,
+    budget: {
+      ...state.budget,
+      usage: nextUsage,
+      ...reason ? { checkpoint: { reason, actions: ["continue", "reduce_scope", "cancel"] } } : {}
+    }
+  };
+}
+function resolveShapeBudgetCheckpoint(state, action) {
+  return resolveShapeBudgetCheckpointWithRouting(state, action).state;
+}
+function resolveShapeBudgetCheckpointWithRouting(state, action) {
+  assertShapeStateEnvelope(state);
+  if (!state.budget.checkpoint || !state.budget.checkpoint.actions.includes(action)) {
+    throw new Error("Active SHAPE budget checkpoint and explicit action are required.");
+  }
+  const { checkpoint: _checkpoint, ...budget } = state.budget;
+  return {
+    state: {
+      ...state,
+      budget: {
+        ...budget,
+        continuations: budget.continuations + (action === "continue" ? 1 : 0)
+      }
+    },
+    nextAction: action === "continue" ? "continue_shape" : action === "reduce_scope" ? "return_to_intake_scope_reduction" : "cancel_shape"
+  };
+}
+function reconcileShapeResume(state, observedValues, now) {
+  validateShapeState(state);
+  const result = reconcileShapeFreshness({
+    graph: state.dependencyGraph,
+    fingerprints: state.sourceFingerprints,
+    evidence: state.evidence,
+    observedValues,
+    ...now ? { now } : {}
+  });
+  if (!result.staleEvidenceIds.length) {
+    return {
+      state,
+      reusedEvidenceIds: result.reusedEvidenceIds,
+      staleEvidenceIds: [],
+      refreshTargetIds: [],
+      invalidatedNodeIds: [],
+      reasoningRequired: false
+    };
+  }
+  const invalidated = new Set(result.invalidatedNodeIds);
+  const staleEvidence = new Set(result.staleEvidenceIds);
+  const refreshTargets = state.evidence.filter((item) => staleEvidence.has(item.id)).map((item) => ({
+    id: `refresh:${item.id}`,
+    question: `Refresh stale evidence ${item.id}`,
+    createdBecause: "Referenced source fingerprint changed during resume reconciliation.",
+    createdAt: now ?? (/* @__PURE__ */ new Date()).toISOString(),
+    materialImpacts: ["plan", "validation"],
+    candidateSourceRefs: item.provenanceRefs,
+    status: "open",
+    evidenceIds: [],
+    dependencyNodeId: item.dependencyNodeId
+  }));
+  const contract = selectivelyInvalidateContract(state.contract, invalidated);
+  const invalidatesContract = contract !== state.contract;
+  const invalidatesProjection = [...invalidated].some(
+    (id) => ["criterion", "task", "risk", "validation", "guide", "projection"].includes(
+      state.dependencyGraph.nodes.find((node) => node.id === id)?.kind ?? ""
+    )
+  );
+  const { contract: _priorContract, projection: _priorProjection, ...base } = state;
+  const next = {
+    ...base,
+    discoveryTargets: mergeById(
+      state.discoveryTargets.map((target) => {
+        const evidenceIds = target.evidenceIds.filter((id) => !staleEvidence.has(id));
+        return evidenceIds.length === target.evidenceIds.length ? target : { ...target, evidenceIds, status: "stale" };
+      }),
+      refreshTargets
+    ),
+    evidence: state.evidence.filter((item) => !invalidated.has(item.dependencyNodeId)),
+    invalidations: [...state.invalidations, {
+      rootIds: result.staleFingerprintIds.map((id) => state.sourceFingerprints.find((item) => item.id === id)?.dependencyNodeId).filter((id) => id !== void 0),
+      invalidatedNodeIds: result.invalidatedNodeIds,
+      reason: "resume:source_freshness"
+    }],
+    ...contract ? { contract } : {},
+    ...!(invalidatesProjection || invalidatesContract) && state.projection ? { projection: state.projection } : {},
+    evaluatorReceipts: state.evaluatorReceipts.filter(
+      (receipt) => receipt.evaluator !== "discovery" && (!invalidatesContract || receipt.evaluator !== "planning")
+    )
+  };
+  return {
+    state: copyWithoutUndefined(next),
+    reusedEvidenceIds: result.reusedEvidenceIds,
+    staleEvidenceIds: result.staleEvidenceIds,
+    refreshTargetIds: refreshTargets.map((item) => item.id).sort(),
+    invalidatedNodeIds: result.invalidatedNodeIds,
+    reasoningRequired: true
+  };
+}
+function validateShapeState(value) {
+  const state = value;
+  assertShapeStateEnvelope(state);
+  validateBudgetLimits(state.budget.limits);
+  for (const [key, amount] of Object.entries(state.budget.usage)) nonNegativeInteger(amount, key);
+  validateDependencyGraph(state.dependencyGraph);
+  for (const target of state.discoveryTargets) validateDiscoveryTarget(target);
+  validateShapeEvidence(state);
+  const escalationIds = /* @__PURE__ */ new Set();
+  const decisionKeys = /* @__PURE__ */ new Set();
+  for (const escalation of state.decisionEscalations) {
+    validateDecisionEscalationRecord(state, escalation);
+    if (escalationIds.has(escalation.id) || decisionKeys.has(escalation.decisionKey)) {
+      throw new Error("Decision Escalation identity is duplicated.");
+    }
+    escalationIds.add(escalation.id);
+    decisionKeys.add(escalation.decisionKey);
+  }
+  if (state.activeEscalationId && !state.decisionEscalations.some(
+    (item) => item.id === state.activeEscalationId && item.status === "active"
+  )) throw new Error("Active Decision Escalation reference is invalid.");
+  if (state.preparationProfileChoice) {
+    validateCheckpoint(state.preparationProfileChoice.checkpoint);
+    if (state.preparationProfileChoice.status === "selected" && (!state.preparationProfileChoice.selectedProfile || !TOKEN2.test(state.preparationProfileChoice.selectionEvidenceRef ?? ""))) {
+      throw new Error("Selected preparation profile lacks explicit evidence.");
+    }
+  }
+  if (state.contract) evaluateContractCompleteness(state);
+  for (const receipt of state.evaluatorReceipts) {
+    const { receiptDigest, ...base } = receipt;
+    if (receiptDigest !== digest(base)) throw new Error(`${receipt.evaluator} evaluator receipt digest is invalid.`);
+  }
+}
+function validateDecisionEscalationRecord(state, escalation) {
+  if (escalation.schemaVersion !== 1 || !ID.test(escalation.id) || !ID.test(escalation.decisionKey) || !ID.test(escalation.targetId) || !TOKEN2.test(escalation.productImpact) || !TOKEN2.test(escalation.recommendationBasis) || !["discovering", "planning"].includes(escalation.priorRole) || !["active", "resolved"].includes(escalation.status) || !state.discoveryTargets.some((target) => target.id === escalation.targetId)) throw new Error("Decision Escalation record is malformed.");
+  if (escalation.options.length < 2 || escalation.options.length > 3 || new Set(escalation.options.map((option) => option.id)).size !== escalation.options.length) {
+    throw new Error(`Decision Escalation ${escalation.id} options are invalid.`);
+  }
+  for (const option of escalation.options) {
+    if (!ID.test(option.id) || !TOKEN2.test(option.label) || !TOKEN2.test(option.impact)) {
+      throw new Error(`Decision Escalation ${escalation.id} option is malformed.`);
+    }
+  }
+  if (!escalation.options.some((option) => option.id === escalation.recommendedOptionId) || !escalation.evidenceIds.length || escalation.status === "active" && escalation.evidenceIds.some((id) => !state.evidence.some((item) => item.id === id))) {
+    throw new Error(`Decision Escalation ${escalation.id} recommendation or evidence is invalid.`);
+  }
+  dependencyClosure(state.dependencyGraph, escalation.affectedDependencyRootIds);
+  if (escalation.status === "resolved") {
+    if (!escalation.selectedOptionId || !escalation.options.some((option) => option.id === escalation.selectedOptionId) || !TOKEN2.test(escalation.answerEvidenceRef ?? "")) {
+      throw new Error(`Resolved Decision Escalation ${escalation.id} lacks explicit answer evidence.`);
+    }
+  } else if (escalation.selectedOptionId !== void 0 || escalation.answerEvidenceRef !== void 0) {
+    throw new Error(`Active Decision Escalation ${escalation.id} cannot contain answer.`);
+  }
+}
+function selectivelyInvalidateContract(contract, invalidated) {
+  if (!contract) return void 0;
+  const acceptanceCriteria = contract.acceptanceCriteria.filter((item) => !invalidated.has(item.dependencyNodeId));
+  const tasks = contract.tasks.filter((item) => !invalidated.has(item.dependencyNodeId));
+  const validations = contract.validations.filter((item) => !invalidated.has(item.dependencyNodeId));
+  const risks = contract.risks.filter((item) => !invalidated.has(item.dependencyNodeId));
+  const guide = contract.guide && !invalidated.has(contract.guide.dependencyNodeId) ? contract.guide : void 0;
+  if (acceptanceCriteria.length === contract.acceptanceCriteria.length && tasks.length === contract.tasks.length && validations.length === contract.validations.length && risks.length === contract.risks.length && guide === contract.guide) return contract;
+  const { guide: _priorGuide, ...base } = contract;
+  return {
+    ...base,
+    acceptanceCriteria,
+    tasks,
+    validations,
+    risks,
+    ...guide ? { guide } : {}
+  };
+}
+function validateDiscoveryTarget(target) {
+  if (!target || !ID.test(target.id) || !TOKEN2.test(target.question) || !TOKEN2.test(target.createdBecause) || !Number.isFinite(Date.parse(target.createdAt)) || !ID.test(target.dependencyNodeId) || !["open", "resolved", "escalated", "blocked", "stale"].includes(target.status)) {
+    throw new Error("Discovery Target is malformed.");
+  }
+  if (!Array.isArray(target.materialImpacts) || !target.materialImpacts.length || target.materialImpacts.some((impact) => !IMPACTS.includes(impact)) || new Set(target.materialImpacts).size !== target.materialImpacts.length) {
+    throw new Error(`Discovery Target ${target.id} material impacts are invalid.`);
+  }
+  if (!Array.isArray(target.candidateSourceRefs) || !target.candidateSourceRefs.length || target.candidateSourceRefs.some((ref) => !TOKEN2.test(ref))) {
+    throw new Error(`Discovery Target ${target.id} requires candidate sources.`);
+  }
+  if (!Array.isArray(target.evidenceIds) || target.evidenceIds.some((id) => !ID.test(id))) {
+    throw new Error(`Discovery Target ${target.id} evidence IDs are invalid.`);
+  }
+}
+function validateShapeEvidence(state) {
+  const observedValues = Object.fromEntries(state.sourceFingerprints.map((fingerprint2) => [
+    fingerprint2.id,
+    fingerprint2.kind === "command" ? { value: fingerprint2.value, inputDigest: fingerprint2.inputDigest } : fingerprint2.value
+  ]));
+  reconcileShapeFreshness({
+    graph: state.dependencyGraph,
+    fingerprints: state.sourceFingerprints,
+    evidence: state.evidence,
+    observedValues,
+    now: (/* @__PURE__ */ new Date()).toISOString()
+  });
+}
+function validateDiscoveryReceipt(state, receipt) {
+  const expected = attestDiscoverySufficient(state);
+  if (receipt.schemaVersion !== 1 || receipt.evaluator !== "discovery" || receipt.receiptDigest !== expected.receiptDigest || receipt.inputDigest !== expected.inputDigest) {
+    throw new Error("Discovery receipt is stale or bound to another SHAPE state.");
+  }
+}
+function validateCheckpoint(checkpoint) {
+  if (!checkpoint || !TOKEN2.test(checkpoint.changeShape) || !Array.isArray(checkpoint.surfaceCategories) || !checkpoint.surfaceCategories.length || checkpoint.surfaceCategories.length > 16 || checkpoint.surfaceCategories.some((item) => !TOKEN2.test(item)) || !Array.isArray(checkpoint.materialFacts) || !checkpoint.materialFacts.length || checkpoint.materialFacts.length > 8 || checkpoint.materialFacts.some((item) => !TOKEN2.test(item))) {
+    throw new Error("Preparation checkpoint is invalid or not compact.");
+  }
+}
+function assertShapeStateEnvelope(state) {
+  if (!state || state.schemaVersion !== 1 || !RISKS.includes(state.risk) || !TOKEN2.test(state.intakeBriefRef) || !Array.isArray(state.discoveryTargets) || !Array.isArray(state.evidence) || !Array.isArray(state.sourceFingerprints) || !Array.isArray(state.decisionEscalations) || !state.budget || !state.semanticRetryCounts || !Array.isArray(state.evaluatorReceipts)) {
+    throw new Error("SHAPE state is malformed.");
+  }
+}
+function validateBudgetLimits(limits) {
+  for (const [key, value] of Object.entries(limits)) {
+    if (!["maxReasoningCalls", "maxInputTokens", "maxOutputTokens", "maxContextBytes"].includes(key) || !Number.isInteger(value) || value <= 0) {
+      throw new Error(`SHAPE budget limit ${key} is invalid.`);
+    }
+  }
+}
+function budgetReason(limits, usage) {
+  if (limits.maxReasoningCalls !== void 0 && usage.reasoningCalls >= limits.maxReasoningCalls) return "reasoning_calls";
+  if (limits.maxInputTokens !== void 0 && usage.inputTokens >= limits.maxInputTokens) return "input_tokens";
+  if (limits.maxOutputTokens !== void 0 && usage.outputTokens >= limits.maxOutputTokens) return "output_tokens";
+  if (limits.maxContextBytes !== void 0 && usage.contextBytes >= limits.maxContextBytes) return "context_bytes";
+  return void 0;
+}
+function nonNegativeInteger(value, label) {
+  if (!Number.isInteger(value) || value < 0) throw new Error(`SHAPE usage ${label} is invalid.`);
+  return value;
+}
+function withoutDiscoveryReceipts(state) {
+  if (state.preparationProfileChoice?.status === "pending") {
+    const { preparationProfileChoice: _choice, ...base } = state;
+    return { ...base, evaluatorReceipts: state.evaluatorReceipts.filter((receipt) => receipt.evaluator !== "discovery") };
+  }
+  return { ...state, evaluatorReceipts: state.evaluatorReceipts.filter((receipt) => receipt.evaluator !== "discovery") };
+}
+function withoutPlanningReceipts(state) {
+  return { ...state, evaluatorReceipts: state.evaluatorReceipts.filter((receipt) => receipt.evaluator !== "planning") };
+}
+function validateContractItem(item, kind, graphNodes, reasons) {
+  if (!ID.test(item.id) || !TOKEN2.test(item.description)) reasons.push(`${kind}:${item.id}:content`);
+  if (graphNodes.get(item.dependencyNodeId)?.kind !== kind) reasons.push(`${kind}:${item.id}:dependency_node`);
+}
+function uniqueIds(items, label, reasons) {
+  const ids = /* @__PURE__ */ new Set();
+  for (const item of items) {
+    if (ids.has(item.id)) reasons.push(`${label}:${item.id}:duplicate`);
+    ids.add(item.id);
+  }
+  return ids;
+}
+function contractProjectionForDigest(contract) {
+  const { digest: _digest, ...projection } = contract;
+  return projection;
+}
+function mergeById(left, right) {
+  const output = new Map(left.map((item) => [item.id, copy2(item)]));
+  for (const item of right) output.set(item.id, copy2(item));
+  return [...output.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+function digest(value) {
+  return createHash("sha256").update(JSON.stringify(canonicalize(value))).digest("hex");
+}
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).filter(([, nested]) => nested !== void 0).sort(([left], [right]) => left.localeCompare(right)).map(([key, nested]) => [key, canonicalize(nested)])
+    );
+  }
+  return value;
+}
+function copy2(value) {
+  return structuredClone(value);
+}
+function copyWithoutUndefined(value) {
+  return JSON.parse(JSON.stringify(value));
+}
 
 // src/state-validator.ts
 var import__2 = __toESM(require__(), 1);
@@ -16896,624 +17536,881 @@ var import__2 = __toESM(require__(), 1);
 // schemas/state.schema.json
 var state_schema_default = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
-  title: "Codex Dev Flow task state V2",
+  title: "Codex Dev Flow task state V3",
   type: "object",
   additionalProperties: false,
-  required: ["schemaVersion", "taskId", "status", "revision", "mode", "modeEvidenceRef", "modeConfirmed", "configSnapshot", "policySnapshot", "issues", "reviewCycle", "remainingActions", "history"],
+  required: [
+    "schemaVersion",
+    "taskId",
+    "status",
+    "revision",
+    "risk",
+    "configSnapshot",
+    "policySnapshot",
+    "issues",
+    "reviewCycle",
+    "remainingActions",
+    "history"
+  ],
   properties: {
-    schemaVersion: { type: "integer", const: 2 },
-    taskId: { type: "string", minLength: 1 },
-    revision: { type: "integer", minimum: 0 },
-    mode: { type: "string", enum: ["quick", "standard", "critical"] },
-    modeEvidenceRef: { type: "string", minLength: 1 },
-    modeConfirmed: { type: "boolean" },
-    contractDigest: { type: "string", minLength: 1 },
-    verificationRequirements: { $ref: "#/$defs/verificationRequirements" },
-    pendingGate: { type: "string", enum: ["pre_build", "critical_completion"] },
+    schemaVersion: {
+      const: 3
+    },
+    taskId: {
+      $ref: "#/$defs/text"
+    },
     status: {
-      type: "string",
-      enum: ["new", "awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off", "ready_for_handoff", "blocked", "cancelled", "failed", "finished_local", "finished"]
+      $ref: "#/$defs/status"
+    },
+    revision: {
+      type: "integer",
+      minimum: 0
+    },
+    risk: {
+      enum: [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    shape: {
+      $ref: "#/$defs/shapeState"
+    },
+    contractDigest: {
+      $ref: "#/$defs/text"
+    },
+    verificationRequirements: {
+      $ref: "#/$defs/verificationRequirements"
+    },
+    pendingGate: {
+      enum: [
+        "pre_build",
+        "completion"
+      ]
     },
     resumeTo: {
-      type: "string",
-      enum: ["awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off"]
+      $ref: "#/$defs/resumeTarget"
     },
-    configSnapshot: { type: "object" },
-    policySnapshot: { type: "object" },
-    issues: { type: "array" },
-    reviewCycle: { type: "integer", minimum: 0 },
-    remainingActions: { type: "array", items: { type: "string", minLength: 1 } },
-    historySummary: { $ref: "#/$defs/historySummary" },
-    activeArtifact: { $ref: "#/$defs/activeArtifact" },
-    activeWorktree: { $ref: "#/$defs/activeWorktree" },
-    contextCapsule: { $ref: "#/$defs/contextCapsule" },
+    configSnapshot: {
+      type: "object"
+    },
+    policySnapshot: {
+      type: "object"
+    },
+    issues: {
+      type: "array"
+    },
+    reviewCycle: {
+      type: "integer",
+      minimum: 0
+    },
+    remainingActions: {
+      type: "array",
+      items: {
+        $ref: "#/$defs/text"
+      }
+    },
     history: {
       type: "array",
-      items: { oneOf: [{ $ref: "#/$defs/transitionEvent" }, { $ref: "#/$defs/workflowEvent" }] }
+      minItems: 1,
+      items: {
+        oneOf: [
+          {
+            $ref: "#/$defs/transitionEvent"
+          },
+          {
+            $ref: "#/$defs/workflowEvent"
+          }
+        ]
+      }
     },
-    routingPolicyVersion: { type: "string", minLength: 1 },
-    routingSnapshot: { $ref: "#/$defs/routingSnapshot" },
+    historySummary: {
+      $ref: "#/$defs/historySummary"
+    },
+    activeArtifact: {
+      $ref: "#/$defs/activeArtifact"
+    },
+    activeWorktree: {
+      $ref: "#/$defs/activeWorktree"
+    },
+    contextCapsule: {
+      type: "object"
+    },
+    routingSnapshot: {
+      type: "object"
+    },
+    routingPolicyVersion: {
+      $ref: "#/$defs/text"
+    },
     routingDecisions: {
       type: "array",
-      items: { $ref: "#/$defs/routingDecision" }
+      items: {
+        type: "object"
+      }
     },
-    intake: { $ref: "#/$defs/intakeState" },
-    benchmarkEnabled: { type: "boolean" }
+    intake: {
+      $ref: "#/$defs/intakeState"
+    },
+    benchmarkEnabled: {
+      type: "boolean"
+    }
   },
   allOf: [
     {
-      if: { properties: { status: { const: "blocked" } }, required: ["status"] },
-      then: {
-        required: ["resumeTo"],
-        properties: {
-          resumeTo: { $ref: "#/$defs/resumeTarget" },
-          remainingActions: { type: "array", minItems: 1 }
-        }
-      }
-    },
-    {
-      if: { properties: { status: { const: "ready_for_handoff" } }, required: ["status"] },
-      then: {
-        required: ["resumeTo"],
-        properties: {
-          resumeTo: { const: "handing_off" },
-          remainingActions: { type: "array", minItems: 1 }
-        }
-      }
-    },
-    {
       if: {
-        properties: { status: { not: { enum: ["blocked", "ready_for_handoff"] } } },
-        required: ["status"]
+        properties: {
+          status: {
+            const: "blocked"
+          }
+        },
+        required: [
+          "status"
+        ]
       },
-      then: { not: { required: ["resumeTo"] } }
-    },
-    {
-      if: { properties: { status: { const: "awaiting_approval" } }, required: ["status"] },
       then: {
-        required: ["pendingGate", "contractDigest"],
+        required: [
+          "resumeTo"
+        ],
         properties: {
-          pendingGate: { type: "string", enum: ["pre_build", "critical_completion"] },
-          contractDigest: { type: "string", minLength: 1 }
-        }
-      }
-    },
-    {
-      if: { required: ["pendingGate"] },
-      then: {
-        properties: { status: { type: "string", enum: ["awaiting_approval", "blocked"] } }
-      }
-    },
-    {
-      if: { properties: { status: { const: "cancelled" } }, required: ["status"] },
-      then: {
-        properties: {
-          history: {
+          resumeTo: {
+            $ref: "#/$defs/resumeTarget"
+          },
+          remainingActions: {
             type: "array",
-            contains: {
-              type: "object",
-              required: ["type", "to", "terminalSource"],
-              properties: {
-                type: { const: "state.transition" },
-                to: { const: "cancelled" },
-                terminalSource: { $ref: "#/$defs/nonTerminalStatus" }
-              }
-            }
+            minItems: 1
           }
         }
       }
     },
     {
-      if: { properties: { status: { const: "failed" } }, required: ["status"] },
-      then: {
+      if: {
         properties: {
-          history: {
+          status: {
+            const: "ready_for_handoff"
+          }
+        },
+        required: [
+          "status"
+        ]
+      },
+      then: {
+        required: [
+          "resumeTo"
+        ],
+        properties: {
+          resumeTo: {
+            const: "handing_off"
+          },
+          remainingActions: {
             type: "array",
-            contains: {
-              type: "object",
-              required: ["type", "to", "terminalSource"],
-              properties: {
-                type: { const: "state.transition" },
-                to: { const: "failed" },
-                terminalSource: { $ref: "#/$defs/nonTerminalStatus" }
-              }
+            minItems: 1
+          }
+        }
+      }
+    },
+    {
+      if: {
+        properties: {
+          status: {
+            not: {
+              enum: [
+                "blocked",
+                "ready_for_handoff"
+              ]
             }
+          }
+        },
+        required: [
+          "status"
+        ]
+      },
+      then: {
+        not: {
+          required: [
+            "resumeTo"
+          ]
+        }
+      }
+    },
+    {
+      if: {
+        properties: {
+          status: {
+            const: "awaiting_approval"
+          }
+        },
+        required: [
+          "status"
+        ]
+      },
+      then: {
+        required: [
+          "pendingGate",
+          "contractDigest"
+        ],
+        properties: {
+          pendingGate: {
+            enum: [
+              "pre_build",
+              "completion"
+            ]
+          },
+          contractDigest: {
+            $ref: "#/$defs/text"
+          }
+        }
+      }
+    },
+    {
+      if: {
+        properties: {
+          status: {
+            enum: [
+              "discovering",
+              "awaiting_profile_choice",
+              "planning",
+              "awaiting_intake_decision",
+              "awaiting_approval",
+              "executing",
+              "validating",
+              "resolving_build",
+              "reviewing",
+              "resolving_assure",
+              "verifying",
+              "handing_off",
+              "ready_for_handoff",
+              "finished_local",
+              "finished"
+            ]
+          }
+        },
+        required: [
+          "status"
+        ]
+      },
+      then: {
+        required: [
+          "shape"
+        ],
+        properties: {
+          shape: {
+            $ref: "#/$defs/shapeState"
           }
         }
       }
     }
   ],
   $defs: {
-    eventAt: {
+    text: {
       type: "string",
-      oneOf: [
-        { pattern: "^(?!0000)(?:[0-9]{4}-(?:(?:01|03|05|07|08|10|12)-(?:0[1-9]|[12][0-9]|3[01])|(?:04|06|09|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8])))T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$" },
-        { pattern: "^(?!0000)(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$" }
+      minLength: 1,
+      maxLength: 4096
+    },
+    ref: {
+      type: "string",
+      minLength: 1,
+      maxLength: 512,
+      pattern: "^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]*$"
+    },
+    status: {
+      enum: [
+        "new",
+        "intaking",
+        "discovering",
+        "awaiting_profile_choice",
+        "planning",
+        "awaiting_intake_decision",
+        "awaiting_approval",
+        "executing",
+        "validating",
+        "resolving_build",
+        "reviewing",
+        "resolving_assure",
+        "verifying",
+        "handing_off",
+        "ready_for_handoff",
+        "blocked",
+        "cancelled",
+        "failed",
+        "finished_local",
+        "finished"
+      ]
+    },
+    resumeTarget: {
+      enum: [
+        "intaking",
+        "discovering",
+        "awaiting_profile_choice",
+        "planning",
+        "awaiting_intake_decision",
+        "awaiting_approval",
+        "executing",
+        "validating",
+        "resolving_build",
+        "reviewing",
+        "resolving_assure",
+        "verifying",
+        "handing_off"
       ]
     },
     historyReference: {
       type: "object",
       additionalProperties: false,
-      required: ["kind", "ref"],
+      required: [
+        "kind",
+        "ref"
+      ],
       properties: {
-        kind: { type: "string", enum: ["task", "mode-evidence", "migration-source", "migration-target", "artifact", "worktree", "context-capsule", "context", "issue", "correction", "gate", "scope", "handoff", "evidence", "receipt", "command", "criterion", "decision", "policy", "config", "git", "symbol"] },
-        ref: { type: "string", minLength: 1, maxLength: 512, pattern: "^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]*$" },
-        fingerprint: { type: "string", minLength: 1, maxLength: 512, pattern: "^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]*$" }
+        kind: {
+          enum: [
+            "task",
+            "shape",
+            "artifact",
+            "worktree",
+            "context-capsule",
+            "context",
+            "issue",
+            "correction",
+            "gate",
+            "scope",
+            "handoff",
+            "evidence",
+            "receipt",
+            "command",
+            "criterion",
+            "decision",
+            "policy",
+            "config",
+            "git",
+            "symbol"
+          ]
+        },
+        ref: {
+          $ref: "#/$defs/ref"
+        },
+        fingerprint: {
+          $ref: "#/$defs/ref"
+        }
+      }
+    },
+    workflowEvent: {
+      type: "object",
+      additionalProperties: false,
+      required: [
+        "sequence",
+        "at",
+        "type",
+        "refs"
+      ],
+      properties: {
+        sequence: {
+          type: "integer",
+          minimum: 1
+        },
+        at: {
+          type: "string"
+        },
+        type: {
+          enum: [
+            "task.created",
+            "task.blocked",
+            "task.resumed",
+            "gate.recorded",
+            "scope.approved",
+            "artifact.recorded",
+            "issue.recorded",
+            "correction.recorded",
+            "handoff.attempted",
+            "handoff.result",
+            "context.updated",
+            "intake.question_recorded",
+            "intake.answer_recorded",
+            "intake.checkpoint",
+            "advance.rejected",
+            "intake.reopened",
+            "discovery.target_recorded",
+            "discovery.evidence_recorded",
+            "discovery.completed",
+            "profile.choice_requested",
+            "profile.choice_recorded",
+            "decision.escalated",
+            "contract.projected",
+            "projection.reconciliation_requested",
+            "evidence.invalidated",
+            "shape.checkpoint"
+          ]
+        },
+        refs: {
+          type: "array",
+          minItems: 1,
+          maxItems: 16,
+          items: {
+            $ref: "#/$defs/historyReference"
+          }
+        }
       }
     },
     transitionEvent: {
       type: "object",
       additionalProperties: false,
-      required: ["type", "from", "to", "revision", "sourceFingerprint"],
+      required: [
+        "sequence",
+        "at",
+        "type",
+        "from",
+        "to",
+        "revision",
+        "sourceFingerprint"
+      ],
       properties: {
-        sequence: { type: "integer", minimum: 1 },
-        at: { $ref: "#/$defs/eventAt" },
-        type: { const: "state.transition" },
-        from: { $ref: "#/$defs/status" },
-        to: { $ref: "#/$defs/status" },
-        mode: { type: "string", enum: ["quick", "standard", "critical"] },
-        revision: { type: "integer", minimum: 1 },
-        sourceFingerprint: { type: "string", minLength: 1 },
-        terminalSource: { $ref: "#/$defs/nonTerminalStatus" },
-        terminalResumeTo: { $ref: "#/$defs/resumeTarget" },
-        gateContext: { type: "string", enum: ["pre_build", "critical_completion"] },
-        contractDigest: { type: "string", minLength: 1 },
-        guardEvidence: { type: "array", minItems: 1, items: { $ref: "#/$defs/guardEvidence" } },
-        gateDecision: { $ref: "#/$defs/gateDecision" },
-        legacyData: { type: "object" }
-      },
-      dependentRequired: { sequence: ["at"], at: ["sequence"] }
-    },
-    workflowEvent: {
-      type: "object",
-      additionalProperties: false,
-      required: ["sequence", "at", "type", "refs"],
-      properties: {
-        sequence: { type: "integer", minimum: 1 },
-        at: { $ref: "#/$defs/eventAt" },
-        type: { type: "string", enum: ["task.created", "state.migrated", "task.blocked", "task.resumed", "gate.recorded", "scope.approved", "artifact.recorded", "issue.recorded", "correction.recorded", "handoff.attempted", "handoff.result", "context.updated", "intake.question_recorded", "intake.answer_recorded", "intake.checkpoint", "advance.rejected", "intake.reopened"] },
-        refs: { type: "array", minItems: 1, maxItems: 16, items: { $ref: "#/$defs/historyReference" } }
+        sequence: {
+          type: "integer",
+          minimum: 1
+        },
+        at: {
+          type: "string"
+        },
+        type: {
+          const: "state.transition"
+        },
+        from: {
+          $ref: "#/$defs/status"
+        },
+        to: {
+          $ref: "#/$defs/status"
+        },
+        revision: {
+          type: "integer",
+          minimum: 1
+        },
+        sourceFingerprint: {
+          $ref: "#/$defs/text"
+        },
+        terminalSource: {
+          $ref: "#/$defs/status"
+        },
+        terminalResumeTo: {
+          $ref: "#/$defs/resumeTarget"
+        },
+        gateContext: {
+          enum: [
+            "pre_build",
+            "completion"
+          ]
+        },
+        contractDigest: {
+          $ref: "#/$defs/text"
+        },
+        guardEvidence: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object"
+          }
+        },
+        gateDecision: {
+          type: "object"
+        }
       }
     },
     historySummary: {
       type: "object",
       additionalProperties: false,
-      required: ["removedCount", "firstSequence", "lastSequence", "firstAt", "lastAt", "typeCounts", "modeConfirmed"],
+      required: [
+        "removedCount",
+        "firstSequence",
+        "lastSequence",
+        "firstAt",
+        "lastAt",
+        "typeCounts"
+      ],
       properties: {
-        removedCount: { type: "integer", minimum: 1 },
-        firstSequence: { type: "integer", minimum: 1 },
-        lastSequence: { type: "integer", minimum: 1 },
-        firstAt: { $ref: "#/$defs/eventAt" },
-        lastAt: { $ref: "#/$defs/eventAt" },
-        typeCounts: { type: "object", minProperties: 1, additionalProperties: { type: "integer", minimum: 1 } },
-        modeConfirmed: { type: "boolean" },
-        lastTransition: {
+        removedCount: {
+          type: "integer",
+          minimum: 1
+        },
+        firstSequence: {
+          type: "integer",
+          minimum: 1
+        },
+        lastSequence: {
+          type: "integer",
+          minimum: 1
+        },
+        firstAt: {
+          type: "string"
+        },
+        lastAt: {
+          type: "string"
+        },
+        typeCounts: {
           type: "object",
-          additionalProperties: false,
-          required: ["sequence", "revision", "to"],
-          properties: {
-            sequence: { type: "integer", minimum: 1 },
-            revision: { type: "integer", minimum: 1 },
-            to: { $ref: "#/$defs/status" }
+          additionalProperties: {
+            type: "integer",
+            minimum: 1
           }
         },
-        activeGate: { $ref: "#/$defs/historyGateAnchor" }
-      }
-    },
-    historyGateAnchor: {
-      type: "object",
-      additionalProperties: false,
-      required: ["gateContext", "contractDigest", "entrySequence", "entryRevision", "entryFrom", "sourceFingerprint"],
-      properties: {
-        gateContext: { type: "string", enum: ["pre_build", "critical_completion"] },
-        contractDigest: { type: "string", minLength: 1 },
-        entrySequence: { type: "integer", minimum: 1 },
-        entryRevision: { type: "integer", minimum: 1 },
-        entryFrom: { type: "string", enum: ["planning", "verifying"] },
-        sourceFingerprint: { type: "string", minLength: 1 },
-        verificationReceipt: { $ref: "#/$defs/evaluatorReceipt" }
+        lastTransition: {
+          type: "object"
+        },
+        activeGate: {
+          type: "object"
+        }
       }
     },
     activeArtifact: {
       type: "object",
       additionalProperties: false,
-      required: ["artifactId", "ownerRef", "fingerprint"],
+      required: [
+        "artifactId",
+        "ownerRef",
+        "fingerprint"
+      ],
       properties: {
-        artifactId: { type: "string", minLength: 1, maxLength: 1024 },
-        ownerRef: { type: "string", minLength: 1, maxLength: 1024 },
-        fingerprint: { type: "string", minLength: 1, maxLength: 1024 }
+        artifactId: {
+          $ref: "#/$defs/text"
+        },
+        ownerRef: {
+          $ref: "#/$defs/text"
+        },
+        fingerprint: {
+          $ref: "#/$defs/text"
+        }
       }
     },
     activeWorktree: {
       type: "object",
       additionalProperties: false,
-      required: ["worktreeRef", "gitFingerprint"],
+      required: [
+        "worktreeRef",
+        "gitFingerprint"
+      ],
       properties: {
-        worktreeRef: { type: "string", minLength: 1, maxLength: 1024 },
-        gitFingerprint: { type: "string", minLength: 1, maxLength: 1024 }
-      }
-    },
-    contextCapsule: {
-      type: "object",
-      additionalProperties: false,
-      required: ["schemaVersion", "entries", "fingerprints"],
-      properties: {
-        schemaVersion: { type: "integer", const: 1 },
-        entries: { type: "array", maxItems: 128, items: { $ref: "#/$defs/contextCapsuleEntry" } },
-        fingerprints: { type: "array", maxItems: 64, items: { $ref: "#/$defs/contextCapsuleFingerprint" } }
-      }
-    },
-    contextCapsuleEntry: {
-      type: "object",
-      additionalProperties: false,
-      required: ["section", "ownerRef", "provenanceRef", "fingerprintRefs"],
-      properties: {
-        section: { type: "string", enum: ["objective", "approved_scope", "risk", "relevant_code", "constraints", "acceptance", "decision", "evidence"] },
-        ownerRef: { type: "string", minLength: 1, maxLength: 1024 },
-        provenanceRef: { type: "string", minLength: 1, maxLength: 1024 },
-        fingerprintRefs: { type: "array", minItems: 1, uniqueItems: true, items: { type: "string", minLength: 1, maxLength: 1024 } }
-      }
-    },
-    contextCapsuleFingerprint: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "kind", "value", "provenanceRef"],
-      properties: {
-        id: { type: "string", minLength: 1, maxLength: 1024 },
-        kind: { type: "string", enum: ["git", "config", "policy", "artifact", "worktree"] },
-        value: { type: "string", minLength: 1, maxLength: 1024 },
-        provenanceRef: { type: "string", minLength: 1, maxLength: 1024 }
+        worktreeRef: {
+          $ref: "#/$defs/text"
+        },
+        gitFingerprint: {
+          $ref: "#/$defs/text"
+        }
       }
     },
     verificationRequirements: {
       type: "object",
       additionalProperties: false,
-      required: ["schemaVersion", "sourceDigest", "requirementsDigest", "criterionIds", "mandatoryCheckIds"],
+      required: [
+        "schemaVersion",
+        "sourceDigest",
+        "requirementsDigest",
+        "criterionIds",
+        "mandatoryCheckIds"
+      ],
       properties: {
-        schemaVersion: { type: "integer", const: 1 },
-        sourceDigest: { type: "string", minLength: 1 },
-        requirementsDigest: { type: "string", minLength: 1 },
-        criterionIds: { type: "array", minItems: 1, uniqueItems: true, items: { type: "string", minLength: 1 } },
-        mandatoryCheckIds: { type: "array", uniqueItems: true, items: { type: "string", minLength: 1 } }
-      }
-    },
-    guardId: {
-      type: "string",
-      enum: ["task_initialized", "effective_constraints_valid", "mode_confirmed", "intake_complete", "intake_reopened", "routing_ready", "quick_scope_bounded", "critical_workspace_ready", "discovery_sufficient", "contract_complete", "approval_current", "task_authorized", "validation_fresh", "review_satisfied", "verification_complete", "correction_budget_available", "resume_metadata_valid", "resume_reconciled", "terminal_source_recorded", "gate_context_valid", "handoff_intent_resolved", "handoff_reconciled", "critical_completion_approved"]
-    },
-    guardEvidence: {
-      type: "object",
-      additionalProperties: false,
-      required: ["schemaVersion", "guard", "stateRevision", "stateFingerprint", "observedFingerprint", "evidenceRefs", "provenance", "result"],
-      properties: {
-        schemaVersion: { type: "integer", const: 1 },
-        guard: { $ref: "#/$defs/guardId" },
-        stateRevision: { type: "integer", minimum: 0 },
-        stateFingerprint: { type: "string", minLength: 1 },
-        observedFingerprint: { type: "string", minLength: 1 },
-        evidenceRefs: { type: "array", minItems: 1, items: { type: "string", minLength: 1 } },
-        provenance: { type: "string", enum: ["deterministic-check", "human-approval", "repository-observation", "migration-history"] },
-        result: { type: "string", enum: ["passed", "not_applicable"] },
-        evaluatorReceipt: { $ref: "#/$defs/evaluatorReceipt" }
-      },
-      allOf: [
-        {
-          if: {
-            allOf: [
-              { properties: { guard: { enum: ["intake_complete", "verification_complete", "handoff_intent_resolved", "handoff_reconciled", "critical_completion_approved"] } }, required: ["guard"] },
-              {
-                not: {
-                  properties: {
-                    guard: { const: "intake_complete" },
-                    provenance: { const: "migration-history" }
-                  },
-                  required: ["guard", "provenance"]
-                }
-              }
-            ]
+        schemaVersion: {
+          const: 1
+        },
+        sourceDigest: {
+          $ref: "#/$defs/text"
+        },
+        requirementsDigest: {
+          $ref: "#/$defs/text"
+        },
+        criterionIds: {
+          type: "array",
+          minItems: 1,
+          items: {
+            $ref: "#/$defs/text"
           },
-          then: { properties: { evaluatorReceipt: { $ref: "#/$defs/evaluatorReceipt" } }, required: ["evaluatorReceipt"] },
-          else: { not: { required: ["evaluatorReceipt"] } }
-        }
-      ]
-    },
-    evaluatorReceipt: {
-      type: "object",
-      additionalProperties: false,
-      required: ["schemaVersion", "evaluator", "outcome", "stateRevision", "stateFingerprint", "inputDigest", "evidenceRefs", "subjectIds", "completedIds", "receiptDigest"],
-      properties: {
-        schemaVersion: { type: "integer", const: 1 },
-        evaluator: { type: "string", enum: ["intake", "verification", "handoff_intent", "handoff_reconciliation", "critical_completion"] },
-        outcome: { type: "string", enum: ["intake_complete", "complete", "local_only", "external_selected", "action_required", "approved"] },
-        stateRevision: { type: "integer", minimum: 0 },
-        stateFingerprint: { type: "string", minLength: 1 },
-        inputDigest: { type: "string", minLength: 1 },
-        evidenceRefs: { type: "array", minItems: 1, uniqueItems: true, items: { type: "string", minLength: 1 } },
-        subjectIds: { type: "array", minItems: 1, uniqueItems: true, items: { type: "string", minLength: 1 } },
-        completedIds: { type: "array", uniqueItems: true, items: { type: "string", minLength: 1 } },
-        receiptDigest: { type: "string", minLength: 1 }
-      }
-    },
-    gateDecision: {
-      type: "object",
-      additionalProperties: false,
-      required: ["schemaVersion", "gate", "decision", "stateRevision", "stateFingerprint", "evidenceRef", "contractDigest"],
-      properties: {
-        schemaVersion: { type: "integer", const: 1 },
-        gate: { type: "string", enum: ["pre_build", "critical_completion"] },
-        decision: { type: "string", enum: ["approved", "rejected", "change_requested"] },
-        stateRevision: { type: "integer", minimum: 0 },
-        stateFingerprint: { type: "string", minLength: 1 },
-        evidenceRef: { type: "string", minLength: 1 },
-        contractDigest: { type: "string", minLength: 1 }
-      }
-    },
-    status: {
-      type: "string",
-      enum: ["new", "awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off", "ready_for_handoff", "blocked", "cancelled", "failed", "finished_local", "finished"]
-    },
-    nonTerminalStatus: {
-      type: "string",
-      enum: ["new", "awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off", "ready_for_handoff", "blocked"]
-    },
-    resumeTarget: {
-      type: "string",
-      enum: ["awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off"]
-    },
-    routingSnapshot: {
-      type: "object",
-      additionalProperties: false,
-      required: ["schemaVersion", "capturedAt", "plan", "account", "quota", "models", "warnings", "provenance"],
-      properties: {
-        schemaVersion: { type: "integer", const: 1 },
-        capturedAt: { type: "string" },
-        plan: { type: "string", enum: ["plus", "pro_5x", "pro_20x", "unknown"] },
-        account: {
-          type: "object",
-          additionalProperties: false,
-          properties: { planType: { type: "string" } }
+          uniqueItems: true
         },
-        quota: {
-          type: "object",
-          additionalProperties: false,
-          required: ["pressure", "source"],
-          properties: {
-            windowDurationMins: { type: "number" },
-            usedPercent: { type: "number", minimum: 0, maximum: 100 },
-            resetsAt: { type: "number" },
-            pressure: { type: "string", enum: ["normal", "warning", "critical", "unknown"] },
-            source: { type: "string", enum: ["app-server", "last-known", "unknown"] },
-            observedWindow: {
-              type: "object",
-              additionalProperties: false,
-              required: ["windowDurationMins", "usedPercent"],
-              properties: {
-                windowDurationMins: { type: "number" },
-                usedPercent: { type: "number", minimum: 0, maximum: 100 },
-                resetsAt: { type: "number" }
-              }
-            }
-          }
-        },
-        models: {
+        mandatoryCheckIds: {
           type: "array",
           items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["id", "supportedReasoningEfforts"],
-            properties: {
-              id: { type: "string", enum: ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] },
-              supportedReasoningEfforts: {
-                type: "array",
-                items: { type: "string", enum: ["low", "medium", "high", "xhigh"] }
-              }
-            }
-          }
-        },
-        warnings: { type: "array", items: { type: "string" } },
-        provenance: {
-          type: "object",
-          additionalProperties: false,
-          required: ["plan", "quota", "models"],
-          properties: {
-            plan: { type: "string", enum: ["config", "account/read", "unknown"] },
-            quota: { type: "string", enum: ["account/rateLimits/read", "last-known-cache", "unknown"] },
-            models: { type: "string", enum: ["model/list", "unknown"] }
-          }
-        },
-        subscriptionMultiplier: { type: "number", exclusiveMinimum: 0 }
-      }
-    },
-    routingDecision: {
-      type: "object",
-      additionalProperties: false,
-      required: ["stage", "model", "effort", "quotaPressure", "reason", "warnings"],
-      properties: {
-        stage: { type: "string", enum: ["discover", "plan", "execute", "debug", "review", "verify"] },
-        model: { type: ["string", "null"], enum: ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", null] },
-        effort: { type: ["string", "null"], enum: ["low", "medium", "high", "xhigh", null] },
-        quotaPressure: { type: "string", enum: ["normal", "warning", "critical", "unknown"] },
-        reason: { type: "string" },
-        warnings: { type: "array", items: { type: "string" } }
+            $ref: "#/$defs/text"
+          },
+          uniqueItems: true
+        }
       }
     },
     intakeState: {
       type: "object",
       additionalProperties: false,
-      required: ["schemaVersion", "brief", "decisions", "answeredDecisionKeys", "invalidations", "contradictions", "semanticComplete", "deterministicComplete", "checkpointDue", "semanticRetryCount", "metrics"],
+      required: [
+        "schemaVersion",
+        "brief",
+        "decisions",
+        "answeredDecisionKeys",
+        "invalidations",
+        "contradictions",
+        "semanticComplete",
+        "deterministicComplete",
+        "checkpointDue",
+        "semanticRetryCount",
+        "metrics"
+      ],
       properties: {
-        schemaVersion: { type: "integer", const: 1 },
-        brief: { $ref: "#/$defs/intakeBrief" },
-        activeQuestion: { $ref: "#/$defs/decisionQuestion" },
+        schemaVersion: {
+          const: 1
+        },
+        brief: {
+          $ref: "#/$defs/intakeBrief"
+        },
+        activeQuestion: {
+          type: "object"
+        },
         decisions: {
-          type: "array",
-          maxItems: 32,
-          items: { $ref: "#/$defs/intakeDecision" }
+          type: "array"
         },
         answeredDecisionKeys: {
           type: "array",
-          maxItems: 32,
-          uniqueItems: true,
-          items: { $ref: "#/$defs/intakeText" }
+          items: {
+            type: "string"
+          }
         },
         invalidations: {
-          type: "array",
-          maxItems: 32,
-          items: { $ref: "#/$defs/intakeInvalidation" }
+          type: "array"
         },
         contradictions: {
           type: "array",
-          maxItems: 32,
-          items: { $ref: "#/$defs/intakeText" }
+          items: {
+            type: "string"
+          }
         },
-        semanticComplete: { type: "boolean" },
-        deterministicComplete: { type: "boolean" },
-        checkpointDue: { type: "boolean" },
-        semanticRetryCount: { type: "integer", minimum: 0, maximum: 1 },
-        blockedReason: { type: "string", enum: ["semantic_output_invalid", "answer_required"] },
-        metrics: { $ref: "#/$defs/intakeMetrics" }
+        semanticComplete: {
+          type: "boolean"
+        },
+        deterministicComplete: {
+          type: "boolean"
+        },
+        checkpointDue: {
+          type: "boolean"
+        },
+        semanticRetryCount: {
+          type: "integer",
+          minimum: 0
+        },
+        blockedReason: {
+          enum: [
+            "semantic_output_invalid",
+            "answer_required"
+          ]
+        },
+        metrics: {
+          $ref: "#/$defs/intakeMetrics"
+        }
       }
     },
     intakeBrief: {
       type: "object",
       additionalProperties: false,
-      required: ["schemaVersion", "mode", "risk", "provenance", "technicalUnknowns"],
+      required: [
+        "schemaVersion",
+        "risk",
+        "provenance",
+        "technicalUnknowns"
+      ],
       properties: {
-        schemaVersion: { type: "integer", const: 1 },
-        objective: { $ref: "#/$defs/intakeText" },
+        schemaVersion: {
+          const: 1
+        },
+        objective: {
+          type: "string"
+        },
         successSignal: {
-          type: "object",
-          additionalProperties: false,
-          required: ["description", "observationMethod"],
-          properties: {
-            description: { $ref: "#/$defs/intakeText" },
-            observationMethod: { $ref: "#/$defs/intakeText" },
-            validator: { $ref: "#/$defs/intakeText" },
-            guardrails: { $ref: "#/$defs/intakeTextList" }
-          }
+          type: "object"
         },
-        mode: { type: "string", enum: ["quick", "standard", "critical"] },
-        risk: { type: "string", enum: ["low", "medium", "high", "critical"] },
+        risk: {
+          enum: [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
         provenance: {
-          type: "object",
-          additionalProperties: false,
-          required: ["sourceRefs", "capturedAt", "freshnessRefs"],
-          properties: {
-            sourceRefs: { $ref: "#/$defs/intakeTextList" },
-            capturedAt: { $ref: "#/$defs/eventAt" },
-            freshnessRefs: { $ref: "#/$defs/intakeTextList" }
-          }
+          type: "object"
         },
-        successValidator: { $ref: "#/$defs/intakeText" },
-        successGuardrails: { $ref: "#/$defs/intakeTextList" },
-        determiningConstraints: { $ref: "#/$defs/intakeTextList" },
-        affectedUsers: { $ref: "#/$defs/intakeTextList" },
-        motivation: { $ref: "#/$defs/intakeText" },
-        urgency: { $ref: "#/$defs/intakeText" },
-        scopeBoundaries: { $ref: "#/$defs/intakeTextList" },
+        successValidator: {
+          type: "string"
+        },
+        successGuardrails: {
+          type: "array"
+        },
+        determiningConstraints: {
+          type: "array"
+        },
+        affectedUsers: {
+          type: "array"
+        },
+        motivation: {
+          type: "string"
+        },
+        urgency: {
+          type: "string"
+        },
+        scopeBoundaries: {
+          type: "array"
+        },
         technicalUnknowns: {
-          type: "array",
-          maxItems: 32,
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["key", "kind", "description", "owner"],
-            properties: {
-              key: { $ref: "#/$defs/intakeText" },
-              kind: { type: "string", enum: ["code", "dependency", "architecture", "validation", "operations"] },
-              description: { $ref: "#/$defs/intakeText" },
-              owner: { const: "shape" }
-            }
-          }
+          type: "array"
         }
       }
     },
-    decisionQuestion: {
+    shapeState: {
       type: "object",
       additionalProperties: false,
-      required: ["schemaVersion", "id", "decisionKey", "missingInformation", "determiningImpact", "prompt", "options", "recommendedOptionId", "recommendationBasis", "recommendationConfidence", "freeFormAllowed", "clarificationCount"],
+      required: [
+        "schemaVersion",
+        "risk",
+        "intakeBriefRef",
+        "discoveryTargets",
+        "evidence",
+        "sourceFingerprints",
+        "decisionEscalations",
+        "dependencyGraph",
+        "invalidations",
+        "budget",
+        "semanticRetryCounts",
+        "evaluatorReceipts"
+      ],
       properties: {
-        schemaVersion: { type: "integer", const: 1 },
-        id: { $ref: "#/$defs/intakeText" },
-        decisionKey: { $ref: "#/$defs/intakeText" },
-        missingInformation: { $ref: "#/$defs/intakeText" },
-        determiningImpact: { $ref: "#/$defs/intakeText" },
-        prompt: { $ref: "#/$defs/intakeText" },
-        options: {
+        schemaVersion: {
+          const: 1
+        },
+        risk: {
+          enum: [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        intakeBriefRef: {
+          $ref: "#/$defs/text"
+        },
+        discoveryTargets: {
           type: "array",
-          minItems: 2,
-          maxItems: 3,
+          maxItems: 4096,
           items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["id", "label", "impact"],
-            properties: {
-              id: { $ref: "#/$defs/intakeText" },
-              label: { $ref: "#/$defs/intakeText" },
-              impact: { $ref: "#/$defs/intakeText" }
-            }
+            type: "object"
           }
         },
-        recommendedOptionId: { $ref: "#/$defs/intakeText" },
-        recommendationBasis: { $ref: "#/$defs/intakeText" },
-        recommendationConfidence: { type: "string", enum: ["high", "medium", "low"] },
-        freeFormAllowed: { const: true },
-        clarificationCount: { type: "integer", minimum: 0, maximum: 2 }
-      }
-    },
-    intakeDecision: {
-      type: "object",
-      additionalProperties: false,
-      required: ["key", "value", "source", "provenanceRef", "recommendationDisposition", "dependsOn"],
-      properties: {
-        key: { $ref: "#/$defs/intakeText" },
-        value: { $ref: "#/$defs/intakeText" },
-        source: { type: "string", enum: ["user", "repository"] },
-        provenanceRef: { $ref: "#/$defs/intakeText" },
-        recommendationDisposition: { type: "string", enum: ["accepted", "modified", "not_applicable"] },
-        dependsOn: { $ref: "#/$defs/intakeTextList" }
-      }
-    },
-    intakeInvalidation: {
-      type: "object",
-      additionalProperties: false,
-      required: ["decisionKey", "reason", "at"],
-      properties: {
-        decisionKey: { $ref: "#/$defs/intakeText" },
-        reason: { $ref: "#/$defs/intakeText" },
-        at: { $ref: "#/$defs/eventAt" }
+        evidence: {
+          type: "array",
+          maxItems: 4096,
+          items: {
+            type: "object"
+          }
+        },
+        sourceFingerprints: {
+          type: "array",
+          maxItems: 4096,
+          items: {
+            type: "object"
+          }
+        },
+        decisionEscalations: {
+          type: "array",
+          maxItems: 4096,
+          items: {
+            type: "object"
+          }
+        },
+        activeEscalationId: {
+          $ref: "#/$defs/text"
+        },
+        preparationProfileChoice: {
+          type: "object"
+        },
+        contract: {
+          type: "object"
+        },
+        projection: {
+          type: "object"
+        },
+        dependencyGraph: {
+          type: "object"
+        },
+        invalidations: {
+          type: "array",
+          maxItems: 4096,
+          items: {
+            type: "object"
+          }
+        },
+        budget: {
+          type: "object"
+        },
+        semanticRetryCounts: {
+          type: "object"
+        },
+        evaluatorReceipts: {
+          type: "array",
+          maxItems: 4096,
+          items: {
+            type: "object"
+          }
+        }
       }
     },
     intakeMetrics: {
       type: "object",
       additionalProperties: false,
-      required: ["modelCalls", "questionsAsked", "questionsAvoided", "distinctQuestions", "recommendationsAccepted", "recommendationsModified", "zeroQuestionPath", "lateReopenings", "modeChanges"],
+      required: [
+        "modelCalls",
+        "questionsAsked",
+        "questionsAvoided",
+        "distinctQuestions",
+        "recommendationsAccepted",
+        "recommendationsModified",
+        "zeroQuestionPath",
+        "lateReopenings"
+      ],
       properties: {
-        modelCalls: { type: "integer", minimum: 0 },
-        questionsAsked: { type: "integer", minimum: 0 },
-        questionsAvoided: { type: "integer", minimum: 0 },
-        distinctQuestions: { type: "integer", minimum: 0 },
-        recommendationsAccepted: { type: "integer", minimum: 0 },
-        recommendationsModified: { type: "integer", minimum: 0 },
-        zeroQuestionPath: { type: "boolean" },
-        lateReopenings: { type: "integer", minimum: 0 },
-        modeChanges: { type: "integer", minimum: 0 },
-        inputTokens: { type: "integer", minimum: 0 },
-        outputTokens: { type: "integer", minimum: 0 },
-        latencyMs: { type: "integer", minimum: 0 }
+        modelCalls: {
+          type: "integer",
+          minimum: 0
+        },
+        questionsAsked: {
+          type: "integer",
+          minimum: 0
+        },
+        questionsAvoided: {
+          type: "integer",
+          minimum: 0
+        },
+        distinctQuestions: {
+          type: "integer",
+          minimum: 0
+        },
+        recommendationsAccepted: {
+          type: "integer",
+          minimum: 0
+        },
+        recommendationsModified: {
+          type: "integer",
+          minimum: 0
+        },
+        lateReopenings: {
+          type: "integer",
+          minimum: 0
+        },
+        inputTokens: {
+          type: "integer",
+          minimum: 0
+        },
+        outputTokens: {
+          type: "integer",
+          minimum: 0
+        },
+        latencyMs: {
+          type: "integer",
+          minimum: 0
+        },
+        zeroQuestionPath: {
+          type: "boolean"
+        }
       }
-    },
-    intakeText: {
-      type: "string",
-      minLength: 1,
-      maxLength: 2e3,
-      pattern: "^[^\\u0000\\r\\n]+$"
-    },
-    intakeTextList: {
-      type: "array",
-      maxItems: 32,
-      uniqueItems: true,
-      items: { $ref: "#/$defs/intakeText" }
     }
   }
 };
@@ -17521,7 +18418,7 @@ var state_schema_default = {
 // src/state-validator.ts
 var ajv = new import__2.Ajv2020({ allErrors: true, strict: true });
 var validate = ajv.compile(state_schema_default);
-function validateStateV2(value) {
+function validateStateV3(value) {
   const valid = validate(value);
   return { valid, errors: validate.errors ? [...validate.errors] : [] };
 }
@@ -17530,360 +18427,251 @@ function validateStateV2(value) {
 var HISTORY_LIMIT = 200;
 var HISTORY_REFERENCE_LIMIT = 16;
 var HISTORY_REFERENCE_TOTAL_CHARS = 4096;
-var StateMigrationError = class extends Error {
+var StateValidationError = class extends Error {
   constructor(code, message) {
     super(message);
     this.code = code;
-    this.name = "StateMigrationError";
+    this.name = "StateValidationError";
   }
   code;
 };
 function createState(input) {
-  if (!isTaskMode(input.mode) || !nonEmpty(input.modeEvidenceRef)) throw new Error("createState requires mode and modeEvidenceRef.");
+  if (!nonEmpty(input.taskId) || !isRisk(input.risk)) throw new Error("createState requires taskId and risk.");
   const contextCapsule = input.contextCapsule ?? defaultContextCapsule(input.configSnapshot, input.policySnapshot);
-  const created = {
-    sequence: 1,
-    at: normalizeEventAt(input.at),
-    type: "task.created",
-    refs: [
-      { kind: "task", ref: "state:taskId" },
-      { kind: "mode-evidence", ref: "state:modeEvidenceRef" }
-    ]
-  };
   const state = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     taskId: input.taskId,
     status: "new",
     revision: 0,
-    mode: input.mode,
-    modeEvidenceRef: input.modeEvidenceRef,
-    modeConfirmed: false,
-    configSnapshot: input.configSnapshot,
-    policySnapshot: input.policySnapshot,
+    risk: input.risk,
+    configSnapshot: copy3(input.configSnapshot),
+    policySnapshot: copy3(input.policySnapshot),
     issues: [],
     reviewCycle: 0,
     remainingActions: [],
-    history: [created],
-    ...input.activeArtifact ? { activeArtifact: copy2(input.activeArtifact) } : {},
-    ...input.activeWorktree ? { activeWorktree: copy2(input.activeWorktree) } : {},
-    contextCapsule: copy2(contextCapsule),
-    ...input.intake ? { intake: copy2(input.intake) } : {},
+    history: [{ sequence: 1, at: normalizeEventAt(input.at), type: "task.created", refs: [{ kind: "task", ref: "state:taskId" }] }],
+    ...input.activeArtifact ? { activeArtifact: copy3(input.activeArtifact) } : {},
+    ...input.activeWorktree ? { activeWorktree: copy3(input.activeWorktree) } : {},
+    contextCapsule: copy3(contextCapsule),
+    ...input.intake ? { intake: copy3(input.intake) } : {},
+    ...input.shape ? { shape: copy3(input.shape) } : {},
     benchmarkEnabled: input.benchmarkEnabled ?? false,
-    ...input.routingSnapshot ? { routingSnapshot: input.routingSnapshot } : {},
+    ...input.routingSnapshot ? { routingSnapshot: copy3(input.routingSnapshot) } : {},
     routingPolicyVersion: ROUTING_POLICY_VERSION,
     routingDecisions: [],
-    ...input.verificationRequirements ? {
-      verificationRequirements: {
-        ...copy2(input.verificationRequirements),
-        requirementsDigest: digest({
-          criterionIds: input.verificationRequirements.criterionIds,
-          mandatoryCheckIds: input.verificationRequirements.mandatoryCheckIds
-        })
-      }
-    } : {}
+    ...input.verificationRequirements ? { verificationRequirements: normalizeVerificationRequirements(input.verificationRequirements) } : {}
   };
-  assertV2State(state);
+  assertStateV3(state);
   return state;
 }
+function loadStateV3(value) {
+  if (!isRecord6(value) || value.schemaVersion !== 3) {
+    const version = isRecord6(value) ? String(value.schemaVersion) : "missing";
+    throw new StateValidationError("state_schema_incompatible", `Task state schema ${version} is incompatible; schemaVersion 3 required. No migration is available.`);
+  }
+  assertStateV3(value);
+  return copy3(value);
+}
+function assertStateV3(value) {
+  const result = validateStateV3(value);
+  if (!result.valid) throw new StateValidationError("state_invalid", `Task state V3 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`);
+  const state = value;
+  if (!isTaskStatus(state.status) || !isRisk(state.risk)) throw new StateValidationError("state_invalid", "Task state V3 status or risk is invalid.");
+  validateHistory(state);
+  if (state.intake && state.intake.brief.risk !== state.risk) throw new StateValidationError("state_invalid", "Task risk contradicts Intake Brief risk.");
+  if (state.shape) {
+    try {
+      validateShapeState(state.shape);
+    } catch (error) {
+      throw new StateValidationError("state_invalid", `Persisted ShapeState is invalid: ${error instanceof Error ? error.message : "unknown error"}.`);
+    }
+    if (state.shape.risk !== state.risk || state.shape.intakeBriefRef !== "state:intake.brief") throw new StateValidationError("state_invalid", "Shape state is not bound to current Intake Brief and risk.");
+  }
+  if (["discovering", "awaiting_profile_choice", "planning", "awaiting_intake_decision", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off", "ready_for_handoff", "finished_local", "finished"].includes(state.status) && !state.shape) {
+    throw new StateValidationError("state_invalid", `Task status ${state.status} requires persisted ShapeState.`);
+  }
+  if (state.status === "blocked") {
+    if (!state.resumeTo || !isOperationalResumeTarget(state.resumeTo) || !state.remainingActions.length) throw new StateValidationError("state_invalid", "Blocked state requires exact operational resume metadata.");
+  } else if (state.status === "ready_for_handoff") {
+    if (state.resumeTo !== "handing_off" || !state.remainingActions.length) throw new StateValidationError("state_invalid", "ready_for_handoff requires handing_off resume metadata.");
+  } else if (state.resumeTo !== void 0) throw new StateValidationError("state_invalid", "Only blocked or ready_for_handoff may contain resumeTo.");
+  if (state.status === "awaiting_approval" && (!state.pendingGate || !nonEmpty(state.contractDigest))) throw new StateValidationError("state_invalid", "awaiting_approval requires gate and contract digest.");
+}
 function guardStateFingerprint(state) {
-  return createHash("sha256").update(stable({
-    base: stateFingerprintAtRevision(state, state.revision),
+  return digest2({
+    schemaVersion: state.schemaVersion,
+    taskId: state.taskId,
     status: state.status,
-    modeConfirmed: state.modeConfirmed,
+    revision: state.revision,
+    risk: state.risk,
     resumeTo: state.resumeTo,
     remainingActions: state.remainingActions,
     pendingGate: state.pendingGate,
     contractDigest: state.contractDigest,
-    issues: state.issues,
-    reviewCycle: state.reviewCycle,
+    configSnapshot: state.configSnapshot,
+    policySnapshot: state.policySnapshot,
+    routingSnapshot: state.routingSnapshot,
     routingDecisions: state.routingDecisions,
     intake: state.intake,
-    benchmarkEnabled: state.benchmarkEnabled
-  })).digest("hex");
+    shape: state.shape,
+    issues: state.issues,
+    reviewCycle: state.reviewCycle
+  });
 }
 function createGuardAttestation(state, guard, input) {
-  assertV2State(state);
+  assertStateV3(state);
   if (!GUARD_IDS.includes(guard)) throw new Error(`Unknown transition guard ${String(guard)}.`);
   if (guard === "intake_complete") {
     validateCompleteIntake(state);
-    if (!Array.isArray(input.evidenceRefs) || !input.evidenceRefs.length || !input.evidenceRefs.every(nonEmpty)) {
-      throw new Error("intake_complete requires evidence references.");
-    }
-    const subjectIds = ["objective", "success_signal", "mode", "risk"];
-    return createEvaluatorEvidence(state, "intake_complete", "deterministic-check", {
-      evaluator: "intake",
-      outcome: "intake_complete",
-      inputDigest: digest(state.intake),
-      evidenceRefs: [...input.evidenceRefs],
-      subjectIds,
-      completedIds: subjectIds
-    });
+    return createEvaluatorEvidence(state, guard, "deterministic-check", { evaluator: "intake", outcome: "intake_complete", inputDigest: digest2(state.intake), evidenceRefs: [...input.evidenceRefs], subjectIds: ["objective", "success_signal", "risk"], completedIds: ["objective", "success_signal", "risk"] });
   }
-  if (TRUSTED_EVALUATOR_REQUIRED.has(guard)) throw new Error(`Guard ${guard} requires trusted evaluator.`);
-  const evidence = {
-    schemaVersion: 1,
-    guard,
-    stateRevision: state.revision,
-    stateFingerprint: guardStateFingerprint(state),
-    observedFingerprint: input.observedFingerprint,
-    evidenceRefs: [...input.evidenceRefs],
-    provenance: input.provenance,
-    result: input.result ?? "passed"
-  };
+  if (TRUSTED_GUARDS.has(guard)) throw new Error(`Guard ${guard} requires trusted evaluator.`);
+  if (guard === "profile_selected") validateSelectedProfile(state);
+  const evidence = { schemaVersion: 1, guard, stateRevision: state.revision, stateFingerprint: guardStateFingerprint(state), observedFingerprint: input.observedFingerprint, evidenceRefs: [...input.evidenceRefs], provenance: input.provenance, result: input.result ?? "passed" };
   validateGuardEvidence(state, evidence);
   return evidence;
 }
-var trustedEvaluatorEvidence = /* @__PURE__ */ new WeakSet();
+var trustedEvidence = /* @__PURE__ */ new WeakSet();
+function evaluateDiscoveryGuard(state, receipt) {
+  assertStateV3(state);
+  if (!state.shape || !evaluateDiscoveryCompleteness(state.shape).complete) throw new Error("Discovery evaluator requires current complete Shape Discovery.");
+  const current = state.shape.evaluatorReceipts.find((candidate) => candidate.evaluator === "discovery" && candidate.receiptDigest === receipt.receiptDigest);
+  if (!current || digestWithoutReceipt(current) !== digestWithoutReceipt(receipt)) throw new Error("Discovery receipt is stale or not persisted.");
+  return createEvaluatorEvidence(state, "discovery_sufficient", "repository-observation", { evaluator: "discovery", outcome: "discovery_sufficient", inputDigest: receipt.inputDigest, evidenceRefs: receipt.evidenceRefs, subjectIds: receipt.subjectIds, completedIds: receipt.completedIds });
+}
+function evaluatePlanningGuard(state, receipt) {
+  assertStateV3(state);
+  if (!state.shape || !evaluateContractCompleteness(state.shape).complete || state.shape.contract?.digest !== state.contractDigest && state.status === "awaiting_approval") throw new Error("Planning evaluator requires current complete Shape contract.");
+  const current = state.shape.evaluatorReceipts.find((candidate) => candidate.evaluator === "planning" && candidate.receiptDigest === receipt.receiptDigest);
+  if (!current || digestWithoutReceipt(current) !== digestWithoutReceipt(receipt)) throw new Error("Planning receipt is stale or not persisted.");
+  return createEvaluatorEvidence(state, "contract_complete", "deterministic-check", { evaluator: "planning", outcome: "contract_complete", inputDigest: receipt.inputDigest, evidenceRefs: receipt.evidenceRefs, subjectIds: receipt.subjectIds, completedIds: receipt.completedIds });
+}
 function evaluateVerification(state, input) {
-  assertV2State(state);
+  assertStateV3(state);
   const requirements = state.verificationRequirements;
   if (!requirements) throw new Error("Verification requires state-bound verificationRequirements.");
-  validateVerificationRequirements(requirements);
-  assertExactObservations(state, "acceptance criteria", requirements.criterionIds, input.criteria, true);
-  assertExactObservations(state, "mandatory checks", requirements.mandatoryCheckIds, input.mandatoryChecks, false);
+  assertExactObservations(state, requirements.criterionIds, input.criteria, "acceptance criteria", true);
+  assertExactObservations(state, requirements.mandatoryCheckIds, input.mandatoryChecks, "mandatory checks", false);
   const observations = [...input.criteria, ...input.mandatoryChecks];
-  const subjectIds = [
-    ...requirements.criterionIds.map((id) => `criterion:${id}`),
-    ...requirements.mandatoryCheckIds.map((id) => `check:${id}`)
-  ];
-  return createEvaluatorEvidence(state, "verification_complete", "deterministic-check", {
-    evaluator: "verification",
-    outcome: "complete",
-    inputDigest: digest({
-      requirements,
-      criteria: input.criteria.map(({ stateRevision: _stateRevision, ...item }) => item),
-      mandatoryChecks: input.mandatoryChecks.map(({ stateRevision: _stateRevision, ...item }) => item)
-    }),
-    evidenceRefs: observations.map((item) => item.evidenceRef),
-    subjectIds,
-    completedIds: subjectIds
-  });
+  const ids = [...requirements.criterionIds.map((id) => `criterion:${id}`), ...requirements.mandatoryCheckIds.map((id) => `check:${id}`)];
+  return createEvaluatorEvidence(state, "verification_complete", "deterministic-check", { evaluator: "verification", outcome: "complete", inputDigest: digest2({ requirements, input }), evidenceRefs: observations.map((item) => item.evidenceRef), subjectIds: ids, completedIds: ids });
 }
 function evaluateHandoffIntent(state, input) {
-  assertV2State(state);
-  if (!nonEmpty(input.intentEvidenceRef) || !Array.isArray(input.actions)) throw new Error("Handoff intent requires explicit action set and evidence reference.");
-  const ids = input.actions.map((action) => action.id);
-  assertUniqueNonEmpty(ids, "handoff action IDs");
-  for (const action of input.actions) {
-    if (action.stateRevision !== state.revision || !nonEmpty(action.observedFingerprint) || !nonEmpty(action.evidenceRef) || !["required", "selected", "not_selected"].includes(action.disposition)) throw new Error(`Handoff intent observation ${String(action.id)} is stale or malformed.`);
-  }
-  const selected = input.actions.filter((action) => action.disposition !== "not_selected").map((action) => action.id);
-  if (input.delivery === "local" && selected.length) throw new Error("Local handoff intent cannot contain required or selected external actions.");
-  if (input.delivery === "external" && !selected.length) throw new Error("External handoff intent requires at least one required or selected action.");
-  if (input.delivery !== "local" && input.delivery !== "external") throw new Error("Unknown handoff delivery intent.");
-  return createEvaluatorEvidence(state, "handoff_intent_resolved", "repository-observation", {
-    evaluator: "handoff_intent",
-    outcome: input.delivery === "local" ? "local_only" : "external_selected",
-    inputDigest: digest(input),
-    evidenceRefs: [input.intentEvidenceRef, ...input.actions.map((item) => item.evidenceRef)],
-    subjectIds: ids,
-    completedIds: selected
-  });
+  assertStateV3(state);
+  if (!nonEmpty(input.intentEvidenceRef) || !Array.isArray(input.actions)) throw new Error("Handoff intent requires action set and evidence.");
+  assertUnique(input.actions.map((item) => item.id), "handoff action IDs", true);
+  for (const item of input.actions) if (item.stateRevision !== state.revision || !nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef)) throw new Error(`Handoff action ${item.id} is stale or malformed.`);
+  const selected = input.actions.filter((item) => item.disposition !== "not_selected").map((item) => item.id);
+  if (input.delivery === "local" && selected.length) throw new Error("Local handoff cannot select external actions.");
+  if (input.delivery === "external" && !selected.length) throw new Error("External handoff requires selected action.");
+  return createEvaluatorEvidence(state, "handoff_intent_resolved", "repository-observation", { evaluator: "handoff_intent", outcome: input.delivery === "local" ? "local_only" : "external_selected", inputDigest: digest2(input), evidenceRefs: [input.intentEvidenceRef, ...input.actions.map((item) => item.evidenceRef)], subjectIds: input.actions.map((item) => item.id), completedIds: selected });
 }
 function evaluateHandoffReconciliation(state, intent, input) {
-  assertV2State(state);
-  if (!trustedEvaluatorEvidence.has(intent) || intent.guard !== "handoff_intent_resolved") {
-    throw new Error("Handoff reconciliation requires intent from trusted evaluator in current runtime.");
-  }
+  assertStateV3(state);
   validateGuardEvidence(state, intent);
-  const intentReceipt = intent.evaluatorReceipt;
-  if (!intentReceipt || intentReceipt.evaluator !== "handoff_intent" || intentReceipt.outcome !== "external_selected") {
-    throw new Error("Handoff reconciliation requires external handoff intent.");
-  }
-  const selectedIds = [...intentReceipt.completedIds];
-  const observationIds = input.observations.map((item) => item.actionId);
-  assertSameIds(selectedIds, observationIds, "handoff reconciliation actions");
+  if (!trustedEvidence.has(intent) || intent.evaluatorReceipt?.evaluator !== "handoff_intent" || intent.evaluatorReceipt.outcome !== "external_selected") throw new Error("Handoff reconciliation requires trusted external intent.");
+  assertSameIds(intent.evaluatorReceipt.completedIds, input.observations.map((item) => item.actionId), "handoff actions");
   const completed = [];
-  for (const observation of input.observations) {
-    if (observation.stateRevision !== state.revision || !nonEmpty(observation.observedFingerprint) || !nonEmpty(observation.evidenceRef) || !["completed", "pending", "blocked"].includes(observation.status)) throw new Error(`Handoff observation ${String(observation.actionId)} is stale or malformed.`);
-    if (observation.status === "completed") {
-      if (!nonEmpty(observation.receiptRef)) throw new Error(`Completed handoff action ${observation.actionId} requires receiptRef.`);
-      completed.push(observation.actionId);
-    } else if (observation.receiptRef !== void 0) {
-      throw new Error(`Incomplete handoff action ${observation.actionId} cannot contain receiptRef.`);
-    }
+  for (const item of input.observations) {
+    if (item.stateRevision !== state.revision || !nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef)) throw new Error(`Handoff observation ${item.actionId} is stale or malformed.`);
+    if (item.status === "completed") {
+      if (!nonEmpty(item.receiptRef)) throw new Error(`Completed handoff action ${item.actionId} requires receiptRef.`);
+      completed.push(item.actionId);
+    } else if (item.receiptRef !== void 0) throw new Error(`Incomplete handoff action ${item.actionId} cannot contain receiptRef.`);
   }
-  return createEvaluatorEvidence(state, "handoff_reconciled", "repository-observation", {
-    evaluator: "handoff_reconciliation",
-    outcome: completed.length === selectedIds.length ? "complete" : "action_required",
-    inputDigest: digest({ intentReceiptDigest: intentReceipt.receiptDigest, ...input }),
-    evidenceRefs: input.observations.flatMap((item) => [item.evidenceRef, ...item.receiptRef ? [item.receiptRef] : []]),
-    subjectIds: selectedIds,
-    completedIds: completed
-  });
+  return createEvaluatorEvidence(state, "handoff_reconciled", "repository-observation", { evaluator: "handoff_reconciliation", outcome: completed.length === input.observations.length ? "complete" : "action_required", inputDigest: digest2(input), evidenceRefs: input.observations.flatMap((item) => [item.evidenceRef, ...item.receiptRef ? [item.receiptRef] : []]), subjectIds: input.observations.map((item) => item.actionId), completedIds: completed });
 }
-function evaluateCriticalCompletionApproval(state, decision) {
-  assertV2State(state);
-  if (state.status !== "awaiting_approval" || state.mode !== "critical" || state.pendingGate !== "critical_completion") {
-    throw new Error("Critical completion evaluator requires Critical completion gate.");
-  }
-  if (decision.decision !== "approved" || decision.gate !== "critical_completion" || decision.stateRevision !== state.revision || decision.stateFingerprint !== guardStateFingerprint(state) || decision.contractDigest !== state.contractDigest || !nonEmpty(decision.evidenceRef)) throw new Error("Critical completion approval is stale, malformed, or not approved.");
-  const gateEntry = [...state.history].reverse().find(
-    (event) => isTransitionEvent(event) && event.from === "verifying" && event.to === "awaiting_approval" && event.gateContext === "critical_completion" && event.contractDigest === state.contractDigest
-  );
-  const compactedGate = state.historySummary?.activeGate;
-  const entryVerification = gateEntry?.guardEvidence?.find((item) => item.guard === "verification_complete");
-  const verificationReceipt = entryVerification?.evaluatorReceipt ?? (compactedGate?.gateContext === "critical_completion" && compactedGate.contractDigest === state.contractDigest ? compactedGate.verificationReceipt : void 0);
-  if (!verificationReceipt || verificationReceipt.evaluator !== "verification") {
-    throw new Error("Critical completion gate lacks trusted verification receipt.");
-  }
-  if (entryVerification) validateEvaluatorReceipt(entryVerification, gateEntry?.sourceFingerprint, gateEntry ? gateEntry.revision - 1 : -1);
-  else if (compactedGate) validateCompactedVerificationReceipt(compactedGate);
-  return createEvaluatorEvidence(state, "critical_completion_approved", "human-approval", {
-    evaluator: "critical_completion",
-    outcome: "approved",
-    inputDigest: digest({ decision, verificationReceiptDigest: verificationReceipt.receiptDigest }),
-    evidenceRefs: [decision.evidenceRef, verificationReceipt.receiptDigest],
-    subjectIds: [verificationReceipt.inputDigest],
-    completedIds: [decision.evidenceRef]
-  });
+function evaluateCompletionApproval(state, decision) {
+  assertStateV3(state);
+  if (state.status !== "awaiting_approval" || state.pendingGate !== "completion" || decision.decision !== "approved") throw new Error("Completion evaluator requires approved completion gate.");
+  validateGateDecision(state, decision);
+  return createEvaluatorEvidence(state, "completion_approved", "human-approval", { evaluator: "completion", outcome: "approved", inputDigest: digest2(decision), evidenceRefs: [decision.evidenceRef], subjectIds: [state.contractDigest], completedIds: [decision.evidenceRef] });
 }
 function createGateDecision(state, input) {
-  assertV2State(state);
-  if (state.status !== "awaiting_approval" || !state.pendingGate) throw new Error("Gate decision requires awaiting_approval with pendingGate.");
-  if (!nonEmpty(input.evidenceRef) || !nonEmpty(state.contractDigest)) throw new Error("Gate decision requires evidenceRef and state-bound contractDigest.");
-  return {
-    schemaVersion: 1,
-    gate: state.pendingGate,
-    decision: input.decision,
-    stateRevision: state.revision,
-    stateFingerprint: guardStateFingerprint(state),
-    evidenceRef: input.evidenceRef,
-    contractDigest: state.contractDigest
-  };
+  assertStateV3(state);
+  if (state.status !== "awaiting_approval" || !state.pendingGate || !state.contractDigest || !nonEmpty(input.evidenceRef)) throw new Error("Gate decision requires current gate, contract, and evidence.");
+  return { schemaVersion: 1, gate: state.pendingGate, decision: input.decision, stateRevision: state.revision, stateFingerprint: guardStateFingerprint(state), evidenceRef: input.evidenceRef, contractDigest: state.contractDigest };
+}
+function updateShapeState(state, shape, input) {
+  assertStateV3(state);
+  if (deriveMacroPhase(state) !== "SHAPE" && state.status !== "awaiting_intake_decision") {
+    throw new Error("ShapeState may change only in SHAPE or while resolving linked Intake escalation.");
+  }
+  if (!isRisk(shape.risk) || shape.risk !== state.risk || shape.intakeBriefRef !== "state:intake.brief") throw new Error("Shape update must remain bound to current Intake Brief and risk.");
+  return recordHistoryEvent({ ...state, shape: copy3(shape) }, input);
 }
 function addRoutingDecision(state, decision) {
-  assertV2State(state);
-  return { ...state, routingDecisions: [...state.routingDecisions ?? [], decision] };
+  assertStateV3(state);
+  return { ...state, routingDecisions: [...state.routingDecisions ?? [], copy3(decision)] };
 }
 function recordHistoryEvent(state, input) {
-  assertV2State(state);
+  assertStateV3(state);
   if (STATE_MACHINE[state.status].terminal) throw new Error("Terminal state history is immutable.");
-  const eventType = input.type;
-  if (!WORKFLOW_EVENT_TYPES.has(eventType) || eventType === "task.created" || eventType === "state.migrated") {
-    throw new Error(`Unsupported workflow history event type ${String(input.type)}.`);
-  }
-  validateHistoryReferences(input.refs, `Workflow event ${eventType}`);
-  const normalized = normalizeHistoryEnvelope(state);
-  const event = {
-    sequence: nextHistorySequence(normalized),
-    at: normalizeEventAt(input.at),
-    type: input.type,
-    refs: copy2(input.refs)
-  };
-  const output = withCompactedHistory(normalized, [...normalized.history, event]);
-  assertV2State(output);
-  return output;
+  validateHistoryReferences(input.refs, `Workflow event ${input.type}`);
+  const event = { sequence: nextSequence(state), at: normalizeEventAt(input.at), type: input.type, refs: copy3(input.refs) };
+  return compactAndValidate({ ...state, history: [...state.history, event] });
 }
 function updateResumeContext(state, input) {
-  assertV2State(state);
-  if (STATE_MACHINE[state.status].terminal) throw new Error("Terminal state resume context is immutable.");
-  const { activeArtifact: _activeArtifact, activeWorktree: _activeWorktree, ...base } = state;
+  assertStateV3(state);
+  const { activeArtifact: _a, activeWorktree: _w, ...base } = state;
   const updated = {
     ...base,
-    remainingActions: input.remainingActions === void 0 ? [...state.remainingActions] : [...input.remainingActions],
-    ...input.activeArtifact === void 0 ? state.activeArtifact ? { activeArtifact: copy2(state.activeArtifact) } : {} : input.activeArtifact === null ? {} : { activeArtifact: copy2(input.activeArtifact) },
-    ...input.activeWorktree === void 0 ? state.activeWorktree ? { activeWorktree: copy2(state.activeWorktree) } : {} : input.activeWorktree === null ? {} : { activeWorktree: copy2(input.activeWorktree) },
-    contextCapsule: input.contextCapsule === void 0 ? copy2(state.contextCapsule ?? defaultContextCapsule(state.configSnapshot, state.policySnapshot)) : copy2(input.contextCapsule)
+    remainingActions: input.remainingActions ? [...input.remainingActions] : [...state.remainingActions],
+    ...input.activeArtifact === void 0 ? state.activeArtifact ? { activeArtifact: copy3(state.activeArtifact) } : {} : input.activeArtifact === null ? {} : { activeArtifact: copy3(input.activeArtifact) },
+    ...input.activeWorktree === void 0 ? state.activeWorktree ? { activeWorktree: copy3(state.activeWorktree) } : {} : input.activeWorktree === null ? {} : { activeWorktree: copy3(input.activeWorktree) },
+    contextCapsule: input.contextCapsule ? copy3(input.contextCapsule) : copy3(state.contextCapsule ?? defaultContextCapsule(state.configSnapshot, state.policySnapshot))
   };
-  const refs = [{ kind: "context-capsule", ref: "state:contextCapsule" }];
-  if (updated.activeArtifact) refs.push({ kind: "artifact", ref: "state:activeArtifact", fingerprint: `sha256:${digest(updated.activeArtifact.fingerprint)}` });
-  if (updated.activeWorktree) refs.push({ kind: "worktree", ref: "state:activeWorktree", fingerprint: `sha256:${digest(updated.activeWorktree.gitFingerprint)}` });
-  return recordHistoryEvent(updated, { type: "context.updated", refs, ...input.at === void 0 ? {} : { at: input.at } });
+  return recordHistoryEvent(updated, { type: "context.updated", refs: [{ kind: "context-capsule", ref: "state:contextCapsule" }], ...input.at ? { at: input.at } : {} });
 }
 function transition(state, next, options = {}) {
-  assertV2State(state);
+  assertStateV3(state);
   validateTransitionOptionKeys(options);
   if (!isTaskStatus(next)) throw new Error(`Invalid state transition from ${state.status} to ${String(next)}.`);
   const contract = transitionContract(state.status, next);
   if (!contract) throw new Error(`Invalid state transition from ${state.status} to ${next}.`);
-  if (!contract.modes.includes(state.mode)) throw new Error(`Transition ${state.status} to ${next} is not allowed for mode ${state.mode}.`);
-  if (state.status === "verifying" && next === "awaiting_approval" && state.mode !== "critical") {
-    throw new Error("Only Critical verification may enter the completion gate.");
-  }
-  const required2 = requiredGuards(state, contract);
-  validateOptionApplicability(state, next, options, required2);
-  const structural = validateStructuralGuards(state, next, options, required2);
-  const evidenceByGuard = validateEvidenceSet(state, options.guardEvidence ?? [], required2);
-  const missing = required2.filter((guard) => !structural.has(guard) && !evidenceByGuard.has(guard));
+  const structural = validateStructuralGuards(state, next, options, contract.guards);
+  const evidence = validateEvidenceSet(state, options.guardEvidence ?? [], contract.guards);
+  const missing = contract.guards.filter((guard) => !structural.has(guard) && evidence.get(guard)?.result !== "passed" && evidence.get(guard)?.result !== "not_applicable");
   if (missing.length) throw new Error(`Unmet transition guards from ${state.status} to ${next}: ${missing.join(", ")}.`);
-  validateTrustedTarget(state, next, evidenceByGuard);
-  const revision = state.revision + 1;
-  const normalized = normalizeHistoryEnvelope(state);
-  const gateContext = transitionGateContext(state, next);
-  const contractDigest = transitionContractDigest(state, next, options);
+  validateTrustedTarget(next, evidence);
+  const sourceFingerprint = guardStateFingerprint(state);
+  const metadata = transitionMetadata(state, next, options);
   const event = {
-    sequence: nextHistorySequence(normalized),
+    sequence: nextSequence(state),
     at: normalizeEventAt(options.at),
     type: "state.transition",
     from: state.status,
     to: next,
-    mode: state.mode,
-    revision,
-    sourceFingerprint: guardStateFingerprint(state),
-    ...gateContext ? { gateContext } : {},
-    ...contractDigest ? { contractDigest } : {},
-    ...options.guardEvidence?.length ? { guardEvidence: options.guardEvidence.map((evidence) => copy2(evidence)) } : {},
-    ...options.gateDecision ? { gateDecision: copy2(options.gateDecision) } : {},
-    ...next === "cancelled" || next === "failed" ? {
-      terminalSource: state.status,
-      ...state.status === "blocked" && state.resumeTo ? { terminalResumeTo: state.resumeTo } : {}
-    } : {}
+    revision: state.revision + 1,
+    sourceFingerprint,
+    ...next === "cancelled" || next === "failed" ? { terminalSource: state.status, ...state.status === "blocked" && state.resumeTo ? { terminalResumeTo: state.resumeTo } : {} } : {},
+    ...metadata.pendingGate ? { gateContext: metadata.pendingGate, contractDigest: metadata.contractDigest } : state.pendingGate && options.gateDecision ? { gateContext: state.pendingGate, contractDigest: state.contractDigest } : {},
+    ...evidence.size ? { guardEvidence: [...evidence.values()].map(copy3) } : {},
+    ...options.gateDecision ? { gateDecision: copy3(options.gateDecision) } : {}
   };
-  const { resumeTo: _resumeTo, pendingGate: _pendingGate, ...base } = state;
-  const metadata = transitionMetadata(state, next, options);
-  const output = {
-    ...base,
-    status: next,
-    revision,
-    modeConfirmed: state.modeConfirmed || state.status === "awaiting_mode_confirmation" && (next === "executing" || next === "discovering"),
-    ...metadata,
-    history: normalized.history
-  };
-  const compacted = withCompactedHistory(output, [...normalized.history, event]);
-  assertV2State(compacted);
-  return compacted;
+  let shape = state.shape;
+  if (next === "discovering" && !shape) shape = createShapeState({ risk: state.risk, intakeBriefRef: "state:intake.brief" });
+  const { resumeTo: _resume, pendingGate: _gate, contractDigest: _contract, ...base } = state;
+  const output = { ...base, status: next, revision: state.revision + 1, ...metadata, ...shape ? { shape } : {}, history: [...state.history, event] };
+  return compactAndValidate(output);
 }
-function transitionGateContext(state, next) {
-  if (state.pendingGate && (state.status === "awaiting_approval" || state.status === "blocked" || next === "blocked" || next === "awaiting_approval")) return state.pendingGate;
-  if (next === "awaiting_approval" && state.status === "planning") return "pre_build";
-  if (next === "awaiting_approval" && state.status === "verifying") return "critical_completion";
-  return void 0;
-}
-function transitionContractDigest(state, next, options) {
-  if (next === "awaiting_approval" && state.status === "planning") return options.contractDigest;
-  if (state.contractDigest && (state.pendingGate || state.status === "awaiting_approval" || state.status === "blocked" || next === "awaiting_approval" || next === "blocked")) return state.contractDigest;
-  return void 0;
+function compareSnapshot(state, current) {
+  const reasons = [];
+  if (stable(state.configSnapshot) !== stable(current.config)) reasons.push("config_changed");
+  if (stable(state.policySnapshot) !== stable(current.policy)) reasons.push("policy_changed");
+  if (state.routingSnapshot && current.routingSnapshot && routingStable(state.routingSnapshot) !== routingStable(current.routingSnapshot)) reasons.push("routing_changed");
+  return { changed: reasons.length > 0, reasons };
 }
 function transitionMetadata(state, next, options) {
-  if (next === "blocked") {
-    return {
-      resumeTo: options.resumeTo,
-      remainingActions: [...options.remainingActions ?? []],
-      ...state.pendingGate ? { pendingGate: state.pendingGate } : {},
-      ...state.contractDigest ? { contractDigest: state.contractDigest } : {}
-    };
-  }
-  if (next === "ready_for_handoff") {
-    return { resumeTo: "handing_off", remainingActions: [...options.remainingActions ?? []] };
-  }
+  if (next === "blocked") return { resumeTo: options.resumeTo, remainingActions: [...options.remainingActions ?? []], ...state.pendingGate ? { pendingGate: state.pendingGate } : {}, ...state.contractDigest ? { contractDigest: state.contractDigest } : {} };
+  if (next === "ready_for_handoff") return { resumeTo: "handing_off", remainingActions: [...options.remainingActions ?? []] };
   if (next === "awaiting_approval") {
-    const gate = state.status === "planning" ? "pre_build" : state.status === "verifying" ? "critical_completion" : state.pendingGate;
-    if (!gate) throw new Error("awaiting_approval requires deterministic pendingGate context.");
-    const digest3 = state.status === "planning" ? options.contractDigest : state.contractDigest;
-    if (!nonEmpty(digest3)) throw new Error("awaiting_approval requires contractDigest bound to current contract.");
-    return { pendingGate: gate, contractDigest: digest3, remainingActions: [] };
+    const pendingGate = state.status === "planning" ? "pre_build" : "completion";
+    const contractDigest = state.status === "planning" ? options.contractDigest : state.contractDigest;
+    if (!nonEmpty(contractDigest)) throw new Error("awaiting_approval requires current contract digest.");
+    return { pendingGate, contractDigest, remainingActions: [] };
   }
   return { remainingActions: [] };
-}
-function transitionContract(from, to) {
-  return STATE_MACHINE[from].transitions[to];
-}
-function requiredGuards(state, contract) {
-  return [
-    ...contract.guards,
-    ...contract.conditionalGuards.filter((conditional) => conditional.when.mode === state.mode).map((conditional) => conditional.guard)
-  ];
 }
 function validateStructuralGuards(state, next, options, required2) {
   const satisfied = /* @__PURE__ */ new Set();
@@ -17893,836 +18681,227 @@ function validateStructuralGuards(state, next, options, required2) {
   }
   if (required2.includes("resume_metadata_valid")) {
     if (next === "blocked") {
-      if (!options.resumeTo || !options.remainingActions?.length) throw new Error("blocked requires resumeTo and remainingActions.");
-      if (!isOperationalResumeTarget(options.resumeTo)) throw new Error(`blocked requires operational, non-stable resumeTo; received ${options.resumeTo}.`);
-      if (options.resumeTo === "awaiting_approval" && (!state.pendingGate || !state.contractDigest)) throw new Error("blocked resumeTo awaiting_approval requires existing pendingGate and contractDigest.");
-      if (state.pendingGate && options.resumeTo !== "awaiting_approval") throw new Error("blocked state with pendingGate must resume to awaiting_approval.");
+      if (!options.resumeTo || !isOperationalResumeTarget(options.resumeTo) || !options.remainingActions?.length) throw new Error("blocked requires operational resumeTo and remainingActions.");
     } else if (state.status === "blocked") {
-      if (!state.resumeTo || !state.remainingActions.length || !isOperationalResumeTarget(state.resumeTo)) throw new Error("blocked state has invalid resume metadata.");
       if (next !== state.resumeTo) throw new Error(`blocked may transition only to exact resumeTo ${state.resumeTo}.`);
-    } else {
-      throw new Error(`resume_metadata_valid is not applicable from ${state.status} to ${next}.`);
-    }
+    } else throw new Error(`resume_metadata_valid is not applicable from ${state.status}.`);
     satisfied.add("resume_metadata_valid");
   }
   if (required2.includes("terminal_source_recorded")) {
-    if (options.terminalSource !== state.status) throw new Error(`${next} requires terminalSource equal to current status ${state.status}.`);
+    if (options.terminalSource !== state.status) throw new Error(`${next} requires terminalSource equal to ${state.status}.`);
     satisfied.add("terminal_source_recorded");
   }
   if (required2.includes("gate_context_valid")) {
-    validateGateContext(state, next, options.gateDecision);
+    if (!options.gateDecision) throw new Error("Gate exit requires decision.");
+    validateGateDecision(state, options.gateDecision);
+    if (!gateDecisionAllows(options.gateDecision, next)) throw new Error(`Gate decision cannot transition to ${next}.`);
     satisfied.add("gate_context_valid");
   }
   if (next === "ready_for_handoff" && !options.remainingActions?.length) throw new Error("ready_for_handoff requires remainingActions.");
+  if (options.contractDigest !== void 0 && (state.status !== "planning" || next !== "awaiting_approval")) throw new Error("contractDigest may only enter GATE from Planning.");
+  if (state.status === "planning" && next === "awaiting_approval" && state.shape?.contract?.digest !== options.contractDigest) throw new Error("GATE digest must match canonical Shape contract.");
   return satisfied;
 }
-function validateGateContext(state, next, decision) {
-  if (state.status !== "awaiting_approval" || !state.pendingGate || !decision) throw new Error("Gate exit requires pendingGate and bound gateDecision.");
-  if (decision.schemaVersion !== 1 || decision.gate !== state.pendingGate || decision.stateRevision !== state.revision || decision.stateFingerprint !== guardStateFingerprint(state) || !nonEmpty(decision.evidenceRef) || !nonEmpty(decision.contractDigest) || decision.contractDigest !== state.contractDigest) throw new Error("Gate decision is stale, malformed, or bound to another state.");
-  if (!gateDecisionAllows(decision.gate, decision.decision, next)) throw new Error(`Gate ${state.pendingGate} decision ${decision.decision} cannot transition to ${next}.`);
-}
-function gateDecisionAllows(gate, decision, target) {
-  const approvedTargets = {
-    pre_build: ["executing"],
-    critical_completion: ["handing_off", "ready_for_handoff", "finished_local"]
-  };
-  const rejectedTargets = {
-    pre_build: ["planning"],
-    critical_completion: ["resolving_assure", "verifying"]
-  };
-  return (decision === "approved" ? approvedTargets[gate] : rejectedTargets[gate]).includes(target);
-}
-function validateEvidenceSet(state, evidence, required2) {
+function validateEvidenceSet(state, items, required2) {
   const output = /* @__PURE__ */ new Map();
-  for (const item of evidence) {
+  for (const item of items) {
     validateGuardEvidence(state, item);
-    if (!required2.includes(item.guard) || STRUCTURAL_GUARDS.has(item.guard)) throw new Error(`Guard evidence for ${item.guard} is not applicable to this transition.`);
-    if (TRUSTED_EVALUATOR_REQUIRED.has(item.guard) && !trustedEvaluatorEvidence.has(item)) {
-      throw new Error(`Guard ${item.guard} requires trusted evaluator evidence from current runtime.`);
-    }
+    if (!required2.includes(item.guard) || STRUCTURAL_GUARDS.has(item.guard)) throw new Error(`Guard evidence for ${item.guard} is not applicable.`);
+    if (TRUSTED_GUARDS.has(item.guard) && !trustedEvidence.has(item)) throw new Error(`Guard ${item.guard} requires trusted evaluator evidence from current runtime.`);
     if (output.has(item.guard)) throw new Error(`Duplicate guard evidence for ${item.guard}.`);
     output.set(item.guard, item);
   }
   return output;
 }
-function validateOptionApplicability(state, next, options, required2) {
-  const terminal = next === "cancelled" || next === "failed";
-  if (options.terminalSource !== void 0 && !terminal) throw new Error("terminalSource is valid only for cancelled or failed transitions.");
-  if (options.resumeTo !== void 0 && next !== "blocked") throw new Error("resumeTo is valid only when entering blocked.");
-  if (options.remainingActions !== void 0 && next !== "blocked" && next !== "ready_for_handoff") throw new Error("remainingActions is valid only for blocked or ready_for_handoff.");
-  if (options.gateDecision !== void 0 && !required2.includes("gate_context_valid")) throw new Error("gateDecision is valid only when exiting awaiting_approval.");
-  if (options.contractDigest !== void 0 && next !== "awaiting_approval") throw new Error("contractDigest is valid only when entering awaiting_approval.");
-  if (options.contractDigest !== void 0 && state.status !== "planning") throw new Error("contractDigest may be supplied only by planning entering pre-build gate.");
-  if (options.contractDigest !== void 0 && state.verificationRequirements && state.verificationRequirements.sourceDigest !== options.contractDigest) {
-    throw new Error("Pre-build contractDigest does not match state-bound verification requirements.");
+function validateGuardEvidence(state, evidence) {
+  if (evidence.schemaVersion !== 1 || !GUARD_IDS.includes(evidence.guard) || evidence.stateRevision !== state.revision || evidence.stateFingerprint !== guardStateFingerprint(state) || !nonEmpty(evidence.observedFingerprint) || !evidence.evidenceRefs?.length || !evidence.evidenceRefs.every(nonEmpty) || !["deterministic-check", "human-approval", "repository-observation"].includes(evidence.provenance)) throw new Error(`Guard evidence for ${String(evidence.guard)} is stale, malformed, or unproven.`);
+  if (TRUSTED_GUARDS.has(evidence.guard)) validateEvaluatorReceipt(evidence, state);
+  else if (evidence.evaluatorReceipt) throw new Error(`Guard ${evidence.guard} cannot contain evaluatorReceipt.`);
+}
+function createEvaluatorEvidence(state, guard, provenance, input) {
+  if (!input.evidenceRefs.length) throw new Error(`${guard} evaluator requires evidence references.`);
+  const base = { schemaVersion: 1, ...input, stateRevision: state.revision, stateFingerprint: guardStateFingerprint(state) };
+  const receipt = { ...base, receiptDigest: digest2(base) };
+  const evidence = deepFreeze2({ schemaVersion: 1, guard, stateRevision: state.revision, stateFingerprint: guardStateFingerprint(state), observedFingerprint: receipt.receiptDigest, evidenceRefs: [...receipt.evidenceRefs], provenance, result: "passed", evaluatorReceipt: receipt });
+  validateGuardEvidence(state, evidence);
+  trustedEvidence.add(evidence);
+  return evidence;
+}
+function validateEvaluatorReceipt(evidence, state) {
+  const receipt = evidence.evaluatorReceipt;
+  const evaluators = { intake_complete: "intake", discovery_sufficient: "discovery", contract_complete: "planning", verification_complete: "verification", handoff_intent_resolved: "handoff_intent", handoff_reconciled: "handoff_reconciliation", completion_approved: "completion" };
+  if (!receipt || receipt.evaluator !== evaluators[evidence.guard] || receipt.stateRevision !== state.revision || receipt.stateFingerprint !== guardStateFingerprint(state) || receipt.receiptDigest !== digest2({ ...receipt, receiptDigest: void 0 }) || evidence.observedFingerprint !== receipt.receiptDigest || !sameIds(evidence.evidenceRefs, receipt.evidenceRefs)) throw new Error(`Trusted evaluator receipt for ${evidence.guard} is stale or malformed.`);
+}
+function validateTrustedTarget(next, evidence) {
+  const intent = evidence.get("handoff_intent_resolved")?.evaluatorReceipt;
+  if (next === "finished_local" && intent?.outcome !== "local_only") throw new Error("finished_local requires local handoff intent.");
+  if (["handing_off", "ready_for_handoff", "finished"].includes(next) && intent && intent.outcome !== "external_selected") throw new Error(`${next} requires external handoff intent.`);
+  if (next === "finished" && evidence.get("handoff_reconciled")?.evaluatorReceipt?.outcome !== "complete") throw new Error("finished requires complete handoff reconciliation.");
+}
+function validateGateDecision(state, decision) {
+  if (state.status !== "awaiting_approval" || decision.gate !== state.pendingGate || decision.stateRevision !== state.revision || decision.stateFingerprint !== guardStateFingerprint(state) || decision.contractDigest !== state.contractDigest || !nonEmpty(decision.evidenceRef)) throw new Error("Gate decision is stale or bound to another state.");
+}
+function gateDecisionAllows(decision, target) {
+  return decision.gate === "pre_build" ? decision.decision === "approved" ? target === "executing" : target === "planning" : decision.decision === "approved" ? ["handing_off", "ready_for_handoff", "finished_local"].includes(target) : ["resolving_assure", "verifying"].includes(target);
+}
+function transitionContract(from, to) {
+  return STATE_MACHINE[from].transitions[to];
+}
+function validateCompleteIntake(state) {
+  const intake = state.intake;
+  const signal = intake?.brief.successSignal;
+  if (!intake || !intake.semanticComplete || !intake.deterministicComplete || intake.activeQuestion || intake.contradictions.length || intake.blockedReason || !nonEmpty(intake.brief.objective) || !signal || !nonEmpty(signal.description) || !nonEmpty(signal.observationMethod) || intake.brief.risk !== state.risk) throw new Error("intake_complete requires complete current Intake Brief.");
+}
+function validateSelectedProfile(state) {
+  const choice = state.shape?.preparationProfileChoice;
+  if (!choice || choice.status !== "selected" || !choice.selectedProfile || !nonEmpty(choice.selectionEvidenceRef)) throw new Error("profile_selected requires explicit persisted Quick/Plan answer.");
+}
+function assertExactObservations(state, required2, observed, label, nonEmptyRequired) {
+  assertUnique(required2, `${label} required IDs`, !nonEmptyRequired);
+  assertSameIds(required2, observed.map((item) => item.id), label);
+  for (const item of observed) if (item.stateRevision !== state.revision || item.exitCode !== 0 || !nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef)) throw new Error(`${label} observation ${item.id} did not pass or is stale.`);
+}
+function normalizeVerificationRequirements(input) {
+  assertUnique(input.criterionIds, "criterion IDs");
+  assertUnique(input.mandatoryCheckIds, "check IDs", true);
+  return { ...copy3(input), requirementsDigest: digest2({ criterionIds: input.criterionIds, mandatoryCheckIds: input.mandatoryCheckIds }) };
+}
+function validateHistory(state) {
+  if (!Array.isArray(state.history) || !state.history.length) throw new StateValidationError("state_invalid", "Task state history is empty.");
+  let previous = state.historySummary?.lastSequence ?? 0;
+  let latestStatus = state.historySummary?.lastTransition?.to ?? "new";
+  let revision = state.historySummary?.lastTransition?.revision ?? 0;
+  for (const event of state.history) {
+    if (!Number.isInteger(event.sequence) || event.sequence <= previous || !validAt(event.at)) throw new StateValidationError("state_invalid", "History sequence or timestamp is invalid.");
+    previous = event.sequence;
+    if (event.type === "state.transition") {
+      const contract = transitionContract(event.from, event.to);
+      if (!isTaskStatus(event.from) || !isTaskStatus(event.to) || event.from !== latestStatus || !contract) throw new StateValidationError("state_invalid", `History edge ${event.from} -> ${event.to} is invalid.`);
+      if (event.revision !== revision + 1) throw new StateValidationError("state_invalid", "History transition revision is non-monotonic.");
+      validatePersistedTransitionEvent(event, contract);
+      revision = event.revision;
+      latestStatus = event.to;
+    }
+  }
+  if (latestStatus !== state.status) throw new StateValidationError("state_invalid", `History latest status ${latestStatus} differs from ${state.status}.`);
+  if (revision !== state.revision) throw new StateValidationError("state_invalid", `History latest revision ${revision} differs from ${state.revision}.`);
+}
+function validatePersistedTransitionEvent(event, contract) {
+  if (!nonEmpty(event.sourceFingerprint)) throw new StateValidationError("state_invalid", "Transition source fingerprint is missing.");
+  if (event.to === "cancelled" || event.to === "failed") {
+    if (event.terminalSource !== event.from) throw new StateValidationError("state_invalid", "Terminal transition source is invalid.");
+  } else if (event.terminalSource !== void 0 || event.terminalResumeTo !== void 0) {
+    throw new StateValidationError("state_invalid", "Non-terminal transition contains terminal source metadata.");
+  }
+  const expected = contract.guards.filter((guard) => !STRUCTURAL_GUARDS.has(guard)).sort();
+  const evidence = event.guardEvidence ?? [];
+  if (!sameIds(expected, evidence.map((item) => item.guard).sort())) {
+    throw new StateValidationError("state_invalid", `Transition ${event.from} -> ${event.to} guard evidence is incomplete.`);
+  }
+  for (const item of evidence) {
+    if (item.schemaVersion !== 1 || item.stateRevision !== event.revision - 1 || item.stateFingerprint !== event.sourceFingerprint || !nonEmpty(item.observedFingerprint) || !item.evidenceRefs.length || !item.evidenceRefs.every(nonEmpty) || !["passed", "not_applicable"].includes(item.result) || item.result === "not_applicable" && item.guard !== "review_satisfied") throw new StateValidationError("state_invalid", `Persisted guard ${item.guard} is malformed or stale.`);
+    if (TRUSTED_GUARDS.has(item.guard)) validatePersistedEvaluatorReceipt(item);
+    else if (item.evaluatorReceipt !== void 0) throw new StateValidationError("state_invalid", `Non-trusted guard ${item.guard} contains evaluator receipt.`);
+  }
+  if (contract.guards.includes("gate_context_valid")) {
+    if (!event.gateDecision || event.gateDecision.stateRevision !== event.revision - 1 || event.gateDecision.stateFingerprint !== event.sourceFingerprint || event.gateDecision.gate !== event.gateContext || event.gateDecision.contractDigest !== event.contractDigest) {
+      throw new StateValidationError("state_invalid", "Persisted gate decision context is invalid.");
+    }
+  } else if (event.gateDecision !== void 0) {
+    throw new StateValidationError("state_invalid", "Gate decision is attached to non-gate transition.");
   }
 }
-function validateGuardEvidence(state, evidence) {
-  if (evidence.schemaVersion !== 1 || !GUARD_IDS.includes(evidence.guard) || evidence.stateRevision !== state.revision || evidence.stateFingerprint !== guardStateFingerprint(state) || !nonEmpty(evidence.observedFingerprint) || !Array.isArray(evidence.evidenceRefs) || !evidence.evidenceRefs.length || !evidence.evidenceRefs.every(nonEmpty) || !["deterministic-check", "human-approval", "repository-observation"].includes(evidence.provenance) || !["passed", "not_applicable"].includes(evidence.result)) throw new Error(`Guard evidence for ${String(evidence.guard)} is stale, malformed, or unproven.`);
-  if (evidence.result === "not_applicable" && evidence.guard !== "review_satisfied") {
-    throw new Error(`Guard ${evidence.guard} cannot be attested not_applicable.`);
+function validatePersistedEvaluatorReceipt(evidence) {
+  const receipt = evidence.evaluatorReceipt;
+  const evaluators = {
+    intake_complete: "intake",
+    discovery_sufficient: "discovery",
+    contract_complete: "planning",
+    verification_complete: "verification",
+    handoff_intent_resolved: "handoff_intent",
+    handoff_reconciled: "handoff_reconciliation",
+    completion_approved: "completion"
+  };
+  if (!receipt || receipt.evaluator !== evaluators[evidence.guard] || receipt.stateRevision !== evidence.stateRevision || receipt.stateFingerprint !== evidence.stateFingerprint || receipt.receiptDigest !== digest2({ ...receipt, receiptDigest: void 0 }) || evidence.observedFingerprint !== receipt.receiptDigest || !sameIds(evidence.evidenceRefs, receipt.evidenceRefs)) throw new StateValidationError("state_invalid", `Persisted evaluator receipt for ${evidence.guard} is invalid.`);
+}
+function validateHistoryReferences(refs, label) {
+  if (!Array.isArray(refs) || !refs.length || refs.length > HISTORY_REFERENCE_LIMIT) throw new Error(`${label} requires 1-${HISTORY_REFERENCE_LIMIT} references.`);
+  let chars = 0;
+  for (const item of refs) {
+    if (!HISTORY_REFERENCE_KINDS.has(item.kind) || !REF.test(item.ref) || item.fingerprint !== void 0 && !REF.test(item.fingerprint)) throw new Error(`${label} contains invalid reference.`);
+    chars += item.ref.length + (item.fingerprint?.length ?? 0);
   }
-  if (TRUSTED_EVALUATOR_REQUIRED.has(evidence.guard)) validateEvaluatorReceipt(evidence, guardStateFingerprint(state), state.revision);
-  else if (evidence.evaluatorReceipt !== void 0) throw new Error(`Guard ${evidence.guard} cannot contain evaluatorReceipt.`);
+  if (chars > HISTORY_REFERENCE_TOTAL_CHARS) throw new Error(`${label} references exceed character budget.`);
+}
+function compactAndValidate(state) {
+  const output = state.history.length <= HISTORY_LIMIT ? state : { ...state, history: state.history.slice(-HISTORY_LIMIT), historySummary: summarizeHistory(state) };
+  assertStateV3(output);
+  return output;
+}
+function summarizeHistory(state) {
+  const removed = state.history.slice(0, -HISTORY_LIMIT);
+  const first = removed[0];
+  const last = removed.at(-1);
+  const typeCounts = {};
+  for (const item of removed) typeCounts[item.type] = (typeCounts[item.type] ?? 0) + 1;
+  const transition2 = [...removed].reverse().find((item) => item.type === "state.transition");
+  return { removedCount: removed.length, firstSequence: first.sequence, lastSequence: last.sequence, firstAt: first.at, lastAt: last.at, typeCounts, ...transition2 ? { lastTransition: { sequence: transition2.sequence, revision: transition2.revision, to: transition2.to } } : {} };
+}
+function nextSequence(state) {
+  return Math.max(state.historySummary?.lastSequence ?? 0, state.history.at(-1)?.sequence ?? 0) + 1;
+}
+function defaultContextCapsule(config, policy) {
+  return { schemaVersion: 1, entries: [{ section: "constraints", ownerRef: "state:configSnapshot", provenanceRef: "state:configSnapshot", fingerprintRefs: ["config"] }, { section: "constraints", ownerRef: "state:policySnapshot", provenanceRef: "state:policySnapshot", fingerprintRefs: ["policy"] }], fingerprints: [{ id: "config", kind: "config", value: digest2(config), provenanceRef: "state:configSnapshot" }, { id: "policy", kind: "policy", value: digest2(policy), provenanceRef: "state:policySnapshot" }] };
+}
+function routingStable(snapshot) {
+  const { capturedAt: _capturedAt, ...rest } = snapshot;
+  return stable(rest);
 }
 function validateTransitionOptionKeys(options) {
   const allowed = /* @__PURE__ */ new Set(["resumeTo", "remainingActions", "terminalSource", "guardEvidence", "gateDecision", "contractDigest", "at"]);
   const unknown = Object.keys(options).filter((key) => !allowed.has(key));
   if (unknown.length) throw new Error(`Unknown transition options: ${unknown.join(", ")}.`);
 }
-function createEvaluatorEvidence(state, guard, provenance, input) {
-  const receiptBase = {
-    schemaVersion: 1,
-    ...input,
-    stateRevision: state.revision,
-    stateFingerprint: guardStateFingerprint(state)
-  };
-  const receipt = { ...receiptBase, receiptDigest: digest(receiptBase) };
-  const evidence = deepFreezeValue({
-    schemaVersion: 1,
-    guard,
-    stateRevision: state.revision,
-    stateFingerprint: guardStateFingerprint(state),
-    observedFingerprint: receipt.receiptDigest,
-    evidenceRefs: [...receipt.evidenceRefs],
-    provenance,
-    result: "passed",
-    evaluatorReceipt: receipt
-  });
-  validateGuardEvidence(state, evidence);
-  trustedEvaluatorEvidence.add(evidence);
-  return evidence;
-}
-function validateEvaluatorReceipt(evidence, expectedFingerprint, expectedRevision) {
-  const receipt = evidence.evaluatorReceipt;
-  const expectedEvaluator = {
-    intake_complete: "intake",
-    verification_complete: "verification",
-    handoff_intent_resolved: "handoff_intent",
-    handoff_reconciled: "handoff_reconciliation",
-    critical_completion_approved: "critical_completion"
-  };
-  if (!receipt || receipt.schemaVersion !== 1 || receipt.evaluator !== expectedEvaluator[evidence.guard] || receipt.stateRevision !== expectedRevision || receipt.stateFingerprint !== expectedFingerprint || evidence.observedFingerprint !== receipt.receiptDigest || !nonEmpty(receipt.inputDigest) || !Array.isArray(receipt.evidenceRefs) || !receipt.evidenceRefs.length || !receipt.evidenceRefs.every(nonEmpty) || !Array.isArray(receipt.subjectIds) || !Array.isArray(receipt.completedIds)) throw new Error(`Trusted evaluator receipt for ${evidence.guard} is stale or malformed.`);
-  if (!sameIds(evidence.evidenceRefs, receipt.evidenceRefs)) throw new Error(`Trusted evaluator receipt for ${evidence.guard} has mismatched evidence references.`);
-  assertUniqueNonEmpty(receipt.subjectIds, "evaluator subject IDs");
-  assertUniqueNonEmpty(receipt.completedIds, "evaluator completed IDs", true);
-  const { receiptDigest, ...base } = receipt;
-  if (receiptDigest !== digest(base)) throw new Error(`Trusted evaluator receipt for ${evidence.guard} has invalid digest.`);
-  if (receipt.evaluator === "intake" && (receipt.outcome !== "intake_complete" || !sameIds(receipt.subjectIds, ["objective", "success_signal", "mode", "risk"]) || !sameIds(receipt.subjectIds, receipt.completedIds))) throw new Error("Intake evaluator receipt is incomplete.");
-  if (receipt.evaluator === "verification" && (receipt.outcome !== "complete" || !sameIds(receipt.subjectIds, receipt.completedIds) || !receipt.subjectIds.length)) {
-    throw new Error("Verification evaluator receipt does not prove complete coverage.");
-  }
-  if (receipt.evaluator === "handoff_intent") {
-    if (receipt.outcome === "local_only" && receipt.completedIds.length) throw new Error("Local handoff evaluator receipt selects external actions.");
-    if (receipt.outcome === "external_selected" && !receipt.completedIds.length) throw new Error("External handoff evaluator receipt selects no action.");
-    if (receipt.outcome !== "local_only" && receipt.outcome !== "external_selected") throw new Error("Handoff intent evaluator receipt has invalid outcome.");
-    if (!receipt.completedIds.every((id) => receipt.subjectIds.includes(id))) throw new Error("Handoff intent evaluator receipt contains unknown selected action.");
-  }
-  if (receipt.evaluator === "handoff_reconciliation") {
-    if (!receipt.subjectIds.length || !receipt.completedIds.every((id) => receipt.subjectIds.includes(id))) throw new Error("Handoff reconciliation evaluator receipt contains unknown action.");
-    if (receipt.outcome === "complete" && !sameIds(receipt.subjectIds, receipt.completedIds)) throw new Error("Complete handoff receipt lacks completed actions.");
-    if (receipt.outcome === "action_required" && sameIds(receipt.subjectIds, receipt.completedIds)) throw new Error("Action-required handoff receipt has no remaining action.");
-    if (receipt.outcome !== "complete" && receipt.outcome !== "action_required") throw new Error("Handoff reconciliation evaluator receipt has invalid outcome.");
-  }
-  if (receipt.evaluator === "critical_completion" && (receipt.outcome !== "approved" || receipt.subjectIds.length !== 1 || receipt.completedIds.length !== 1)) {
-    throw new Error("Critical completion evaluator receipt is incomplete.");
-  }
-}
-function validateTrustedTarget(state, next, evidence) {
-  const intent = evidence.get("handoff_intent_resolved")?.evaluatorReceipt;
-  if (next === "finished_local" && intent?.outcome !== "local_only") throw new Error("finished_local requires local-only handoff intent.");
-  if (["handing_off", "ready_for_handoff", "finished"].includes(next) && intent && intent.outcome !== "external_selected") {
-    throw new Error(`${next} requires external-selected handoff intent.`);
-  }
-  const reconciliation = evidence.get("handoff_reconciled")?.evaluatorReceipt;
-  if (intent && reconciliation && !sameIds(intent.completedIds, reconciliation.subjectIds)) {
-    throw new Error("Handoff reconciliation does not match selected intent actions.");
-  }
-  if (next === "finished" && reconciliation?.outcome !== "complete") throw new Error("finished requires complete handoff reconciliation.");
-  if ((next === "ready_for_handoff" || state.status === "ready_for_handoff" && next === "handing_off") && reconciliation?.outcome !== "action_required") {
-    throw new Error(`${next} requires action-required handoff reconciliation.`);
-  }
-  const critical = evidence.get("critical_completion_approved")?.evaluatorReceipt;
-  const verification = evidence.get("verification_complete")?.evaluatorReceipt;
-  if (critical && verification && critical.subjectIds[0] !== verification.inputDigest) {
-    throw new Error("Critical completion approval does not match current verification projection.");
-  }
-}
-function assertExactObservations(state, label, requiredIds, observations, requireNonEmpty) {
-  assertUniqueNonEmpty(requiredIds, `${label} required IDs`, !requireNonEmpty);
-  if (!Array.isArray(observations)) throw new Error(`${label} observations must be an array.`);
-  assertSameIds(requiredIds, observations.map((item) => item.id), label);
-  for (const item of observations) {
-    if (item.stateRevision !== state.revision) throw new Error(`${label} observation ${String(item.id)} is stale.`);
-    if (!nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef)) throw new Error(`${label} observation ${String(item.id)} is malformed.`);
-    if (!Number.isInteger(item.exitCode)) throw new Error(`${label} observation ${String(item.id)} is malformed.`);
-    if (item.exitCode !== 0) throw new Error(`${label} observation ${item.id} did not pass.`);
-  }
-}
 function assertSameIds(expected, actual, label) {
-  assertUniqueNonEmpty(actual, `${label} observed IDs`, expected.length === 0);
+  assertUnique(actual, `${label} observed IDs`, expected.length === 0);
   if (!sameIds(expected, actual)) throw new Error(`${label} do not exactly cover required IDs.`);
 }
+function assertUnique(values, label, allowEmpty = false) {
+  if (!Array.isArray(values) || !allowEmpty && !values.length || !values.every(nonEmpty) || new Set(values).size !== values.length) throw new Error(`${label} must contain unique non-empty values.`);
+}
 function sameIds(left, right) {
-  return left.length === right.length && [...left].sort().every((value, index) => value === [...right].sort()[index]);
+  return left.length === right.length && [...left].sort().every((item, index) => item === [...right].sort()[index]);
 }
-function assertUniqueNonEmpty(values, label, allowEmpty = false) {
-  if (!Array.isArray(values) || !allowEmpty && !values.length || !values.every(nonEmpty) || new Set(values).size !== values.length) {
-    throw new Error(`${label} must contain unique non-empty values${allowEmpty ? "" : " and cannot be empty"}.`);
-  }
+function digestWithoutReceipt(value) {
+  const { receiptDigest: _digest, ...rest } = value;
+  return digest2(rest);
 }
-function validateVerificationRequirements(value) {
-  if (value.schemaVersion !== 1 || !nonEmpty(value.sourceDigest) || !nonEmpty(value.requirementsDigest)) throw new Error("verificationRequirements is malformed.");
-  assertUniqueNonEmpty(value.criterionIds, "verification criterion IDs");
-  assertUniqueNonEmpty(value.mandatoryCheckIds, "verification mandatory check IDs", true);
-  if (value.requirementsDigest !== digest({ criterionIds: value.criterionIds, mandatoryCheckIds: value.mandatoryCheckIds })) {
-    throw new Error("verificationRequirements digest does not match required IDs.");
-  }
+function digest2(value) {
+  return createHash2("sha256").update(stable(value)).digest("hex");
 }
-function validateCompleteIntake(state) {
-  const intake = state.intake;
-  const signal = intake?.brief.successSignal;
-  if (!intake || !intake.semanticComplete || !intake.deterministicComplete || intake.activeQuestion !== void 0 || intake.contradictions.length > 0 || intake.blockedReason !== void 0 || !nonEmpty(intake.brief.objective) || !signal || !nonEmpty(signal.description) || !nonEmpty(signal.observationMethod) || intake.brief.mode !== state.mode || !["low", "medium", "high", "critical"].includes(intake.brief.risk) || intake.brief.technicalUnknowns.some((unknown) => !nonEmpty(unknown.key) || !["code", "dependency", "architecture", "validation", "operations"].includes(unknown.kind) || !nonEmpty(unknown.description) || unknown.owner !== "shape")) throw new Error("intake_complete requires semantically and deterministically complete Intake Brief.");
+function stable(value) {
+  return JSON.stringify(canonical(value));
 }
-function digest(value) {
-  return createHash("sha256").update(stable(value)).digest("hex");
-}
-function deepFreezeValue(value) {
-  if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value;
-  for (const nested of Object.values(value)) deepFreezeValue(nested);
-  return Object.freeze(value);
-}
-function migrateStateToV2(value, options = {}) {
-  if (!isRecord6(value) || !Number.isInteger(value.schemaVersion)) throw unsupported("State schemaVersion is missing or unsupported");
-  if (value.schemaVersion === 2) {
-    assertV2State(value);
-    return { state: copy2(value), migrationRequired: false };
-  }
-  if (value.schemaVersion !== 1) throw unsupported(`State schemaVersion ${String(value.schemaVersion)} is unsupported`);
-  validateV1State(value);
-  const source = copy2(value);
-  const rawHistory = source.history;
-  if (["handing_off", "ready_for_handoff", "finished_local", "finished"].includes(source.status) || ["handing_off", "ready_for_handoff"].includes(source.resumeTo)) {
-    throw ambiguous(`V1 ${source.status} lacks V2 verification evidence and requires reverification`);
-  }
-  const { mode, evidenceRef, confirmed } = inferMigrationMode(rawHistory, options);
-  const migratedTransitions = migrateHistory(rawHistory, mode);
-  const fullHistory = [
-    {
-      sequence: 1,
-      at: migrationEventAt(1),
-      type: "task.created",
-      refs: [{ kind: "task", ref: "state:taskId" }, { kind: "migration-source", ref: "state:v1" }]
-    },
-    ...migratedTransitions,
-    {
-      sequence: migratedTransitions.length + 2,
-      at: migrationEventAt(migratedTransitions.length + 2),
-      type: "state.migrated",
-      refs: [{ kind: "migration-source", ref: "state:v1" }, { kind: "migration-target", ref: "state:v2" }]
-    }
-  ];
-  const rawStatus = source.status;
-  const status = mapCurrentV1Status(rawStatus, rawHistory);
-  const rawResumeTo = source.resumeTo;
-  const resumeTo = rawStatus === "blocked" && rawResumeTo === "resolving" ? inferResolvingStatus(rawHistory, true) : rawStatus === "ready_for_handoff" ? "handing_off" : rawResumeTo === void 0 ? void 0 : mapV1OrdinaryStatus(rawResumeTo);
-  const {
-    schemaVersion: _schemaVersion,
-    status: _status,
-    resumeTo: _resumeTo,
-    history: _history,
-    ...preserved
-  } = source;
-  const migrated = {
-    ...preserved,
-    schemaVersion: 2,
-    status,
-    revision: migratedTransitions.length,
-    mode,
-    modeEvidenceRef: evidenceRef,
-    modeConfirmed: confirmed,
-    ...resumeTo ? { resumeTo } : {},
-    contextCapsule: defaultContextCapsule(source.configSnapshot, source.policySnapshot),
-    history: fullHistory
-  };
-  const compacted = withCompactedHistory(migrated, fullHistory);
-  assertV2State(compacted);
-  return { state: compacted, migrationRequired: true };
-}
-var V1_STATUSES = [
-  "new",
-  "awaiting_mode_confirmation",
-  "discovering",
-  "planning",
-  "awaiting_approval",
-  "executing",
-  "validating",
-  "reviewing",
-  "resolving",
-  "verifying",
-  "handing_off",
-  "ready_for_handoff",
-  "blocked",
-  "cancelled",
-  "failed",
-  "finished_local",
-  "finished"
-];
-var V1_ALLOWED = {
-  new: ["awaiting_mode_confirmation"],
-  awaiting_mode_confirmation: ["executing", "discovering", "cancelled"],
-  discovering: [],
-  planning: [],
-  awaiting_approval: [],
-  executing: ["validating", "blocked"],
-  validating: ["reviewing", "verifying", "resolving"],
-  reviewing: ["resolving", "verifying"],
-  resolving: ["validating", "blocked"],
-  verifying: ["handing_off", "finished_local", "ready_for_handoff", "resolving"],
-  handing_off: ["finished", "ready_for_handoff"],
-  ready_for_handoff: [],
-  blocked: [],
-  cancelled: [],
-  failed: [],
-  finished_local: [],
-  finished: []
-};
-function validateV1State(value) {
-  const allowedKeys = /* @__PURE__ */ new Set([
-    "schemaVersion",
-    "taskId",
-    "status",
-    "resumeTo",
-    "configSnapshot",
-    "policySnapshot",
-    "issues",
-    "reviewCycle",
-    "remainingActions",
-    "history",
-    "routingSnapshot",
-    "routingPolicyVersion",
-    "routingDecisions"
-  ]);
-  const unknown = Object.keys(value).filter((key) => !allowedKeys.has(key));
-  if (unknown.length) throw invalid2(`V1 state contains unknown properties: ${unknown.join(", ")}`);
-  if (typeof value.taskId !== "string" || !value.taskId || !isV1Status(value.status) || !isRecord6(value.configSnapshot) || !isRecord6(value.policySnapshot) || !Array.isArray(value.issues) || !Number.isInteger(value.reviewCycle) || value.reviewCycle < 0 || !Array.isArray(value.remainingActions) || !value.remainingActions.every(nonEmpty) || !Array.isArray(value.history)) throw invalid2("V1 state does not satisfy required V1 fields");
-  if (value.resumeTo !== void 0 && !isV1Status(value.resumeTo)) throw invalid2("V1 resumeTo is invalid");
-  if (value.status === "blocked") {
-    const operationalV1 = ["new", "awaiting_mode_confirmation", "discovering", "planning", "awaiting_approval", "executing", "validating", "reviewing", "resolving", "verifying", "handing_off"];
-    if (!operationalV1.includes(value.resumeTo)) throw invalid2("V1 blocked resumeTo must be operational");
-  } else if (value.status === "ready_for_handoff") {
-    if (value.resumeTo !== "handing_off") throw invalid2("V1 ready_for_handoff resumeTo must be handing_off");
-  } else if (value.resumeTo !== void 0) {
-    throw invalid2(`V1 ${value.status} must not contain resumeTo`);
-  }
-  const history = value.history;
-  if (value.status === "new") {
-    if (history.length) throw invalid2("V1 new state must have empty history");
-    return;
-  }
-  if (!history.length) throw invalid2(`V1 ${value.status} cannot migrate without complete transition history`);
-  let previousTo;
-  for (const [index, raw] of history.entries()) {
-    if (!isLegacyTransition(raw)) throw invalid2(`V1 history event ${index} is not a recognized transition`);
-    if (index === 0 && raw.from !== "new") throw invalid2("V1 history must start from new");
-    if (previousTo !== void 0 && raw.from !== previousTo) throw invalid2(`V1 history breaks continuity at event ${index}`);
-    if (!V1_ALLOWED[raw.from].includes(raw.to)) throw invalid2(`V1 history edge ${raw.from} -> ${raw.to} is illegal`);
-    previousTo = raw.to;
-  }
-  if (previousTo !== value.status) throw invalid2(`V1 latest history status ${String(previousTo)} does not match current ${value.status}`);
-  if (value.status === "blocked" && (!isV1Status(value.resumeTo) || !value.remainingActions.length)) throw invalid2("V1 blocked requires resumeTo and remainingActions");
-  if (value.status === "ready_for_handoff" && !value.remainingActions.length) throw invalid2("V1 ready_for_handoff requires remainingActions");
-}
-function inferMigrationMode(history, options) {
-  const exit = history.find((event) => event.from === "awaiting_mode_confirmation");
-  const inferred = exit?.to === "executing" ? "quick" : void 0;
-  const confirmed = exit?.to === "executing" || exit?.to === "discovering";
-  if (inferred) {
-    if (options.mode && options.mode !== inferred) throw ambiguous(`Migration mode ${options.mode} contradicts Quick history`);
-    return { mode: inferred, evidenceRef: options.modeEvidenceRef ?? "migration:history:quick", confirmed };
-  }
-  if (!options.mode || !nonEmpty(options.modeEvidenceRef)) throw ambiguous("V1 mode cannot be inferred uniquely; provide mode with modeEvidenceRef");
-  if (exit?.to === "discovering" && options.mode === "quick") throw ambiguous("Quick mode contradicts V1 discovery history");
-  return { mode: options.mode, evidenceRef: options.modeEvidenceRef, confirmed };
-}
-function migrateHistory(history, mode) {
-  let resolvingContext;
-  return history.map((raw, index) => {
-    const from = raw.from === "resolving" ? resolvingContext : mapV1OrdinaryStatus(raw.from);
-    if (!from) throw ambiguous(`V1 history event ${index} leaves resolving source ambiguous`);
-    let to;
-    if (raw.to === "resolving") {
-      resolvingContext = splitResolvingSource(raw.from);
-      to = resolvingContext;
-    } else {
-      to = mapV1OrdinaryStatus(raw.to);
-    }
-    const contract = transitionContract(from, to);
-    if (!contract) throw invalid2(`Translated V1 edge ${from} -> ${to} is not canonical V2`);
-    const legacyData = { migratedFromSchemaVersion: 1 };
-    const migrationEvidence = [
-      ...contract.guards,
-      ...contract.conditionalGuards.filter((conditional) => conditional.when.mode === mode).map((conditional) => conditional.guard)
-    ].filter((guard) => !STRUCTURAL_GUARDS.has(guard)).map((guard) => ({
-      schemaVersion: 1,
-      guard,
-      stateRevision: index,
-      stateFingerprint: `migration:v1:state:${index}`,
-      observedFingerprint: `migration:v1:event:${index + 1}`,
-      evidenceRefs: [`migration:v1:history:${index + 1}`],
-      provenance: "migration-history",
-      result: guard === "review_satisfied" ? "not_applicable" : "passed"
-    }));
-    return {
-      sequence: index + 2,
-      at: migrationEventAt(index + 2),
-      type: "state.transition",
-      from,
-      to,
-      mode,
-      revision: index + 1,
-      sourceFingerprint: `migration:v1:state:${index}`,
-      ...migrationEvidence.length ? { guardEvidence: migrationEvidence } : {},
-      ...to === "cancelled" || to === "failed" ? { terminalSource: from } : {},
-      legacyData
-    };
-  });
-}
-function mapCurrentV1Status(status, history) {
-  return status === "resolving" ? inferResolvingStatus(history, false) : mapV1OrdinaryStatus(status);
-}
-function inferResolvingStatus(history, blockedContext) {
-  const event = blockedContext ? history.at(-2) : history.at(-1);
-  if (!event || event.to !== "resolving") throw ambiguous("V1 resolving lacks coherent latest entry context");
-  return splitResolvingSource(event.from);
-}
-function splitResolvingSource(source) {
-  if (source === "validating") return "resolving_build";
-  if (source === "reviewing" || source === "verifying") return "resolving_assure";
-  throw ambiguous(`V1 resolving source ${source} does not identify BUILD or ASSURE`);
-}
-function mapV1OrdinaryStatus(value) {
-  if (value === "resolving") throw ambiguous("V1 resolving requires history context");
-  if (!isTaskStatus(value)) throw invalid2(`V1 status ${value} has no V2 mapping`);
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (isRecord6(value)) return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== void 0).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonical(item)]));
   return value;
 }
-function assertV2State(value) {
-  const schema = validateStateV2(value);
-  if (!schema.valid) throw invalid2(`State V2 schema validation failed: ${formatSchemaError(schema.errors[0])}`);
-  const state = value;
-  if (state.verificationRequirements) {
-    try {
-      validateVerificationRequirements(state.verificationRequirements);
-    } catch (error) {
-      throw invalid2(error instanceof Error ? error.message : "verificationRequirements is invalid");
-    }
-  }
-  if (state.contractDigest !== void 0 && state.verificationRequirements && state.contractDigest !== state.verificationRequirements.sourceDigest) {
-    throw invalid2("Persisted contractDigest does not match state-bound verification requirements");
-  }
-  if (state.contextCapsule) validateContextCapsule(state.contextCapsule);
-  if (state.activeArtifact && (!compactRef(state.activeArtifact.artifactId) || !compactRef(state.activeArtifact.ownerRef) || !compactRef(state.activeArtifact.fingerprint))) {
-    throw invalid2("Active artifact reference is malformed");
-  }
-  if (state.activeWorktree && (!compactRef(state.activeWorktree.worktreeRef) || !compactRef(state.activeWorktree.gitFingerprint))) {
-    throw invalid2("Active worktree reference is malformed");
-  }
-  validateHistoryEnvelope(state);
-  const events = state.history.filter(isTransitionEvent);
-  const compactedTransitions = state.historySummary?.typeCounts["state.transition"] ?? 0;
-  if (state.revision !== compactedTransitions + events.length) throw invalid2("State V2 revision must equal total transition count");
-  let previous = state.historySummary?.lastTransition?.to;
-  let activeGate = state.historySummary?.activeGate?.gateContext;
-  let activeGateDigest = state.historySummary?.activeGate?.contractDigest;
-  let activeCriticalVerificationProjection = state.historySummary?.activeGate?.verificationReceipt?.inputDigest;
-  for (const [index, event] of events.entries()) {
-    if (event.revision !== compactedTransitions + index + 1) throw invalid2(`State V2 history revision is non-monotonic at event ${index}`);
-    if (index === 0 && compactedTransitions === 0 && event.from !== "new") throw invalid2("State V2 history must start from new");
-    if (previous !== void 0 && event.from !== previous) throw invalid2(`State V2 history breaks continuity at event ${index}`);
-    if (!(event.to in STATE_MACHINE[event.from].transitions)) throw invalid2(`State V2 history edge ${event.from} -> ${event.to} is illegal`);
-    const eventContract = transitionContract(event.from, event.to);
-    const eventMode = event.mode ?? state.mode;
-    if (!eventContract?.modes.includes(eventMode)) throw invalid2(`State V2 history edge ${event.from} -> ${event.to} is invalid for mode ${eventMode}`);
-    if (!nonEmpty(event.sourceFingerprint)) throw invalid2(`State V2 event ${index} lacks sourceFingerprint`);
-    if (event.guardEvidence) {
-      const seen = /* @__PURE__ */ new Set();
-      for (const evidence of event.guardEvidence) {
-        if (evidence.stateRevision !== event.revision - 1 || seen.has(evidence.guard)) throw invalid2(`State V2 event ${index} contains stale or duplicate guard evidence`);
-        if (evidence.result === "not_applicable" && evidence.guard !== "review_satisfied") throw invalid2(`State V2 event ${index} contains invalid not_applicable evidence`);
-        if (evidence.stateFingerprint !== event.sourceFingerprint) throw invalid2(`State V2 event ${index} contains mismatched evidence stateFingerprint`);
-        if (TRUSTED_EVALUATOR_REQUIRED.has(evidence.guard) && !(evidence.guard === "intake_complete" && evidence.provenance === "migration-history")) {
-          try {
-            validateEvaluatorReceipt(evidence, event.sourceFingerprint, event.revision - 1);
-          } catch (error) {
-            throw invalid2(error instanceof Error ? error.message : `State V2 event ${index} has invalid trusted evaluator receipt`);
-          }
-        } else if (evidence.evaluatorReceipt !== void 0) {
-          throw invalid2(`State V2 event ${index} has evaluator receipt on untrusted guard ${evidence.guard}`);
-        }
-        seen.add(evidence.guard);
-      }
-    }
-    const contract = transitionContract(event.from, event.to);
-    if (!contract) throw invalid2(`State V2 history edge ${event.from} -> ${event.to} lacks contract`);
-    const evidenceByGuard = new Map(event.guardEvidence?.map((evidence) => [evidence.guard, evidence]) ?? []);
-    try {
-      validateTrustedTarget({ ...state, status: event.from }, event.to, evidenceByGuard);
-    } catch (error) {
-      throw invalid2(error instanceof Error ? error.message : `State V2 event ${index} has invalid trusted target evidence`);
-    }
-    if (event.gateDecision) {
-      if (event.gateDecision.stateRevision !== event.revision - 1 || event.gateDecision.stateFingerprint !== event.sourceFingerprint) throw invalid2(`State V2 event ${index} contains stale gate decision`);
-      if (event.from !== "awaiting_approval" || event.gateContext !== event.gateDecision.gate || !gateDecisionAllows(event.gateDecision.gate, event.gateDecision.decision, event.to)) {
-        throw invalid2(`State V2 event ${index} contains invalid gate decision context`);
-      }
-    } else if (contract.guards.includes("gate_context_valid")) {
-      throw invalid2(`State V2 gate exit event ${index} lacks gate decision`);
-    }
-    if (event.to === "awaiting_approval") {
-      const expectedGate = event.from === "planning" ? "pre_build" : event.from === "verifying" ? "critical_completion" : event.from === "blocked" ? event.gateContext : void 0;
-      if (!expectedGate || event.gateContext !== expectedGate || !nonEmpty(event.contractDigest)) throw invalid2(`State V2 event ${index} lacks valid gate entry context`);
-      if (event.from === "blocked" && activeGate !== void 0 && (event.gateContext !== activeGate || event.contractDigest !== activeGateDigest)) throw invalid2(`State V2 event ${index} changes blocked gate context`);
-      activeGate = event.gateContext;
-      activeGateDigest = event.contractDigest;
-      if (event.from === "verifying") {
-        activeCriticalVerificationProjection = evidenceByGuard.get("verification_complete")?.evaluatorReceipt?.inputDigest;
-        if (!activeCriticalVerificationProjection) throw invalid2(`State V2 event ${index} lacks Critical verification projection`);
-      }
-    }
-    if (event.from === "awaiting_approval") {
-      if (activeGate !== void 0 && (event.gateContext !== activeGate || event.contractDigest !== activeGateDigest)) throw invalid2(`State V2 event ${index} gate digest/context differs from entry`);
-      if (event.gateDecision && event.gateDecision.contractDigest !== event.contractDigest) throw invalid2(`State V2 event ${index} gate decision digest differs from event`);
-      if (event.gateContext === "critical_completion" && event.to !== "blocked" && ["handing_off", "ready_for_handoff", "finished_local"].includes(event.to)) {
-        const critical = evidenceByGuard.get("critical_completion_approved")?.evaluatorReceipt;
-        if (!critical || activeCriticalVerificationProjection !== void 0 && critical.subjectIds[0] !== activeCriticalVerificationProjection || critical.completedIds[0] !== event.gateDecision?.evidenceRef) {
-          throw invalid2(`State V2 event ${index} Critical approval does not match gate verification and decision`);
-        }
-      }
-      if (event.to !== "blocked") {
-        activeGate = void 0;
-        activeGateDigest = void 0;
-        activeCriticalVerificationProjection = void 0;
-      }
-    } else if (event.from === "blocked" && event.gateContext) {
-      if (activeGate !== void 0 && (event.gateContext !== activeGate || event.contractDigest !== activeGateDigest)) throw invalid2(`State V2 event ${index} changes preserved gate context`);
-      if (event.to !== "awaiting_approval" && event.to !== "blocked") {
-        activeGate = void 0;
-        activeGateDigest = void 0;
-        activeCriticalVerificationProjection = void 0;
-      }
-    }
-    const nonStructural = requiredGuards({ ...state, mode: eventMode }, contract).filter((guard) => !STRUCTURAL_GUARDS.has(guard));
-    const recorded = new Set(event.guardEvidence?.map((evidence) => evidence.guard) ?? []);
-    const missing = nonStructural.filter((guard) => !recorded.has(guard));
-    if (missing.length) throw invalid2(`State V2 event ${index} lacks durable guard evidence: ${missing.join(", ")}`);
-    const terminal = event.to === "cancelled" || event.to === "failed";
-    if (terminal) {
-      if (event.terminalSource !== event.from) throw invalid2("Terminal event source must equal from status");
-      if (event.from === "blocked") {
-        if (!event.terminalResumeTo || !isOperationalResumeTarget(event.terminalResumeTo)) throw invalid2("Blocked terminal event requires operational terminalResumeTo");
-      } else if (event.terminalResumeTo !== void 0) throw invalid2("terminalResumeTo is valid only for blocked terminal source");
-    } else if (event.terminalSource !== void 0 || event.terminalResumeTo !== void 0) {
-      throw invalid2("Non-terminal transition cannot contain terminal source metadata");
-    }
-    previous = event.to;
-  }
-  if (state.status === "new") {
-    if (events.length || state.revision !== 0) throw invalid2("State new must have no transition history");
-  } else if (previous !== state.status) {
-    throw invalid2(`State latest history status ${String(previous)} does not match current ${state.status}`);
-  }
-  const confirmedByHistory = events.some((event) => event.from === "awaiting_mode_confirmation" && (event.to === "executing" || event.to === "discovering"));
-  if (state.modeConfirmed !== ((state.historySummary?.modeConfirmed ?? false) || confirmedByHistory)) throw invalid2("State V2 modeConfirmed contradicts history");
-  if (state.status === "blocked") {
-    if (!state.resumeTo || !isOperationalResumeTarget(state.resumeTo) || !state.remainingActions.length) throw invalid2("Blocked V2 state has invalid resume metadata");
-    if (state.pendingGate && state.resumeTo !== "awaiting_approval") throw invalid2("Blocked pendingGate requires resumeTo awaiting_approval");
-  }
-  if (state.status === "awaiting_approval") {
-    if (!state.pendingGate) throw invalid2("awaiting_approval requires pendingGate");
-    const latest = events.at(-1);
-    if (latest && latest.gateContext !== state.pendingGate) throw invalid2("pendingGate contradicts latest gate context");
-    if (latest && state.pendingGate === "pre_build" && latest.from !== "planning" && latest.from !== "blocked") throw invalid2("pre_build pendingGate requires planning or resumed source");
-    if (state.pendingGate === "critical_completion" && (latest && latest.from !== "verifying" && latest.from !== "blocked" || state.mode !== "critical")) throw invalid2("critical_completion pendingGate requires Critical verifying or resumed source");
-  }
-  if (state.pendingGate) {
-    if (activeGate !== state.pendingGate || activeGateDigest !== state.contractDigest) throw invalid2("Persisted gate context does not match active gate anchor");
-  } else if (activeGate !== void 0) {
-    throw invalid2("Compacted active gate anchor survives outside a pending gate");
-  }
-  if (state.status === "cancelled" || state.status === "failed") deriveMacroPhase(state);
+function copy3(value) {
+  return structuredClone(value);
 }
-var STRUCTURAL_GUARDS = /* @__PURE__ */ new Set(["task_initialized", "resume_metadata_valid", "terminal_source_recorded", "gate_context_valid"]);
-var TRUSTED_EVALUATOR_REQUIRED = /* @__PURE__ */ new Set(["intake_complete", "verification_complete", "handoff_intent_resolved", "handoff_reconciled", "critical_completion_approved"]);
-var WORKFLOW_EVENT_TYPES = /* @__PURE__ */ new Set([
-  "task.created",
-  "state.migrated",
-  "task.blocked",
-  "task.resumed",
-  "gate.recorded",
-  "scope.approved",
-  "artifact.recorded",
-  "issue.recorded",
-  "correction.recorded",
-  "handoff.attempted",
-  "handoff.result",
-  "context.updated",
-  "intake.question_recorded",
-  "intake.answer_recorded",
-  "intake.checkpoint",
-  "advance.rejected",
-  "intake.reopened"
-]);
-var HISTORY_REFERENCE_KINDS = /* @__PURE__ */ new Set([
-  "task",
-  "mode-evidence",
-  "migration-source",
-  "migration-target",
-  "artifact",
-  "worktree",
-  "context-capsule",
-  "context",
-  "issue",
-  "correction",
-  "gate",
-  "scope",
-  "handoff",
-  "evidence",
-  "receipt",
-  "command",
-  "criterion",
-  "decision",
-  "policy",
-  "config",
-  "git",
-  "symbol"
-]);
-function isTransitionEvent(event) {
-  return event.type === "state.transition";
+function deepFreeze2(value) {
+  if (!isRecord6(value) && !Array.isArray(value)) return value;
+  if (Object.isFrozen(value)) return value;
+  for (const item of Object.values(value)) deepFreeze2(item);
+  return Object.freeze(value);
 }
 function normalizeEventAt(value) {
-  const source = value ?? (/* @__PURE__ */ new Date()).toISOString();
-  if (!isValidRfc3339(source)) throw new Error("History event at must be a valid RFC 3339 calendar timestamp.");
-  const date = new Date(source);
-  if (!Number.isFinite(date.valueOf())) throw new Error("History event at must be a valid RFC 3339 calendar timestamp.");
-  return date.toISOString();
+  if (value && validAt(value)) return new Date(value).toISOString();
+  return (/* @__PURE__ */ new Date()).toISOString();
 }
-function migrationEventAt(sequence) {
-  return new Date(sequence - 1).toISOString();
-}
-function nextHistorySequence(state) {
-  return (state.history.at(-1)?.sequence ?? state.historySummary?.lastSequence ?? 0) + 1;
-}
-function normalizeHistoryEnvelope(state) {
-  if (state.history.every((event) => event.sequence !== void 0 && event.at !== void 0)) return state;
-  if (state.historySummary || state.history.some((event) => event.sequence !== void 0 || event.at !== void 0 || !isTransitionEvent(event))) {
-    throw invalid2("State V2 history mixes legacy and structured event envelopes");
-  }
-  return {
-    ...state,
-    history: state.history.map((event, index) => ({ ...event, sequence: index + 1, at: migrationEventAt(index + 1) }))
-  };
-}
-function withCompactedHistory(state, inputHistory) {
-  const normalized = normalizeHistoryEnvelope({ ...state, history: inputHistory });
-  if (normalized.history.length <= HISTORY_LIMIT) return normalized;
-  const removed = normalized.history.slice(0, normalized.history.length - HISTORY_LIMIT);
-  const history = normalized.history.slice(-HISTORY_LIMIT);
-  const previous = normalized.historySummary;
-  const typeCounts = { ...previous?.typeCounts ?? {} };
-  for (const event of removed) typeCounts[event.type] = (typeCounts[event.type] ?? 0) + 1;
-  const removedTransitions = removed.filter(isTransitionEvent);
-  const lastRemovedTransition = removedTransitions.at(-1);
-  const lastTransition = lastRemovedTransition ? { sequence: lastRemovedTransition.sequence, revision: lastRemovedTransition.revision, to: lastRemovedTransition.to } : previous?.lastTransition;
-  const modeConfirmed = (previous?.modeConfirmed ?? false) || removedTransitions.some(
-    (event) => event.from === "awaiting_mode_confirmation" && (event.to === "executing" || event.to === "discovering")
-  );
-  const activeGate = foldCompactedGate(previous?.activeGate, removedTransitions);
-  return {
-    ...normalized,
-    history,
-    historySummary: {
-      removedCount: (previous?.removedCount ?? 0) + removed.length,
-      firstSequence: previous?.firstSequence ?? removed[0].sequence,
-      lastSequence: removed.at(-1)?.sequence ?? previous?.lastSequence ?? 0,
-      firstAt: previous?.firstAt ?? removed[0].at,
-      lastAt: removed.at(-1)?.at ?? previous?.lastAt ?? "",
-      typeCounts,
-      modeConfirmed,
-      ...lastTransition ? { lastTransition } : {},
-      ...activeGate ? { activeGate } : {}
-    }
-  };
-}
-function foldCompactedGate(initial, events) {
-  let active = initial ? copy2(initial) : void 0;
-  for (const event of events) {
-    if (event.to === "awaiting_approval" && (event.from === "planning" || event.from === "verifying")) {
-      const gateContext = event.from === "planning" ? "pre_build" : "critical_completion";
-      const verificationReceipt = event.guardEvidence?.find((evidence) => evidence.guard === "verification_complete")?.evaluatorReceipt;
-      active = {
-        gateContext,
-        contractDigest: event.contractDigest ?? "",
-        entrySequence: event.sequence,
-        entryRevision: event.revision,
-        entryFrom: event.from,
-        sourceFingerprint: event.sourceFingerprint,
-        ...verificationReceipt ? { verificationReceipt: copy2(verificationReceipt) } : {}
-      };
-      continue;
-    }
-    if (event.from === "awaiting_approval" && event.to !== "blocked") active = void 0;
-    else if (event.from === "blocked" && event.gateContext && event.to !== "awaiting_approval" && event.to !== "blocked") active = void 0;
-  }
-  return active;
-}
-function validateHistoryEnvelope(state) {
-  const structured = state.history.some((event) => event.sequence !== void 0 || event.at !== void 0 || !isTransitionEvent(event));
-  if (!structured && !state.historySummary) return;
-  if (state.history.length > HISTORY_LIMIT) throw invalid2(`State V2 history exceeds ${HISTORY_LIMIT} events`);
-  let expected = (state.historySummary?.lastSequence ?? 0) + 1;
-  for (const [index, event] of state.history.entries()) {
-    if (event.sequence !== expected) throw invalid2(`State V2 history sequence is non-monotonic at event ${index}`);
-    assertRfc3339(event.at, `State V2 event ${index} at`);
-    if (!isTransitionEvent(event)) validateHistoryReferences(event.refs, `State V2 event ${index}`);
-    expected += 1;
-  }
-  const summary = state.historySummary;
-  if (!summary) {
-    if (state.history[0]?.sequence !== 1) throw invalid2("State V2 history without summary must start at sequence 1");
-    return;
-  }
-  if (summary.removedCount < 1 || summary.firstSequence !== 1 || summary.lastSequence !== summary.removedCount) throw invalid2("State V2 historySummary sequence range is inconsistent");
-  assertRfc3339(summary.firstAt, "State V2 historySummary firstAt");
-  assertRfc3339(summary.lastAt, "State V2 historySummary lastAt");
-  const count = Object.values(summary.typeCounts).reduce((sum, value) => sum + value, 0);
-  if (count !== summary.removedCount || Object.entries(summary.typeCounts).some(([type, value]) => !isHistoryType(type) || !Number.isInteger(value) || value < 1)) {
-    throw invalid2("State V2 historySummary type counters are inconsistent");
-  }
-  const transitionCount = summary.typeCounts["state.transition"] ?? 0;
-  if (transitionCount > 0) {
-    if (!summary.lastTransition || summary.lastTransition.revision !== transitionCount || summary.lastTransition.sequence > summary.lastSequence) {
-      throw invalid2("State V2 historySummary transition anchor is inconsistent");
-    }
-  } else if (summary.lastTransition !== void 0 || summary.modeConfirmed) {
-    throw invalid2("State V2 historySummary has transition metadata without transitions");
-  }
-  if (summary.activeGate) validateCompactedGateAnchor(summary.activeGate, transitionCount, summary.lastSequence);
-}
-function validateCompactedGateAnchor(anchor, transitionCount, lastSequence) {
-  const expectedGate = anchor.entryFrom === "planning" ? "pre_build" : "critical_completion";
-  if (anchor.gateContext !== expectedGate || !compactRef(anchor.contractDigest) || !compactRef(anchor.sourceFingerprint) || anchor.entrySequence > lastSequence || anchor.entryRevision > transitionCount) {
-    throw invalid2("State V2 compacted gate anchor is malformed");
-  }
-  if (anchor.gateContext === "pre_build") {
-    if (anchor.verificationReceipt !== void 0) throw invalid2("Pre-build compacted gate cannot carry verification receipt");
-    return;
-  }
-  if (!anchor.verificationReceipt) throw invalid2("Critical compacted gate lacks matching verification receipt");
-  try {
-    validateCompactedVerificationReceipt(anchor);
-  } catch (error) {
-    throw invalid2(error instanceof Error ? error.message : "Critical compacted gate receipt is invalid");
-  }
-}
-function validateCompactedVerificationReceipt(anchor) {
-  const receipt = anchor.verificationReceipt;
-  if (!receipt) throw new Error("Critical compacted gate lacks verification receipt.");
-  const reconstructed = {
-    schemaVersion: 1,
-    guard: "verification_complete",
-    stateRevision: anchor.entryRevision - 1,
-    stateFingerprint: anchor.sourceFingerprint,
-    observedFingerprint: receipt.receiptDigest,
-    evidenceRefs: [...receipt.evidenceRefs],
-    provenance: "deterministic-check",
-    result: "passed",
-    evaluatorReceipt: receipt
-  };
-  validateEvaluatorReceipt(reconstructed, anchor.sourceFingerprint, anchor.entryRevision - 1);
-}
-function isHistoryType(value) {
-  return value === "state.transition" || WORKFLOW_EVENT_TYPES.has(value);
-}
-function assertRfc3339(value, label) {
-  if (typeof value !== "string" || !isValidRfc3339(value)) throw invalid2(`${label} must be a valid RFC 3339 calendar timestamp`);
-}
-function isValidRfc3339(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/.exec(value);
-  if (!match) return false;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
-  const second = Number(match[6]);
-  const offsetHour = match[9] === void 0 ? 0 : Number(match[9]);
-  const offsetMinute = match[10] === void 0 ? 0 : Number(match[10]);
-  if (year < 1 || month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59 || offsetHour > 23 || offsetMinute > 59) return false;
-  const days = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  return day >= 1 && day <= days[month - 1];
-}
-function isLeapYear(year) {
-  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-}
-function validateHistoryReferences(refs, label) {
-  if (!Array.isArray(refs) || refs.length < 1 || refs.length > HISTORY_REFERENCE_LIMIT) throw invalid2(`${label} requires 1..${HISTORY_REFERENCE_LIMIT} structured references`);
-  let totalChars = 0;
-  for (const ref of refs) {
-    if (!isRecord6(ref) || !HISTORY_REFERENCE_KINDS.has(ref.kind) || !historyReferenceToken(ref.kind, 32) || !historyReferenceToken(ref.ref, 512) || ref.fingerprint !== void 0 && !historyReferenceToken(ref.fingerprint, 512)) {
-      throw invalid2(`${label} contains malformed or non-compact references`);
-    }
-    totalChars += ref.kind.length + ref.ref.length + (typeof ref.fingerprint === "string" ? ref.fingerprint.length : 0);
-  }
-  if (totalChars > HISTORY_REFERENCE_TOTAL_CHARS) throw invalid2(`${label} references exceed compact size bound`);
-}
-function historyReferenceToken(value, maxLength) {
-  return typeof value === "string" && value.length > 0 && value.length <= maxLength && /^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]*$/.test(value);
-}
-function defaultContextCapsule(configSnapshot, policySnapshot) {
-  return {
-    schemaVersion: 1,
-    entries: [],
-    fingerprints: [
-      { id: "config", kind: "config", value: `sha256:${digest(configSnapshot)}`, provenanceRef: "state:configSnapshot" },
-      { id: "policy", kind: "policy", value: `sha256:${digest(policySnapshot)}`, provenanceRef: "state:policySnapshot" }
-    ]
-  };
-}
-function validateContextCapsule(capsule) {
-  if (capsule.schemaVersion !== 1 || !Array.isArray(capsule.entries) || !Array.isArray(capsule.fingerprints)) throw invalid2("Context Capsule is malformed");
-  const ids = /* @__PURE__ */ new Set();
-  for (const fingerprint of capsule.fingerprints) {
-    if (!compactRef(fingerprint.id) || ids.has(fingerprint.id) || !["git", "config", "policy", "artifact", "worktree"].includes(fingerprint.kind) || !compactRef(fingerprint.value) || !compactRef(fingerprint.provenanceRef)) throw invalid2("Context Capsule fingerprint is malformed");
-    ids.add(fingerprint.id);
-  }
-  for (const entry of capsule.entries) {
-    if (!["objective", "approved_scope", "risk", "relevant_code", "constraints", "acceptance", "decision", "evidence"].includes(entry.section) || !compactRef(entry.ownerRef) || !compactRef(entry.provenanceRef) || !Array.isArray(entry.fingerprintRefs) || entry.fingerprintRefs.length < 1 || new Set(entry.fingerprintRefs).size !== entry.fingerprintRefs.length || entry.fingerprintRefs.some((id) => !ids.has(id))) throw invalid2("Context Capsule entry is malformed or references unknown fingerprints");
-  }
-}
-function compactRef(value) {
-  return typeof value === "string" && value.length > 0 && value.length <= 1024 && !/[\r\n\0]/.test(value);
-}
-function formatSchemaError(value) {
-  if (!isRecord6(value)) return "unknown schema error";
-  return `${String(value.instancePath || "/")} ${String(value.message ?? "invalid")}`;
-}
-function invalid2(message) {
-  return new StateMigrationError("state_invalid", `${message}; state was not modified.`);
-}
-function ambiguous(message) {
-  return new StateMigrationError("state_migration_ambiguous", `${message}. Resolve ambiguity with provenance; state was not modified.`);
-}
-function unsupported(message) {
-  return new StateMigrationError("state_version_unsupported", `${message}; state was not modified.`);
-}
-function isLegacyTransition(value) {
-  return isRecord6(value) && isV1Status(value.from) && isV1Status(value.to);
-}
-function isV1Status(value) {
-  return typeof value === "string" && V1_STATUSES.includes(value);
-}
-function isTaskMode(value) {
-  return value === "quick" || value === "standard" || value === "critical";
+function validAt(value) {
+  return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }
 function nonEmpty(value) {
   return typeof value === "string" && value.length > 0;
@@ -18730,67 +18909,16 @@ function nonEmpty(value) {
 function isRecord6(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-function copy2(value) {
-  if (Array.isArray(value)) return value.map(copy2);
-  if (isRecord6(value)) return Object.fromEntries(Object.entries(value).map(([key, nested]) => [key, copy2(nested)]));
-  return value;
+function isRisk(value) {
+  return ["low", "medium", "high", "critical"].includes(value);
 }
-function stateFingerprintAtRevision(state, revision) {
-  const history = state.history.map((event) => ({
-    ...event,
-    ...isTransitionEvent(event) && event.guardEvidence ? {
-      guardEvidence: event.guardEvidence.map(({ stateFingerprint: _stateFingerprint, ...evidence }) => evidence)
-    } : {},
-    ...isTransitionEvent(event) && event.gateDecision ? {
-      gateDecision: (({ stateFingerprint: _stateFingerprint, ...decision }) => decision)(event.gateDecision)
-    } : {}
-  }));
-  const projection = {
-    schemaVersion: state.schemaVersion,
-    taskId: state.taskId,
-    mode: state.mode,
-    modeEvidenceRef: state.modeEvidenceRef,
-    configSnapshot: state.configSnapshot,
-    policySnapshot: state.policySnapshot,
-    verificationRequirements: state.verificationRequirements,
-    routingSnapshot: state.routingSnapshot,
-    routingPolicyVersion: state.routingPolicyVersion,
-    activeArtifact: state.activeArtifact,
-    activeWorktree: state.activeWorktree,
-    contextCapsule: state.contextCapsule,
-    intake: state.intake,
-    benchmarkEnabled: state.benchmarkEnabled,
-    historySummary: state.historySummary,
-    revision,
-    history
-  };
-  return createHash("sha256").update(stable(projection)).digest("hex");
-}
-function stable(value) {
-  return JSON.stringify(canonicalize(value));
-}
-function compareSnapshot(state, current) {
-  const reasons = [];
-  if (stable(state.configSnapshot) !== stable(current.config)) reasons.push("Effective configuration changed.");
-  if (stable(state.policySnapshot) !== stable(current.policy)) reasons.push("Effective policy changed.");
-  if (state.routingSnapshot && current.routingSnapshot && stableRoutingSnapshot(state.routingSnapshot) !== stableRoutingSnapshot(current.routingSnapshot)) reasons.push("Routing snapshot changed.");
-  return { changed: reasons.length > 0, reasons };
-}
-function stableRoutingSnapshot(snapshot) {
-  const { capturedAt: _capturedAt, ...behavior } = snapshot;
-  return stable(behavior);
-}
-function canonicalize(value) {
-  if (Array.isArray(value)) return value.map(canonicalize);
-  if (isRecord6(value)) {
-    return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, nested]) => [key, canonicalize(nested)]));
-  }
-  return value;
-}
+var REF = /^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]{0,511}$/;
+var HISTORY_REFERENCE_KINDS = /* @__PURE__ */ new Set(["task", "shape", "artifact", "worktree", "context-capsule", "context", "issue", "correction", "gate", "scope", "handoff", "evidence", "receipt", "command", "criterion", "decision", "policy", "config", "git", "symbol"]);
+var STRUCTURAL_GUARDS = /* @__PURE__ */ new Set(["task_initialized", "resume_metadata_valid", "terminal_source_recorded", "gate_context_valid"]);
+var TRUSTED_GUARDS = /* @__PURE__ */ new Set(["intake_complete", "discovery_sufficient", "contract_complete", "verification_complete", "handoff_intent_resolved", "handoff_reconciled", "completion_approved"]);
 
 // src/state-store.ts
 var STATE_FILENAME = "state.yaml";
-var STATE_V1_BACKUP_FILENAME = "state.v1.yaml";
 var StateStoreError = class extends Error {
   constructor(code, message) {
     super(message);
@@ -18804,7 +18932,7 @@ var DEFAULT_FILE_SYSTEM = {
     const handle = await nodeFs.open(path, constants2.O_RDONLY | (constants2.O_NOFOLLOW ?? 0));
     try {
       const metadata = await handle.stat();
-      if (!metadata.isFile()) throw Object.assign(new Error("State path is not a regular file."), { code: "EINVAL" });
+      if (!metadata.isFile()) throw Object.assign(new Error("not regular"), { code: "EINVAL" });
       return await handle.readFile();
     } finally {
       await handle.close();
@@ -18813,7 +18941,6 @@ var DEFAULT_FILE_SYSTEM = {
   mkdir: (path, options) => nodeFs.mkdir(path, options),
   writeFile: (path, data, options) => nodeFs.writeFile(path, data, options),
   rename: (from, to) => nodeFs.rename(from, to),
-  link: (from, to) => nodeFs.link(from, to),
   lstat: (path) => nodeFs.lstat(path),
   realpath: (path) => nodeFs.realpath(path),
   unlink: (path) => nodeFs.unlink(path)
@@ -18821,154 +18948,120 @@ var DEFAULT_FILE_SYSTEM = {
 var TaskStateStore = class {
   workspaceRoot;
   tasksRoot;
-  #fileSystem;
+  #fs;
   #temporaryId;
   constructor(workspaceRoot, options = {}) {
-    if (typeof workspaceRoot !== "string" || !workspaceRoot || workspaceRoot.includes("\0")) {
-      throw new StateStoreError("state_path_invalid", "Workspace root is invalid.");
-    }
+    if (!workspaceRoot || workspaceRoot.includes("\0")) throw new StateStoreError("state_path_invalid", "Workspace root is invalid.");
     try {
       this.workspaceRoot = realpathSync2(resolve2(workspaceRoot));
-      if (!lstatSync2(this.workspaceRoot).isDirectory()) throw new Error("Workspace root is not a directory.");
+      if (!lstatSync2(this.workspaceRoot).isDirectory()) throw new Error();
     } catch {
-      throw new StateStoreError("state_path_invalid", "Workspace root must be an existing accessible directory.");
+      throw new StateStoreError("state_path_invalid", "Workspace root must be existing directory.");
     }
     this.tasksRoot = resolve2(this.workspaceRoot, ".codex", "tasks");
-    this.#fileSystem = { ...DEFAULT_FILE_SYSTEM, ...options.fileSystem };
+    this.#fs = { ...DEFAULT_FILE_SYSTEM, ...options.fileSystem };
     this.#temporaryId = options.temporaryId ?? randomUUID3;
   }
   paths(taskId) {
     assertSafeTaskId2(taskId);
     const directory = resolve2(this.tasksRoot, taskId);
-    const fromTasksRoot = relative(this.tasksRoot, directory);
-    if (!fromTasksRoot || fromTasksRoot.startsWith(`..${sep}`) || fromTasksRoot === ".." || isAbsolute(fromTasksRoot)) {
-      throw new StateStoreError("state_path_invalid", "Task ID resolves outside task state root.");
-    }
-    return {
-      directory,
-      statePath: join4(directory, STATE_FILENAME),
-      backupPath: join4(directory, STATE_V1_BACKUP_FILENAME)
-    };
+    const rel = relative(this.tasksRoot, directory);
+    if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new StateStoreError("state_path_invalid", "Task ID resolves outside task root.");
+    return { directory, statePath: join4(directory, STATE_FILENAME) };
   }
-  async load(taskId, migrationOptions = {}) {
+  async load(taskId) {
     const paths = this.paths(taskId);
-    await this.#assertExistingTaskDirectory(paths);
+    await this.#assertExistingDirectory(paths.directory);
     await this.#assertRegularFile(paths.statePath, false);
-    const source = await this.#readState(paths.statePath);
-    const parsed = parseStateYaml(source);
-    const result = migrateStateToV2(parsed, migrationOptions);
-    assertMatchingTaskId(taskId, result.state);
-    return result;
+    let source;
+    try {
+      source = await this.#fs.readFile(paths.statePath);
+    } catch (error) {
+      if (hasCode2(error, "ENOENT")) throw new StateStoreError("state_not_found", "Task state does not exist.");
+      throw new StateStoreError("state_read_failed", "Task state could not be read.");
+    }
+    let parsed;
+    try {
+      parsed = (0, import_yaml3.parse)(source.toString("utf8"));
+    } catch {
+      throw new StateStoreError("state_yaml_invalid", "Task state is not valid YAML.");
+    }
+    let state;
+    try {
+      state = loadStateV3(parsed);
+    } catch (error) {
+      if (error instanceof StateValidationError) throw new StateStoreError(error.code, error.message);
+      throw error;
+    }
+    if (state.taskId !== taskId) throw new StateStoreError("state_task_mismatch", "Task state taskId differs from requested task.");
+    return state;
   }
-  async save(taskId, state) {
+  async save(taskId, value) {
     const paths = this.paths(taskId);
-    const validated = validateSaveState(state);
-    assertMatchingTaskId(taskId, validated);
-    const serialized = serializeValidatedState(validated);
-    await this.#ensureTaskDirectory(paths);
+    let state;
+    try {
+      state = loadStateV3(value);
+    } catch (error) {
+      if (error instanceof StateValidationError) throw new StateStoreError(error.code, error.message);
+      throw error;
+    }
+    if (state.taskId !== taskId) throw new StateStoreError("state_task_mismatch", "Task state taskId differs from requested task.");
+    const serialized = (0, import_yaml3.stringify)(state);
+    try {
+      loadStateV3((0, import_yaml3.parse)(serialized));
+    } catch {
+      throw new StateStoreError("state_invalid", "Serialized V3 state failed validation.");
+    }
+    await this.#ensureDirectory(paths.directory);
     await this.#assertRegularFile(paths.statePath, true);
-    await this.#atomicWrite(paths, paths.statePath, serialized);
+    await this.#atomicWrite(paths.statePath, paths.directory, serialized);
   }
-  async migrateForResume(taskId, migrationOptions = {}) {
-    const paths = this.paths(taskId);
-    await this.#assertExistingTaskDirectory(paths);
-    await this.#assertRegularFile(paths.statePath, false);
-    const source = await this.#readState(paths.statePath);
-    const parsed = parseStateYaml(source);
-    const result = migrateStateToV2(parsed, migrationOptions);
-    assertMatchingTaskId(taskId, result.state);
-    if (!result.migrationRequired) return { ...result, persisted: false };
-    const serialized = serializeValidatedState(result.state);
-    await this.#preserveV1Backup(paths, source);
-    await this.#atomicWrite(paths, paths.statePath, serialized);
-    return { ...result, persisted: true, backupPath: paths.backupPath };
-  }
-  async #readState(path) {
+  async #atomicWrite(destination, directory, data) {
+    const id = this.#temporaryId();
+    if (!id || /[\\/\0]/.test(id)) throw new StateStoreError("state_path_invalid", "Temporary identifier is invalid.");
+    const temporary = join4(directory, `.${STATE_FILENAME}.${id}.tmp`);
+    let owns = true;
     try {
-      return await this.#fileSystem.readFile(path);
+      await this.#fs.writeFile(temporary, data, { flag: "wx", mode: 384 });
+      await this.#fs.rename(temporary, destination);
+      owns = false;
     } catch (error) {
-      if (hasCode2(error, "ENOENT")) throw new StateStoreError("state_not_found", "Task state file does not exist.");
-      throw new StateStoreError("state_read_failed", "Task state file could not be read.");
-    }
-  }
-  async #preserveV1Backup(paths, source) {
-    await this.#assertRegularFile(paths.backupPath, true);
-    const temporaryPath = createTemporaryPath(paths.directory, STATE_V1_BACKUP_FILENAME, this.#temporaryId());
-    let ownsTemporary = true;
-    let stage = "write";
-    try {
-      await this.#fileSystem.writeFile(temporaryPath, source, { flag: "wx", mode: 384 });
-      stage = "link";
-      await this.#fileSystem.link(temporaryPath, paths.backupPath);
-    } catch (error) {
-      if (stage === "write" && hasCode2(error, "EEXIST")) ownsTemporary = false;
-      if (stage === "link" && hasCode2(error, "EEXIST")) {
-        await this.#assertRegularFile(paths.backupPath, false);
-        const existing = await this.#readBackup(paths.backupPath);
-        if (!existing.equals(source)) {
-          throw new StateStoreError("state_backup_conflict", "Existing V1 backup differs from current V1 state.");
-        }
-        return;
-      }
-      throw new StateStoreError("state_write_failed", "V1 backup could not be published safely.");
-    } finally {
-      if (ownsTemporary) await this.#unlinkBestEffort(temporaryPath);
-    }
-  }
-  async #atomicWrite(paths, destination, data) {
-    const temporaryPath = createTemporaryPath(paths.directory, STATE_FILENAME, this.#temporaryId());
-    let ownsTemporary = true;
-    let stage = "write";
-    try {
-      await this.#fileSystem.writeFile(temporaryPath, data, { flag: "wx", mode: 384 });
-      stage = "rename";
-      await this.#fileSystem.rename(temporaryPath, destination);
-      ownsTemporary = false;
-    } catch (error) {
-      if (stage === "write" && hasCode2(error, "EEXIST")) ownsTemporary = false;
+      if (hasCode2(error, "EEXIST")) owns = false;
       throw new StateStoreError("state_write_failed", "Task state could not be written atomically.");
     } finally {
-      if (ownsTemporary) await this.#unlinkBestEffort(temporaryPath);
+      if (owns) await this.#fs.unlink(temporary).catch(() => void 0);
     }
   }
-  async #ensureTaskDirectory(paths) {
-    for (const path of [join4(this.workspaceRoot, ".codex"), this.tasksRoot, paths.directory]) {
+  async #ensureDirectory(taskDirectory) {
+    for (const path of [join4(this.workspaceRoot, ".codex"), this.tasksRoot, taskDirectory]) {
       try {
-        await this.#fileSystem.mkdir(path, { mode: 448 });
+        await this.#fs.mkdir(path, { mode: 448 });
       } catch (error) {
-        if (!hasCode2(error, "EEXIST")) {
-          throw new StateStoreError("state_write_failed", "Task state directory could not be created.");
-        }
+        if (!hasCode2(error, "EEXIST")) throw new StateStoreError("state_write_failed", "Task directory could not be created.");
       }
       await this.#assertDirectory(path, false);
     }
-    await this.#assertCanonicalContainment(paths.directory);
+    await this.#assertContainment(taskDirectory);
   }
-  async #assertExistingTaskDirectory(paths) {
-    for (const path of [join4(this.workspaceRoot, ".codex"), this.tasksRoot, paths.directory]) {
-      await this.#assertDirectory(path, false);
-    }
-    await this.#assertCanonicalContainment(paths.directory);
+  async #assertExistingDirectory(taskDirectory) {
+    for (const path of [join4(this.workspaceRoot, ".codex"), this.tasksRoot, taskDirectory]) await this.#assertDirectory(path, false);
+    await this.#assertContainment(taskDirectory);
   }
   async #assertDirectory(path, optional) {
     try {
-      const metadata = await this.#fileSystem.lstat(path);
-      if (metadata.isSymbolicLink() || !metadata.isDirectory()) {
-        throw new StateStoreError("state_path_invalid", "Task state path contains a symlink or non-directory component.");
-      }
+      const stat = await this.#fs.lstat(path);
+      if (stat.isSymbolicLink() || !stat.isDirectory()) throw new StateStoreError("state_path_invalid", "State path contains symlink or non-directory.");
     } catch (error) {
       if (error instanceof StateStoreError) throw error;
       if (optional && hasCode2(error, "ENOENT")) return;
       if (hasCode2(error, "ENOENT")) throw new StateStoreError("state_not_found", "Task state directory does not exist.");
-      throw new StateStoreError("state_read_failed", "Task state directory could not be inspected.");
+      throw new StateStoreError("state_read_failed", "Task directory could not be inspected.");
     }
   }
   async #assertRegularFile(path, optional) {
     try {
-      const metadata = await this.#fileSystem.lstat(path);
-      if (metadata.isSymbolicLink() || !metadata.isFile()) {
-        throw new StateStoreError("state_path_invalid", "Task state path is a symlink or non-regular file.");
-      }
+      const stat = await this.#fs.lstat(path);
+      if (stat.isSymbolicLink() || !stat.isFile()) throw new StateStoreError("state_path_invalid", "State path is symlink or non-file.");
     } catch (error) {
       if (error instanceof StateStoreError) throw error;
       if (optional && hasCode2(error, "ENOENT")) return;
@@ -18976,80 +19069,22 @@ var TaskStateStore = class {
       throw new StateStoreError("state_read_failed", "Task state path could not be inspected.");
     }
   }
-  async #assertCanonicalContainment(taskDirectory) {
+  async #assertContainment(taskDirectory) {
     try {
-      const [canonicalTasksRoot, canonicalTaskDirectory] = await Promise.all([
-        this.#fileSystem.realpath(this.tasksRoot),
-        this.#fileSystem.realpath(taskDirectory)
-      ]);
-      const fromTasksRoot = relative(canonicalTasksRoot, canonicalTaskDirectory);
-      if (!fromTasksRoot || fromTasksRoot === ".." || fromTasksRoot.startsWith(`..${sep}`) || isAbsolute(fromTasksRoot)) {
-        throw new StateStoreError("state_path_invalid", "Task state directory resolves outside canonical task root.");
-      }
+      const [root, task] = await Promise.all([this.#fs.realpath(this.tasksRoot), this.#fs.realpath(taskDirectory)]);
+      const rel = relative(root, task);
+      if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new StateStoreError("state_path_invalid", "Task directory resolves outside task root.");
     } catch (error) {
       if (error instanceof StateStoreError) throw error;
-      throw new StateStoreError("state_path_invalid", "Task state directory could not be resolved safely.");
-    }
-  }
-  async #readBackup(path) {
-    try {
-      return await this.#fileSystem.readFile(path);
-    } catch {
-      throw new StateStoreError("state_read_failed", "Existing V1 backup could not be read.");
-    }
-  }
-  async #unlinkBestEffort(path) {
-    try {
-      await this.#fileSystem.unlink(path);
-    } catch {
+      throw new StateStoreError("state_path_invalid", "Task directory could not be resolved safely.");
     }
   }
 };
 function createTaskStateStore(workspaceRoot, options = {}) {
   return new TaskStateStore(workspaceRoot, options);
 }
-function parseStateYaml(source) {
-  try {
-    return (0, import_yaml3.parse)(source.toString("utf8"));
-  } catch {
-    throw new StateStoreError("state_yaml_invalid", "Task state file is not valid YAML.");
-  }
-}
-function validateSaveState(value) {
-  let result;
-  try {
-    result = migrateStateToV2(value);
-  } catch (error) {
-    if (error instanceof StateMigrationError) throw error;
-    throw new StateStoreError("state_save_requires_v2", "Only valid V2 task state can be saved.");
-  }
-  if (result.migrationRequired) {
-    throw new StateStoreError("state_save_requires_v2", "V1 task state requires explicit resume migration.");
-  }
-  return result.state;
-}
-function serializeValidatedState(state) {
-  const serialized = (0, import_yaml3.stringify)(state);
-  const reparsed = parseStateYaml(Buffer.from(serialized, "utf8"));
-  const validated = migrateStateToV2(reparsed);
-  if (validated.migrationRequired) {
-    throw new StateStoreError("state_save_requires_v2", "Serialized task state is not V2.");
-  }
-  return serialized;
-}
-function assertMatchingTaskId(expected, state) {
-  if (state.taskId !== expected) {
-    throw new StateStoreError("state_task_mismatch", "Task state taskId does not match requested task ID.");
-  }
-}
-function assertSafeTaskId2(taskId) {
-  if (typeof taskId !== "string" || !taskId || taskId === "." || taskId === ".." || taskId.includes("/") || taskId.includes("\\") || taskId.includes("\0")) throw new StateStoreError("state_path_invalid", "Task ID must be one non-traversing path segment.");
-}
-function createTemporaryPath(directory, basename2, temporaryId) {
-  if (!temporaryId || temporaryId.includes("/") || temporaryId.includes("\\") || temporaryId.includes("\0")) {
-    throw new StateStoreError("state_path_invalid", "Temporary state identifier must be one non-traversing path segment.");
-  }
-  return join4(directory, `.${basename2}.${temporaryId}.tmp`);
+function assertSafeTaskId2(value) {
+  if (!value || value === "." || value === ".." || /[\\/\0]/.test(value)) throw new StateStoreError("state_path_invalid", "Task ID must be one non-traversing segment.");
 }
 function hasCode2(error, code) {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
@@ -19095,7 +19130,7 @@ function applyPolicy(config, policy) {
 }
 
 // src/metrics.ts
-import { createHash as createHash2, randomUUID as randomUUID4 } from "node:crypto";
+import { createHash as createHash3, randomUUID as randomUUID4 } from "node:crypto";
 var LIFECYCLE_METRICS = Object.freeze([
   "model_calls",
   "delegations",
@@ -19116,7 +19151,10 @@ var LIFECYCLE_METRICS = Object.freeze([
   "intake_recommendations_modified",
   "intake_zero_question_paths",
   "intake_late_reopenings",
-  "mode_changes",
+  "shape_discovery_sessions",
+  "shape_planning_sessions",
+  "shape_targeted_invalidations",
+  "shape_evidence_reuses",
   "routing_decisions",
   "gates",
   "blocks",
@@ -19129,7 +19167,7 @@ var LIFECYCLE_METRICS = Object.freeze([
 ]);
 var EVENT_KEYS = /* @__PURE__ */ new Set([
   "runId",
-  "mode",
+  "preparationProfile",
   "phase",
   "metric",
   "value",
@@ -19145,8 +19183,8 @@ var TOKEN_METRICS = /* @__PURE__ */ new Set(["input_tokens", "output_tokens"]);
 function createLifecycleMetricEvent(input) {
   const unknown = Object.keys(input).filter((key) => !EVENT_KEYS.has(key));
   if (unknown.length) throw new Error(`Unknown metric event fields: ${unknown.join(", ")}.`);
-  if (!isUuid(input.runId) || !isTaskMode2(input.mode) || !MACRO_PHASES.includes(input.phase)) {
-    throw new Error("Metric event identity, mode, or phase is invalid.");
+  if (!isUuid(input.runId) || !isPreparationProfile(input.preparationProfile) || !MACRO_PHASES.includes(input.phase)) {
+    throw new Error("Metric event identity, preparation profile, or phase is invalid.");
   }
   if (!LIFECYCLE_METRICS.includes(input.metric) || !nonNegativeFinite(input.value)) {
     throw new Error("Metric event metric or value is invalid.");
@@ -19158,7 +19196,7 @@ function createLifecycleMetricEvent(input) {
   return {
     schemaVersion: 1,
     runId: input.runId,
-    mode: input.mode,
+    preparationProfile: input.preparationProfile,
     phase: input.phase,
     metric: input.metric,
     value: input.value,
@@ -19182,8 +19220,8 @@ function tryCreateLifecycleMetricEvent(input) {
   }
 }
 function summarizeLifecycleTrace(input) {
-  if (!nonEmpty2(input.runId) || !isTaskMode2(input.mode) || !["contract_fixture", "runtime"].includes(input.source)) {
-    throw new Error("Trace identity, mode, or source is invalid.");
+  if (!nonEmpty2(input.runId) || !isPreparationProfile(input.preparationProfile) || !["contract_fixture", "runtime"].includes(input.source)) {
+    throw new Error("Trace identity, preparation profile, or source is invalid.");
   }
   if (input.source === "runtime" && !isUuid(input.runId)) throw new Error("Runtime trace requires opaque UUID runId.");
   if (!Array.isArray(input.statuses) || input.statuses.length < 2 || input.statuses[0] !== "new") {
@@ -19196,7 +19234,6 @@ function summarizeLifecycleTrace(input) {
     const from = statuses[index - 1];
     const contract = STATE_MACHINE[from].transitions[status];
     if (!contract) throw new Error(`Lifecycle trace edge ${from} -> ${status} is illegal.`);
-    if (!contract.modes.includes(input.mode)) throw new Error(`Lifecycle trace edge ${from} -> ${status} is illegal for mode ${input.mode}.`);
   }
   const terminalStatus = statuses.at(-1);
   if (!STATE_MACHINE[terminalStatus].stable && !STATE_MACHINE[terminalStatus].terminal) {
@@ -19214,7 +19251,7 @@ function summarizeLifecycleTrace(input) {
   return {
     schemaVersion: 1,
     sampleIdHash: sha256(input.runId),
-    mode: input.mode,
+    preparationProfile: input.preparationProfile,
     source: input.source,
     statuses,
     phases,
@@ -19259,13 +19296,13 @@ function validateBaselineReport(value) {
   if (!Array.isArray(limitations) || JSON.stringify(limitations) !== JSON.stringify(allowedLimitations)) errors.push("limitations are invalid");
   if (!Array.isArray(value.samples) || value.samples.length !== 3) errors.push("baseline requires exactly three samples");
   else {
-    const modes = [];
-    for (const [index, sample] of value.samples.entries()) validateSummary(sample, index, modes, errors);
-    if (modes.join(",") !== "quick,standard,critical") errors.push("samples must cover quick, standard, critical in order");
+    const profiles = [];
+    for (const [index, sample] of value.samples.entries()) validateSummary(sample, index, profiles, errors);
+    if (!profiles.includes("quick") || !profiles.includes("plan")) errors.push("samples must cover quick and plan");
   }
   return { valid: errors.length === 0, errors };
 }
-function validateSummary(value, index, modes, errors) {
+function validateSummary(value, index, profiles, errors) {
   if (!isRecord7(value)) {
     errors.push(`sample ${index} must be an object`);
     return;
@@ -19273,7 +19310,7 @@ function validateSummary(value, index, modes, errors) {
   exactKeys(value, [
     "schemaVersion",
     "sampleIdHash",
-    "mode",
+    "preparationProfile",
     "source",
     "statuses",
     "phases",
@@ -19291,17 +19328,17 @@ function validateSummary(value, index, modes, errors) {
     "tokenUsage",
     "latency"
   ], `sample ${index}`, errors);
-  if (value.schemaVersion !== 1 || !isTaskMode2(value.mode) || value.source !== "contract_fixture" || !/^[a-f0-9]{64}$/.test(String(value.sampleIdHash))) {
+  if (value.schemaVersion !== 1 || !isPreparationProfile(value.preparationProfile) || value.source !== "contract_fixture" || !/^[a-f0-9]{64}$/.test(String(value.sampleIdHash))) {
     errors.push(`sample ${index} identity is invalid`);
     return;
   }
-  modes.push(value.mode);
+  profiles.push(value.preparationProfile);
   if (!Number.isInteger(value.falseSuccessDetections) || Number(value.falseSuccessDetections) < 0) errors.push(`sample ${index} falseSuccessDetections is invalid`);
   if (value.falseSuccessDetectionSource !== "contract_tests") errors.push(`sample ${index} falseSuccessDetectionSource is invalid`);
   try {
     const rebuilt = summarizeLifecycleTrace({
       runId: "validation-placeholder",
-      mode: value.mode,
+      preparationProfile: value.preparationProfile,
       source: value.source,
       statuses: value.statuses,
       falseSuccessDetections: value.falseSuccessDetections,
@@ -19332,7 +19369,10 @@ function validateMeasurementSource(metric, measurement, source) {
     "intake_recommendations_modified",
     "intake_zero_question_paths",
     "intake_late_reopenings",
-    "mode_changes"
+    "shape_discovery_sessions",
+    "shape_planning_sessions",
+    "shape_targeted_invalidations",
+    "shape_evidence_reuses"
   ].includes(metric) && measurement === "measured" && source === "orchestrator_counter" || ["validation_runs", "correction_cycles", "gates", "blocks", "transition_errors"].includes(metric) && measurement === "measured" && source === "state_history";
   if (!valid) throw new Error(`Metric ${metric} measurement/source mismatch.`);
 }
@@ -19377,8 +19417,8 @@ function exactKeys(value, expected, label, errors) {
 function isUnavailable(value) {
   return isRecord7(value) && Object.keys(value).length === 1 && value.availability === "unavailable";
 }
-function isTaskMode2(value) {
-  return value === "quick" || value === "standard" || value === "critical";
+function isPreparationProfile(value) {
+  return value === "quick" || value === "plan" || value === "unselected";
 }
 function isIsoDate(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && !Number.isNaN(Date.parse(value));
@@ -19396,13 +19436,13 @@ function isRecord7(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function sha256(value) {
-  return createHash2("sha256").update(value).digest("hex");
+  return createHash3("sha256").update(value).digest("hex");
 }
 
 // src/fingerprint.ts
-import { createHash as createHash3, randomUUID as randomUUID5 } from "node:crypto";
+import { createHash as createHash4, randomUUID as randomUUID5 } from "node:crypto";
 function fingerprintFailure(input) {
-  const canonical = {
+  const canonical2 = {
     check: input.check,
     stage: input.stage,
     errorType: input.errorType,
@@ -19411,8 +19451,8 @@ function fingerprintFailure(input) {
     messagePattern: input.messagePattern,
     rawMessage: "[redacted]"
   };
-  const issueId = createHash3("sha256").update(JSON.stringify(canonical)).digest("hex");
-  return { issueId, occurrenceId: randomUUID5(), canonical };
+  const issueId = createHash4("sha256").update(JSON.stringify(canonical2)).digest("hex");
+  return { issueId, occurrenceId: randomUUID5(), canonical: canonical2 };
 }
 function nextCorrectionAction(input) {
   if (input.codeChanges < 2) return "debug";
@@ -19420,8 +19460,130 @@ function nextCorrectionAction(input) {
   return "human_gate";
 }
 
+// src/shape-projection.ts
+import { createHash as createHash5 } from "node:crypto";
+function renderPlanProjection(contract, options = {}) {
+  if (contract.profile !== "plan") throw new Error("Only Plan contract may render Markdown projection.");
+  const path = options.path ?? defaultPath(options.date, options.slug);
+  validateProjectionPath(path);
+  const markdown = render(contract, "Proposed");
+  return {
+    schemaVersion: 1,
+    path,
+    status: "Proposed",
+    contractDigest: contract.digest,
+    contentFingerprint: fingerprint(markdown),
+    markdown
+  };
+}
+function approvePlanProjection(projection) {
+  validateProjection(projection);
+  if (projection.status !== "Proposed") throw new Error("Only Proposed Plan projection may become Approved.");
+  const markdown = projection.markdown.replace(/^Status: Proposed$/m, "Status: Approved");
+  return {
+    ...projection,
+    status: "Approved",
+    contentFingerprint: fingerprint(markdown),
+    markdown
+  };
+}
+function detectPlanProjectionDrift(projection, observedContent) {
+  validateProjection(projection);
+  if (typeof observedContent !== "string") throw new Error("Observed Plan projection content must be text.");
+  return fingerprint(observedContent) !== projection.contentFingerprint;
+}
+function reconcilePlanProjection(projection, observedContent, action) {
+  if (!detectPlanProjectionDrift(projection, observedContent)) {
+    throw new Error("Plan projection reconciliation requires detected drift.");
+  }
+  if (action === "regenerate") return { action, projection };
+  if (action === "integrate") return { action, observedContent };
+  throw new Error("Plan projection reconciliation action is invalid.");
+}
+function render(contract, status) {
+  const lines = [
+    `# ${titleFromArtifact(contract.artifactId)}`,
+    "",
+    `Status: ${status}`,
+    `Contract-Digest: ${contract.digest}`,
+    `Risk: ${contract.risk}`,
+    "",
+    "## Spec",
+    "",
+    "### Scope",
+    "",
+    ...bullets(contract.scope),
+    "",
+    "### Non-goals",
+    "",
+    ...bullets(contract.nonGoals),
+    "",
+    "### Acceptance criteria",
+    "",
+    ...contract.acceptanceCriteria.map(
+      (criterion) => `- [${criterion.id}] ${criterion.description} (validation: ${criterion.validationIds.join(", ")})`
+    ),
+    "",
+    "## Plan",
+    "",
+    ...contract.tasks.map(
+      (task, index) => `${index + 1}. [${task.id}] ${task.description} (covers: ${task.criterionIds.join(", ")})`
+    ),
+    "",
+    "## Validation",
+    "",
+    ...contract.validations.map(
+      (validation) => `- [${validation.id}] ${validation.description}${validation.command ? ` \u2014 \`${validation.command}\`` : ""}`
+    ),
+    "",
+    "## Risks",
+    "",
+    ...contract.risks.length ? contract.risks.map((risk) => `- [${risk.id}] ${risk.description} Control: ${risk.control}`) : ["- None identified."]
+  ];
+  if (contract.guide) {
+    lines.push(
+      "",
+      "## Implementation Guide",
+      "",
+      ...bullets(contract.guide.content),
+      "",
+      "Required because:",
+      ...contract.guide.requiredBecause.map(
+        (reason) => `- ${reason.kind} (evidence: ${reason.evidenceIds.join(", ") || "none"}; risks: ${reason.riskIds.join(", ") || "none"})`
+      )
+    );
+  }
+  return `${lines.join("\n")}
+`;
+}
+function defaultPath(date = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), slug = "change") {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Plan projection date is invalid.");
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error("Plan projection slug is invalid.");
+  return `docs/dev-flow/${date}-${slug}.md`;
+}
+function validateProjectionPath(path) {
+  if (!path || path.startsWith("/") || path.startsWith("\\") || path.split(/[\\/]/).includes("..") || path.includes("\0") || !path.endsWith(".md")) {
+    throw new Error("Plan projection requires safe repository-relative Markdown path.");
+  }
+}
+function validateProjection(projection) {
+  if (!projection || projection.schemaVersion !== 1 || !["Proposed", "Approved"].includes(projection.status) || !/^[a-f0-9]{64}$/.test(projection.contentFingerprint) || typeof projection.contractDigest !== "string" || !projection.contractDigest.length) {
+    throw new Error("Plan projection record is invalid.");
+  }
+  validateProjectionPath(projection.path);
+}
+function bullets(items) {
+  return items.length ? items.map((item) => `- ${item}`) : ["- None."];
+}
+function titleFromArtifact(artifactId) {
+  return artifactId.replace(/^artifact[.:/-]?/, "").split(/[._:/-]+/).filter(Boolean).map((part) => part[0].toUpperCase() + part.slice(1)).join(" ") || "Change Plan";
+}
+function fingerprint(content) {
+  return createHash5("sha256").update(content).digest("hex");
+}
+
 // src/intake.ts
-import { createHash as createHash4 } from "node:crypto";
+import { createHash as createHash6 } from "node:crypto";
 var MAX_TEXT = 2e3;
 var MAX_LIST = 32;
 var SECRET2 = /\b(?:sk-[A-Za-z0-9_-]{8,}|(?:api[_-]?key|token|password|secret)\s*[:=]\s*\S+)\b/gi;
@@ -19433,14 +19595,13 @@ function applyInitialIntakeEvaluation(state, evaluation, at2) {
   assertIntakeWritable(state);
   if (state.intake?.activeQuestion) throw new Error("Initial Intake evaluation cannot replace an active question.");
   const intake = state.intake ?? createIntakeState({
-    mode: state.mode,
-    risk: defaultRisk(state.mode),
+    risk: state.risk,
     sourceRefs: ["request"],
     freshnessRefs: ["state:configSnapshot", "state:policySnapshot"],
     ...at2 ? { capturedAt: at2 } : {}
   });
   const brief = sanitizeBrief(evaluation.brief);
-  if (brief.mode !== state.mode) throw new Error("Intake Brief mode must match task mode.");
+  if (brief.risk !== state.risk) throw new Error("Intake Brief risk must match task risk.");
   const decisions = evaluation.resolvedDecisions.map(validateDecision);
   if (decisions.some((decision) => decision.source === "user" && decision.provenanceRef !== "request")) {
     throw new Error("Initial user decisions must be attributable to explicit request.");
@@ -19482,7 +19643,6 @@ function createIntakeState(input) {
     schemaVersion: 1,
     ...input.objective ? { objective: input.objective } : {},
     ...input.successSignal ? { successSignal: input.successSignal } : {},
-    mode: input.mode,
     risk: input.risk,
     provenance: {
       sourceRefs: input.sourceRefs ?? [],
@@ -19508,8 +19668,7 @@ function createIntakeState(input) {
 function setDecisionQuestion(state, question, at2) {
   assertIntakeWritable(state);
   const intake = state.intake ?? createIntakeState({
-    mode: state.mode,
-    risk: defaultRisk(state.mode),
+    risk: state.risk,
     sourceRefs: ["request"],
     freshnessRefs: ["state:configSnapshot", "state:policySnapshot"],
     ...at2 ? { capturedAt: at2 } : {}
@@ -19554,14 +19713,9 @@ function applyIntakeResponse(state, answer, evaluation, at2) {
   }
   const brief = sanitizeBrief(evaluation.brief);
   const resolved = evaluation.resolvedDecisions.map(validateDecision);
-  const modeDecision = resolved.find((decision) => decision.key === "mode" && decision.source === "user");
-  const modeChanged = brief.mode !== state.mode;
-  if (modeChanged && !modeDecision) {
-    throw new Error("Intake Brief mode change requires an explicit user mode decision.");
-  }
-  if (modeChanged && state.history.some((event) => event.type === "state.transition" && event.mode === void 0)) {
-    throw new Error("Mode change requires transition history with mode provenance.");
-  }
+  const riskDecision = resolved.find((decision) => decision.key === "risk" && decision.source === "user");
+  const riskChanged = brief.risk !== state.risk;
+  if (riskChanged && !riskDecision) throw new Error("Intake Brief risk change requires an explicit user decision.");
   const resolutionKeys = new Set(resolved.map((item) => item.key));
   const activeResolved = resolutionKeys.has(intake.activeQuestion.decisionKey);
   let nextQuestion;
@@ -19587,10 +19741,7 @@ function applyIntakeResponse(state, answer, evaluation, at2) {
   }
   const answeredDecisionKeys = unique2([...intake.answeredDecisionKeys, ...resolved.map((item) => item.key)]);
   const contradictions = evaluation.contradictions.map(sanitizeText).filter(Boolean);
-  const metrics = {
-    ...updateMetrics(intake.metrics, resolved, evaluation),
-    modeChanges: intake.metrics.modeChanges + (modeChanged ? 1 : 0)
-  };
+  const metrics = updateMetrics(intake.metrics, resolved, evaluation);
   const checkpointDue = metrics.distinctQuestions > 0 && metrics.distinctQuestions % 5 === 0 && answeredDecisionKeys.length >= metrics.distinctQuestions;
   const candidate = {
     schemaVersion: 1,
@@ -19611,11 +19762,7 @@ function applyIntakeResponse(state, answer, evaluation, at2) {
   candidate.deterministicComplete = completeness.complete;
   const updated = {
     ...state,
-    ...modeChanged ? {
-      mode: brief.mode,
-      modeEvidenceRef: modeDecision?.provenanceRef ?? state.modeEvidenceRef,
-      routingDecisions: []
-    } : {},
+    ...riskChanged ? { risk: brief.risk, routingDecisions: [] } : {},
     intake: candidate
   };
   assertTaskState(updated);
@@ -19638,7 +19785,6 @@ function applyIntakeResponse(state, answer, evaluation, at2) {
       checkpoint: {
         ...brief.objective ? { objective: brief.objective } : {},
         ...brief.successSignal ? { success: brief.successSignal.description } : {},
-        mode: brief.mode,
         risk: brief.risk,
         answeredDecisionKeys
       }
@@ -19652,7 +19798,6 @@ function evaluateIntakeCompleteness(intake) {
   if (!intake.brief.successSignal || !nonEmpty3(intake.brief.successSignal.description) || !nonEmpty3(intake.brief.successSignal.observationMethod)) {
     missingDecisionKeys.push("success_signal");
   }
-  if (!["quick", "standard", "critical"].includes(intake.brief.mode)) missingDecisionKeys.push("mode");
   if (!["low", "medium", "high", "critical"].includes(intake.brief.risk)) missingDecisionKeys.push("risk");
   if (intake.activeQuestion) reasons.push(`active_question:${intake.activeQuestion.decisionKey}`);
   if (intake.contradictions.length) reasons.push("contradictions");
@@ -19673,7 +19818,7 @@ function attestIntakeComplete(state, evidenceRef) {
     throw new Error(`INTAKE incomplete: ${missing.join(", ")}.`);
   }
   return createGuardAttestation(state, "intake_complete", {
-    observedFingerprint: `sha256:${digest2(intake)}`,
+    observedFingerprint: `sha256:${digest3(intake)}`,
     evidenceRefs: [evidenceRef],
     provenance: "deterministic-check"
   });
@@ -19727,7 +19872,7 @@ function attestIntakeReopened(state, evidenceRef) {
     throw new Error("INTAKE reopen requires persisted product-context invalidation.");
   }
   return createGuardAttestation(state, "intake_reopened", {
-    observedFingerprint: `sha256:${digest2(state.intake.invalidations.at(-1))}`,
+    observedFingerprint: `sha256:${digest3(state.intake.invalidations.at(-1))}`,
     evidenceRefs: [evidenceRef],
     provenance: "deterministic-check"
   });
@@ -19757,9 +19902,6 @@ function recordInvalidIntakeModelOutput(state) {
   };
   assertTaskState(updated);
   return { state: updated, action: "block" };
-}
-function isQuickEligible(input) {
-  return input.boundedScope && input.nonDestructive && input.technicallyLocalizable && input.executableWithoutDesignDecision && input.verifiable;
 }
 function validateDecisionQuestion(question, intake) {
   if (question.schemaVersion !== 1) throw new Error("Decision Question schemaVersion must be 1.");
@@ -19844,7 +19986,6 @@ function sanitizeBrief(value) {
         ...value.successSignal.guardrails?.length ? { guardrails: sanitizeList(value.successSignal.guardrails) } : {}
       }
     } : {},
-    mode: value.mode,
     risk: value.risk,
     provenance: {
       sourceRefs: sanitizeList(value.provenance?.sourceRefs ?? []),
@@ -19860,7 +20001,6 @@ function sanitizeBrief(value) {
     ...optionalText("urgency", value.urgency),
     ...optionalList("scopeBoundaries", value.scopeBoundaries)
   };
-  if (!["quick", "standard", "critical"].includes(brief.mode)) throw new Error("Intake Brief mode is invalid.");
   if (!["low", "medium", "high", "critical"].includes(brief.risk)) throw new Error("Intake Brief risk is invalid.");
   return brief;
 }
@@ -19876,9 +20016,9 @@ function updateMetrics(current, decisions, evaluation) {
     questionsAvoided: current.questionsAvoided + Math.max(0, evaluation.questionsAvoided ?? 0),
     recommendationsAccepted: current.recommendationsAccepted + decisions.filter((item) => item.recommendationDisposition === "accepted").length,
     recommendationsModified: current.recommendationsModified + decisions.filter((item) => item.recommendationDisposition === "modified").length,
-    ...evaluation.inputTokens === void 0 ? {} : { inputTokens: (current.inputTokens ?? 0) + nonNegativeInteger(evaluation.inputTokens) },
-    ...evaluation.outputTokens === void 0 ? {} : { outputTokens: (current.outputTokens ?? 0) + nonNegativeInteger(evaluation.outputTokens) },
-    ...evaluation.latencyMs === void 0 ? {} : { latencyMs: (current.latencyMs ?? 0) + nonNegativeInteger(evaluation.latencyMs) }
+    ...evaluation.inputTokens === void 0 ? {} : { inputTokens: (current.inputTokens ?? 0) + nonNegativeInteger2(evaluation.inputTokens) },
+    ...evaluation.outputTokens === void 0 ? {} : { outputTokens: (current.outputTokens ?? 0) + nonNegativeInteger2(evaluation.outputTokens) },
+    ...evaluation.latencyMs === void 0 ? {} : { latencyMs: (current.latencyMs ?? 0) + nonNegativeInteger2(evaluation.latencyMs) }
   };
 }
 function emptyMetrics() {
@@ -19890,8 +20030,7 @@ function emptyMetrics() {
     recommendationsAccepted: 0,
     recommendationsModified: 0,
     zeroQuestionPath: true,
-    lateReopenings: 0,
-    modeChanges: 0
+    lateReopenings: 0
   };
 }
 function assertIntakeWritable(state) {
@@ -19899,7 +20038,7 @@ function assertIntakeWritable(state) {
   if (deriveMacroPhase(state) !== "INTAKE") throw new Error("Decision Questions may be changed only in INTAKE.");
 }
 function assertTaskState(state) {
-  const result = validateStateV2(state);
+  const result = validateStateV3(state);
   if (!result.valid) throw new Error(`Task state is invalid: ${JSON.stringify(result.errors.slice(0, 3))}`);
 }
 function validTechnicalUnknown(value) {
@@ -19922,27 +20061,24 @@ function optionalList(key, value) {
 }
 function compactEventRef(value) {
   const safe = value.replace(/[^A-Za-z0-9._:/#@+~=-]/g, "-").replace(/^-+/, "").slice(0, 400);
-  return safe || `sha256:${digest2(value)}`;
+  return safe || `sha256:${digest3(value)}`;
 }
 function normalizeAt2(value) {
   if (value && !Number.isNaN(Date.parse(value))) return new Date(value).toISOString();
   return (/* @__PURE__ */ new Date()).toISOString();
 }
-function defaultRisk(mode) {
-  return mode === "critical" ? "critical" : mode === "standard" ? "medium" : "low";
-}
 function unique2(values) {
   return [...new Set(values)];
 }
-function nonNegativeInteger(value) {
+function nonNegativeInteger2(value) {
   if (!Number.isFinite(value) || value < 0) throw new Error("Metric value must be non-negative.");
   return Math.round(value);
 }
 function nonEmpty3(value) {
   return typeof value === "string" && value.length > 0;
 }
-function digest2(value) {
-  return createHash4("sha256").update(JSON.stringify(canonicalize2(value))).digest("hex");
+function digest3(value) {
+  return createHash6("sha256").update(JSON.stringify(canonicalize2(value))).digest("hex");
 }
 function canonicalize2(value) {
   if (Array.isArray(value)) return value.map(canonicalize2);
@@ -19954,7 +20090,8 @@ function canonicalize2(value) {
 
 // src/worktree.ts
 function decideWorktree(context) {
-  if (context.mode === "critical") return { required: true, reason: "critical" };
+  if (context.policyRequired) return { required: true, reason: "policy" };
+  if (context.risk === "critical") return { required: true, reason: "critical_risk" };
   if (context.requested) return { required: true, reason: "requested" };
   if (context.concurrent) return { required: true, reason: "concurrent" };
   if (!context.checkoutSafe) return { required: true, reason: "unsafe" };
@@ -20004,13 +20141,13 @@ async function runInvocation(argv, options = {}) {
     const loaded = await createTaskStateStore(options.workspaceRoot ?? process.cwd()).load(invocation.taskId);
     return {
       command: "status",
-      status: loaded.state.status,
+      status: loaded.status,
       data: {
         taskId: invocation.taskId,
-        mode: loaded.state.mode,
-        macroPhase: deriveMacroPhase(loaded.state),
-        benchmarkEnabled: loaded.state.benchmarkEnabled ?? false,
-        migrationRequired: loaded.migrationRequired
+        risk: loaded.risk,
+        preparationProfile: loaded.shape?.preparationProfileChoice?.selectedProfile ?? "unselected",
+        macroPhase: deriveMacroPhase(loaded),
+        benchmarkEnabled: loaded.benchmarkEnabled ?? false
       }
     };
   }
@@ -20051,15 +20188,14 @@ async function runInvocation(argv, options = {}) {
       routingSnapshot = applyFiveHourResetFallback(routingSnapshot, cached);
     }
   }
-  const mode = invocation.command === "run" ? invocation.mode : resumedState?.mode;
-  const decisions = ROUTING_TASKS2.map((task) => chooseRoute(routingSnapshot, { ...task, ...mode ? { mode } : {} }));
+  const decisions = ROUTING_TASKS2.map((task) => chooseRoute(routingSnapshot, task));
   const unavailable = decisions.some((decision) => decision.model === null || decision.effort === null);
   const permissionRequired = snapshotResult.failure?.code === "app_server_permission_denied";
   return {
     command: invocation.command,
     status: permissionRequired ? "routing_permission_required" : unavailable ? "routing_unavailable" : snapshotResult.available ? "routed" : "routed_with_warning",
     data: {
-      ...invocation.command === "run" ? { mode, objective: invocation.objective, benchmarkEnabled: invocation.flags.benchmark === true } : {
+      ...invocation.command === "run" ? { objective: invocation.objective, benchmarkEnabled: invocation.flags.benchmark === true } : {
         taskId: invocation.taskId,
         benchmarkEnabled: resumedState?.benchmarkEnabled ?? false
       },
@@ -20093,7 +20229,7 @@ function resolveRuntimeConfig(sources) {
 }
 async function loadResumeStateIfPresent(workspaceRoot, taskId) {
   try {
-    return (await createTaskStateStore(workspaceRoot).load(taskId)).state;
+    return await createTaskStateStore(workspaceRoot).load(taskId);
   } catch (error) {
     if (error instanceof StateStoreError && error.code === "state_not_found") return void 0;
     throw error;
@@ -20129,6 +20265,7 @@ export {
   ConfigValidationError,
   DEFAULT_CONFIG,
   DEFAULT_SUBSCRIPTION_CONFIG,
+  DEPENDENCY_NODE_KINDS,
   EXIT_CODES,
   GUARD_IDS,
   HISTORY_LIMIT,
@@ -20145,16 +20282,20 @@ export {
   ROUTING_POLICY_VERSION,
   STATE_FILENAME,
   STATE_MACHINE,
-  STATE_V1_BACKUP_FILENAME,
-  StateMigrationError,
   StateStoreError,
+  StateValidationError,
   TASK_STATUSES,
   TaskStateStore,
   addRoutingDecision,
+  applyDiscoveryEvaluation,
   applyFiveHourResetFallback,
   applyInitialIntakeEvaluation,
   applyIntakeResponse,
+  applyPlanningEvaluation,
   applyPolicy,
+  approvePlanProjection,
+  attestContractComplete,
+  attestDiscoverySufficient,
   attestIntakeComplete,
   attestIntakeReopened,
   buildBaselineReport,
@@ -20168,39 +20309,56 @@ export {
   compareSnapshot,
   createBenchmarkRecord,
   createBenchmarkStore,
+  createDecisionEscalation,
   createGateDecision,
   createGuardAttestation,
   createIntakeState,
   createLifecycleMetricEvent,
   createMetricRunId,
+  createShapeState,
   createState,
   createTaskStateStore,
   createUnavailableRoutingSnapshot,
   decideWorktree,
   delegateStage,
+  dependencyClosure,
   deriveMacroPhase,
+  detectPlanProjectionDrift,
   discoverVerificationCommands,
-  evaluateCriticalCompletionApproval,
+  evaluateCompletionApproval,
+  evaluateContractCompleteness,
+  evaluateDiscoveryCompleteness,
+  evaluateDiscoveryGuard,
   evaluateHandoffIntent,
   evaluateHandoffReconciliation,
   evaluateIntakeCompleteness,
+  evaluatePlanningGuard,
   evaluateVerification,
   explainConfig,
   fingerprintFailure,
   guardStateFingerprint,
   invalidateIntakeDecisions,
   isDelegableStage,
-  isQuickEligible,
+  isSourceFingerprintFresh,
   loadConfigSources,
+  loadStateV3,
   main,
-  migrateStateToV2,
   nextCorrectionAction,
   parseInvocation,
   readFiveHourResetCache,
+  reconcilePlanProjection,
+  reconcileShapeFreshness,
+  reconcileShapeResume,
   recordHistoryEvent,
   recordInvalidIntakeModelOutput,
+  recordShapeUsage,
   rejectPrematureAdvance,
+  renderPlanProjection,
+  requestPreparationProfileChoice,
   resolveConfig,
+  resolveDecisionEscalation,
+  resolveShapeBudgetCheckpoint,
+  resolveShapeBudgetCheckpointWithRouting,
   resolveSubscriptionMultiplier,
   resolveSubscriptionPlan,
   routeLateUnknown,
@@ -20208,6 +20366,7 @@ export {
   runInvocation,
   selectFiveHourWindow,
   selectObservedQuotaWindow,
+  selectPreparationProfile,
   setDecisionQuestion,
   shouldOfferBenchmarkSurvey,
   summarizeBenchmarkRecords,
@@ -20216,8 +20375,11 @@ export {
   tryCreateLifecycleMetricEvent,
   tryWriteBenchmarkRecord,
   updateResumeContext,
+  updateShapeState,
   validateBaselineReport,
   validateConfigSource,
+  validateDependencyGraph,
   validateSchema,
+  validateShapeState,
   writeFiveHourResetCache
 };

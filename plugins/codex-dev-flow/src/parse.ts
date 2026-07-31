@@ -1,9 +1,8 @@
 import { EXIT_CODES } from "./exit-codes.js";
-import type { TaskMode } from "./types.js";
 
 export type ParsedInvocation =
   | { command: "init" }
-  | { command: "run"; mode: TaskMode | undefined; objective: string; flags: { benchmark?: true } }
+  | { command: "run"; objective: string; flags: { benchmark?: true } }
   | { command: "resume"; taskId: string }
   | { command: "status"; taskId: string | undefined }
   | { command: "benchmark_summary" }
@@ -13,8 +12,6 @@ export type ParsedInvocation =
 export class InvocationError extends Error {
   readonly exitCode = EXIT_CODES.INVALID_INVOCATION;
 }
-
-const MODES = new Set<TaskMode>(["quick", "standard", "critical"]);
 
 function invalid(message: string): never {
   throw new InvocationError(message);
@@ -63,11 +60,8 @@ export function parseInvocation(argv: string[]): ParsedInvocation {
 
   const benchmark = first === "--benchmark";
   const runArgs = benchmark ? rest : argv;
-  const runFirst = runArgs[0];
-  const mode = MODES.has(runFirst as TaskMode) ? (runFirst as TaskMode) : undefined;
-  const objectiveParts = mode ? runArgs.slice(1) : runArgs;
-  if (objectiveParts.length === 0 || objectiveParts.some((part) => part.startsWith("--"))) {
+  if (runArgs.length === 0 || runArgs.some((part) => part.startsWith("--"))) {
     invalid("A run requires an objective and no unsupported flags.");
   }
-  return { command: "run", mode, objective: objectiveParts.join(" "), flags: benchmark ? { benchmark: true } : {} };
+  return { command: "run", objective: runArgs.join(" "), flags: benchmark ? { benchmark: true } : {} };
 }

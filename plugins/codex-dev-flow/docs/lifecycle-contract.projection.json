@@ -10,13 +10,12 @@
   "guards": [
     "task_initialized",
     "effective_constraints_valid",
-    "mode_confirmed",
     "intake_complete",
     "intake_reopened",
     "routing_ready",
-    "quick_scope_bounded",
-    "critical_workspace_ready",
+    "workspace_ready",
     "discovery_sufficient",
+    "profile_selected",
     "contract_complete",
     "approval_current",
     "task_authorized",
@@ -30,7 +29,7 @@
     "gate_context_valid",
     "handoff_intent_resolved",
     "handoff_reconciled",
-    "critical_completion_approved"
+    "completion_approved"
   ],
   "states": [
     {
@@ -40,177 +39,42 @@
       "terminal": false,
       "transitions": [
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "task_initialized",
             "effective_constraints_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
-        },
-        {
-          "target": "blocked",
-          "guards": [
-            "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
-        },
-        {
-          "target": "cancelled",
-          "guards": [
-            "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
-        },
-        {
-          "target": "failed",
-          "guards": [
-            "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
-        }
-      ],
-      "capsule": {
-        "consumes": [
-          "request",
-          "constraints"
-        ],
-        "produces": [
-          "intake.brief",
-          "intake.decisions",
-          "intake.question",
-          "classification",
-          "routing",
-          "workspace",
-          "freshness.config",
-          "freshness.policy"
-        ],
-        "invalidates": [
-          "intake.dependent-decisions",
-          "classification",
-          "routing",
-          "workspace",
-          "approvals"
-        ]
-      },
-      "events": [
-        "task.initialized",
-        "intake.question_recorded",
-        "intake.answer_recorded",
-        "intake.checkpoint",
-        "advance.rejected",
-        "intake.reopened",
-        "mode.proposed",
-        "mode.confirmed",
-        "routing.captured",
-        "state.transition"
-      ]
-    },
-    {
-      "status": "awaiting_mode_confirmation",
-      "macroPhase": "INTAKE",
-      "stable": false,
-      "terminal": false,
-      "transitions": [
-        {
-          "target": "executing",
-          "guards": [
-            "intake_complete",
-            "mode_confirmed",
-            "routing_ready",
-            "quick_scope_bounded"
-          ],
-          "modes": [
-            "quick"
-          ],
-          "conditionalGuards": []
-        },
-        {
-          "target": "discovering",
-          "guards": [
-            "intake_complete",
-            "mode_confirmed",
-            "routing_ready"
-          ],
-          "modes": [
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": [
-            {
-              "guard": "critical_workspace_ready",
-              "when": {
-                "mode": "critical"
-              }
-            }
           ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
           "request",
-          "constraints"
+          "constraints",
+          "shape.decision-escalation"
         ],
         "produces": [
           "intake.brief",
           "intake.decisions",
           "intake.question",
-          "classification",
+          "risk",
           "routing",
           "workspace",
           "freshness.config",
@@ -218,9 +82,7 @@
         ],
         "invalidates": [
           "intake.dependent-decisions",
-          "classification",
-          "routing",
-          "workspace",
+          "shape.dependency-closure",
           "approvals"
         ]
       },
@@ -231,8 +93,72 @@
         "intake.checkpoint",
         "advance.rejected",
         "intake.reopened",
-        "mode.proposed",
-        "mode.confirmed",
+        "routing.captured",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "intaking",
+      "macroPhase": "INTAKE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "discovering",
+          "guards": [
+            "intake_complete",
+            "routing_ready",
+            "workspace_ready"
+          ]
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ]
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ]
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ]
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "request",
+          "constraints",
+          "shape.decision-escalation"
+        ],
+        "produces": [
+          "intake.brief",
+          "intake.decisions",
+          "intake.question",
+          "risk",
+          "routing",
+          "workspace",
+          "freshness.config",
+          "freshness.policy"
+        ],
+        "invalidates": [
+          "intake.dependent-decisions",
+          "shape.dependency-closure",
+          "approvals"
+        ]
+      },
+      "events": [
+        "task.initialized",
+        "intake.question_recorded",
+        "intake.answer_recorded",
+        "intake.checkpoint",
+        "advance.rejected",
+        "intake.reopened",
         "routing.captured",
         "state.transition"
       ]
@@ -244,64 +170,38 @@
       "terminal": false,
       "transitions": [
         {
-          "target": "planning",
+          "target": "awaiting_profile_choice",
           "guards": [
             "discovery_sufficient"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "awaiting_intake_decision",
+          "guards": []
+        },
+        {
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
@@ -309,20 +209,22 @@
           "intake.brief",
           "intake.decisions",
           "intake.technical-unknowns",
+          "risk",
           "constraints",
-          "classification",
           "routing",
-          "workspace"
+          "workspace",
+          "shape.state"
         ],
         "produces": [
-          "discovery",
-          "contract",
-          "freshness.git",
-          "freshness.artifact"
+          "shape.targets",
+          "shape.evidence",
+          "shape.profile-choice",
+          "shape.contract",
+          "shape.projection",
+          "freshness.sources"
         ],
         "invalidates": [
-          "discovery",
-          "contract",
+          "shape.dependency-closure",
           "approvals",
           "build",
           "assurance",
@@ -330,9 +232,98 @@
         ]
       },
       "events": [
-        "discovery.updated",
+        "discovery.target_recorded",
+        "discovery.evidence_recorded",
+        "discovery.completed",
+        "profile.choice_requested",
+        "profile.choice_recorded",
+        "decision.escalated",
         "contract.projected",
+        "projection.reconciliation_requested",
         "evidence.invalidated",
+        "shape.checkpoint",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "awaiting_profile_choice",
+      "macroPhase": "SHAPE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "planning",
+          "guards": [
+            "profile_selected"
+          ]
+        },
+        {
+          "target": "discovering",
+          "guards": []
+        },
+        {
+          "target": "intaking",
+          "guards": [
+            "intake_reopened"
+          ]
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ]
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ]
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ]
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "intake.brief",
+          "intake.decisions",
+          "intake.technical-unknowns",
+          "risk",
+          "constraints",
+          "routing",
+          "workspace",
+          "shape.state"
+        ],
+        "produces": [
+          "shape.targets",
+          "shape.evidence",
+          "shape.profile-choice",
+          "shape.contract",
+          "shape.projection",
+          "freshness.sources"
+        ],
+        "invalidates": [
+          "shape.dependency-closure",
+          "approvals",
+          "build",
+          "assurance",
+          "handoff"
+        ]
+      },
+      "events": [
+        "discovery.target_recorded",
+        "discovery.evidence_recorded",
+        "discovery.completed",
+        "profile.choice_requested",
+        "profile.choice_recorded",
+        "decision.escalated",
+        "contract.projected",
+        "projection.reconciliation_requested",
+        "evidence.invalidated",
+        "shape.checkpoint",
         "state.transition"
       ]
     },
@@ -344,74 +335,43 @@
       "transitions": [
         {
           "target": "discovering",
-          "guards": [],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          "guards": []
+        },
+        {
+          "target": "awaiting_intake_decision",
+          "guards": []
         },
         {
           "target": "awaiting_approval",
           "guards": [
             "discovery_sufficient",
+            "profile_selected",
             "contract_complete"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
@@ -419,20 +379,22 @@
           "intake.brief",
           "intake.decisions",
           "intake.technical-unknowns",
+          "risk",
           "constraints",
-          "classification",
           "routing",
-          "workspace"
+          "workspace",
+          "shape.state"
         ],
         "produces": [
-          "discovery",
-          "contract",
-          "freshness.git",
-          "freshness.artifact"
+          "shape.targets",
+          "shape.evidence",
+          "shape.profile-choice",
+          "shape.contract",
+          "shape.projection",
+          "freshness.sources"
         ],
         "invalidates": [
-          "discovery",
-          "contract",
+          "shape.dependency-closure",
           "approvals",
           "build",
           "assurance",
@@ -440,9 +402,88 @@
         ]
       },
       "events": [
-        "discovery.updated",
+        "discovery.target_recorded",
+        "discovery.evidence_recorded",
+        "discovery.completed",
+        "profile.choice_requested",
+        "profile.choice_recorded",
+        "decision.escalated",
         "contract.projected",
+        "projection.reconciliation_requested",
         "evidence.invalidated",
+        "shape.checkpoint",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "awaiting_intake_decision",
+      "macroPhase": "INTAKE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "discovering",
+          "guards": [
+            "intake_complete"
+          ]
+        },
+        {
+          "target": "planning",
+          "guards": [
+            "intake_complete",
+            "discovery_sufficient",
+            "profile_selected"
+          ]
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ]
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ]
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ]
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "request",
+          "constraints",
+          "shape.decision-escalation"
+        ],
+        "produces": [
+          "intake.brief",
+          "intake.decisions",
+          "intake.question",
+          "risk",
+          "routing",
+          "workspace",
+          "freshness.config",
+          "freshness.policy"
+        ],
+        "invalidates": [
+          "intake.dependent-decisions",
+          "shape.dependency-closure",
+          "approvals"
+        ]
+      },
+      "events": [
+        "task.initialized",
+        "intake.question_recorded",
+        "intake.answer_recorded",
+        "intake.checkpoint",
+        "advance.rejected",
+        "intake.reopened",
+        "routing.captured",
         "state.transition"
       ]
     },
@@ -456,38 +497,20 @@
           "target": "planning",
           "guards": [
             "gate_context_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "resolving_assure",
           "guards": [
             "gate_context_valid",
             "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "verifying",
           "guards": [
             "gate_context_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "executing",
@@ -495,112 +518,64 @@
             "gate_context_valid",
             "approval_current",
             "task_authorized"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "handing_off",
           "guards": [
             "gate_context_valid",
             "verification_complete",
-            "critical_completion_approved",
+            "completion_approved",
             "handoff_intent_resolved"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "ready_for_handoff",
           "guards": [
             "gate_context_valid",
             "verification_complete",
-            "critical_completion_approved",
+            "completion_approved",
             "handoff_intent_resolved"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "finished_local",
           "guards": [
             "gate_context_valid",
             "verification_complete",
-            "critical_completion_approved",
+            "completion_approved",
             "handoff_intent_resolved"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "contract",
-          "classification",
+          "shape.contract",
+          "risk",
           "assurance.verificationEvidence"
         ],
         "produces": [
@@ -627,78 +602,42 @@
           "target": "validating",
           "guards": [
             "task_authorized"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "planning",
-          "guards": [],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          "guards": []
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "approvals",
-          "discovery",
+          "shape.evidence",
           "workspace",
           "freshness"
         ],
@@ -734,115 +673,61 @@
           "guards": [
             "validation_fresh",
             "task_authorized"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "resolving_build",
           "guards": [
             "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "reviewing",
           "guards": [
             "validation_fresh"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "verifying",
           "guards": [
             "validation_fresh",
             "review_satisfied"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "planning",
-          "guards": [],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          "guards": []
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "approvals",
-          "discovery",
+          "shape.evidence",
           "workspace",
           "freshness"
         ],
@@ -877,78 +762,42 @@
           "target": "validating",
           "guards": [
             "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "planning",
-          "guards": [],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          "guards": []
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "approvals",
-          "discovery",
+          "shape.evidence",
           "workspace",
           "freshness"
         ],
@@ -983,88 +832,50 @@
           "target": "resolving_assure",
           "guards": [
             "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "verifying",
           "guards": [
             "review_satisfied"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
+        },
+        {
+          "target": "validating",
+          "guards": []
         },
         {
           "target": "planning",
-          "guards": [],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          "guards": []
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "build",
           "issues.active",
           "freshness"
@@ -1096,103 +907,47 @@
       "terminal": false,
       "transitions": [
         {
-          "target": "validating",
-          "guards": [
-            "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
-        },
-        {
           "target": "reviewing",
           "guards": [
             "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
-          "target": "verifying",
-          "guards": [
-            "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          "target": "validating",
+          "guards": []
         },
         {
           "target": "planning",
-          "guards": [],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          "guards": []
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "build",
           "issues.active",
           "freshness"
@@ -1224,130 +979,74 @@
       "terminal": false,
       "transitions": [
         {
-          "target": "resolving_assure",
+          "target": "validating",
           "guards": [
             "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
+        },
+        {
+          "target": "reviewing",
+          "guards": []
         },
         {
           "target": "planning",
-          "guards": [],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          "guards": []
         },
         {
           "target": "awaiting_approval",
           "guards": [
             "verification_complete"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "handing_off",
           "guards": [
             "verification_complete",
             "handoff_intent_resolved"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "ready_for_handoff",
           "guards": [
             "verification_complete",
             "handoff_intent_resolved"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "finished_local",
           "guards": [
             "verification_complete",
             "handoff_intent_resolved"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "build",
           "issues.active",
           "freshness"
@@ -1379,83 +1078,53 @@
       "terminal": false,
       "transitions": [
         {
-          "target": "ready_for_handoff",
-          "guards": [
-            "handoff_intent_resolved",
-            "handoff_reconciled"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
-        },
-        {
           "target": "finished",
           "guards": [
             "handoff_intent_resolved",
             "handoff_reconciled"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "ready_for_handoff",
+          "guards": [
+            "handoff_intent_resolved",
+            "handoff_reconciled"
+          ]
+        },
+        {
+          "target": "finished_local",
+          "guards": [
+            "handoff_intent_resolved"
+          ]
+        },
+        {
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "assurance.verificationEvidence",
           "workspace",
           "handoff"
@@ -1487,79 +1156,36 @@
           "guards": [
             "handoff_intent_resolved",
             "handoff_reconciled"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
-          "target": "finished",
-          "guards": [
-            "handoff_intent_resolved",
-            "handoff_reconciled"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
-        },
-        {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "intake_reopened"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "blocked",
           "guards": [
             "resume_metadata_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "assurance.verificationEvidence",
           "workspace",
           "handoff"
@@ -1587,40 +1213,30 @@
       "terminal": false,
       "transitions": [
         {
-          "target": "awaiting_mode_confirmation",
+          "target": "intaking",
           "guards": [
             "resume_metadata_valid",
             "resume_reconciled",
             "task_initialized",
             "effective_constraints_valid"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "discovering",
           "guards": [
             "resume_metadata_valid",
             "resume_reconciled",
-            "mode_confirmed",
-            "routing_ready"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": [
-            {
-              "guard": "critical_workspace_ready",
-              "when": {
-                "mode": "critical"
-              }
-            }
+            "intake_complete",
+            "routing_ready",
+            "workspace_ready"
+          ]
+        },
+        {
+          "target": "awaiting_profile_choice",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled",
+            "discovery_sufficient"
           ]
         },
         {
@@ -1628,14 +1244,16 @@
           "guards": [
             "resume_metadata_valid",
             "resume_reconciled",
-            "discovery_sufficient"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+            "discovery_sufficient",
+            "profile_selected"
+          ]
+        },
+        {
+          "target": "awaiting_intake_decision",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled"
+          ]
         },
         {
           "target": "awaiting_approval",
@@ -1643,13 +1261,7 @@
             "resume_metadata_valid",
             "resume_reconciled",
             "contract_complete"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "executing",
@@ -1658,13 +1270,7 @@
             "resume_reconciled",
             "approval_current",
             "task_authorized"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "validating",
@@ -1672,13 +1278,7 @@
             "resume_metadata_valid",
             "resume_reconciled",
             "task_authorized"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "resolving_build",
@@ -1686,13 +1286,7 @@
             "resume_metadata_valid",
             "resume_reconciled",
             "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "reviewing",
@@ -1700,13 +1294,7 @@
             "resume_metadata_valid",
             "resume_reconciled",
             "validation_fresh"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "resolving_assure",
@@ -1714,13 +1302,7 @@
             "resume_metadata_valid",
             "resume_reconciled",
             "correction_budget_available"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "verifying",
@@ -1728,13 +1310,7 @@
             "resume_metadata_valid",
             "resume_reconciled",
             "review_satisfied"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "handing_off",
@@ -1743,54 +1319,32 @@
             "resume_reconciled",
             "handoff_intent_resolved",
             "handoff_reconciled"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         },
         {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
-          ],
-          "modes": [
-            "quick",
-            "standard",
-            "critical"
-          ],
-          "conditionalGuards": []
+          ]
         }
       ],
       "capsule": {
         "consumes": [
-          "resumeTo",
-          "remainingActions",
+          "resume.metadata",
           "freshness"
         ],
         "produces": [
-          "issues.active"
+          "resume.reconciliation"
         ],
-        "invalidates": [
-          "source-phase-dependent"
-        ]
+        "invalidates": []
       },
       "events": [
-        "task.blocked",
         "task.resumed",
         "state.transition"
       ]
@@ -1844,7 +1398,7 @@
       "transitions": [],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "assurance.verificationEvidence",
           "workspace",
           "handoff"
@@ -1869,7 +1423,7 @@
       "transitions": [],
       "capsule": {
         "consumes": [
-          "contract",
+          "shape.contract",
           "assurance.verificationEvidence",
           "workspace",
           "handoff"

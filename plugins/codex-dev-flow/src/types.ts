@@ -1,4 +1,4 @@
-export type TaskMode = "quick" | "standard" | "critical";
+import type { PreparationProfile, ShapeState } from "./shape.js";
 
 export const ALLOWED_MODEL_IDS = ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] as const;
 export type ModelId = (typeof ALLOWED_MODEL_IDS)[number];
@@ -99,13 +99,12 @@ export interface Policy {
 }
 
 export interface TaskState {
-  schemaVersion: 2;
+  schemaVersion: 3;
   taskId: string;
   status: TaskStatus;
   revision: number;
-  mode: TaskMode;
-  modeEvidenceRef: string;
-  modeConfirmed: boolean;
+  risk: RiskLevel;
+  shape?: ShapeState;
   contractDigest?: string;
   verificationRequirements?: VerificationRequirements;
   pendingGate?: ApprovalGate;
@@ -149,7 +148,6 @@ export interface IntakeBrief {
   schemaVersion: 1;
   objective?: string;
   successSignal?: IntakeSuccessSignal;
-  mode: TaskMode;
   risk: RiskLevel;
   provenance: IntakeProvenance;
   successValidator?: string;
@@ -214,7 +212,6 @@ export interface IntakeMetrics {
   recommendationsModified: number;
   zeroQuestionPath: boolean;
   lateReopenings: number;
-  modeChanges: number;
   inputTokens?: number;
   outputTokens?: number;
   latencyMs?: number;
@@ -252,9 +249,9 @@ export interface BenchmarkRecord {
   schemaVersion: 1;
   taskId: string;
   recordedAt: string;
-  mode: TaskMode;
+  preparationProfile: PreparationProfile | "unselected";
   outcome: "finished_local" | "finished" | "failed";
-  authority: "intake_brief" | "approved_change_artifact";
+  authority: "canonical_change_contract";
   survey: BenchmarkSurveyAnswers;
   deviations: BenchmarkDeviationFact[];
 }
@@ -266,7 +263,6 @@ export interface HistorySummary {
   firstAt: string;
   lastAt: string;
   typeCounts: Record<string, number>;
-  modeConfirmed: boolean;
   lastTransition?: {
     sequence: number;
     revision: number;
@@ -277,9 +273,7 @@ export interface HistorySummary {
 
 export type HistoryReferenceKind =
   | "task"
-  | "mode-evidence"
-  | "migration-source"
-  | "migration-target"
+  | "shape"
   | "artifact"
   | "worktree"
   | "context-capsule"
@@ -317,7 +311,6 @@ export interface HistoryGateAnchor {
 
 export type WorkflowHistoryEventType =
   | "task.created"
-  | "state.migrated"
   | "task.blocked"
   | "task.resumed"
   | "gate.recorded"
@@ -332,7 +325,17 @@ export type WorkflowHistoryEventType =
   | "intake.answer_recorded"
   | "intake.checkpoint"
   | "advance.rejected"
-  | "intake.reopened";
+  | "intake.reopened"
+  | "discovery.target_recorded"
+  | "discovery.evidence_recorded"
+  | "discovery.completed"
+  | "profile.choice_requested"
+  | "profile.choice_recorded"
+  | "decision.escalated"
+  | "contract.projected"
+  | "projection.reconciliation_requested"
+  | "evidence.invalidated"
+  | "shape.checkpoint";
 
 export interface WorkflowHistoryEvent {
   sequence: number;
@@ -396,7 +399,6 @@ export interface StateHistoryEvent {
   type: "state.transition";
   from: TaskStatus;
   to: TaskStatus;
-  mode?: TaskMode;
   revision: number;
   sourceFingerprint: string;
   terminalSource?: TaskStatus;
@@ -405,12 +407,11 @@ export interface StateHistoryEvent {
   contractDigest?: string;
   guardEvidence?: GuardEvidenceRecord[];
   gateDecision?: GateDecisionRecord;
-  legacyData?: Record<string, unknown>;
 }
 
 export type DurableHistoryEvent = StateHistoryEvent | WorkflowHistoryEvent;
 
-export type ApprovalGate = "pre_build" | "critical_completion";
+export type ApprovalGate = "pre_build" | "completion";
 
 export interface GuardEvidenceRecord {
   schemaVersion: 1;
@@ -419,17 +420,17 @@ export interface GuardEvidenceRecord {
   stateFingerprint: string;
   observedFingerprint: string;
   evidenceRefs: readonly string[];
-  provenance: "deterministic-check" | "human-approval" | "repository-observation" | "migration-history";
+  provenance: "deterministic-check" | "human-approval" | "repository-observation";
   result: "passed" | "not_applicable";
   evaluatorReceipt?: EvaluatorReceiptRecord;
 }
 
-export type TrustedEvaluator = "intake" | "verification" | "handoff_intent" | "handoff_reconciliation" | "critical_completion";
+export type TrustedEvaluator = "intake" | "discovery" | "planning" | "verification" | "handoff_intent" | "handoff_reconciliation" | "completion";
 
 export interface EvaluatorReceiptRecord {
   schemaVersion: 1;
   evaluator: TrustedEvaluator;
-  outcome: "intake_complete" | "complete" | "local_only" | "external_selected" | "action_required" | "approved";
+  outcome: "intake_complete" | "discovery_sufficient" | "contract_complete" | "complete" | "local_only" | "external_selected" | "action_required" | "approved";
   stateRevision: number;
   stateFingerprint: string;
   inputDigest: string;

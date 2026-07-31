@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { validateConfigSource } from "./config.js";
 import { MODEL_COST_MULTIPLIERS, ROUTING_POLICY_VERSION, chooseRoute, type RouteTask } from "./routing.js";
-import { REASONING_EFFORTS, type CliResult, type ModelCapability, type QuotaPressure, type ResolvedSubscriptionPlan, type RoutingDecision, type TaskMode } from "./types.js";
+import { REASONING_EFFORTS, type CliResult, type ModelCapability, type QuotaPressure, type ResolvedSubscriptionPlan, type RoutingDecision } from "./types.js";
 
 export interface PromptChoice<Value extends string> {
   value: Value;
@@ -80,7 +80,7 @@ export async function runInit(options: InitOptions = {}): Promise<CliResult> {
       const config = buildConfiguration(current, draft);
       validateConfigSource(config, "init");
       prompts.note(renderConfigurationSummary(path, draft), "Configuration summary");
-      prompts.note(renderRoutingSummary(draft.plan, "standard", "normal"), `Automatic routing · ${ROUTING_POLICY_VERSION}`);
+      prompts.note(renderRoutingSummary(draft.plan, "normal"), `Automatic routing · ${ROUTING_POLICY_VERSION}`);
 
       const action = await required(prompts, prompts.select<ReviewAction>({
         message: existed ? "Review complete. What should Dev Flow do?" : "Configuration ready. What should Dev Flow do?",
@@ -129,7 +129,6 @@ export async function runInit(options: InitOptions = {}): Promise<CliResult> {
 
 export function buildRoutingPreview(
   plan: SubscriptionPlan,
-  mode: TaskMode = "standard",
   pressure: QuotaPressure = "normal"
 ): RoutingDecision[] {
   const resolvedPlan: ResolvedSubscriptionPlan = plan === "auto" ? "unknown" : plan;
@@ -146,7 +145,7 @@ export function buildRoutingPreview(
     models,
     warnings: [],
     provenance: { plan: plan === "auto" ? "unknown" : "config", quota: "unknown", models: "model/list" }
-  }, { ...task, mode }));
+  }, task));
 }
 
 async function collectWorkflow(prompts: InitPromptAdapter, draft: InitDraft): Promise<InitDraft> {
@@ -252,13 +251,13 @@ function renderConfigurationSummary(path: string, draft: InitDraft): string {
   ].join("\n");
 }
 
-function renderRoutingSummary(plan: SubscriptionPlan, mode: TaskMode, pressure: QuotaPressure): string {
+function renderRoutingSummary(plan: SubscriptionPlan, pressure: QuotaPressure): string {
   const labels: Record<string, string> = { discover: "Discover", plan: "Plan", execute: "Execute", review: "Review", verify: "Verify", debug: "Debug root cause" };
-  const routes = buildRoutingPreview(plan, mode, pressure).map((decision) =>
+  const routes = buildRoutingPreview(plan, pressure).map((decision) =>
     `${labels[decision.stage]}: ${decision.model ?? "unavailable"} · ${decision.effort ?? "unavailable"}`
   );
   return [
-    `Baseline: ${plan === "auto" ? "Plus until account detection" : plan} · ${mode} · ${pressure} quota`,
+    `Baseline: ${plan === "auto" ? "Plus until account detection" : plan} · ${pressure} quota`,
     ...routes,
     "Live availability is captured once when a Dev Flow workflow starts; exact unavailable routes block instead of falling back."
   ].join("\n");

@@ -9,7 +9,7 @@ import { applyFiveHourResetFallback, readFiveHourResetCache, writeFiveHourResetC
 import { chooseRoute, ROUTING_POLICY_VERSION, type RouteTask } from "./routing.js";
 import { deriveMacroPhase } from "./state-machine.js";
 import { StateStoreError, createTaskStateStore } from "./state-store.js";
-import type { CliResult, TaskMode } from "./types.js";
+import type { CliResult } from "./types.js";
 
 export { EXIT_CODES } from "./exit-codes.js";
 export { resolveConfig } from "./config.js";
@@ -20,7 +20,7 @@ export { PolicyError, applyPolicy } from "./policy.js";
 export {
   STATE_MACHINE,
   TASK_STATUSES,
-  StateMigrationError,
+  StateValidationError,
   HISTORY_LIMIT,
   HISTORY_REFERENCE_LIMIT,
   HISTORY_REFERENCE_TOTAL_CHARS,
@@ -30,13 +30,16 @@ export {
   createGuardAttestation,
   createState,
   deriveMacroPhase,
-  evaluateCriticalCompletionApproval,
+  evaluateCompletionApproval,
+  evaluateDiscoveryGuard,
   evaluateHandoffIntent,
   evaluateHandoffReconciliation,
   evaluateVerification,
+  evaluatePlanningGuard,
   guardStateFingerprint,
-  migrateStateToV2,
+  loadStateV3,
   recordHistoryEvent,
+  updateShapeState,
   updateResumeContext,
   transition
 } from "./state.js";
@@ -52,6 +55,39 @@ export {
 } from "./metrics.js";
 export { fingerprintFailure, nextCorrectionAction } from "./fingerprint.js";
 export {
+  DEPENDENCY_NODE_KINDS,
+  dependencyClosure,
+  validateDependencyGraph
+} from "./shape-dependencies.js";
+export {
+  isSourceFingerprintFresh,
+  reconcileShapeFreshness
+} from "./shape-freshness.js";
+export {
+  applyDiscoveryEvaluation,
+  applyPlanningEvaluation,
+  attestContractComplete,
+  attestDiscoverySufficient,
+  createDecisionEscalation,
+  createShapeState,
+  evaluateDiscoveryCompleteness,
+  evaluateContractCompleteness,
+  recordShapeUsage,
+  reconcileShapeResume,
+  requestPreparationProfileChoice,
+  resolveDecisionEscalation,
+  resolveShapeBudgetCheckpoint,
+  resolveShapeBudgetCheckpointWithRouting,
+  selectPreparationProfile,
+  validateShapeState
+} from "./shape.js";
+export {
+  approvePlanProjection,
+  detectPlanProjectionDrift,
+  reconcilePlanProjection,
+  renderPlanProjection
+} from "./shape-projection.js";
+export {
   attestIntakeComplete,
   attestIntakeReopened,
   applyInitialIntakeEvaluation,
@@ -59,7 +95,6 @@ export {
   createIntakeState,
   evaluateIntakeCompleteness,
   invalidateIntakeDecisions,
-  isQuickEligible,
   recordInvalidIntakeModelOutput,
   rejectPrematureAdvance,
   routeLateUnknown,
@@ -97,7 +132,6 @@ export { AppServerClient, AppServerError, captureRoutingSnapshot } from "./app-s
 export { ROUTED_STAGES, delegateStage, isDelegableStage } from "./bridge.js";
 export {
   STATE_FILENAME,
-  STATE_V1_BACKUP_FILENAME,
   StateStoreError,
   TaskStateStore,
   createTaskStateStore
@@ -131,13 +165,13 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
     const loaded = await createTaskStateStore(options.workspaceRoot ?? process.cwd()).load(invocation.taskId);
     return {
       command: "status",
-      status: loaded.state.status,
+      status: loaded.status,
       data: {
         taskId: invocation.taskId,
-        mode: loaded.state.mode,
-        macroPhase: deriveMacroPhase(loaded.state),
-        benchmarkEnabled: loaded.state.benchmarkEnabled ?? false,
-        migrationRequired: loaded.migrationRequired
+        risk: loaded.risk,
+        preparationProfile: loaded.shape?.preparationProfileChoice?.selectedProfile ?? "unselected",
+        macroPhase: deriveMacroPhase(loaded),
+        benchmarkEnabled: loaded.benchmarkEnabled ?? false
       }
     };
   }
@@ -186,8 +220,7 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
       routingSnapshot = applyFiveHourResetFallback(routingSnapshot, cached);
     }
   }
-  const mode: TaskMode | undefined = invocation.command === "run" ? invocation.mode : resumedState?.mode;
-  const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, { ...task, ...(mode ? { mode } : {}) }));
+  const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, task));
   const unavailable = decisions.some((decision) => decision.model === null || decision.effort === null);
   const permissionRequired = snapshotResult.failure?.code === "app_server_permission_denied";
   return {
@@ -195,7 +228,7 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
     status: permissionRequired ? "routing_permission_required" : unavailable ? "routing_unavailable" : snapshotResult.available ? "routed" : "routed_with_warning",
     data: {
       ...(invocation.command === "run"
-        ? { mode, objective: invocation.objective, benchmarkEnabled: invocation.flags.benchmark === true }
+        ? { objective: invocation.objective, benchmarkEnabled: invocation.flags.benchmark === true }
         : {
             taskId: invocation.taskId,
             benchmarkEnabled: resumedState?.benchmarkEnabled ?? false
@@ -235,7 +268,7 @@ function resolveRuntimeConfig(sources: ConfigSource[] | undefined): ResolvedConf
 
 async function loadResumeStateIfPresent(workspaceRoot: string, taskId: string) {
   try {
-    return (await createTaskStateStore(workspaceRoot).load(taskId)).state;
+    return await createTaskStateStore(workspaceRoot).load(taskId);
   } catch (error) {
     if (error instanceof StateStoreError && error.code === "state_not_found") return undefined;
     throw error;

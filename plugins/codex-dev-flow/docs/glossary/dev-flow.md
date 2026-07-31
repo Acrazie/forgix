@@ -15,13 +15,20 @@ It is invalidated when a material field of that contract changes.
 
 The sole versioned logical owner of stable intent, scope, acceptance criteria,
 implementation plan, risks, and detailed evidence references. Its identity and canonical
-digest—not its pathname—bind Approval. Standard mode does not prescribe one physical
+digest—not its pathname—bind Approval. Plan profile does not prescribe one physical
 layout.
+
+## Plan profile
+
+The durable-preparation choice made after SHAPE Discovery and before Planning. It
+projects the canonical Change Contract to one versioned document containing
+specification, plan, and evidence-required implementation guidance. Risk and policy,
+not the profile, determine safety controls.
 
 ## Change record
 
 Legacy name for a file-based projection of a Change artifact. It is a supported
-repository choice, not a canonical Standard-mode convention.
+repository choice, not a canonical Docs-profile convention.
 
 ## Benchmark record
 
@@ -51,11 +58,44 @@ One active, resumable INTAKE question bound to a stable decision key and a deter
 lifecycle impact. It offers mutually exclusive choices, one sourced recommendation, and
 free-form input. A recommendation is never a user decision until explicitly answered.
 
+## Decision Escalation
+
+A structured SHAPE request for an explicit INTAKE decision when repository discovery
+reveals feasible technical alternatives with different product effects. It carries a
+stable decision key, technical evidence and provenance, product impact, mutually
+exclusive options, an evidence-backed recommendation, and the SHAPE sections that may
+depend on the answer. It transfers evidence, not decision authority.
+
+## Dependency closure
+
+The transitive set of discovery evidence and contract sections that depend on a changed
+decision, source, or section. SHAPE invalidates this set selectively while retaining
+fresh independent work; it never uses invalidation as a reason to reset all shaping.
+
+## Dependency graph
+
+The persisted acyclic graph connecting stable decision, source-fingerprint, discovery,
+and contract-section identities through explicit `dependsOn` references. The model
+proposes semantic links; deterministic runtime validates structure and computes
+selective invalidation.
+
 ## Determining constraint
 
 A constraint whose violation or change can alter the expected outcome, success signal,
-mode/risk, scope, solution, validation, or lifecycle transition. Preferences without
+risk, scope, solution, validation, or lifecycle transition. Preferences without
 such impact are not INTAKE questions.
+
+## Discovery target
+
+One stable, resumable SHAPE investigation unit containing a precise technical question,
+its possible material contract impact, candidate sources, its evidence-backed result,
+provenance, and explicit dependencies. A target widens discovery only when its result
+creates another material uncertainty.
+
+## Discovery role
+
+The read-only SHAPE role allowed to inspect repository sources and resolve Discovery
+Targets into provenance-bound evidence. It does not author the canonical plan.
 
 ## Diff Capsule
 
@@ -69,6 +109,11 @@ A failed validation, review, or verification check tracked by a stable `issue_id
 ## Finding
 
 An actionable review issue tracked by a stable `issue_id`.
+
+## Fresh evidence
+
+SHAPE evidence whose exact source fingerprints still match. Freshness is evaluated per
+referenced source; unrelated repository changes do not make an evidence item stale.
 
 ## Gate
 
@@ -87,9 +132,23 @@ used to reconcile retries without duplicating external work.
 ## Intake Brief
 
 The compact, structured output of INTAKE. It owns the canonical objective, observable
-success signal, mode/risk, provenance, completeness state, and only the conditional
+success signal, risk, provenance, completeness state, and only the conditional
 context that determines workflow behavior. It is not an interview transcript or a
 Change Artifact.
+
+## Implementation Guide
+
+The optional Change Contract section containing only evidence-backed architectural
+constraints, required patterns, migration rules, or sequencing details needed to
+prevent implementation drift. It is not a second plan and does not contain decorative
+prose or redundant pseudo-code.
+
+## Late Intake decision
+
+An explicit product decision requested after SHAPE discovery reveals a
+product-impacting technical choice. It is presented in `awaiting_intake_decision`,
+selectively invalidates its dependency closure, and resumes the prior SHAPE work without
+rerunning initial INTAKE.
 
 ## Macro-phase
 
@@ -108,6 +167,19 @@ An identifier for one observation of an issue in one workflow run.
 
 A schema-approved requirement, prohibition, bound, or lock applied after configuration resolution.
 
+## Preparation profile choice
+
+The explicit Quick-or-Plan choice made after `discovery_sufficient` and before Planning.
+It is persisted with its evidence-backed recommendation in
+`awaiting_profile_choice`. An explicit plan request or policy lock may resolve it
+without presenting a redundant or false choice.
+
+## Planning role
+
+The read-only SHAPE role that projects the canonical contract only from fresh structured
+evidence. It cannot inspect the repository directly; missing evidence becomes a new
+Discovery Target.
+
 ## Partial release
 
 A release whose Git, npm-registry, GitHub Release, or local Codex installation actions
@@ -124,6 +196,19 @@ metrics.
 ## Ready for handoff
 
 A resumable state where code and verification are complete but an external Git or GitHub action cannot run.
+
+## Quick profile
+
+The compact-preparation choice made after SHAPE Discovery and before Planning. It uses a
+minimal SHAPE contract persisted in workflow state rather than requiring a
+repository-versioned planning document. Risk and policy may still require strong gates
+and assurance.
+
+## Schema break
+
+An intentional state-contract replacement with no compatibility migration. Legacy task
+state is rejected clearly and never treated as current proof, Approval, or resumable
+workflow evidence.
 
 ## Release preparation
 
@@ -167,6 +252,12 @@ criteria.
 
 The person, role, test, metric, or system authorized to judge a success signal when
 multiple validation authorities could require different proof.
+
+## Shape State
+
+The aggregate owning SHAPE discovery targets, evidence, source fingerprints, decision
+escalations, preparation profile, canonical contract, dependency graph, and semantic
+evaluator receipts. It is the resumable boundary shared by Discovery and Planning.
 
 ## State snapshot
 

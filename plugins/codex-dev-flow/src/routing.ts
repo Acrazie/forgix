@@ -13,7 +13,6 @@ import {
   type RoutingStage,
   type SubscriptionConfig
 } from "./types.js";
-import type { TaskMode } from "./types.js";
 
 export const MODEL_IDS = ALLOWED_MODEL_IDS;
 export const APP_SERVER_PROTOCOL_VERSION = "v2";
@@ -179,7 +178,6 @@ export interface RouteTask {
   stage: RoutingStage;
   risk: RiskLevel;
   ambiguity: RiskLevel;
-  mode?: TaskMode;
 }
 
 export function chooseRoute(snapshot: RoutingSnapshot, task: RouteTask): RoutingDecision {
@@ -190,8 +188,8 @@ export function chooseRoute(snapshot: RoutingSnapshot, task: RouteTask): Routing
   if (unknownPlan && !warnings.includes("plan_unknown")) warnings.push("plan_unknown");
   const effectivePlan = effectiveMatrixPlan(snapshot.plan, pressure);
   const base = STANDARD_ROUTES[effectivePlan][task.stage];
-  const elevated = task.mode === "critical" || task.risk === "high" || task.risk === "critical" || task.ambiguity === "high" || task.ambiguity === "critical";
-  const delta = elevated ? 1 : task.mode === "quick" ? -1 : 0;
+  const elevated = task.risk === "high" || task.risk === "critical" || task.ambiguity === "high" || task.ambiguity === "critical";
+  const delta = elevated ? 1 : 0;
   const effort = shiftEffort(base.effort, delta);
   const capability = snapshot.models.find((candidate) => candidate.id === base.model);
   const exactAvailable = capability?.supportedReasoningEfforts.includes(effort) === true;

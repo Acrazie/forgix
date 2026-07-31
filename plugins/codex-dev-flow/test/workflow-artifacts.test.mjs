@@ -9,11 +9,11 @@ function read(relativePath) {
 test("public workflow defines logical versioned artifacts", () => {
   const skill = read("../skills/dev-flow/SKILL.md");
 
-  assert.match(skill, /Quick.*no mandatory artifact/is);
-  assert.match(skill, /logical canonical change artifact projection/i);
-  assert.match(skill, /Artifact identity and digest/i);
-  assert.match(skill, /require pre-build Approval/i);
-  assert.match(skill, /Parent alone writes artifact/i);
+  assert.match(skill, /Every task uses adaptive SHAPE/i);
+  assert.match(skill, /Quick and Plan share canonical contract/i);
+  assert.match(skill, /Quick keeps compact state only/i);
+  assert.match(skill, /Plan creates one parent-rendered Proposed\s+Markdown/i);
+  assert.match(skill, /Parent alone writes ShapeState and Plan projection/i);
   assert.match(skill, /belongs to active\s+worktree/i);
   assert.match(skill, /commit or handoff/i);
   assert.match(skill, /Reuse existing artifact\s+identity/i);
@@ -24,15 +24,14 @@ test("logical change artifact has a stable minimum contract", () => {
   const skill = read("../skills/dev-flow/SKILL.md");
 
   for (const section of [
-    "objective",
-    "constraints",
     "scope",
     "non-goals",
-    "stable acceptance criteria",
-    "confirmed mode/risk",
-    "executable atomic plan",
-    "risk/rollback controls",
-    "Artifact identity and digest"
+    "stable criteria",
+    "ordered tasks",
+    "criterion-linked validation",
+    "risks/controls",
+    "explicit dependencies",
+    "digest"
   ]) {
     assert.match(skill, new RegExp(section, "i"));
   }
@@ -45,8 +44,9 @@ test("stage skills preserve and consume the artifact contract", () => {
   const review = read("../skills/review-change/SKILL.md");
   const verify = read("../skills/verify-change/SKILL.md");
 
-  assert.match(discover, /artifact-ready specification evidence/i);
-  assert.match(plan, /acceptance criterion/i);
+  assert.match(discover, /bounded structured evidence/i);
+  assert.match(discover, /source fingerprints/i);
+  assert.match(plan, /criterion/i);
   assert.match(plan, /Do not embed complete implementations/i);
   assert.match(execute, /artifact identity\/digest/i);
   assert.match(execute, /matching Approval/i);
@@ -64,7 +64,7 @@ test("artifact documentation keeps legacy layouts non-canonical", () => {
   assert.match(documentation, /plan\.md/);
   assert.match(documentation, /risk-and-rollback\.md/);
   assert.match(documentation, /verification\.md/);
-  assert.match(documentation, /supported repository choices, not canonical mode\s+requirements/i);
-  assert.match(documentation, /no canonical filename or monolithic Markdown template/i);
-  assert.match(documentation, /Physical separation is policy-selected, not lifecycle-selected/i);
+  assert.match(documentation, /repository choices only/i);
+  assert.match(documentation, /non-canonical/i);
+  assert.match(documentation, /cannot replace persisted contract\s+identity\/digest/i);
 });

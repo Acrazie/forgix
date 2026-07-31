@@ -6,7 +6,6 @@ import type {
   BenchmarkDeviationFact,
   BenchmarkRecord,
   BenchmarkSurveyAnswers,
-  TaskMode,
   TaskState
 } from "./types.js";
 
@@ -32,12 +31,11 @@ export interface BenchmarkAuthority {
 
 export interface CreateBenchmarkRecordInput {
   taskId: string;
-  mode: TaskMode;
+  preparationProfile: "quick" | "plan";
   outcome: BenchmarkRecord["outcome"];
   survey: BenchmarkSurveyAnswers;
   actual: BenchmarkActualSurface;
-  intakeBrief?: BenchmarkAuthority;
-  approvedChangeArtifact?: BenchmarkAuthority;
+  canonicalChangeContract: BenchmarkAuthority;
   recordedAt?: string;
 }
 
@@ -59,17 +57,15 @@ export function createBenchmarkRecord(input: CreateBenchmarkRecordInput): Benchm
   assertSafeTaskId(input.taskId);
   if (!ELIGIBLE_OUTCOMES.has(input.outcome)) throw new Error("Benchmark survey is available only after finished_local, finished, or failed.");
   const survey = validateSurvey(input.survey);
-  const authority = input.mode === "quick" ? input.intakeBrief : input.approvedChangeArtifact;
-  if (!authority) throw new Error(input.mode === "quick"
-    ? "Quick benchmark requires Intake Brief authority."
-    : "Standard/Critical benchmark requires approved Change Artifact authority.");
+  const authority = input.canonicalChangeContract;
+  if (!authority) throw new Error("Benchmark requires canonical Shape contract authority.");
   return {
     schemaVersion: 1,
     taskId: input.taskId,
     recordedAt: normalizeAt(input.recordedAt),
-    mode: input.mode,
+    preparationProfile: input.preparationProfile,
     outcome: input.outcome,
-    authority: input.mode === "quick" ? "intake_brief" : "approved_change_artifact",
+    authority: "canonical_change_contract",
     survey,
     deviations: classifyBenchmarkDeviations(authority, input.actual)
   };
@@ -252,7 +248,7 @@ function sanitizeBenchmarkRecord(value: unknown): BenchmarkRecord {
     schemaVersion: 1,
     taskId: value.taskId,
     recordedAt: value.recordedAt,
-    mode: value.mode,
+    preparationProfile: value.preparationProfile,
     outcome: value.outcome,
     authority: value.authority,
     survey: validateSurvey(value.survey),
@@ -263,15 +259,14 @@ function sanitizeBenchmarkRecord(value: unknown): BenchmarkRecord {
 function validateRecord(value: unknown): asserts value is BenchmarkRecord {
   if (!isRecord(value)) throw new Error("Benchmark record must be an object.");
   const keys = Object.keys(value);
-  const allowed = new Set(["schemaVersion", "taskId", "recordedAt", "mode", "outcome", "authority", "survey", "deviations"]);
+  const allowed = new Set(["schemaVersion", "taskId", "recordedAt", "preparationProfile", "outcome", "authority", "survey", "deviations"]);
   if (keys.some((key) => !allowed.has(key))) throw new Error("Benchmark record contains unsupported data.");
   if (value.schemaVersion !== 1 || typeof value.taskId !== "string") throw new Error("Benchmark record identity is invalid.");
   assertSafeTaskId(value.taskId);
   if (typeof value.recordedAt !== "string" || Number.isNaN(Date.parse(value.recordedAt))) throw new Error("Benchmark recordedAt is invalid.");
-  if (!["quick", "standard", "critical"].includes(value.mode as string)) throw new Error("Benchmark mode is invalid.");
+  if (!["quick", "plan"].includes(value.preparationProfile as string)) throw new Error("Benchmark preparation profile is invalid.");
   if (typeof value.outcome !== "string" || !ELIGIBLE_OUTCOMES.has(value.outcome)) throw new Error("Benchmark outcome is invalid.");
-  const expectedAuthority = value.mode === "quick" ? "intake_brief" : "approved_change_artifact";
-  if (value.authority !== expectedAuthority) throw new Error("Benchmark authority does not match mode.");
+  if (value.authority !== "canonical_change_contract") throw new Error("Benchmark authority must be canonical Shape contract.");
   validateSurvey(value.survey as BenchmarkSurveyAnswers);
   if (!Array.isArray(value.deviations) || value.deviations.length > MAX_FILES + 2) throw new Error("Benchmark deviations are invalid.");
   for (const deviation of value.deviations) {

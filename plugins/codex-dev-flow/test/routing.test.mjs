@@ -41,22 +41,22 @@ const standardMatrix = {
   }
 };
 
-test("standard routing matches every skill and subscription cell", async () => {
+test("profile-neutral routing matches every skill and subscription cell", async () => {
   const { chooseRoute } = await import(bundle);
   for (const [plan, routes] of Object.entries(standardMatrix)) {
     for (const [stage, [model, effort]] of Object.entries(routes)) {
-      const decision = chooseRoute(snapshot(plan), { stage, risk: "medium", ambiguity: "medium", mode: "standard" });
+      const decision = chooseRoute(snapshot(plan), { stage, risk: "medium", ambiguity: "medium" });
       assert.equal(decision.model, model, `${plan}/${stage} model`);
       assert.equal(decision.effort, effort, `${plan}/${stage} effort`);
     }
   }
 });
 
-test("quick lowers and critical or high-risk work raises effort within low..xhigh", async () => {
+test("risk or ambiguity raises effort; preparation profile never affects routing", async () => {
   const { chooseRoute } = await import(bundle);
-  assert.equal(chooseRoute(snapshot("plus"), { stage: "plan", risk: "medium", ambiguity: "medium", mode: "quick" }).effort, "low");
-  assert.equal(chooseRoute(snapshot("plus"), { stage: "plan", risk: "medium", ambiguity: "medium", mode: "critical" }).effort, "high");
-  assert.equal(chooseRoute(snapshot("pro_20x"), { stage: "plan", risk: "critical", ambiguity: "medium", mode: "standard" }).effort, "xhigh");
+  assert.equal(chooseRoute(snapshot("plus"), { stage: "plan", risk: "medium", ambiguity: "medium" }).effort, "medium");
+  assert.equal(chooseRoute(snapshot("plus"), { stage: "plan", risk: "high", ambiguity: "medium" }).effort, "high");
+  assert.equal(chooseRoute(snapshot("pro_20x"), { stage: "plan", risk: "critical", ambiguity: "medium" }).effort, "xhigh");
 });
 
 test("initial quota pressure deterministically lowers the effective subscription row", async () => {

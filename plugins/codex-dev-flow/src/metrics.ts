@@ -5,8 +5,7 @@ import {
   REASONING_EFFORTS,
   type ModelId,
   type QuotaPressure,
-  type ReasoningEffort,
-  type TaskMode
+  type ReasoningEffort
 } from "./types.js";
 
 export const LIFECYCLE_METRICS = Object.freeze([
@@ -29,7 +28,10 @@ export const LIFECYCLE_METRICS = Object.freeze([
   "intake_recommendations_modified",
   "intake_zero_question_paths",
   "intake_late_reopenings",
-  "mode_changes",
+  "shape_discovery_sessions",
+  "shape_planning_sessions",
+  "shape_targeted_invalidations",
+  "shape_evidence_reuses",
   "routing_decisions",
   "gates",
   "blocks",
@@ -54,7 +56,7 @@ export type MetricSource =
 
 export interface LifecycleMetricEventInput {
   runId: string;
-  mode: TaskMode;
+  preparationProfile: "quick" | "plan" | "unselected";
   phase: MacroPhase;
   metric: LifecycleMetric;
   value: number;
@@ -99,7 +101,7 @@ export interface TokenUsageObservation {
 
 export interface TraceSummaryInput {
   runId: string;
-  mode: TaskMode;
+  preparationProfile: "quick" | "plan" | "unselected";
   source: "contract_fixture" | "runtime";
   statuses: readonly TaskStatus[];
   tokenUsage?: TokenUsageObservation;
@@ -111,7 +113,7 @@ export interface TraceSummaryInput {
 export interface LifecycleTraceSummary {
   schemaVersion: 1;
   sampleIdHash: string;
-  mode: TaskMode;
+  preparationProfile: "quick" | "plan" | "unselected";
   source: "contract_fixture" | "runtime";
   statuses: TaskStatus[];
   phases: MacroPhase[];
@@ -141,7 +143,7 @@ export interface BaselineReport {
 }
 
 const EVENT_KEYS = new Set([
-  "runId", "mode", "phase", "metric", "value", "measurement", "source", "sequence", "occurredAtEpochMs",
+  "runId", "preparationProfile", "phase", "metric", "value", "measurement", "source", "sequence", "occurredAtEpochMs",
   "model", "effort", "quotaPressure"
 ]);
 const TOKEN_METRICS = new Set<LifecycleMetric>(["input_tokens", "output_tokens"]);
@@ -149,8 +151,8 @@ const TOKEN_METRICS = new Set<LifecycleMetric>(["input_tokens", "output_tokens"]
 export function createLifecycleMetricEvent(input: LifecycleMetricEventInput): LifecycleMetricEvent {
   const unknown = Object.keys(input).filter((key) => !EVENT_KEYS.has(key));
   if (unknown.length) throw new Error(`Unknown metric event fields: ${unknown.join(", ")}.`);
-  if (!isUuid(input.runId) || !isTaskMode(input.mode) || !(MACRO_PHASES as readonly string[]).includes(input.phase)) {
-    throw new Error("Metric event identity, mode, or phase is invalid.");
+  if (!isUuid(input.runId) || !isPreparationProfile(input.preparationProfile) || !(MACRO_PHASES as readonly string[]).includes(input.phase)) {
+    throw new Error("Metric event identity, preparation profile, or phase is invalid.");
   }
   if (!(LIFECYCLE_METRICS as readonly string[]).includes(input.metric) || !nonNegativeFinite(input.value)) {
     throw new Error("Metric event metric or value is invalid.");
@@ -162,7 +164,7 @@ export function createLifecycleMetricEvent(input: LifecycleMetricEventInput): Li
   return {
     schemaVersion: 1,
     runId: input.runId,
-    mode: input.mode,
+    preparationProfile: input.preparationProfile,
     phase: input.phase,
     metric: input.metric,
     value: input.value,
@@ -191,8 +193,8 @@ export function tryCreateLifecycleMetricEvent(input: unknown):
 }
 
 export function summarizeLifecycleTrace(input: TraceSummaryInput): LifecycleTraceSummary {
-  if (!nonEmpty(input.runId) || !isTaskMode(input.mode) || !["contract_fixture", "runtime"].includes(input.source)) {
-    throw new Error("Trace identity, mode, or source is invalid.");
+  if (!nonEmpty(input.runId) || !isPreparationProfile(input.preparationProfile) || !["contract_fixture", "runtime"].includes(input.source)) {
+    throw new Error("Trace identity, preparation profile, or source is invalid.");
   }
   if (input.source === "runtime" && !isUuid(input.runId)) throw new Error("Runtime trace requires opaque UUID runId.");
   if (!Array.isArray(input.statuses) || input.statuses.length < 2 || input.statuses[0] !== "new") {
@@ -203,9 +205,8 @@ export function summarizeLifecycleTrace(input: TraceSummaryInput): LifecycleTrac
     if (!isTaskStatus(status)) throw new Error(`Unknown lifecycle status ${String(status)}.`);
     if (index === 0) continue;
     const from = statuses[index - 1] as TaskStatus;
-    const contract = (STATE_MACHINE[from].transitions as Record<string, { modes: readonly TaskMode[] }>)[status];
+    const contract = (STATE_MACHINE[from].transitions as Record<string, { guards: readonly string[] }>)[status];
     if (!contract) throw new Error(`Lifecycle trace edge ${from} -> ${status} is illegal.`);
-    if (!contract.modes.includes(input.mode)) throw new Error(`Lifecycle trace edge ${from} -> ${status} is illegal for mode ${input.mode}.`);
   }
   const terminalStatus = statuses.at(-1) as TaskStatus;
   if (!STATE_MACHINE[terminalStatus].stable && !STATE_MACHINE[terminalStatus].terminal) {
@@ -225,7 +226,7 @@ export function summarizeLifecycleTrace(input: TraceSummaryInput): LifecycleTrac
   return {
     schemaVersion: 1,
     sampleIdHash: sha256(input.runId),
-    mode: input.mode,
+    preparationProfile: input.preparationProfile,
     source: input.source,
     statuses,
     phases,
@@ -272,33 +273,33 @@ export function validateBaselineReport(value: unknown): { valid: boolean; errors
   if (!Array.isArray(limitations) || JSON.stringify(limitations) !== JSON.stringify(allowedLimitations)) errors.push("limitations are invalid");
   if (!Array.isArray(value.samples) || value.samples.length !== 3) errors.push("baseline requires exactly three samples");
   else {
-    const modes: string[] = [];
-    for (const [index, sample] of value.samples.entries()) validateSummary(sample, index, modes, errors);
-    if (modes.join(",") !== "quick,standard,critical") errors.push("samples must cover quick, standard, critical in order");
+    const profiles: string[] = [];
+    for (const [index, sample] of value.samples.entries()) validateSummary(sample, index, profiles, errors);
+    if (!profiles.includes("quick") || !profiles.includes("plan")) errors.push("samples must cover quick and plan");
   }
   return { valid: errors.length === 0, errors };
 }
 
-function validateSummary(value: unknown, index: number, modes: string[], errors: string[]): void {
+function validateSummary(value: unknown, index: number, profiles: string[], errors: string[]): void {
   if (!isRecord(value)) {
     errors.push(`sample ${index} must be an object`);
     return;
   }
   exactKeys(value, [
-    "schemaVersion", "sampleIdHash", "mode", "source", "statuses", "phases", "transitions", "gates", "blocks", "resumes",
+    "schemaVersion", "sampleIdHash", "preparationProfile", "source", "statuses", "phases", "transitions", "gates", "blocks", "resumes",
     "validationRuns", "reviewRuns", "buildResolutionCycles", "assureResolutionCycles", "terminalStatus", "falseSuccessDetections", "falseSuccessDetectionSource", "tokenUsage", "latency"
   ], `sample ${index}`, errors);
-  if (value.schemaVersion !== 1 || !isTaskMode(value.mode) || value.source !== "contract_fixture" || !/^[a-f0-9]{64}$/.test(String(value.sampleIdHash))) {
+  if (value.schemaVersion !== 1 || !isPreparationProfile(value.preparationProfile) || value.source !== "contract_fixture" || !/^[a-f0-9]{64}$/.test(String(value.sampleIdHash))) {
     errors.push(`sample ${index} identity is invalid`);
     return;
   }
-  modes.push(value.mode);
+  profiles.push(value.preparationProfile as string);
   if (!Number.isInteger(value.falseSuccessDetections) || Number(value.falseSuccessDetections) < 0) errors.push(`sample ${index} falseSuccessDetections is invalid`);
   if (value.falseSuccessDetectionSource !== "contract_tests") errors.push(`sample ${index} falseSuccessDetectionSource is invalid`);
   try {
     const rebuilt = summarizeLifecycleTrace({
       runId: "validation-placeholder",
-      mode: value.mode,
+      preparationProfile: value.preparationProfile as "quick" | "plan" | "unselected",
       source: value.source,
       statuses: value.statuses as TaskStatus[],
       falseSuccessDetections: value.falseSuccessDetections as number,
@@ -327,7 +328,7 @@ function validateMeasurementSource(metric: LifecycleMetric, measurement: MetricM
       "review_lanes", "human_confirmations", "routing_decisions", "intake_questions",
       "intake_questions_avoided", "intake_recommendations_accepted",
       "intake_recommendations_modified", "intake_zero_question_paths",
-      "intake_late_reopenings", "mode_changes"
+      "intake_late_reopenings", "shape_discovery_sessions", "shape_planning_sessions", "shape_targeted_invalidations", "shape_evidence_reuses"
     ].includes(metric) && measurement === "measured" && source === "orchestrator_counter")
     || (["validation_runs", "correction_cycles", "gates", "blocks", "transition_errors"].includes(metric) && measurement === "measured" && source === "state_history");
   if (!valid) throw new Error(`Metric ${metric} measurement/source mismatch.`);
@@ -388,8 +389,8 @@ function isUnavailable(value: unknown): boolean {
   return isRecord(value) && Object.keys(value).length === 1 && value.availability === "unavailable";
 }
 
-function isTaskMode(value: unknown): value is TaskMode {
-  return value === "quick" || value === "standard" || value === "critical";
+function isPreparationProfile(value: unknown): value is "quick" | "plan" | "unselected" {
+  return value === "quick" || value === "plan" || value === "unselected";
 }
 
 function isIsoDate(value: unknown): boolean {

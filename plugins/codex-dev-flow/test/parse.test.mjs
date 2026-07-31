@@ -7,21 +7,19 @@ test("parses an unclassified run objective", async () => {
   const { parseInvocation } = await import(bundle);
   assert.deepEqual(parseInvocation(["rename", "the", "DTO"]), {
     command: "run",
-    mode: undefined,
     objective: "rename the DTO",
     flags: {}
   });
 });
 
-test("parses explicit modes and read-only subcommands", async () => {
+test("treats legacy mode words as objective text and parses read-only subcommands", async () => {
   const { parseInvocation } = await import(bundle);
   assert.deepEqual(parseInvocation(["init"]), {
     command: "init"
   });
   assert.deepEqual(parseInvocation(["critical", "migrate", "sessions"]), {
     command: "run",
-    mode: "critical",
-    objective: "migrate sessions",
+    objective: "critical migrate sessions",
     flags: {}
   });
   assert.deepEqual(parseInvocation(["resume", "task-42"]), {

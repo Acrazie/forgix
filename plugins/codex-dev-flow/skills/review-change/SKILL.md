@@ -10,8 +10,8 @@ identity/digest; report uncovered criteria and unapproved deviations.
 
 Return lane applicability, structured findings, and freshness/invalidation references.
 Each finding includes stable identity inputs, severity, symbolic location, evidence,
-impact, reproduction, fix, and confidence. Standard uses one structured review. Critical
-uses independent lanes by applicable risk; omission requires evidence-backed N/A and
+impact, reproduction, fix, and confidence. Review depth and lane count derive from
+applicable risk/policy, never Quick/Plan profile. Omission requires evidence-backed N/A;
 ambiguity activates lane. Reviewers never write. Known deterministic failure blocks
 expensive review. Limit global review to three cycles.
 
