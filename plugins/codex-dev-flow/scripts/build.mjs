@@ -1,17 +1,35 @@
 import { build } from "esbuild";
-import { chmod } from "node:fs/promises";
+import { chmod, mkdir, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-await build({
-  bundle: true,
-  entryPoints: ["src/cli.ts"],
-  format: "esm",
-  outfile: "dist/dev-flow.mjs",
-  platform: "node",
-  sourcemap: false,
-  target: "node22.18",
-  banner: {
-    js: '#!/usr/bin/env node\nimport { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
-  },
-});
+const OUTPUT_PATH = "dist/dev-flow.mjs";
 
-await chmod("dist/dev-flow.mjs", 0o755);
+export async function createDistributionBundle() {
+  const result = await build({
+    bundle: true,
+    entryPoints: ["src/cli.ts"],
+    format: "esm",
+    outfile: OUTPUT_PATH,
+    platform: "node",
+    sourcemap: false,
+    target: "node22.18",
+    write: false,
+    banner: {
+      js: '#!/usr/bin/env node\nimport { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
+    },
+  });
+  const output = result.outputFiles[0];
+  if (!output) throw new Error("esbuild did not produce the distribution bundle.");
+  return output.contents;
+}
+
+export async function writeDistributionBundle() {
+  const contents = await createDistributionBundle();
+  await mkdir("dist", { recursive: true });
+  await writeFile(OUTPUT_PATH, contents);
+  await chmod(OUTPUT_PATH, 0o755);
+}
+
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : undefined;
+if (invokedPath === fileURLToPath(import.meta.url)) await writeDistributionBundle();

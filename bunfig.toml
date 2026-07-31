@@ -1,0 +1,3 @@
+[test]
+randomize = true
+retry = 0

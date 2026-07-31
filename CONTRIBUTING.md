@@ -46,7 +46,7 @@ plugins/codex-dev-flow/
   skills/                              Workflow reasoning and stage guidance
   src/                                 Deterministic runtime behavior
   schemas/                             Configuration, policy, and state schemas
-  test/                                Node.js test suite
+  test/                                Bun unit, integration, support, and fixtures
   docs/                                Design, ADRs, glossary, and plans
 ```
 
@@ -86,8 +86,9 @@ Architecture changes should update [the design document](./plugins/codex-dev-flo
 
 ## Tests
 
-Runtime tests currently use Node.js's built-in test runner. Release orchestration and
-repository tooling tests use Bun.
+Plugin and repository tooling tests use `bun:test`. Plugin tests are split between
+source-oriented unit tests and integration tests for composition, filesystem, process,
+bundle, and package boundaries.
 
 Prefer tests that assert public behavior or stable invariants. Avoid coupling tests to incidental implementation details.
 
@@ -103,6 +104,8 @@ bun run test:tools
 bun run build
 bun run --cwd plugins/codex-dev-flow typecheck
 bun run --cwd plugins/codex-dev-flow test
+bun run --cwd plugins/codex-dev-flow test:coverage
+bun run --cwd plugins/codex-dev-flow test:randomization
 bun run --cwd plugins/codex-dev-flow release:test
 bun run check
 ```

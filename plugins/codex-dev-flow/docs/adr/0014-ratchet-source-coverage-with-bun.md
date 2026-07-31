@@ -40,3 +40,12 @@ Coverage is a Full Gate signal. The Fast Gate does not collect it.
   the Runtime Smoke Suite.
 - Test or source-scope changes that legitimately alter measurement require an explicit
   baseline review.
+
+## Implementation note
+
+Bun 1.3.14 reports and enforces line and function coverage, but its installed text and
+LCOV reporters do not expose statement coverage and its documented statement threshold
+key does not affect the gate. PR2 therefore records statement coverage as unavailable
+rather than claiming a false signal. Per-file line and function floors are enforced and
+the measured aggregate is recorded. Statement enforcement remains required when Bun
+exposes a verifiable metric.
