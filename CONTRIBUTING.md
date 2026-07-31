@@ -13,7 +13,7 @@ Thanks for helping improve Codex Dev Flow. This guide covers repository developm
 
 ```bash
 git clone https://github.com/Acrazie/codex-dev-flow.git
-cd codex-dev-flow/plugins/codex-dev-flow
+cd codex-dev-flow
 bun install --frozen-lockfile
 bun run check
 ```
@@ -29,12 +29,18 @@ codex-dev-flow init
 
 End users should run `npx codex-dev-flow init`; `npm link` is not part of the published installation flow.
 
-`bun run check` runs TypeScript checks, creates the bundled ESM distribution, and executes the test suite.
+The root installation also activates the Husky pre-commit hook. `bun run check` verifies
+formatting, runs native and type-aware linting, checks tool scripts, builds the bundled
+ESM distribution, and executes every current test suite.
 
 ## Repository layout
 
 ```text
 .agents/plugins/marketplace.json       Local marketplace catalog
+.github/workflows/                    Repository CI
+.husky/                               Git hooks
+scripts/                              Repository quality tooling
+test/                                 Repository tooling tests
 plugins/codex-dev-flow/
   .codex-plugin/plugin.json            Plugin manifest
   skills/                              Workflow reasoning and stage guidance
@@ -57,14 +63,13 @@ Keep `$dev-flow` as the only public workflow. Internal stage skills are implemen
 5. Run the complete verification command.
 
 ```bash
-cd plugins/codex-dev-flow
 bun run check
 ```
 
 For configuration work, also validate the built CLI:
 
 ```bash
-node dist/dev-flow.mjs config validate --json
+node plugins/codex-dev-flow/dist/dev-flow.mjs config validate --json
 ```
 
 ## Design constraints
@@ -81,19 +86,30 @@ Architecture changes should update [the design document](./plugins/codex-dev-flo
 
 ## Tests
 
-Runtime tests use Node.js's built-in test runner. Release orchestration tests use Bun.
+Runtime tests currently use Node.js's built-in test runner. Release orchestration and
+repository tooling tests use Bun.
 
 Prefer tests that assert public behavior or stable invariants. Avoid coupling tests to incidental implementation details.
 
 Useful commands:
 
 ```bash
-bun run typecheck
+bun run format
+bun run format:check
+bun run lint
+bun run lint:type-aware
+bun run typecheck:tools
+bun run test:tools
 bun run build
-bun run test
-bun run release:test
+bun run --cwd plugins/codex-dev-flow typecheck
+bun run --cwd plugins/codex-dev-flow test
+bun run --cwd plugins/codex-dev-flow release:test
 bun run check
 ```
+
+The pre-commit hook runs `bun run check:staged`. Its small Bun adapter passes only staged,
+supported files to Oxfmt in check-only mode and native Oxlint. It never formats files or
+mutates the index; the complete root check remains the authoritative gate.
 
 ## Releases
 

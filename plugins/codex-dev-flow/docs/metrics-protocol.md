@@ -30,17 +30,17 @@ Every numeric observation is one of:
 
 Allowed source bindings:
 
-| Metric | Measurement | Source |
-| --- | --- | --- |
-| `input_tokens`, `output_tokens` | `measured` | `native_token_api` |
-| `input_tokens`, `output_tokens` | `estimated` | `explicit_token_estimate` |
-| `token_proxy_context_bytes` | `estimated` | `context_bytes_proxy` |
-| `latency_ms` | `measured` | `monotonic_clock` |
-| `false_success_detections` | `measured` | `operator_audit` |
-| structural lifecycle counters | `measured` | `state_history` |
-| model/delegation/context/capsule counters | `measured` | `orchestrator_counter` |
-| INTAKE questions/avoided/recommendation/zero-path/reopen counters | `measured` | `orchestrator_counter` |
-| SHAPE Discovery/Planning session, targeted invalidation, and evidence reuse counters | `measured` | `orchestrator_counter` |
+| Metric                                                                               | Measurement | Source                    |
+| ------------------------------------------------------------------------------------ | ----------- | ------------------------- |
+| `input_tokens`, `output_tokens`                                                      | `measured`  | `native_token_api`        |
+| `input_tokens`, `output_tokens`                                                      | `estimated` | `explicit_token_estimate` |
+| `token_proxy_context_bytes`                                                          | `estimated` | `context_bytes_proxy`     |
+| `latency_ms`                                                                         | `measured`  | `monotonic_clock`         |
+| `false_success_detections`                                                           | `measured`  | `operator_audit`          |
+| structural lifecycle counters                                                        | `measured`  | `state_history`           |
+| model/delegation/context/capsule counters                                            | `measured`  | `orchestrator_counter`    |
+| INTAKE questions/avoided/recommendation/zero-path/reopen counters                    | `measured`  | `orchestrator_counter`    |
+| SHAPE Discovery/Planning session, targeted invalidation, and evidence reuse counters | `measured`  | `orchestrator_counter`    |
 
 Missing token or latency telemetry is `unavailable`, never numeric zero. Estimated data
 cannot be combined with measured data without retaining both labels and sources.

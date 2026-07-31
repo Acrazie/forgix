@@ -10,8 +10,8 @@ await build({
   sourcemap: false,
   target: "node22.18",
   banner: {
-    js: '#!/usr/bin/env node\nimport { createRequire } from "node:module"; const require = createRequire(import.meta.url);'
-  }
+    js: '#!/usr/bin/env node\nimport { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
+  },
 });
 
 await chmod("dist/dev-flow.mjs", 0o755);

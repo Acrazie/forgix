@@ -37,6 +37,7 @@
 ## Task 1: Establish Plugin and Distribution Contract
 
 **Files:**
+
 - Create .codex-plugin/plugin.json, package.json, package-lock.json, tsconfig.json, scripts/build.mjs, README.md, .gitignore, and .github/workflows/ci.yml.
 - Create test/distribution.test.ts.
 
@@ -53,6 +54,7 @@
 ## Task 2: Define Versioned Contracts, Schemas, and Exit Codes
 
 **Files:**
+
 - Create src/types.ts, src/exit-codes.ts, schemas/config.schema.json, schemas/policy.schema.json, schemas/state.schema.json.
 - Create test/schema.test.ts and test/exit-codes.test.ts.
 
@@ -68,6 +70,7 @@
 ## Task 3: Implement Deterministic Public Command Parsing
 
 **Files:**
+
 - Create src/parse.ts and src/cli.ts.
 - Create test/parse.test.ts.
 
@@ -83,6 +86,7 @@
 ## Task 4: Resolve Configuration and Enforce Policy
 
 **Files:**
+
 - Create src/config.ts, src/policy.ts, and src/commands.ts.
 - Create test/config.test.ts and test/policy.test.ts.
 
@@ -99,6 +103,7 @@
 ## Task 5: Implement State, Resume Safety, and Artifacts
 
 **Files:**
+
 - Create src/state.ts and src/artifacts.ts.
 - Create test/state.test.ts and test/artifacts.test.ts.
 
@@ -115,6 +120,7 @@
 ## Task 6: Implement Fingerprints and Escalation
 
 **Files:**
+
 - Create src/fingerprint.ts.
 - Create test/fingerprint.test.ts.
 
@@ -131,6 +137,7 @@
 ## Task 7: Implement Worktree and Finish Decisions
 
 **Files:**
+
 - Create src/worktree.ts.
 - Modify src/commands.ts and src/state.ts.
 - Create test/worktree.test.ts and test/finish.test.ts.
@@ -148,6 +155,7 @@
 ## Task 8: Package the Public Orchestrator and Internal Skills
 
 **Files:**
+
 - Create every named skills directory and SKILL.md.
 - Create skills/dev-flow/agents/openai.yaml.
 - Create test/skill-contract.test.ts.
@@ -164,6 +172,7 @@
 ## Task 9: Add Node Discovery Fixture
 
 **Files:**
+
 - Create test/fixtures/node-project/package.json and AGENTS.md.
 - Create test/discovery.test.ts.
 - Modify src/commands.ts.
@@ -178,6 +187,7 @@
 ## Task 10: Verify and Prepare V1
 
 **Files:**
+
 - Modify README.md, package.json, and CI.
 - Create test/release.test.ts.
 

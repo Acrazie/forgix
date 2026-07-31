@@ -5,20 +5,70 @@ import { buildBaselineReport } from "../dist/dev-flow.mjs";
 
 const pluginRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const output = join(pluginRoot, "docs", "baselines", "2026-07-18-p0-lifecycle.json");
-const common = { source: "contract_fixture", falseSuccessDetections: 0, falseSuccessDetectionSource: "contract_tests" };
-const quick = ["new", "intaking", "discovering", "awaiting_profile_choice", "planning", "awaiting_approval", "executing", "validating", "verifying", "finished_local"];
-const plan = ["new", "intaking", "discovering", "awaiting_profile_choice", "planning", "awaiting_approval", "executing", "validating", "reviewing", "verifying", "finished_local"];
+const common = {
+  source: "contract_fixture",
+  falseSuccessDetections: 0,
+  falseSuccessDetectionSource: "contract_tests",
+};
+const quick = [
+  "new",
+  "intaking",
+  "discovering",
+  "awaiting_profile_choice",
+  "planning",
+  "awaiting_approval",
+  "executing",
+  "validating",
+  "verifying",
+  "finished_local",
+];
+const plan = [
+  "new",
+  "intaking",
+  "discovering",
+  "awaiting_profile_choice",
+  "planning",
+  "awaiting_approval",
+  "executing",
+  "validating",
+  "reviewing",
+  "verifying",
+  "finished_local",
+];
 const report = buildBaselineReport({
   baselineId: "p0-shape-v3-contract-fixture",
   capturedAt: "2026-07-29T00:00:00.000Z",
   contractVersion: "P0",
   source: "contract_fixture",
-  limitations: ["contract_fixture_not_runtime", "token_telemetry_unavailable", "latency_telemetry_unavailable"],
+  limitations: [
+    "contract_fixture_not_runtime",
+    "token_telemetry_unavailable",
+    "latency_telemetry_unavailable",
+  ],
   traces: [
     { ...common, runId: "fixture-quick", preparationProfile: "quick", statuses: quick },
     { ...common, runId: "fixture-plan", preparationProfile: "plan", statuses: plan },
-    { ...common, runId: "fixture-plan-block-resume", preparationProfile: "plan", statuses: ["new", "intaking", "discovering", "awaiting_profile_choice", "planning", "awaiting_approval", "executing", "blocked", "executing", "validating", "reviewing", "verifying", "finished_local"] }
-  ]
+    {
+      ...common,
+      runId: "fixture-plan-block-resume",
+      preparationProfile: "plan",
+      statuses: [
+        "new",
+        "intaking",
+        "discovering",
+        "awaiting_profile_choice",
+        "planning",
+        "awaiting_approval",
+        "executing",
+        "blocked",
+        "executing",
+        "validating",
+        "reviewing",
+        "verifying",
+        "finished_local",
+      ],
+    },
+  ],
 });
 await writeFile(output, `${JSON.stringify(report, null, 2)}\n`);
 console.log(output);

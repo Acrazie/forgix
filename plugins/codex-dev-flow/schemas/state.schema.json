@@ -31,12 +31,7 @@
       "minimum": 0
     },
     "risk": {
-      "enum": [
-        "low",
-        "medium",
-        "high",
-        "critical"
-      ]
+      "enum": ["low", "medium", "high", "critical"]
     },
     "shape": {
       "$ref": "#/$defs/shapeState"
@@ -48,10 +43,7 @@
       "$ref": "#/$defs/verificationRequirements"
     },
     "pendingGate": {
-      "enum": [
-        "pre_build",
-        "completion"
-      ]
+      "enum": ["pre_build", "completion"]
     },
     "resumeTo": {
       "$ref": "#/$defs/resumeTarget"
@@ -128,14 +120,10 @@
             "const": "blocked"
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "then": {
-        "required": [
-          "resumeTo"
-        ],
+        "required": ["resumeTo"],
         "properties": {
           "resumeTo": {
             "$ref": "#/$defs/resumeTarget"
@@ -154,14 +142,10 @@
             "const": "ready_for_handoff"
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "then": {
-        "required": [
-          "resumeTo"
-        ],
+        "required": ["resumeTo"],
         "properties": {
           "resumeTo": {
             "const": "handing_off"
@@ -178,22 +162,15 @@
         "properties": {
           "status": {
             "not": {
-              "enum": [
-                "blocked",
-                "ready_for_handoff"
-              ]
+              "enum": ["blocked", "ready_for_handoff"]
             }
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "then": {
         "not": {
-          "required": [
-            "resumeTo"
-          ]
+          "required": ["resumeTo"]
         }
       }
     },
@@ -204,21 +181,13 @@
             "const": "awaiting_approval"
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "then": {
-        "required": [
-          "pendingGate",
-          "contractDigest"
-        ],
+        "required": ["pendingGate", "contractDigest"],
         "properties": {
           "pendingGate": {
-            "enum": [
-              "pre_build",
-              "completion"
-            ]
+            "enum": ["pre_build", "completion"]
           },
           "contractDigest": {
             "$ref": "#/$defs/text"
@@ -249,14 +218,10 @@
             ]
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "then": {
-        "required": [
-          "shape"
-        ],
+        "required": ["shape"],
         "properties": {
           "shape": {
             "$ref": "#/$defs/shapeState"
@@ -321,10 +286,7 @@
     "historyReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "ref"
-      ],
+      "required": ["kind", "ref"],
       "properties": {
         "kind": {
           "enum": [
@@ -361,12 +323,7 @@
     "workflowEvent": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "sequence",
-        "at",
-        "type",
-        "refs"
-      ],
+      "required": ["sequence", "at", "type", "refs"],
       "properties": {
         "sequence": {
           "type": "integer",
@@ -418,15 +375,7 @@
     "transitionEvent": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "sequence",
-        "at",
-        "type",
-        "from",
-        "to",
-        "revision",
-        "sourceFingerprint"
-      ],
+      "required": ["sequence", "at", "type", "from", "to", "revision", "sourceFingerprint"],
       "properties": {
         "sequence": {
           "type": "integer",
@@ -458,10 +407,7 @@
           "$ref": "#/$defs/resumeTarget"
         },
         "gateContext": {
-          "enum": [
-            "pre_build",
-            "completion"
-          ]
+          "enum": ["pre_build", "completion"]
         },
         "contractDigest": {
           "$ref": "#/$defs/text"
@@ -526,11 +472,7 @@
     "activeArtifact": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "artifactId",
-        "ownerRef",
-        "fingerprint"
-      ],
+      "required": ["artifactId", "ownerRef", "fingerprint"],
       "properties": {
         "artifactId": {
           "$ref": "#/$defs/text"
@@ -546,10 +488,7 @@
     "activeWorktree": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "worktreeRef",
-        "gitFingerprint"
-      ],
+      "required": ["worktreeRef", "gitFingerprint"],
       "properties": {
         "worktreeRef": {
           "$ref": "#/$defs/text"
@@ -654,10 +593,7 @@
           "minimum": 0
         },
         "blockedReason": {
-          "enum": [
-            "semantic_output_invalid",
-            "answer_required"
-          ]
+          "enum": ["semantic_output_invalid", "answer_required"]
         },
         "metrics": {
           "$ref": "#/$defs/intakeMetrics"
@@ -667,12 +603,7 @@
     "intakeBrief": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "schemaVersion",
-        "risk",
-        "provenance",
-        "technicalUnknowns"
-      ],
+      "required": ["schemaVersion", "risk", "provenance", "technicalUnknowns"],
       "properties": {
         "schemaVersion": {
           "const": 1
@@ -684,12 +615,7 @@
           "type": "object"
         },
         "risk": {
-          "enum": [
-            "low",
-            "medium",
-            "high",
-            "critical"
-          ]
+          "enum": ["low", "medium", "high", "critical"]
         },
         "provenance": {
           "type": "object"
@@ -742,12 +668,7 @@
           "const": 1
         },
         "risk": {
-          "enum": [
-            "low",
-            "medium",
-            "high",
-            "critical"
-          ]
+          "enum": ["low", "medium", "high", "critical"]
         },
         "intakeBriefRef": {
           "$ref": "#/$defs/text"

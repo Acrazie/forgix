@@ -15,7 +15,9 @@ test("loads user, repository, local, and flags sources in precedence order", asy
   await writeFile(join(home, ".codex", "dev-flow.yaml"), "subscription:\n  plan: plus\n");
   await writeFile(join(root, ".codex", "dev-flow.yaml"), "subscription:\n  plan: pro_5x\n");
   await writeFile(join(root, ".codex", "dev-flow.local.yaml"), "subscription:\n  plan: pro_20x\n");
-  const resolved = resolveConfig(loadConfigSources({ cwd: root, home, flags: { subscription: { plan: "plus" } } }));
+  const resolved = resolveConfig(
+    loadConfigSources({ cwd: root, home, flags: { subscription: { plan: "plus" } } }),
+  );
   assert.equal(resolved.value.subscription.plan, "plus");
   assert.equal(resolved.provenance["subscription.plan"], "flags");
 });

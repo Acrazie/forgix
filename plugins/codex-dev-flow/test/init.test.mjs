@@ -25,7 +25,7 @@ function scriptedPrompts({ selects = [], texts = [], confirms = [] } = {}) {
       if (error) throw new Error(`Invalid scripted answer: ${error}`);
       return value;
     },
-    confirm: async (options) => confirms[confirmIndex++] ?? options.initialValue
+    confirm: async (options) => confirms[confirmIndex++] ?? options.initialValue,
   };
 }
 
@@ -34,14 +34,17 @@ test("init writes validated configuration and explains automatic skill routing",
   const root = await mkdtemp(join(tmpdir(), "dev-flow-init-"));
   const prompts = scriptedPrompts({
     selects: ["required", "required", "plus", "write"],
-    texts: ["60", "85", "impeccable", "impeccable:frontend-design"]
+    texts: ["60", "85", "impeccable", "impeccable:frontend-design"],
   });
   try {
     const result = await runInvocation(["init"], { init: { cwd: root, prompts } });
     assert.equal(result.status, "created");
     const path = join(root, ".codex", "dev-flow.yaml");
     const config = parseYaml(await readFile(path, "utf8"));
-    assert.deepEqual(config.integrations, { plugins: ["impeccable"], skills: ["impeccable:frontend-design"] });
+    assert.deepEqual(config.integrations, {
+      plugins: ["impeccable"],
+      skills: ["impeccable:frontend-design"],
+    });
     assert.equal(config.worktree.mode, "required");
     assert.equal(config.finish.pullRequest, "required");
     assert.equal(config.subscription.plan, "plus");
@@ -64,7 +67,7 @@ test("review can revisit subscription before one atomic write", async () => {
   const root = await mkdtemp(join(tmpdir(), "dev-flow-init-revisit-"));
   const prompts = scriptedPrompts({
     selects: ["auto", "optional", "plus", "subscription", "pro_20x", "write"],
-    texts: ["50", "80", "", "", "55", "90"]
+    texts: ["50", "80", "", "", "55", "90"],
   });
   try {
     const result = await runInvocation(["init"], { init: { cwd: root, prompts } });
@@ -83,10 +86,16 @@ test("cancellation preserves an existing configuration byte-for-byte", async () 
   const { runInvocation } = await import(bundle);
   const root = await mkdtemp(join(tmpdir(), "dev-flow-init-cancel-"));
   try {
-    const firstPrompts = scriptedPrompts({ selects: ["auto", "optional", "auto", "write"], texts: ["50", "80", "", ""] });
+    const firstPrompts = scriptedPrompts({
+      selects: ["auto", "optional", "auto", "write"],
+      texts: ["50", "80", "", ""],
+    });
     const first = await runInvocation(["init"], { init: { cwd: root, prompts: firstPrompts } });
     const before = await readFile(first.data.path, "utf8");
-    const cancelPrompts = scriptedPrompts({ selects: ["auto", "optional", "auto", "cancel"], texts: ["50", "80", "", ""] });
+    const cancelPrompts = scriptedPrompts({
+      selects: ["auto", "optional", "auto", "cancel"],
+      texts: ["50", "80", "", ""],
+    });
     const second = await runInvocation(["init"], { init: { cwd: root, prompts: cancelPrompts } });
     assert.equal(second.status, "cancelled");
     assert.equal(await readFile(first.data.path, "utf8"), before);
@@ -112,12 +121,15 @@ test("Ctrl+C cancellation symbol exits cleanly before file creation", async () =
 test("routing preview applies Plus baseline for auto without model selection", async () => {
   const { buildRoutingPreview } = await import(bundle);
   const preview = buildRoutingPreview("auto");
-  assert.deepEqual(preview.map(({ stage, model, effort }) => [stage, model, effort]), [
-    ["discover", "gpt-5.6-terra", "medium"],
-    ["plan", "gpt-5.6-sol", "medium"],
-    ["execute", "gpt-5.6-terra", "high"],
-    ["debug", "gpt-5.6-sol", "high"],
-    ["review", "gpt-5.6-sol", "medium"],
-    ["verify", "gpt-5.6-luna", "medium"]
-  ]);
+  assert.deepEqual(
+    preview.map(({ stage, model, effort }) => [stage, model, effort]),
+    [
+      ["discover", "gpt-5.6-terra", "medium"],
+      ["plan", "gpt-5.6-sol", "medium"],
+      ["execute", "gpt-5.6-terra", "high"],
+      ["debug", "gpt-5.6-sol", "high"],
+      ["review", "gpt-5.6-sol", "medium"],
+      ["verify", "gpt-5.6-luna", "medium"],
+    ],
+  );
 });

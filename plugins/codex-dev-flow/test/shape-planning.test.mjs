@@ -13,31 +13,47 @@ async function shaped(profile = "quick") {
     attestDiscoverySufficient,
     createShapeState,
     requestPreparationProfileChoice,
-    selectPreparationProfile
+    selectPreparationProfile,
   } = await api();
   let state = createShapeState({ risk: "medium", intakeBriefRef: "intake:brief:planning" });
   state = applyDiscoveryEvaluation(state, {
-    targets: [{
-      id: "target.api", question: "Where is API behavior implemented?",
-      createdBecause: "API surface affects contract scope.",
-      createdAt: "2026-07-29T00:00:00.000Z",
-      materialImpacts: ["scope", "validation"], candidateSourceRefs: ["repo:api"],
-      status: "resolved", evidenceIds: ["evidence.api"], dependencyNodeId: "target.api"
-    }],
-    evidence: [{
-      id: "evidence.api", fact: "API behavior is in src/api.ts.", provenanceRefs: ["repo:api"],
-      sourceFingerprintIds: ["fp.api"], dependencyNodeId: "evidence.api"
-    }],
-    sourceFingerprints: [{
-      id: "fp.api", kind: "git_blob", value: "blob:api", provenanceRef: "repo:api",
-      dependencyNodeId: "source.api"
-    }],
+    targets: [
+      {
+        id: "target.api",
+        question: "Where is API behavior implemented?",
+        createdBecause: "API surface affects contract scope.",
+        createdAt: "2026-07-29T00:00:00.000Z",
+        materialImpacts: ["scope", "validation"],
+        candidateSourceRefs: ["repo:api"],
+        status: "resolved",
+        evidenceIds: ["evidence.api"],
+        dependencyNodeId: "target.api",
+      },
+    ],
+    evidence: [
+      {
+        id: "evidence.api",
+        fact: "API behavior is in src/api.ts.",
+        provenanceRefs: ["repo:api"],
+        sourceFingerprintIds: ["fp.api"],
+        dependencyNodeId: "evidence.api",
+      },
+    ],
+    sourceFingerprints: [
+      {
+        id: "fp.api",
+        kind: "git_blob",
+        value: "blob:api",
+        provenanceRef: "repo:api",
+        dependencyNodeId: "source.api",
+      },
+    ],
     dependencyNodes: [
       { id: "source.api", kind: "source", dependsOn: [] },
       { id: "target.api", kind: "evidence", dependsOn: ["source.api"] },
-      { id: "evidence.api", kind: "evidence", dependsOn: ["source.api"] }
+      { id: "evidence.api", kind: "evidence", dependsOn: ["source.api"] },
     ],
-    semanticSufficient: true
+    semanticSufficient: true,
   });
   const receipt = attestDiscoverySufficient(state);
   state = requestPreparationProfileChoice(state, {
@@ -46,9 +62,9 @@ async function shaped(profile = "quick") {
     checkpoint: {
       changeShape: "localized",
       surfaceCategories: ["api"],
-      materialFacts: ["API tests exist."]
+      materialFacts: ["API tests exist."],
     },
-    discoveryReceipt: receipt
+    discoveryReceipt: receipt,
   });
   return selectPreparationProfile(state, { profile, evidenceRef: `user:profile:${profile}` });
 }
@@ -59,7 +75,7 @@ function quickPlanningEvaluation() {
     dependencyNodes: [
       { id: "criterion.api", kind: "criterion", dependsOn: ["evidence.api"] },
       { id: "task.api", kind: "task", dependsOn: ["criterion.api"] },
-      { id: "validation.api", kind: "validation", dependsOn: ["criterion.api"] }
+      { id: "validation.api", kind: "validation", dependsOn: ["criterion.api"] },
     ],
     contract: {
       schemaVersion: 1,
@@ -68,25 +84,40 @@ function quickPlanningEvaluation() {
       profile: "quick",
       scope: ["Update API behavior."],
       nonGoals: [],
-      acceptanceCriteria: [{
-        id: "criterion.api", description: "API returns expected result.",
-        validationIds: ["validation.api"], dependencyNodeId: "criterion.api"
-      }],
-      tasks: [{
-        id: "task.api", description: "Update API implementation.",
-        criterionIds: ["criterion.api"], dependsOnTaskIds: [], dependencyNodeId: "task.api"
-      }],
-      validations: [{
-        id: "validation.api", description: "Run API tests.", criterionIds: ["criterion.api"],
-        command: "bun test test/api.test.mjs", dependencyNodeId: "validation.api"
-      }],
-      risks: []
-    }
+      acceptanceCriteria: [
+        {
+          id: "criterion.api",
+          description: "API returns expected result.",
+          validationIds: ["validation.api"],
+          dependencyNodeId: "criterion.api",
+        },
+      ],
+      tasks: [
+        {
+          id: "task.api",
+          description: "Update API implementation.",
+          criterionIds: ["criterion.api"],
+          dependsOnTaskIds: [],
+          dependencyNodeId: "task.api",
+        },
+      ],
+      validations: [
+        {
+          id: "validation.api",
+          description: "Run API tests.",
+          criterionIds: ["criterion.api"],
+          command: "bun test test/api.test.mjs",
+          dependencyNodeId: "validation.api",
+        },
+      ],
+      risks: [],
+    },
   };
 }
 
 test("Quick Planning produces compact complete canonical contract", async () => {
-  const { applyPlanningEvaluation, attestContractComplete, evaluateContractCompleteness } = await api();
+  const { applyPlanningEvaluation, attestContractComplete, evaluateContractCompleteness } =
+    await api();
   const state = applyPlanningEvaluation(await shaped("quick"), quickPlanningEvaluation());
   assert.equal(evaluateContractCompleteness(state).complete, true);
   assert.equal(state.contract.profile, "quick");
@@ -119,9 +150,9 @@ test("missing Planning evidence returns one material Discovery Target", async ()
       candidateSourceRefs: ["repo:migrations"],
       status: "open",
       evidenceIds: [],
-      dependencyNodeId: "target.migration"
+      dependencyNodeId: "target.migration",
     },
-    dependencyNodes: [{ id: "target.migration", kind: "evidence", dependsOn: [] }]
+    dependencyNodes: [{ id: "target.migration", kind: "evidence", dependsOn: [] }],
   });
   assert.equal(state.discoveryTargets.at(-1).id, "target.migration");
   assert.equal(state.contract, undefined);
@@ -136,11 +167,13 @@ test("Implementation Guide requires evidence-linked admissible reason", async ()
   evaluation.contract.guide = {
     dependencyNodeId: "guide.api",
     content: ["Preserve public response compatibility."],
-    requiredBecause: [{
-      kind: "compatibility_migration",
-      evidenceIds: ["evidence.api"],
-      riskIds: []
-    }]
+    requiredBecause: [
+      {
+        kind: "compatibility_migration",
+        evidenceIds: ["evidence.api"],
+        riskIds: [],
+      },
+    ],
   };
   const state = applyPlanningEvaluation(await shaped("plan"), evaluation);
   assert.equal(state.contract.guide.requiredBecause[0].kind, "compatibility_migration");
@@ -148,5 +181,8 @@ test("Implementation Guide requires evidence-linked admissible reason", async ()
   const invalid = structuredClone(evaluation);
   invalid.contract.guide.requiredBecause[0].evidenceIds = [];
   const planned = await shaped("plan");
-  assert.throws(() => applyPlanningEvaluation(planned, invalid), /Guide reason requires evidence or risk/);
+  assert.throws(
+    () => applyPlanningEvaluation(planned, invalid),
+    /Guide reason requires evidence or risk/,
+  );
 });

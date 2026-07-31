@@ -14,15 +14,21 @@ test("app-server client performs one handshake and reads account, five-hour quot
   const result = await captureRoutingSnapshot({
     command: process.execPath,
     args: [fixture.pathname],
-    timeoutMs: 1000
+    timeoutMs: 1000,
   });
   assert.equal(result.snapshot.plan, "pro_20x");
   assert.equal(result.snapshot.quota.usedPercent, 42);
   assert.equal(result.snapshot.quota.windowDurationMins, 300);
-  assert.deepEqual(result.snapshot.models.map((model) => model.id), [
-    "gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"
+  assert.deepEqual(
+    result.snapshot.models.map((model) => model.id),
+    ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"],
+  );
+  assert.deepEqual(result.snapshot.models[0].supportedReasoningEfforts, [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
   ]);
-  assert.deepEqual(result.snapshot.models[0].supportedReasoningEfforts, ["low", "medium", "high", "xhigh"]);
   assert.equal(result.snapshot.quota.resetsAt, 1780000000);
   assert.deepEqual(result.snapshot.warnings, []);
 });
@@ -32,7 +38,7 @@ test("app-server timeout is non-fatal and marks quota unknown", async () => {
   const result = await captureRoutingSnapshot({
     command: process.execPath,
     args: [timeoutFixture.pathname],
-    timeoutMs: 30
+    timeoutMs: 30,
   });
   assert.equal(result.available, false);
   assert.equal(result.snapshot.quota.pressure, "unknown");
@@ -40,7 +46,7 @@ test("app-server timeout is non-fatal and marks quota unknown", async () => {
   assert.equal(result.snapshot.models.length, 0);
   assert.deepEqual(result.failure, {
     code: "app_server_timeout",
-    retryableWithApproval: false
+    retryableWithApproval: false,
   });
 });
 
@@ -49,24 +55,27 @@ test("app-server state permission failures are structured and actionable", async
   const result = await captureRoutingSnapshot({
     command: process.execPath,
     args: [permissionFixture.pathname],
-    timeoutMs: 500
+    timeoutMs: 500,
   });
   assert.equal(result.available, false);
   assert.equal(result.error, "app-server unavailable");
   assert.deepEqual(result.failure, {
     code: "app_server_permission_denied",
     path: "~/.codex",
-    retryableWithApproval: true
+    retryableWithApproval: true,
   });
   assert.equal(JSON.stringify(result).includes(process.env.HOME ?? "never-match"), false);
 });
 
 test("app-server spawn failures have a distinct non-retryable code", async () => {
   const { captureRoutingSnapshot } = await import(bundle);
-  const result = await captureRoutingSnapshot({ command: "/definitely/missing/codex", timeoutMs: 500 });
+  const result = await captureRoutingSnapshot({
+    command: "/definitely/missing/codex",
+    timeoutMs: 500,
+  });
   assert.deepEqual(result.failure, {
     code: "app_server_spawn_failed",
-    retryableWithApproval: false
+    retryableWithApproval: false,
   });
 });
 
@@ -75,11 +84,11 @@ test("premature close is classified without exposing bounded stderr", async () =
   const result = await captureRoutingSnapshot({
     command: process.execPath,
     args: [closedFixture.pathname],
-    timeoutMs: 500
+    timeoutMs: 500,
   });
   assert.deepEqual(result.failure, {
     code: "app_server_closed",
-    retryableWithApproval: false
+    retryableWithApproval: false,
   });
   assert.equal(JSON.stringify(result).includes("secret-token"), false);
 });
@@ -90,7 +99,7 @@ test("snapshot sanitization omits credentials and raw protocol payloads", async 
     account: { planType: "plus", email: "person@example.com", accessToken: "secret-token" },
     rateLimits: { primary: { windowDurationMins: 300, usedPercent: 10 } },
     models: [{ id: "gpt-5.6-luna", supportedReasoningEfforts: ["low"] }],
-    config: { plan: "auto" }
+    config: { plan: "auto" },
   });
   const serialized = JSON.stringify(result);
   assert.equal(serialized.includes("secret-token"), false);
@@ -100,7 +109,11 @@ test("snapshot sanitization omits credentials and raw protocol payloads", async 
 
 test("app-server errors do not leak raw protocol messages", async () => {
   const { captureRoutingSnapshot } = await import(bundle);
-  const result = await captureRoutingSnapshot({ command: process.execPath, args: [errorFixture.pathname], timeoutMs: 500 });
+  const result = await captureRoutingSnapshot({
+    command: process.execPath,
+    args: [errorFixture.pathname],
+    timeoutMs: 500,
+  });
   assert.equal(result.available, false);
   assert.equal(result.error?.includes("secret-token"), false);
   assert.equal(JSON.stringify(result).includes("secret-token"), false);

@@ -6,7 +6,7 @@ export const EXIT_CODES = {
   STATE_CONFLICT: 5,
   BLOCKED: 6,
   HANDOFF_REQUIRED: 7,
-  INTERNAL_ERROR: 10
+  INTERNAL_ERROR: 10,
 } as const;
 
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];

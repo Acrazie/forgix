@@ -20,7 +20,7 @@ import {
   runCommand,
   semanticBase,
   unexpectedReleasePaths,
-  validatePluginManifest
+  validatePluginManifest,
 } from "../src/release.ts";
 
 describe("release versioning", () => {
@@ -61,7 +61,7 @@ describe("release plans", () => {
         currentPackageVersion: "0.1.0",
         currentPluginVersion: "0.1.0+codex.20260712195921",
         nextPackageVersion: "0.2.0",
-        now
+        now,
       }),
       {
         target: "both",
@@ -70,8 +70,8 @@ describe("release plans", () => {
         cachebuster: "20260728140509",
         identity: "v0.2.0",
         tag: "v0.2.0",
-        commitMessage: "chore(release): v0.2.0"
-      }
+        commitMessage: "chore(release): v0.2.0",
+      },
     );
   });
 
@@ -81,7 +81,7 @@ describe("release plans", () => {
       currentPackageVersion: "0.1.0",
       currentPluginVersion: "0.1.0+codex.20260712195921",
       nextPackageVersion: "0.1.1",
-      now
+      now,
     });
     assert.equal(plan.packageVersion, "0.1.1");
     assert.equal(plan.pluginVersion, "0.1.0+codex.20260712195921");
@@ -93,7 +93,7 @@ describe("release plans", () => {
       target: "plugin",
       currentPackageVersion: "0.1.0",
       currentPluginVersion: "0.1.0+codex.20260712195921",
-      now
+      now,
     });
     assert.equal(plan.packageVersion, "0.1.0");
     assert.equal(plan.pluginVersion, "0.1.0+codex.20260728140509");
@@ -108,9 +108,9 @@ describe("release plans", () => {
           currentPackageVersion: "1.0.0",
           currentPluginVersion: "1.0.0+codex.20260712195921",
           nextPackageVersion: "1.0.0",
-          now
+          now,
         }),
-      /must be greater/
+      /must be greater/,
     );
   });
 });
@@ -120,18 +120,18 @@ describe("release safety", () => {
     const output = normalizeGitOutput(" M plugins/codex-dev-flow/.codex-plugin/plugin.json\n");
     assert.equal(output, " M plugins/codex-dev-flow/.codex-plugin/plugin.json");
     assert.deepEqual(parsePorcelainPaths(output), [
-      "plugins/codex-dev-flow/.codex-plugin/plugin.json"
+      "plugins/codex-dev-flow/.codex-plugin/plugin.json",
     ]);
   });
 
   test("parses porcelain output and rejects paths outside target allowlist", () => {
     const paths = parsePorcelainPaths(
-      " M plugins/codex-dev-flow/package.json\n?? plugins/codex-dev-flow/bun.lock\n M README.md\n"
+      " M plugins/codex-dev-flow/package.json\n?? plugins/codex-dev-flow/bun.lock\n M README.md\n",
     );
     assert.deepEqual(paths, [
       "plugins/codex-dev-flow/package.json",
       "plugins/codex-dev-flow/bun.lock",
-      "README.md"
+      "README.md",
     ]);
     assert.deepEqual(unexpectedReleasePaths(paths, "npm"), ["README.md"]);
   });
@@ -142,7 +142,7 @@ describe("release safety", () => {
       version: "0.2.0+codex.20260728140509",
       description: "Flow",
       license: "MIT",
-      skills: "./skills/"
+      skills: "./skills/",
     };
     assert.doesNotThrow(() => validatePluginManifest(manifest));
     assert.throws(() => validatePluginManifest({ ...manifest, skills: "./skills" }), /must end/);
@@ -152,17 +152,17 @@ describe("release safety", () => {
     assert.deepEqual(parseReleaseCommit("chore(release): v1.2.0"), {
       target: "both",
       identity: "v1.2.0",
-      version: "1.2.0"
+      version: "1.2.0",
     });
     assert.deepEqual(parseReleaseCommit("chore(release): npm-v1.2.1"), {
       target: "npm",
       identity: "npm-v1.2.1",
-      version: "1.2.1"
+      version: "1.2.1",
     });
     assert.deepEqual(parseReleaseCommit("chore(release): plugin-v1.2.1-codex.20260728140509"), {
       target: "plugin",
       identity: "plugin-v1.2.1-codex.20260728140509",
-      version: "1.2.1"
+      version: "1.2.1",
     });
     assert.equal(parseReleaseCommit("feat: unrelated"), null);
   });
@@ -172,25 +172,25 @@ describe("release safety", () => {
       missingPublicationSteps("both", {
         pushed: true,
         npmPublished: false,
-        githubRelease: false
+        githubRelease: false,
       }),
-      ["npm", "github-release"]
+      ["npm", "github-release"],
     );
     assert.deepEqual(
       missingPublicationSteps("plugin", {
         pushed: false,
         npmPublished: false,
-        githubRelease: false
+        githubRelease: false,
       }),
-      ["push", "github-release"]
+      ["push", "github-release"],
     );
     assert.deepEqual(
       missingPublicationSteps("npm", {
         pushed: true,
         npmPublished: true,
-        githubRelease: true
+        githubRelease: true,
       }),
-      []
+      [],
     );
   });
 

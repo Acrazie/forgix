@@ -1,4 +1,8 @@
-import { dependencyClosure, validateDependencyGraph, type DependencyGraph } from "./shape-dependencies.js";
+import {
+  dependencyClosure,
+  validateDependencyGraph,
+  type DependencyGraph,
+} from "./shape-dependencies.js";
 
 export type ShapeSourceFingerprintKind = "git_blob" | "content" | "command" | "external";
 
@@ -39,21 +43,24 @@ export interface ShapeFreshnessResult {
   refreshTargetIds: string[];
 }
 
-const TOKEN = /^[^\r\n\0]{1,1024}$/;
+// oxlint-disable-next-line eslint/no-control-regex -- persisted tokens must reject NUL and line separators.
+const TOKEN = /^[^\r\n\u0000]{1,1024}$/;
 
 export function isSourceFingerprintFresh(
   fingerprint: ShapeSourceFingerprint,
   observed: ObservedFingerprintValue,
-  now = new Date().toISOString()
+  now = new Date().toISOString(),
 ): boolean {
   validateSourceFingerprint(fingerprint);
   const observation = typeof observed === "string" ? { value: observed } : observed;
   if (!observation || observation.value !== fingerprint.value) return false;
-  if (fingerprint.kind === "command" && observation.inputDigest !== fingerprint.inputDigest) return false;
+  if (fingerprint.kind === "command" && observation.inputDigest !== fingerprint.inputDigest)
+    return false;
   if (fingerprint.kind === "external" && fingerprint.expiresAt !== undefined) {
     const nowEpoch = Date.parse(now);
     const expiresEpoch = Date.parse(fingerprint.expiresAt);
-    if (!Number.isFinite(nowEpoch) || !Number.isFinite(expiresEpoch)) throw new Error("Freshness timestamp is invalid.");
+    if (!Number.isFinite(nowEpoch) || !Number.isFinite(expiresEpoch))
+      throw new Error("Freshness timestamp is invalid.");
     if (nowEpoch >= expiresEpoch) return false;
   }
   return true;
@@ -64,7 +71,8 @@ export function reconcileShapeFreshness(input: ReconcileShapeFreshnessInput): Sh
   const fingerprints = new Map<string, ShapeSourceFingerprint>();
   for (const fingerprint of input.fingerprints) {
     validateSourceFingerprint(fingerprint);
-    if (fingerprints.has(fingerprint.id)) throw new Error(`Duplicate source fingerprint ${fingerprint.id}.`);
+    if (fingerprints.has(fingerprint.id))
+      throw new Error(`Duplicate source fingerprint ${fingerprint.id}.`);
     fingerprints.set(fingerprint.id, fingerprint);
   }
 
@@ -74,7 +82,7 @@ export function reconcileShapeFreshness(input: ReconcileShapeFreshnessInput): Sh
       return observed === undefined || !isSourceFingerprintFresh(fingerprint, observed, input.now);
     })
     .map((fingerprint) => fingerprint.id)
-    .sort();
+    .toSorted();
 
   const staleSet = new Set(staleFingerprintIds);
   const staleEvidenceIds: string[] = [];
@@ -105,16 +113,21 @@ export function reconcileShapeFreshness(input: ReconcileShapeFreshnessInput): Sh
 
   return {
     staleFingerprintIds,
-    staleEvidenceIds: staleEvidenceIds.sort(),
-    reusedEvidenceIds: reusedEvidenceIds.sort(),
+    staleEvidenceIds: staleEvidenceIds.toSorted(),
+    reusedEvidenceIds: reusedEvidenceIds.toSorted(),
     invalidatedNodeIds: staleRoots.size ? dependencyClosure(graph, [...staleRoots]) : [],
-    refreshTargetIds: staleEvidenceIds.map((id) => `refresh:${id}`).sort()
+    refreshTargetIds: staleEvidenceIds.map((id) => `refresh:${id}`).toSorted(),
   };
 }
 
 function validateSourceFingerprint(fingerprint: ShapeSourceFingerprint): void {
-  if (!fingerprint || !TOKEN.test(fingerprint.id) || !TOKEN.test(fingerprint.value)
-    || !TOKEN.test(fingerprint.provenanceRef) || !TOKEN.test(fingerprint.dependencyNodeId)) {
+  if (
+    !fingerprint ||
+    !TOKEN.test(fingerprint.id) ||
+    !TOKEN.test(fingerprint.value) ||
+    !TOKEN.test(fingerprint.provenanceRef) ||
+    !TOKEN.test(fingerprint.dependencyNodeId)
+  ) {
     throw new Error("Source fingerprint is malformed.");
   }
   if (!["git_blob", "content", "command", "external"].includes(fingerprint.kind)) {
@@ -127,7 +140,10 @@ function validateSourceFingerprint(fingerprint: ShapeSourceFingerprint): void {
     if (!fingerprint.observedAt || !Number.isFinite(Date.parse(fingerprint.observedAt))) {
       throw new Error(`External fingerprint ${fingerprint.id} requires observedAt.`);
     }
-    if (fingerprint.expiresAt !== undefined && !Number.isFinite(Date.parse(fingerprint.expiresAt))) {
+    if (
+      fingerprint.expiresAt !== undefined &&
+      !Number.isFinite(Date.parse(fingerprint.expiresAt))
+    ) {
       throw new Error(`External fingerprint ${fingerprint.id} expiresAt is invalid.`);
     }
   }
@@ -136,12 +152,21 @@ function validateSourceFingerprint(fingerprint: ShapeSourceFingerprint): void {
 function validateEvidence(
   item: ShapeEvidenceItem,
   fingerprints: ReadonlyMap<string, ShapeSourceFingerprint>,
-  graphNodes: ReadonlyMap<string, { kind: string }>
+  graphNodes: ReadonlyMap<string, { kind: string }>,
 ): void {
-  if (!item || !TOKEN.test(item.id) || !TOKEN.test(item.fact) || !TOKEN.test(item.dependencyNodeId)) {
+  if (
+    !item ||
+    !TOKEN.test(item.id) ||
+    !TOKEN.test(item.fact) ||
+    !TOKEN.test(item.dependencyNodeId)
+  ) {
     throw new Error("Evidence item is malformed.");
   }
-  if (!Array.isArray(item.provenanceRefs) || !item.provenanceRefs.length || item.provenanceRefs.some((ref) => !TOKEN.test(ref))) {
+  if (
+    !Array.isArray(item.provenanceRefs) ||
+    !item.provenanceRefs.length ||
+    item.provenanceRefs.some((ref) => !TOKEN.test(ref))
+  ) {
     throw new Error(`Evidence item ${item.id} requires provenance.`);
   }
   if (!Array.isArray(item.sourceFingerprintIds) || !item.sourceFingerprintIds.length) {

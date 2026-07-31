@@ -16,12 +16,24 @@ test("freshness reconciliation preserves unrelated evidence", async () => {
       { id: "evidence.auth", kind: "evidence", dependsOn: ["source.auth"] },
       { id: "criterion.auth", kind: "criterion", dependsOn: ["evidence.auth"] },
       { id: "source.docs", kind: "source", dependsOn: [] },
-      { id: "evidence.docs", kind: "evidence", dependsOn: ["source.docs"] }
-    ]
+      { id: "evidence.docs", kind: "evidence", dependsOn: ["source.docs"] },
+    ],
   };
   const fingerprints = [
-    { id: "auth-file", kind: "git_blob", value: "blob:old", provenanceRef: "repo:auth", dependencyNodeId: "source.auth" },
-    { id: "docs-file", kind: "content", value: "sha256:same", provenanceRef: "repo:docs", dependencyNodeId: "source.docs" }
+    {
+      id: "auth-file",
+      kind: "git_blob",
+      value: "blob:old",
+      provenanceRef: "repo:auth",
+      dependencyNodeId: "source.auth",
+    },
+    {
+      id: "docs-file",
+      kind: "content",
+      value: "sha256:same",
+      provenanceRef: "repo:docs",
+      dependencyNodeId: "source.docs",
+    },
   ];
   const evidence = [
     {
@@ -29,15 +41,15 @@ test("freshness reconciliation preserves unrelated evidence", async () => {
       fact: "Auth uses sessions.",
       provenanceRefs: ["repo:auth"],
       sourceFingerprintIds: ["auth-file"],
-      dependencyNodeId: "evidence.auth"
+      dependencyNodeId: "evidence.auth",
     },
     {
       id: "docs",
       fact: "Docs use Markdown.",
       provenanceRefs: ["repo:docs"],
       sourceFingerprintIds: ["docs-file"],
-      dependencyNodeId: "evidence.docs"
-    }
+      dependencyNodeId: "evidence.docs",
+    },
   ];
 
   const result = reconcileShapeFreshness({
@@ -46,8 +58,8 @@ test("freshness reconciliation preserves unrelated evidence", async () => {
     evidence,
     observedValues: {
       "auth-file": "blob:new",
-      "docs-file": "sha256:same"
-    }
+      "docs-file": "sha256:same",
+    },
   });
 
   assert.deepEqual(result.staleEvidenceIds, ["auth"]);
@@ -67,12 +79,12 @@ test("external TTL and command input changes become stale deterministically", as
         provenanceRef: "external:api",
         dependencyNodeId: "source.external",
         observedAt: "2026-07-29T00:00:00.000Z",
-        expiresAt: "2026-07-29T01:00:00.000Z"
+        expiresAt: "2026-07-29T01:00:00.000Z",
       },
       "etag:1",
-      "2026-07-29T00:30:00.000Z"
+      "2026-07-29T00:30:00.000Z",
     ),
-    true
+    true,
   );
   assert.equal(
     isSourceFingerprintFresh(
@@ -83,12 +95,12 @@ test("external TTL and command input changes become stale deterministically", as
         provenanceRef: "external:api",
         dependencyNodeId: "source.external",
         observedAt: "2026-07-29T00:00:00.000Z",
-        expiresAt: "2026-07-29T01:00:00.000Z"
+        expiresAt: "2026-07-29T01:00:00.000Z",
       },
       "etag:1",
-      "2026-07-29T02:00:00.000Z"
+      "2026-07-29T02:00:00.000Z",
     ),
-    false
+    false,
   );
   assert.equal(
     isSourceFingerprintFresh(
@@ -98,10 +110,10 @@ test("external TTL and command input changes become stale deterministically", as
         value: "sha256:result",
         inputDigest: "sha256:inputs-a",
         provenanceRef: "command:test",
-        dependencyNodeId: "source.command"
+        dependencyNodeId: "source.command",
       },
-      { value: "sha256:result", inputDigest: "sha256:inputs-b" }
+      { value: "sha256:result", inputDigest: "sha256:inputs-b" },
     ),
-    false
+    false,
   );
 });

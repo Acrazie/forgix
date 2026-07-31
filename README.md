@@ -65,10 +65,10 @@ $dev-flow --benchmark standard Add pagination and collect local feedback
 When mode is omitted, skill workflow inspects cheap read-only context and proposes one.
 Full provider orchestration remains incomplete.
 
-| Mode | Intended use | Contract path |
-| --- | --- | --- |
-| `quick` | Explicit, bounded, non-destructive edit | INTAKE, BUILD, ASSURE, HANDOFF; SHAPE/GATE recorded N/A while bounded guard remains true |
-| `standard` | Normal feature, fix, or refactor | All six phases with pre-build Approval, review, and verification |
+| Mode       | Intended use                                         | Contract path                                                                                   |
+| ---------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `quick`    | Explicit, bounded, non-destructive edit              | INTAKE, BUILD, ASSURE, HANDOFF; SHAPE/GATE recorded N/A while bounded guard remains true        |
+| `standard` | Normal feature, fix, or refactor                     | All six phases with pre-build Approval, review, and verification                                |
 | `critical` | Security-sensitive, destructive, or high-impact work | All six phases with worktree, risk records, human gates, independent applicable assurance lanes |
 
 Ambiguity, scope expansion, destructive impact, or policy conflict stops or escalates
@@ -188,6 +188,7 @@ and [idempotent handoff ADR](./plugins/codex-dev-flow/docs/adr/0005-make-handoff
 - [Design](./plugins/codex-dev-flow/docs/design.md)
 - [Artifact contract](./plugins/codex-dev-flow/docs/artifacts.md)
 - [Measurement protocol](./plugins/codex-dev-flow/docs/metrics-protocol.md)
+- [Maintainer release runbook](./plugins/codex-dev-flow/docs/runbooks/maintainer-release.md)
 - [ADR index](./plugins/codex-dev-flow/docs/adr/)
 - [Glossary](./plugins/codex-dev-flow/docs/glossary/dev-flow.md)
 - [Contributing](./CONTRIBUTING.md)

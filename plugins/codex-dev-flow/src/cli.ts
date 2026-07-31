@@ -1,11 +1,21 @@
 import { resolve } from "node:path";
 import { captureRoutingSnapshot } from "./app-server.js";
 import { createBenchmarkStore } from "./benchmark.js";
-import { explainConfig, loadConfigSources, resolveConfig, type ConfigSource, type ResolvedConfig } from "./config.js";
+import {
+  explainConfig,
+  loadConfigSources,
+  resolveConfig,
+  type ConfigSource,
+  type ResolvedConfig,
+} from "./config.js";
 import { EXIT_CODES } from "./exit-codes.js";
 import { InvocationError, parseInvocation } from "./parse.js";
 import { runInit, type InitOptions } from "./init.js";
-import { applyFiveHourResetFallback, readFiveHourResetCache, writeFiveHourResetCache } from "./quota-cache.js";
+import {
+  applyFiveHourResetFallback,
+  readFiveHourResetCache,
+  writeFiveHourResetCache,
+} from "./quota-cache.js";
 import { chooseRoute, ROUTING_POLICY_VERSION, type RouteTask } from "./routing.js";
 import { deriveMacroPhase } from "./state-machine.js";
 import { StateStoreError, createTaskStateStore } from "./state-store.js";
@@ -13,7 +23,15 @@ import type { CliResult } from "./types.js";
 
 export { EXIT_CODES } from "./exit-codes.js";
 export { resolveConfig } from "./config.js";
-export { DEFAULT_CONFIG, DEFAULT_SUBSCRIPTION_CONFIG, ConfigValidationError, explainConfig, loadConfigSources, validateConfigSource, validateSchema } from "./config.js";
+export {
+  DEFAULT_CONFIG,
+  DEFAULT_SUBSCRIPTION_CONFIG,
+  ConfigValidationError,
+  explainConfig,
+  loadConfigSources,
+  validateConfigSource,
+  validateSchema,
+} from "./config.js";
 export { InvocationError, parseInvocation } from "./parse.js";
 export { buildRoutingPreview, runInit } from "./init.js";
 export { PolicyError, applyPolicy } from "./policy.js";
@@ -41,7 +59,7 @@ export {
   recordHistoryEvent,
   updateShapeState,
   updateResumeContext,
-  transition
+  transition,
 } from "./state.js";
 export { GUARD_IDS, MACRO_PHASES, buildStateMachineProjection } from "./state-machine.js";
 export {
@@ -51,18 +69,15 @@ export {
   createMetricRunId,
   summarizeLifecycleTrace,
   tryCreateLifecycleMetricEvent,
-  validateBaselineReport
+  validateBaselineReport,
 } from "./metrics.js";
 export { fingerprintFailure, nextCorrectionAction } from "./fingerprint.js";
 export {
   DEPENDENCY_NODE_KINDS,
   dependencyClosure,
-  validateDependencyGraph
+  validateDependencyGraph,
 } from "./shape-dependencies.js";
-export {
-  isSourceFingerprintFresh,
-  reconcileShapeFreshness
-} from "./shape-freshness.js";
+export { isSourceFingerprintFresh, reconcileShapeFreshness } from "./shape-freshness.js";
 export {
   applyDiscoveryEvaluation,
   applyPlanningEvaluation,
@@ -79,13 +94,13 @@ export {
   resolveShapeBudgetCheckpoint,
   resolveShapeBudgetCheckpointWithRouting,
   selectPreparationProfile,
-  validateShapeState
+  validateShapeState,
 } from "./shape.js";
 export {
   approvePlanProjection,
   detectPlanProjectionDrift,
   reconcilePlanProjection,
-  renderPlanProjection
+  renderPlanProjection,
 } from "./shape-projection.js";
 export {
   attestIntakeComplete,
@@ -98,7 +113,7 @@ export {
   recordInvalidIntakeModelOutput,
   rejectPrematureAdvance,
   routeLateUnknown,
-  setDecisionQuestion
+  setDecisionQuestion,
 } from "./intake.js";
 export {
   BENCHMARK_DIRECTORY,
@@ -108,7 +123,7 @@ export {
   createBenchmarkStore,
   shouldOfferBenchmarkSurvey,
   summarizeBenchmarkRecords,
-  tryWriteBenchmarkRecord
+  tryWriteBenchmarkRecord,
 } from "./benchmark.js";
 export { decideWorktree } from "./worktree.js";
 export { discoverVerificationCommands } from "./commands.js";
@@ -125,35 +140,48 @@ export {
   resolveSubscriptionPlan,
   resolveSubscriptionMultiplier,
   selectFiveHourWindow,
-  selectObservedQuotaWindow
+  selectObservedQuotaWindow,
 } from "./routing.js";
-export { applyFiveHourResetFallback, readFiveHourResetCache, writeFiveHourResetCache } from "./quota-cache.js";
+export {
+  applyFiveHourResetFallback,
+  readFiveHourResetCache,
+  writeFiveHourResetCache,
+} from "./quota-cache.js";
 export { AppServerClient, AppServerError, captureRoutingSnapshot } from "./app-server.js";
 export { ROUTED_STAGES, delegateStage, isDelegableStage } from "./bridge.js";
 export {
   STATE_FILENAME,
   StateStoreError,
   TaskStateStore,
-  createTaskStateStore
+  createTaskStateStore,
 } from "./state-store.js";
 
 export interface RunInvocationOptions {
   configSources?: ConfigSource[];
   init?: InitOptions;
   appServer?: Parameters<typeof captureRoutingSnapshot>[0];
-  captureSnapshot?: (options: Parameters<typeof captureRoutingSnapshot>[0]) => ReturnType<typeof captureRoutingSnapshot>;
+  captureSnapshot?: (
+    options: Parameters<typeof captureRoutingSnapshot>[0],
+  ) => ReturnType<typeof captureRoutingSnapshot>;
   quotaCachePath?: string | false;
   nowEpochSeconds?: number;
   workspaceRoot?: string;
 }
 
-export async function runInvocation(argv: string[], options: RunInvocationOptions = {}): Promise<CliResult> {
+export async function runInvocation(
+  argv: string[],
+  options: RunInvocationOptions = {},
+): Promise<CliResult> {
   const invocation = parseInvocation(argv);
   if (invocation.command === "init") return runInit(options.init);
   if (invocation.command === "config_show" || invocation.command === "config_validate") {
     const config = resolveRuntimeConfig(options.configSources);
     return invocation.command === "config_show"
-      ? { command: invocation.command, status: "ok", data: invocation.explain ? explainConfig(config) : config.value }
+      ? {
+          command: invocation.command,
+          status: "ok",
+          data: invocation.explain ? explainConfig(config) : config.value,
+        }
       : { command: invocation.command, status: "valid", data: { valid: true } };
   }
   if (invocation.command === "benchmark_summary") {
@@ -161,8 +189,11 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
     return { command: "benchmark_summary", status: "ok", data: summary };
   }
   if (invocation.command === "status") {
-    if (!invocation.taskId) return { command: "status", status: "read-only", data: { taskId: undefined } };
-    const loaded = await createTaskStateStore(options.workspaceRoot ?? process.cwd()).load(invocation.taskId);
+    if (!invocation.taskId)
+      return { command: "status", status: "read-only", data: { taskId: undefined } };
+    const loaded = await createTaskStateStore(options.workspaceRoot ?? process.cwd()).load(
+      invocation.taskId,
+    );
     return {
       command: "status",
       status: loaded.status,
@@ -171,46 +202,64 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
         risk: loaded.risk,
         preparationProfile: loaded.shape?.preparationProfileChoice?.selectedProfile ?? "unselected",
         macroPhase: deriveMacroPhase(loaded),
-        benchmarkEnabled: loaded.benchmarkEnabled ?? false
-      }
+        benchmarkEnabled: loaded.benchmarkEnabled ?? false,
+      },
     };
   }
 
-  const resumedState = invocation.command === "resume"
-    ? await loadResumeStateIfPresent(options.workspaceRoot ?? process.cwd(), invocation.taskId)
-    : undefined;
+  const resumedState =
+    invocation.command === "resume"
+      ? await loadResumeStateIfPresent(options.workspaceRoot ?? process.cwd(), invocation.taskId)
+      : undefined;
   const config = resolveRuntimeConfig(options.configSources);
   const capture = options.captureSnapshot ?? captureRoutingSnapshot;
   const subscription = isRecord(config.value.subscription) ? config.value.subscription : {};
   const snapshotResult = await capture({
-    ...(options.appServer ?? {}),
+    ...options.appServer,
     config: {
       plan: typeof subscription.plan === "string" ? subscription.plan : "auto",
-      ...(typeof subscription.planOverride === "string" ? { planOverride: subscription.planOverride } : {}),
-      ...(typeof subscription.multiplierOverride === "number" ? { multiplierOverride: subscription.multiplierOverride } : {}),
-      ...(Array.isArray(subscription.modelAllowlist) ? { modelAllowlist: subscription.modelAllowlist.filter((model): model is "gpt-5.6-luna" | "gpt-5.6-terra" | "gpt-5.6-sol" => typeof model === "string") } : {}),
-      ...(isRecord(subscription.quota) ? {
-        quota: {
-          ...(typeof subscription.quota.warningPercent === "number" ? { warningPercent: subscription.quota.warningPercent } : {}),
-          ...(typeof subscription.quota.criticalPercent === "number" ? { criticalPercent: subscription.quota.criticalPercent } : {})
-        }
-      } : {})
-    }
+      ...(typeof subscription.planOverride === "string"
+        ? { planOverride: subscription.planOverride }
+        : {}),
+      ...(typeof subscription.multiplierOverride === "number"
+        ? { multiplierOverride: subscription.multiplierOverride }
+        : {}),
+      ...(Array.isArray(subscription.modelAllowlist)
+        ? {
+            modelAllowlist: subscription.modelAllowlist.filter(
+              (model): model is "gpt-5.6-luna" | "gpt-5.6-terra" | "gpt-5.6-sol" =>
+                typeof model === "string",
+            ),
+          }
+        : {}),
+      ...(isRecord(subscription.quota)
+        ? {
+            quota: {
+              ...(typeof subscription.quota.warningPercent === "number"
+                ? { warningPercent: subscription.quota.warningPercent }
+                : {}),
+              ...(typeof subscription.quota.criticalPercent === "number"
+                ? { criticalPercent: subscription.quota.criticalPercent }
+                : {}),
+            },
+          }
+        : {}),
+    },
   });
   const nowEpochSeconds = options.nowEpochSeconds ?? Math.floor(Date.now() / 1000);
   const quotaCachePath = resolveQuotaCachePath(options);
   let routingSnapshot = snapshotResult.snapshot;
   if (quotaCachePath) {
     if (
-      routingSnapshot.quota.source === "app-server"
-      && routingSnapshot.quota.windowDurationMins === 300
-      && routingSnapshot.quota.resetsAt !== undefined
-      && routingSnapshot.quota.resetsAt > nowEpochSeconds
+      routingSnapshot.quota.source === "app-server" &&
+      routingSnapshot.quota.windowDurationMins === 300 &&
+      routingSnapshot.quota.resetsAt !== undefined &&
+      routingSnapshot.quota.resetsAt > nowEpochSeconds
     ) {
       try {
         await writeFiveHourResetCache(quotaCachePath, {
           windowDurationMins: 300,
-          resetsAt: routingSnapshot.quota.resetsAt
+          resetsAt: routingSnapshot.quota.resetsAt,
         });
       } catch {
         routingSnapshot = appendRoutingWarning(routingSnapshot, "quota_cache_write_failed");
@@ -221,29 +270,42 @@ export async function runInvocation(argv: string[], options: RunInvocationOption
     }
   }
   const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, task));
-  const unavailable = decisions.some((decision) => decision.model === null || decision.effort === null);
+  const unavailable = decisions.some(
+    (decision) => decision.model === null || decision.effort === null,
+  );
   const permissionRequired = snapshotResult.failure?.code === "app_server_permission_denied";
   return {
     command: invocation.command,
-    status: permissionRequired ? "routing_permission_required" : unavailable ? "routing_unavailable" : snapshotResult.available ? "routed" : "routed_with_warning",
+    status: permissionRequired
+      ? "routing_permission_required"
+      : unavailable
+        ? "routing_unavailable"
+        : snapshotResult.available
+          ? "routed"
+          : "routed_with_warning",
     data: {
       ...(invocation.command === "run"
         ? { objective: invocation.objective, benchmarkEnabled: invocation.flags.benchmark === true }
         : {
             taskId: invocation.taskId,
-            benchmarkEnabled: resumedState?.benchmarkEnabled ?? false
+            benchmarkEnabled: resumedState?.benchmarkEnabled ?? false,
           }),
       routingSnapshot,
       routingPolicyVersion: ROUTING_POLICY_VERSION,
       routingDecisions: decisions,
       ...(snapshotResult.failure ? { routingFailure: snapshotResult.failure } : {}),
-      ...(snapshotResult.error ? { warning: snapshotResult.error } : {})
-    }
+      ...(snapshotResult.error ? { warning: snapshotResult.error } : {}),
+    },
   };
 }
 
-function appendRoutingWarning(snapshot: Awaited<ReturnType<typeof captureRoutingSnapshot>>["snapshot"], warning: string) {
-  return snapshot.warnings.includes(warning) ? snapshot : { ...snapshot, warnings: [...snapshot.warnings, warning] };
+function appendRoutingWarning(
+  snapshot: Awaited<ReturnType<typeof captureRoutingSnapshot>>["snapshot"],
+  warning: string,
+) {
+  return snapshot.warnings.includes(warning)
+    ? snapshot
+    : { ...snapshot, warnings: [...snapshot.warnings, warning] };
 }
 
 function resolveQuotaCachePath(options: RunInvocationOptions): string | undefined {
@@ -259,7 +321,7 @@ const ROUTING_TASKS: RouteTask[] = [
   { stage: "execute", risk: "medium", ambiguity: "medium" },
   { stage: "debug", risk: "medium", ambiguity: "medium" },
   { stage: "review", risk: "medium", ambiguity: "medium" },
-  { stage: "verify", risk: "medium", ambiguity: "medium" }
+  { stage: "verify", risk: "medium", ambiguity: "medium" },
 ];
 
 function resolveRuntimeConfig(sources: ConfigSource[] | undefined): ResolvedConfig {
@@ -285,15 +347,23 @@ export function main(argv = process.argv.slice(2)): void {
       if (result.command !== "init") process.stdout.write(JSON.stringify(result) + "\n");
     },
     (error: unknown) => {
-      const exitCode = error instanceof InvocationError || isExitCodeError(error) ? error.exitCode : EXIT_CODES.INTERNAL_ERROR;
+      const exitCode =
+        error instanceof InvocationError || isExitCodeError(error)
+          ? error.exitCode
+          : EXIT_CODES.INTERNAL_ERROR;
       process.stderr.write((error instanceof Error ? error.message : "Unexpected error.") + "\n");
       process.exitCode = exitCode;
-    }
+    },
   );
 }
 
 function isExitCodeError(error: unknown): error is { exitCode: number } {
-  return typeof error === "object" && error !== null && "exitCode" in error && typeof error.exitCode === "number";
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "exitCode" in error &&
+    typeof error.exitCode === "number"
+  );
 }
 
 if (import.meta.main) {

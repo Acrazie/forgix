@@ -7,9 +7,15 @@ export function isDelegableStage(stage: string): stage is RoutingStage {
   return ROUTED_STAGES.includes(stage as RoutingStage);
 }
 
-export async function delegateStage<T>(stage: string, runner: (decision?: RoutingDecision) => Promise<T>, decision?: RoutingDecision): Promise<T> {
+export async function delegateStage<T>(
+  stage: string,
+  runner: (decision?: RoutingDecision) => Promise<T>,
+  decision?: RoutingDecision,
+): Promise<T> {
   if (!isDelegableStage(stage) || MUTATING_STAGES.has(stage)) {
-    throw new Error("Mutation and validation stages stay with the parent workflow; no delegation permitted.");
+    throw new Error(
+      "Mutation and validation stages stay with the parent workflow; no delegation permitted.",
+    );
   }
   return runner(decision);
 }

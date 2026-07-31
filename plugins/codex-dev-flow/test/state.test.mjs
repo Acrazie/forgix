@@ -7,8 +7,16 @@ const api = () => import(bundle);
 test("V3 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE statuses", async () => {
   const a = await api();
   assert.deepEqual(a.TASK_STATUSES, Object.keys(a.STATE_MACHINE));
-  for (const status of ["intaking", "discovering", "awaiting_profile_choice", "planning", "awaiting_intake_decision"]) assert.ok(a.TASK_STATUSES.includes(status));
-  for (const removed of ["awaiting_mode_confirmation"]) assert.equal(a.TASK_STATUSES.includes(removed), false);
+  for (const status of [
+    "intaking",
+    "discovering",
+    "awaiting_profile_choice",
+    "planning",
+    "awaiting_intake_decision",
+  ])
+    assert.ok(a.TASK_STATUSES.includes(status));
+  for (const removed of ["awaiting_mode_confirmation"])
+    assert.equal(a.TASK_STATUSES.includes(removed), false);
   assert.equal(a.GUARD_IDS.includes("mode_confirmed"), false);
   assert.equal(a.GUARD_IDS.includes("profile_selected"), true);
   assert.equal(JSON.stringify(a.buildStateMachineProjection()).includes("modes"), false);
@@ -19,9 +27,16 @@ test("V3 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE status
 test("every Intake enters Discovery; direct BUILD bypass is impossible", async () => {
   const a = await api();
   let state = a.createState(taskInput("no-bypass"));
-  state = a.transition(state, "intaking", { guardEvidence: attest(a, state, "effective_constraints_valid") });
+  state = a.transition(state, "intaking", {
+    guardEvidence: attest(a, state, "effective_constraints_valid"),
+  });
   assert.throws(() => a.transition(state, "executing"), /Invalid state transition/);
-  state = a.transition(state, "discovering", { guardEvidence: [a.attestIntakeComplete(state, "intake:complete"), ...attest(a, state, "routing_ready", "workspace_ready")] });
+  state = a.transition(state, "discovering", {
+    guardEvidence: [
+      a.attestIntakeComplete(state, "intake:complete"),
+      ...attest(a, state, "routing_ready", "workspace_ready"),
+    ],
+  });
   assert.equal(state.status, "discovering");
   assert.ok(state.shape);
 });
@@ -41,8 +56,24 @@ test("Discovery, explicit profile choice, Planning, then generic GATE are enforc
 test("trusted Discovery and Planning guards cannot be forged", async () => {
   const a = await api();
   const state = await toDiscovering(a, "trusted-shape");
-  assert.throws(() => a.createGuardAttestation(state, "discovery_sufficient", { observedFingerprint: "fake", evidenceRefs: ["fake"], provenance: "deterministic-check" }), /trusted evaluator/);
-  assert.throws(() => a.createGuardAttestation(state, "contract_complete", { observedFingerprint: "fake", evidenceRefs: ["fake"], provenance: "deterministic-check" }), /trusted evaluator/);
+  assert.throws(
+    () =>
+      a.createGuardAttestation(state, "discovery_sufficient", {
+        observedFingerprint: "fake",
+        evidenceRefs: ["fake"],
+        provenance: "deterministic-check",
+      }),
+    /trusted evaluator/,
+  );
+  assert.throws(
+    () =>
+      a.createGuardAttestation(state, "contract_complete", {
+        observedFingerprint: "fake",
+        evidenceRefs: ["fake"],
+        provenance: "deterministic-check",
+      }),
+    /trusted evaluator/,
+  );
 });
 
 test("Decision Escalation enters INTAKE and resumes exact SHAPE role", async () => {
@@ -55,19 +86,40 @@ test("Decision Escalation enters INTAKE and resumes exact SHAPE role", async () 
 
 test("V1/V2 are rejected explicitly; no migration API remains", async () => {
   const a = await api();
-  for (const schemaVersion of [1, 2]) assert.throws(() => a.loadStateV3({ schemaVersion }), (error) => error instanceof a.StateValidationError && error.code === "state_schema_incompatible" && /No migration/.test(error.message));
+  for (const schemaVersion of [1, 2])
+    assert.throws(
+      () => a.loadStateV3({ schemaVersion }),
+      (error) =>
+        error instanceof a.StateValidationError &&
+        error.code === "state_schema_incompatible" &&
+        /No migration/.test(error.message),
+    );
   assert.equal(a.migrateStateToV2, undefined);
-  assert.throws(() => a.loadStateV3({ ...a.createState(taskInput("strict")), mode: "quick" }), /schema validation failed/);
+  assert.throws(
+    () => a.loadStateV3({ ...a.createState(taskInput("strict")), mode: "quick" }),
+    /schema validation failed/,
+  );
 });
 
 test("GATE decision and blocked resume remain state-bound", async () => {
   const a = await api();
   let state = await toGate(a, "quick", "gate-resume");
-  const decision = a.createGateDecision(state, { decision: "approved", evidenceRef: "approval:pre" });
-  state = a.transition(state, "executing", { gateDecision: decision, guardEvidence: attest(a, state, "approval_current", "task_authorized") });
-  state = a.transition(state, "blocked", { resumeTo: "executing", remainingActions: ["Restore write access"] });
+  const decision = a.createGateDecision(state, {
+    decision: "approved",
+    evidenceRef: "approval:pre",
+  });
+  state = a.transition(state, "executing", {
+    gateDecision: decision,
+    guardEvidence: attest(a, state, "approval_current", "task_authorized"),
+  });
+  state = a.transition(state, "blocked", {
+    resumeTo: "executing",
+    remainingActions: ["Restore write access"],
+  });
   assert.throws(() => a.transition(state, "planning"), /exact resumeTo/);
-  const resumed = a.transition(state, "executing", { guardEvidence: attest(a, state, "resume_reconciled", "approval_current", "task_authorized") });
+  const resumed = a.transition(state, "executing", {
+    guardEvidence: attest(a, state, "resume_reconciled", "approval_current", "task_authorized"),
+  });
   assert.equal(resumed.status, "executing");
 });
 

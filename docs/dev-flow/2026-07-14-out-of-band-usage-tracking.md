@@ -330,16 +330,16 @@ Status: `app_server_cross_process_observation_unavailable` on Codex CLI `0.144.4
 
 ### App Server versus OpenTelemetry verdict
 
-| Criterion | Separate App Server | Native OpenTelemetry |
-| --- | --- | --- |
-| Additional model tokens | Zero | Zero |
-| Runtime overhead | Extra local process; no live events observed | Native async telemetry plus local exporter/collector overhead |
-| User setup | Hook trust plus observer lifecycle | Explicit user-level `otel` config plus local OTLP endpoint |
-| Plugin transparency | Cannot observe native CLI live | Candidate runtime-native emission, but setup cannot be imposed by project config |
-| Reliability | Fails the live-delivery gate | Not yet proven end-to-end in this environment |
-| Cross-platform | Codex process available, but architecture fails | OTLP transports are cross-platform; local collector packaging/lifecycle remains unresolved |
-| Protocol stability | Experimental App Server API | Standard OTLP transport, but Codex event schema remains version-sensitive |
-| Privacy | Adapter could allowlist counters | Prompts are redacted by default; collector must still allowlist structural/token fields only |
+| Criterion               | Separate App Server                             | Native OpenTelemetry                                                                         |
+| ----------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Additional model tokens | Zero                                            | Zero                                                                                         |
+| Runtime overhead        | Extra local process; no live events observed    | Native async telemetry plus local exporter/collector overhead                                |
+| User setup              | Hook trust plus observer lifecycle              | Explicit user-level `otel` config plus local OTLP endpoint                                   |
+| Plugin transparency     | Cannot observe native CLI live                  | Candidate runtime-native emission, but setup cannot be imposed by project config             |
+| Reliability             | Fails the live-delivery gate                    | Not yet proven end-to-end in this environment                                                |
+| Cross-platform          | Codex process available, but architecture fails | OTLP transports are cross-platform; local collector packaging/lifecycle remains unresolved   |
+| Protocol stability      | Experimental App Server API                     | Standard OTLP transport, but Codex event schema remains version-sensitive                    |
+| Privacy                 | Adapter could allowlist counters                | Prompts are redacted by default; collector must still allowlist structural/token fields only |
 
 Official current configuration documents OTel as disabled by default, user-configured, and able to export Codex events with conversation/model/version metadata and response token counts. That makes it the stronger candidate, but documentation is not accepted as proof of exact local delivery or correlation.
 

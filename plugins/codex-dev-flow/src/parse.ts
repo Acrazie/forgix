@@ -49,10 +49,16 @@ export function parseInvocation(argv: string[]): ParsedInvocation {
 
   if (first === "config") {
     const [subcommand, ...flags] = rest;
-    if (subcommand === "show" && (flags.length === 0 || (flags.length === 1 && flags[0] === "--explain"))) {
+    if (
+      subcommand === "show" &&
+      (flags.length === 0 || (flags.length === 1 && flags[0] === "--explain"))
+    ) {
       return { command: "config_show", explain: flags[0] === "--explain" };
     }
-    if (subcommand === "validate" && (flags.length === 0 || (flags.length === 1 && flags[0] === "--json"))) {
+    if (
+      subcommand === "validate" &&
+      (flags.length === 0 || (flags.length === 1 && flags[0] === "--json"))
+    ) {
       return { command: "config_validate", json: flags[0] === "--json" };
     }
     invalid("Invalid config invocation.");
@@ -63,5 +69,9 @@ export function parseInvocation(argv: string[]): ParsedInvocation {
   if (runArgs.length === 0 || runArgs.some((part) => part.startsWith("--"))) {
     invalid("A run requires an objective and no unsupported flags.");
   }
-  return { command: "run", objective: runArgs.join(" "), flags: benchmark ? { benchmark: true } : {} };
+  return {
+    command: "run",
+    objective: runArgs.join(" "),
+    flags: benchmark ? { benchmark: true } : {},
+  };
 }

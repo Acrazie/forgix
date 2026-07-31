@@ -3,8 +3,11 @@ import stateSchema from "../schemas/state.schema.json" with { type: "json" };
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 const validate = ajv.compile(stateSchema);
-export interface StateValidationResult { valid: boolean; errors: readonly unknown[]; }
+export interface StateValidationResult {
+  valid: boolean;
+  errors: readonly unknown[];
+}
 export function validateStateV3(value: unknown): StateValidationResult {
-  const valid = validate(value) as boolean;
+  const valid = validate(value);
   return { valid, errors: validate.errors ? [...validate.errors] : [] };
 }

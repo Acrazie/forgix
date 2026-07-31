@@ -11,7 +11,7 @@ test("failure identity ignores raw messages and line numbers", async () => {
     errorType: "AssertionError",
     path: "src/auth.ts",
     symbol: "rotateToken",
-    messagePattern: "expected token to rotate"
+    messagePattern: "expected token to rotate",
   };
   const first = fingerprintFailure({ ...common, line: 14, rawMessage: "expected 1 got 0" });
   const second = fingerprintFailure({ ...common, line: 22, rawMessage: "expected true got false" });

@@ -31,7 +31,7 @@ test("logical change artifact has a stable minimum contract", () => {
     "criterion-linked validation",
     "risks/controls",
     "explicit dependencies",
-    "digest"
+    "digest",
   ]) {
     assert.match(skill, new RegExp(section, "i"));
   }

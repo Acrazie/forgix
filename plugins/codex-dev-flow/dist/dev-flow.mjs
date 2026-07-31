@@ -14684,13 +14684,16 @@ function classifyQuotaPressure(usedPercent, thresholds = {}) {
   return "normal";
 }
 function selectFiveHourWindow(rateLimits) {
-  return collectQuotaWindows(rateLimits).find((window) => window.windowDurationMins === 300);
+  return collectQuotaWindows(rateLimits).find(
+    (window) => window.windowDurationMins === 300
+  );
 }
 function selectObservedQuotaWindow(rateLimits) {
-  return collectQuotaWindows(rateLimits).filter((window) => window.windowDurationMins !== 300).sort((left, right) => left.windowDurationMins - right.windowDurationMins)[0];
+  return collectQuotaWindows(rateLimits).filter((window) => window.windowDurationMins !== 300).toSorted((left, right) => left.windowDurationMins - right.windowDurationMins)[0];
 }
 function resolveSubscriptionPlan(configPlan, accountPlan) {
-  if (configPlan === "plus" || configPlan === "pro_5x" || configPlan === "pro_20x") return configPlan;
+  if (configPlan === "plus" || configPlan === "pro_5x" || configPlan === "pro_20x")
+    return configPlan;
   if (accountPlan === "plus") return "plus";
   if (accountPlan === "pro_5x" || accountPlan === "pro_20x") return accountPlan;
   if (accountPlan === "pro") return "pro_5x";
@@ -14760,10 +14763,25 @@ function chooseRoute(snapshot, task) {
   const exactAvailable = capability?.supportedReasoningEfforts.includes(effort) === true;
   const reason = `${task.stage} route for ${effectivePlan} plan under ${pressure} quota`;
   if (!exactAvailable) {
-    if (!warnings.includes("required_route_unavailable")) warnings.push("required_route_unavailable");
-    return { stage: task.stage, model: null, effort: null, quotaPressure: pressure, reason: `${reason}; exact ${base.model}/${effort} unavailable`, warnings };
+    if (!warnings.includes("required_route_unavailable"))
+      warnings.push("required_route_unavailable");
+    return {
+      stage: task.stage,
+      model: null,
+      effort: null,
+      quotaPressure: pressure,
+      reason: `${reason}; exact ${base.model}/${effort} unavailable`,
+      warnings
+    };
   }
-  return { stage: task.stage, model: base.model, effort, quotaPressure: pressure, reason, warnings };
+  return {
+    stage: task.stage,
+    model: base.model,
+    effort,
+    quotaPressure: pressure,
+    reason,
+    warnings
+  };
 }
 function effectiveMatrixPlan(plan, pressure) {
   const known = plan === "unknown" ? "plus" : plan;
@@ -14780,7 +14798,8 @@ function normalizeModels(input, allowlist) {
   const candidates = Array.isArray(input) ? input : isRecord(input) && Array.isArray(input.models) ? input.models : isRecord(input) && Array.isArray(input.data) ? input.data : [];
   const models = [];
   for (const candidate of candidates) {
-    if (!isRecord(candidate) || typeof candidate.id !== "string" || !isModelId(candidate.id)) continue;
+    if (!isRecord(candidate) || typeof candidate.id !== "string" || !isModelId(candidate.id))
+      continue;
     if (allowlist && !allowlist.includes(candidate.id)) continue;
     const efforts = Array.isArray(candidate.supportedReasoningEfforts) ? candidate.supportedReasoningEfforts.flatMap((effort) => {
       const value = typeof effort === "string" ? effort : isRecord(effort) && typeof effort.reasoningEffort === "string" ? effort.reasoningEffort : void 0;
@@ -14843,10 +14862,15 @@ var AppServerClient = class {
       if (this.stderr.length >= MAX_STDERR_CHARS) return;
       this.stderr = (this.stderr + String(chunk)).slice(0, MAX_STDERR_CHARS);
     });
-    this.process.on("error", (error) => this.fail(new AppServerError(error.message, "spawn", this.stderr)));
+    this.process.on(
+      "error",
+      (error) => this.fail(new AppServerError(error.message, "spawn", this.stderr))
+    );
     this.process.on("close", () => {
       const kind = looksLikePermissionFailure(this.stderr) ? "permission" : "closed";
-      this.fail(new AppServerError("app-server closed before completing request", kind, this.stderr));
+      this.fail(
+        new AppServerError("app-server closed before completing request", kind, this.stderr)
+      );
     });
   }
   async readSnapshot(config) {
@@ -14877,7 +14901,9 @@ var AppServerClient = class {
         this.process.stdin.write(JSON.stringify({ id, method, params }) + "\n");
       } catch (error) {
         this.pending.delete(id);
-        reject(error instanceof Error ? error : new AppServerError("failed to write to app-server"));
+        reject(
+          error instanceof Error ? error : new AppServerError("failed to write to app-server")
+        );
       }
     });
   }
@@ -14893,7 +14919,9 @@ var AppServerClient = class {
     if (!pending) return;
     this.pending.delete(message.id);
     if (message.error) {
-      pending.reject(new AppServerError(message.error.message ?? "app-server request failed", "rpc"));
+      pending.reject(
+        new AppServerError(message.error.message ?? "app-server request failed", "rpc")
+      );
       return;
     }
     pending.resolve(message.result);
@@ -14922,7 +14950,10 @@ async function captureRoutingSnapshot(options = {}) {
 }
 function withTimeout(promise, timeoutMs) {
   return new Promise((resolve4, reject) => {
-    const timer = setTimeout(() => reject(new AppServerError("app-server timeout", "timeout")), timeoutMs);
+    const timer = setTimeout(
+      () => reject(new AppServerError("app-server timeout", "timeout")),
+      timeoutMs
+    );
     promise.then(
       (value) => {
         clearTimeout(timer);
@@ -14938,9 +14969,12 @@ function withTimeout(promise, timeoutMs) {
 var MAX_STDERR_CHARS = 8192;
 function classifyAppServerFailure(error) {
   if (error instanceof AppServerError) {
-    if (error.kind === "timeout") return { code: "app_server_timeout", retryableWithApproval: false };
-    if (error.kind === "spawn") return { code: "app_server_spawn_failed", retryableWithApproval: false };
-    if (error.kind === "rpc") return { code: "app_server_rpc_failed", retryableWithApproval: false };
+    if (error.kind === "timeout")
+      return { code: "app_server_timeout", retryableWithApproval: false };
+    if (error.kind === "spawn")
+      return { code: "app_server_spawn_failed", retryableWithApproval: false };
+    if (error.kind === "rpc")
+      return { code: "app_server_rpc_failed", retryableWithApproval: false };
     if (error.kind === "permission" || looksLikePermissionFailure(error.stderr)) {
       return {
         code: "app_server_permission_denied",
@@ -14975,7 +15009,10 @@ function shouldOfferBenchmarkSurvey(state) {
 }
 function createBenchmarkRecord(input) {
   assertSafeTaskId(input.taskId);
-  if (!ELIGIBLE_OUTCOMES.has(input.outcome)) throw new Error("Benchmark survey is available only after finished_local, finished, or failed.");
+  if (!ELIGIBLE_OUTCOMES.has(input.outcome))
+    throw new Error(
+      "Benchmark survey is available only after finished_local, finished, or failed."
+    );
   const survey = validateSurvey(input.survey);
   const authority = input.canonicalChangeContract;
   if (!authority) throw new Error("Benchmark requires canonical Shape contract authority.");
@@ -14992,11 +15029,15 @@ function createBenchmarkRecord(input) {
 }
 function classifyBenchmarkDeviations(authority, actual) {
   const planned = new Set((authority.plannedFiles ?? []).map(normalizeSurface).filter(Boolean));
-  const created = [...new Set(actual.createdFiles.map(normalizeSurface).filter(Boolean))].slice(0, MAX_FILES);
+  const created = [...new Set(actual.createdFiles.map(normalizeSurface).filter(Boolean))].slice(
+    0,
+    MAX_FILES
+  );
   const deviations = [];
   for (const file of created) {
     if (authority.forbidNewFiles) deviations.push({ code: "forbidden_new_file", surfaceRef: file });
-    else if (planned.size && !planned.has(file)) deviations.push({ code: "unplanned_new_file", surfaceRef: file });
+    else if (planned.size && !planned.has(file))
+      deviations.push({ code: "unplanned_new_file", surfaceRef: file });
   }
   if (authority.validationRequired && !actual.validationComplete) {
     deviations.push({ code: "missing_validation", surfaceRef: "validation" });
@@ -15028,7 +15069,11 @@ var BenchmarkStore = class {
     const destination = this.path(safeRecord.taskId);
     const temporary = join(this.root, `.${safeRecord.taskId}.${randomUUID()}.tmp`);
     try {
-      const handle = await fs.open(temporary, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 384);
+      const handle = await fs.open(
+        temporary,
+        constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY,
+        384
+      );
       try {
         await handle.writeFile(`${JSON.stringify(safeRecord, null, 2)}
 `, "utf8");
@@ -15051,7 +15096,7 @@ var BenchmarkStore = class {
       throw error;
     }
     const records = [];
-    for (const name of names.sort()) {
+    for (const name of names.toSorted()) {
       if (!name.endsWith(".json") || basename(name) !== name) continue;
       try {
         const parsed = JSON.parse(await fs.readFile(join(this.root, name), "utf8"));
@@ -15063,9 +15108,10 @@ var BenchmarkStore = class {
   }
   async #ensureRoot(create) {
     for (const directory of [join(this.workspaceRoot, ".codex"), this.root]) {
-      if (create) await fs.mkdir(directory, { mode: 448 }).catch((error) => {
-        if (!hasCode(error, "EEXIST")) throw error;
-      });
+      if (create)
+        await fs.mkdir(directory, { mode: 448 }).catch((error) => {
+          if (!hasCode(error, "EEXIST")) throw error;
+        });
       let metadata;
       try {
         metadata = await fs.lstat(directory);
@@ -15129,10 +15175,14 @@ function emptySummary() {
 function validateSurvey(value) {
   if (!isRecord2(value)) throw new Error("Benchmark survey must be an object.");
   const allowed = /* @__PURE__ */ new Set(["satisfaction", "conformance", "pluginValue", "comment"]);
-  if (Object.keys(value).some((key) => !allowed.has(key))) throw new Error("Benchmark survey contains unsupported data.");
-  if (![1, 2, 3, 4, 5].includes(value.satisfaction)) throw new Error("Benchmark satisfaction must be 1\u20135.");
-  if (!["yes", "partial", "no"].includes(value.conformance)) throw new Error("Benchmark conformance is invalid.");
-  if (!["useful", "neutral", "counterproductive"].includes(value.pluginValue)) throw new Error("Benchmark plugin value is invalid.");
+  if (Object.keys(value).some((key) => !allowed.has(key)))
+    throw new Error("Benchmark survey contains unsupported data.");
+  if (![1, 2, 3, 4, 5].includes(value.satisfaction))
+    throw new Error("Benchmark satisfaction must be 1\u20135.");
+  if (!["yes", "partial", "no"].includes(value.conformance))
+    throw new Error("Benchmark conformance is invalid.");
+  if (!["useful", "neutral", "counterproductive"].includes(value.pluginValue))
+    throw new Error("Benchmark plugin value is invalid.");
   const comment = sanitizeComment(value.comment);
   return {
     satisfaction: value.satisfaction,
@@ -15157,29 +15207,50 @@ function sanitizeBenchmarkRecord(value) {
 function validateRecord(value) {
   if (!isRecord2(value)) throw new Error("Benchmark record must be an object.");
   const keys = Object.keys(value);
-  const allowed = /* @__PURE__ */ new Set(["schemaVersion", "taskId", "recordedAt", "preparationProfile", "outcome", "authority", "survey", "deviations"]);
-  if (keys.some((key) => !allowed.has(key))) throw new Error("Benchmark record contains unsupported data.");
-  if (value.schemaVersion !== 1 || typeof value.taskId !== "string") throw new Error("Benchmark record identity is invalid.");
+  const allowed = /* @__PURE__ */ new Set([
+    "schemaVersion",
+    "taskId",
+    "recordedAt",
+    "preparationProfile",
+    "outcome",
+    "authority",
+    "survey",
+    "deviations"
+  ]);
+  if (keys.some((key) => !allowed.has(key)))
+    throw new Error("Benchmark record contains unsupported data.");
+  if (value.schemaVersion !== 1 || typeof value.taskId !== "string")
+    throw new Error("Benchmark record identity is invalid.");
   assertSafeTaskId(value.taskId);
-  if (typeof value.recordedAt !== "string" || Number.isNaN(Date.parse(value.recordedAt))) throw new Error("Benchmark recordedAt is invalid.");
-  if (!["quick", "plan"].includes(value.preparationProfile)) throw new Error("Benchmark preparation profile is invalid.");
-  if (typeof value.outcome !== "string" || !ELIGIBLE_OUTCOMES.has(value.outcome)) throw new Error("Benchmark outcome is invalid.");
-  if (value.authority !== "canonical_change_contract") throw new Error("Benchmark authority must be canonical Shape contract.");
+  if (typeof value.recordedAt !== "string" || Number.isNaN(Date.parse(value.recordedAt)))
+    throw new Error("Benchmark recordedAt is invalid.");
+  if (!["quick", "plan"].includes(value.preparationProfile))
+    throw new Error("Benchmark preparation profile is invalid.");
+  if (typeof value.outcome !== "string" || !ELIGIBLE_OUTCOMES.has(value.outcome))
+    throw new Error("Benchmark outcome is invalid.");
+  if (value.authority !== "canonical_change_contract")
+    throw new Error("Benchmark authority must be canonical Shape contract.");
   validateSurvey(value.survey);
-  if (!Array.isArray(value.deviations) || value.deviations.length > MAX_FILES + 2) throw new Error("Benchmark deviations are invalid.");
+  if (!Array.isArray(value.deviations) || value.deviations.length > MAX_FILES + 2)
+    throw new Error("Benchmark deviations are invalid.");
   for (const deviation of value.deviations) {
-    if (!isRecord2(deviation) || !["unplanned_new_file", "forbidden_new_file", "missing_validation", "missing_handoff"].includes(deviation.code) || typeof deviation.surfaceRef !== "string" || !deviation.surfaceRef || deviation.surfaceRef.length > 512 || Object.keys(deviation).some((key) => key !== "code" && key !== "surfaceRef")) {
+    if (!isRecord2(deviation) || ![
+      "unplanned_new_file",
+      "forbidden_new_file",
+      "missing_validation",
+      "missing_handoff"
+    ].includes(deviation.code) || typeof deviation.surfaceRef !== "string" || !deviation.surfaceRef || deviation.surfaceRef.length > 512 || Object.keys(deviation).some((key) => key !== "code" && key !== "surfaceRef")) {
       throw new Error("Benchmark deviation is invalid.");
     }
   }
 }
 function sanitizeComment(value) {
   if (typeof value !== "string") return "";
-  return value.replace(SECRET, "[REDACTED]").replace(EMAIL, "[REDACTED_EMAIL]").replace(/\0/g, "").trim().slice(0, MAX_COMMENT);
+  return value.replace(SECRET, "[REDACTED]").replace(EMAIL, "[REDACTED_EMAIL]").replace(/\u0000/g, "").trim().slice(0, MAX_COMMENT);
 }
 function normalizeSurface(value) {
   if (typeof value !== "string") return "";
-  const safe = value.replace(/\\/g, "/").replace(/^\.\/+/, "").replace(/\0/g, "").trim();
+  const safe = value.replace(/\\/g, "/").replace(/^\.\/+/, "").replace(/\u0000/g, "").trim();
   if (!safe || safe.startsWith("/") || safe.split("/").includes("..")) return "";
   return safe.slice(0, 512);
 }
@@ -15188,7 +15259,7 @@ function normalizeAt(value) {
   return (/* @__PURE__ */ new Date()).toISOString();
 }
 function assertSafeTaskId(taskId) {
-  if (!taskId || taskId === "." || taskId === ".." || /[\/\\\0]/.test(taskId)) {
+  if (!taskId || taskId === "." || taskId === ".." || /[/\\\u0000]/.test(taskId)) {
     throw new Error("Benchmark task ID must be one non-traversing path segment.");
   }
 }
@@ -15248,7 +15319,12 @@ var DEFAULT_CONFIG = {
   subscription: DEFAULT_SUBSCRIPTION_CONFIG
 };
 function validateSchema(name, value) {
-  const schema = JSON.parse(readFileSync(fileURLToPath(new URL("../schemas/" + name + ".schema.json", import.meta.url)), "utf8"));
+  const schema = JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL("../schemas/" + name + ".schema.json", import.meta.url)),
+      "utf8"
+    )
+  );
   const ajv2 = new import__.Ajv2020({ allErrors: true, strict: true });
   const validate2 = ajv2.compile(schema);
   const valid = validate2(value);
@@ -15279,7 +15355,11 @@ function loadConfigSources(options = {}) {
     if (!existsSync(file.path)) continue;
     const parsed = (0, import_yaml.parse)(readFileSync(file.path, "utf8"));
     if (!isRecord3(parsed)) {
-      throw new ConfigValidationError(`Invalid configuration from ${file.source}: root must be an object.`, file.source, []);
+      throw new ConfigValidationError(
+        `Invalid configuration from ${file.source}: root must be an object.`,
+        file.source,
+        []
+      );
     }
     sources.push({ source: file.source, value: parsed });
   }
@@ -15300,12 +15380,14 @@ function isRecord3(value) {
 }
 function copy(value) {
   if (Array.isArray(value)) return value.map(copy);
-  if (isRecord3(value)) return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, copy(entry)]));
+  if (isRecord3(value))
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, copy(entry)]));
   return value;
 }
 function recordLeaves(value, source, provenance, prefix) {
   if (isRecord3(value)) {
-    for (const [key, nested] of Object.entries(value)) recordLeaves(nested, source, provenance, prefix ? prefix + "." + key : key);
+    for (const [key, nested] of Object.entries(value))
+      recordLeaves(nested, source, provenance, prefix ? prefix + "." + key : key);
     return;
   }
   provenance[prefix] = source;
@@ -15384,7 +15466,11 @@ function parseInvocation(argv) {
   if (runArgs.length === 0 || runArgs.some((part) => part.startsWith("--"))) {
     invalid("A run requires an objective and no unsupported flags.");
   }
-  return { command: "run", objective: runArgs.join(" "), flags: benchmark ? { benchmark: true } : {} };
+  return {
+    command: "run",
+    objective: runArgs.join(" "),
+    flags: benchmark ? { benchmark: true } : {}
+  };
 }
 
 // node_modules/@clack/core/dist/index.mjs
@@ -16145,7 +16231,7 @@ var ROUTING_TASKS = [
   { stage: "verify", risk: "medium", ambiguity: "medium" }
 ];
 async function runInit(options = {}) {
-  if (!options.prompts && (process.stdin.isTTY !== true || process.stdout.isTTY !== true)) {
+  if (!options.prompts && (!process.stdin.isTTY || !process.stdout.isTTY)) {
     throw new Error("init requires an interactive terminal.");
   }
   const prompts = options.prompts ?? createClackAdapter();
@@ -16168,18 +16254,40 @@ async function runInit(options = {}) {
       const config = buildConfiguration(current, draft);
       validateConfigSource(config, "init");
       prompts.note(renderConfigurationSummary(path, draft), "Configuration summary");
-      prompts.note(renderRoutingSummary(draft.plan, "normal"), `Automatic routing \xB7 ${ROUTING_POLICY_VERSION}`);
-      const action = await required(prompts, prompts.select({
-        message: existed ? "Review complete. What should Dev Flow do?" : "Configuration ready. What should Dev Flow do?",
-        initialValue: "write",
-        choices: [
-          { value: "write", label: existed ? "Update configuration" : "Create configuration", hint: path },
-          { value: "workflow", label: "Edit workflow behavior", hint: "Worktrees and pull requests" },
-          { value: "subscription", label: "Edit subscription and quota", hint: "Plan and pressure thresholds" },
-          { value: "integrations", label: "Edit integrations", hint: "External plugin and skill allowlists" },
-          { value: "cancel", label: "Cancel", hint: "Leave existing files unchanged" }
-        ]
-      }));
+      prompts.note(
+        renderRoutingSummary(draft.plan, "normal"),
+        `Automatic routing \xB7 ${ROUTING_POLICY_VERSION}`
+      );
+      const action = await required(
+        prompts,
+        prompts.select({
+          message: existed ? "Review complete. What should Dev Flow do?" : "Configuration ready. What should Dev Flow do?",
+          initialValue: "write",
+          choices: [
+            {
+              value: "write",
+              label: existed ? "Update configuration" : "Create configuration",
+              hint: path
+            },
+            {
+              value: "workflow",
+              label: "Edit workflow behavior",
+              hint: "Worktrees and pull requests"
+            },
+            {
+              value: "subscription",
+              label: "Edit subscription and quota",
+              hint: "Plan and pressure thresholds"
+            },
+            {
+              value: "integrations",
+              label: "Edit integrations",
+              hint: "External plugin and skill allowlists"
+            },
+            { value: "cancel", label: "Cancel", hint: "Leave existing files unchanged" }
+          ]
+        })
+      );
       if (action === "workflow") {
         draft = await collectWorkflow(prompts, draft);
         continue;
@@ -16217,63 +16325,137 @@ function buildRoutingPreview(plan, pressure = "normal") {
     id,
     supportedReasoningEfforts: [...REASONING_EFFORTS]
   }));
-  return ROUTING_TASKS.map((task) => chooseRoute({
-    schemaVersion: 1,
-    capturedAt: "preview",
-    plan: resolvedPlan,
-    account: {},
-    quota: { pressure, source: "unknown" },
-    models,
-    warnings: [],
-    provenance: { plan: plan === "auto" ? "unknown" : "config", quota: "unknown", models: "model/list" }
-  }, task));
+  return ROUTING_TASKS.map(
+    (task) => chooseRoute(
+      {
+        schemaVersion: 1,
+        capturedAt: "preview",
+        plan: resolvedPlan,
+        account: {},
+        quota: { pressure, source: "unknown" },
+        models,
+        warnings: [],
+        provenance: {
+          plan: plan === "auto" ? "unknown" : "config",
+          quota: "unknown",
+          models: "model/list"
+        }
+      },
+      task
+    )
+  );
 }
 async function collectWorkflow(prompts, draft) {
-  prompts.note("Choose how Dev Flow isolates changes and whether completion requires a pull request.", "1/3 \xB7 Workflow behavior");
-  const worktreeMode = await required(prompts, prompts.select({
-    message: "How should isolated Git worktrees be used?",
-    initialValue: draft.worktreeMode,
-    choices: [
-      { value: "auto", label: "Automatic (recommended)", hint: "Require isolation only when workflow risk needs it" },
-      { value: "required", label: "Always required", hint: "Every applicable change runs in an isolated worktree" }
-    ]
-  }));
-  const pullRequest = await required(prompts, prompts.select({
-    message: "Must a pull request be created before completion?",
-    initialValue: draft.pullRequest,
-    choices: [
-      { value: "optional", label: "Optional", hint: "Local verified handoff is allowed" },
-      { value: "required", label: "Required", hint: "Workflow cannot finish without a pull request" }
-    ]
-  }));
+  prompts.note(
+    "Choose how Dev Flow isolates changes and whether completion requires a pull request.",
+    "1/3 \xB7 Workflow behavior"
+  );
+  const worktreeMode = await required(
+    prompts,
+    prompts.select({
+      message: "How should isolated Git worktrees be used?",
+      initialValue: draft.worktreeMode,
+      choices: [
+        {
+          value: "auto",
+          label: "Automatic (recommended)",
+          hint: "Require isolation only when workflow risk needs it"
+        },
+        {
+          value: "required",
+          label: "Always required",
+          hint: "Every applicable change runs in an isolated worktree"
+        }
+      ]
+    })
+  );
+  const pullRequest = await required(
+    prompts,
+    prompts.select({
+      message: "Must a pull request be created before completion?",
+      initialValue: draft.pullRequest,
+      choices: [
+        { value: "optional", label: "Optional", hint: "Local verified handoff is allowed" },
+        {
+          value: "required",
+          label: "Required",
+          hint: "Workflow cannot finish without a pull request"
+        }
+      ]
+    })
+  );
   return { ...draft, worktreeMode, pullRequest };
 }
 async function collectSubscription(prompts, draft) {
-  prompts.note("Your plan controls available routing depth. Dev Flow still chooses each model by skill, workflow risk, and initial quota pressure.", "2/3 \xB7 Subscription and quota");
-  const plan = await required(prompts, prompts.select({
-    message: "Which Codex subscription capacity should this project use?",
-    initialValue: draft.plan,
-    choices: [
-      { value: "auto", label: "Detect automatically (recommended)", hint: "Read account plan once at workflow start; unknown uses Plus baseline" },
-      { value: "plus", label: "Codex Plus", hint: "1x capacity \xB7 conservative routing depth" },
-      { value: "pro_5x", label: "Codex Pro 5x", hint: "5x capacity \xB7 deeper reasoning on high-leverage skills" },
-      { value: "pro_20x", label: "Codex Pro 20x", hint: "20x capacity \xB7 deepest default routing" }
-    ]
-  }));
+  prompts.note(
+    "Your plan controls available routing depth. Dev Flow still chooses each model by skill, workflow risk, and initial quota pressure.",
+    "2/3 \xB7 Subscription and quota"
+  );
+  const plan = await required(
+    prompts,
+    prompts.select({
+      message: "Which Codex subscription capacity should this project use?",
+      initialValue: draft.plan,
+      choices: [
+        {
+          value: "auto",
+          label: "Detect automatically (recommended)",
+          hint: "Read account plan once at workflow start; unknown uses Plus baseline"
+        },
+        { value: "plus", label: "Codex Plus", hint: "1x capacity \xB7 conservative routing depth" },
+        {
+          value: "pro_5x",
+          label: "Codex Pro 5x",
+          hint: "5x capacity \xB7 deeper reasoning on high-leverage skills"
+        },
+        {
+          value: "pro_20x",
+          label: "Codex Pro 20x",
+          hint: "20x capacity \xB7 deepest default routing"
+        }
+      ]
+    })
+  );
   let warningPercent = draft.warningPercent;
   let criticalPercent = draft.criticalPercent;
   for (; ; ) {
-    warningPercent = await numberPrompt(prompts, "When should quota pressure become a warning?", warningPercent, "Example: 50 means 50% of the five-hour window used");
-    criticalPercent = await numberPrompt(prompts, "When should quota pressure become critical?", criticalPercent, "Example: 80 means 80% of the five-hour window used");
+    warningPercent = await numberPrompt(
+      prompts,
+      "When should quota pressure become a warning?",
+      warningPercent,
+      "Example: 50 means 50% of the five-hour window used"
+    );
+    criticalPercent = await numberPrompt(
+      prompts,
+      "When should quota pressure become critical?",
+      criticalPercent,
+      "Example: 80 means 80% of the five-hour window used"
+    );
     if (warningPercent < criticalPercent) break;
-    prompts.note("Warning threshold must be lower than critical threshold. Please enter both values again.", "Invalid quota thresholds");
+    prompts.note(
+      "Warning threshold must be lower than critical threshold. Please enter both values again.",
+      "Invalid quota thresholds"
+    );
   }
   return { ...draft, plan, warningPercent, criticalPercent };
 }
 async function collectIntegrations(prompts, draft) {
-  prompts.note("Optional allowlists restrict external capabilities Dev Flow may use. Leave empty for none.\nExamples: impeccable, context-mode:ctx-search", "3/3 \xB7 External integrations");
-  const plugins = await idsPrompt(prompts, "Allowed external plugin IDs", draft.plugins, "impeccable, context-mode");
-  const skills = await idsPrompt(prompts, "Allowed external skill IDs", draft.skills, "impeccable:frontend-design");
+  prompts.note(
+    "Optional allowlists restrict external capabilities Dev Flow may use. Leave empty for none.\nExamples: impeccable, context-mode:ctx-search",
+    "3/3 \xB7 External integrations"
+  );
+  const plugins = await idsPrompt(
+    prompts,
+    "Allowed external plugin IDs",
+    draft.plugins,
+    "impeccable, context-mode"
+  );
+  const skills = await idsPrompt(
+    prompts,
+    "Allowed external skill IDs",
+    draft.skills,
+    "impeccable:frontend-design"
+  );
   return { ...draft, plugins, skills };
 }
 function buildConfiguration(current, draft) {
@@ -16291,7 +16473,12 @@ function buildConfiguration(current, draft) {
     subscription: {
       ...subscription,
       plan: draft.plan,
-      quota: { ...quota, warningPercent: draft.warningPercent, criticalPercent: draft.criticalPercent, unknownPolicy: "conservative" }
+      quota: {
+        ...quota,
+        warningPercent: draft.warningPercent,
+        criticalPercent: draft.criticalPercent,
+        unknownPolicy: "conservative"
+      }
     },
     integrations: { ...integrations, plugins: draft.plugins, skills: draft.skills }
   };
@@ -16325,7 +16512,14 @@ function renderConfigurationSummary(path, draft) {
   ].join("\n");
 }
 function renderRoutingSummary(plan, pressure) {
-  const labels = { discover: "Discover", plan: "Plan", execute: "Execute", review: "Review", verify: "Verify", debug: "Debug root cause" };
+  const labels = {
+    discover: "Discover",
+    plan: "Plan",
+    execute: "Execute",
+    review: "Review",
+    verify: "Verify",
+    debug: "Debug root cause"
+  };
   const routes = buildRoutingPreview(plan, pressure).map(
     (decision) => `${labels[decision.stage]}: ${decision.model ?? "unavailable"} \xB7 ${decision.effort ?? "unavailable"}`
   );
@@ -16336,31 +16530,41 @@ function renderRoutingSummary(plan, pressure) {
   ].join("\n");
 }
 async function numberPrompt(prompts, message, fallback, placeholder) {
-  const answer = await required(prompts, prompts.text({
-    message,
-    defaultValue: String(fallback),
-    placeholder,
-    validate: (value) => {
-      const number = Number(value);
-      return Number.isFinite(number) && number >= 0 && number <= 100 ? void 0 : "Enter a number from 0 to 100.";
-    }
-  }));
+  const answer = await required(
+    prompts,
+    prompts.text({
+      message,
+      defaultValue: String(fallback),
+      placeholder,
+      validate: (value) => {
+        const number = Number(value);
+        return Number.isFinite(number) && number >= 0 && number <= 100 ? void 0 : "Enter a number from 0 to 100.";
+      }
+    })
+  );
   return Number(answer);
 }
 async function idsPrompt(prompts, message, fallback, placeholder) {
-  const answer = await required(prompts, prompts.text({
-    message,
-    defaultValue: fallback.join(", "),
-    placeholder,
-    validate: (value) => {
-      const invalid2 = parseIds(value).find((id) => !INTEGRATION_ID.test(id));
-      return invalid2 ? `Invalid integration identifier: ${invalid2}` : void 0;
-    }
-  }));
+  const answer = await required(
+    prompts,
+    prompts.text({
+      message,
+      defaultValue: fallback.join(", "),
+      placeholder,
+      validate: (value) => {
+        const invalid2 = parseIds(value).find((id) => !INTEGRATION_ID.test(id));
+        return invalid2 ? `Invalid integration identifier: ${invalid2}` : void 0;
+      }
+    })
+  );
   return parseIds(answer);
 }
 function parseIds(value) {
-  return [...new Set(value.split(",").map((item) => item.trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      value.split(",").map((item) => item.trim()).filter(Boolean)
+    )
+  ];
 }
 async function required(prompts, answer) {
   const value = await answer;
@@ -16383,7 +16587,11 @@ function createClackAdapter() {
         label: choice.label,
         ...choice.hint ? { hint: choice.hint } : {}
       }));
-      return qt({ message: options.message, options: choices, initialValue: options.initialValue });
+      return qt({
+        message: options.message,
+        options: choices,
+        initialValue: options.initialValue
+      });
     },
     text: (options) => Qt({
       message: options.message,
@@ -16395,7 +16603,8 @@ function createClackAdapter() {
 }
 function readConfiguration(path) {
   const parsed = (0, import_yaml2.parse)(readFileSync2(path, "utf8"));
-  if (!isRecord4(parsed)) throw new Error(`Invalid configuration at ${path}: root must be an object.`);
+  if (!isRecord4(parsed))
+    throw new Error(`Invalid configuration at ${path}: root must be an object.`);
   return parsed;
 }
 function record(value) {
@@ -16424,7 +16633,8 @@ var FIVE_HOURS_SECONDS = 300 * 60;
 async function readFiveHourResetCache(path, nowEpochSeconds) {
   try {
     const parsed = JSON.parse(await readFile2(path, "utf8"));
-    if (!isFiveHourResetCache(parsed) || parsed.resetsAt <= nowEpochSeconds || parsed.resetsAt > nowEpochSeconds + FIVE_HOURS_SECONDS) return void 0;
+    if (!isFiveHourResetCache(parsed) || parsed.resetsAt <= nowEpochSeconds || parsed.resetsAt > nowEpochSeconds + FIVE_HOURS_SECONDS)
+      return void 0;
     return parsed;
   } catch {
     return void 0;
@@ -16438,7 +16648,10 @@ async function writeFiveHourResetCache(path, value) {
   const temporaryPath = path + "." + process.pid + "." + randomUUID2() + ".tmp";
   await mkdir3(dirname(path), { recursive: true, mode: 448 });
   try {
-    await writeFile2(temporaryPath, JSON.stringify(cache, null, 2) + "\n", { encoding: "utf8", mode: 384 });
+    await writeFile2(temporaryPath, JSON.stringify(cache, null, 2) + "\n", {
+      encoding: "utf8",
+      mode: 384
+    });
     await rename3(temporaryPath, path);
   } catch (error) {
     await rm(temporaryPath, { force: true }).catch(() => void 0);
@@ -16467,7 +16680,14 @@ function isFiveHourResetCache(value) {
 }
 
 // src/state-machine.ts
-var MACRO_PHASES = Object.freeze(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE", "HANDOFF"]);
+var MACRO_PHASES = Object.freeze([
+  "INTAKE",
+  "SHAPE",
+  "GATE",
+  "BUILD",
+  "ASSURE",
+  "HANDOFF"
+]);
 var GUARD_IDS = Object.freeze([
   "task_initialized",
   "effective_constraints_valid",
@@ -16495,92 +16715,471 @@ var GUARD_IDS = Object.freeze([
 var CAPSULE = {
   INTAKE: {
     consumes: ["request", "constraints", "shape.decision-escalation"],
-    produces: ["intake.brief", "intake.decisions", "intake.question", "risk", "routing", "workspace", "freshness.config", "freshness.policy"],
+    produces: [
+      "intake.brief",
+      "intake.decisions",
+      "intake.question",
+      "risk",
+      "routing",
+      "workspace",
+      "freshness.config",
+      "freshness.policy"
+    ],
     invalidates: ["intake.dependent-decisions", "shape.dependency-closure", "approvals"]
   },
   SHAPE: {
-    consumes: ["intake.brief", "intake.decisions", "intake.technical-unknowns", "risk", "constraints", "routing", "workspace", "shape.state"],
-    produces: ["shape.targets", "shape.evidence", "shape.profile-choice", "shape.contract", "shape.projection", "freshness.sources"],
+    consumes: [
+      "intake.brief",
+      "intake.decisions",
+      "intake.technical-unknowns",
+      "risk",
+      "constraints",
+      "routing",
+      "workspace",
+      "shape.state"
+    ],
+    produces: [
+      "shape.targets",
+      "shape.evidence",
+      "shape.profile-choice",
+      "shape.contract",
+      "shape.projection",
+      "freshness.sources"
+    ],
     invalidates: ["shape.dependency-closure", "approvals", "build", "assurance", "handoff"]
   },
-  GATE: { consumes: ["shape.contract", "risk", "assurance.verificationEvidence"], produces: ["approvals"], invalidates: ["approvals"] },
-  BUILD: { consumes: ["shape.contract", "approvals", "shape.evidence", "workspace", "freshness"], produces: ["build", "issues.active", "freshness.git", "freshness.commands"], invalidates: ["build.validationEvidence", "assurance", "handoff.receipts", "approvals"] },
-  ASSURE: { consumes: ["shape.contract", "build", "issues.active", "freshness"], produces: ["assurance", "issues.active", "freshness.commands"], invalidates: ["assurance.findings", "assurance.verificationEvidence", "handoff.receipts", "approvals"] },
-  HANDOFF: { consumes: ["shape.contract", "assurance.verificationEvidence", "workspace", "handoff"], produces: ["handoff.identities", "handoff.receipts"], invalidates: ["handoff.receipts"] }
+  GATE: {
+    consumes: ["shape.contract", "risk", "assurance.verificationEvidence"],
+    produces: ["approvals"],
+    invalidates: ["approvals"]
+  },
+  BUILD: {
+    consumes: ["shape.contract", "approvals", "shape.evidence", "workspace", "freshness"],
+    produces: ["build", "issues.active", "freshness.git", "freshness.commands"],
+    invalidates: ["build.validationEvidence", "assurance", "handoff.receipts", "approvals"]
+  },
+  ASSURE: {
+    consumes: ["shape.contract", "build", "issues.active", "freshness"],
+    produces: ["assurance", "issues.active", "freshness.commands"],
+    invalidates: [
+      "assurance.findings",
+      "assurance.verificationEvidence",
+      "handoff.receipts",
+      "approvals"
+    ]
+  },
+  HANDOFF: {
+    consumes: ["shape.contract", "assurance.verificationEvidence", "workspace", "handoff"],
+    produces: ["handoff.identities", "handoff.receipts"],
+    invalidates: ["handoff.receipts"]
+  }
 };
 var EVENTS = {
-  INTAKE: ["task.initialized", "intake.question_recorded", "intake.answer_recorded", "intake.checkpoint", "advance.rejected", "intake.reopened", "routing.captured", "state.transition"],
-  SHAPE: ["discovery.target_recorded", "discovery.evidence_recorded", "discovery.completed", "profile.choice_requested", "profile.choice_recorded", "decision.escalated", "contract.projected", "projection.reconciliation_requested", "evidence.invalidated", "shape.checkpoint", "state.transition"],
+  INTAKE: [
+    "task.initialized",
+    "intake.question_recorded",
+    "intake.answer_recorded",
+    "intake.checkpoint",
+    "advance.rejected",
+    "intake.reopened",
+    "routing.captured",
+    "state.transition"
+  ],
+  SHAPE: [
+    "discovery.target_recorded",
+    "discovery.evidence_recorded",
+    "discovery.completed",
+    "profile.choice_requested",
+    "profile.choice_recorded",
+    "decision.escalated",
+    "contract.projected",
+    "projection.reconciliation_requested",
+    "evidence.invalidated",
+    "shape.checkpoint",
+    "state.transition"
+  ],
   GATE: ["approval.requested", "approval.recorded", "approval.invalidated", "state.transition"],
-  BUILD: ["task.started", "checkpoint.recorded", "validation.completed", "finding.observed", "state.transition"],
-  ASSURE: ["review.completed", "finding.observed", "finding.resolved", "verification.completed", "state.transition"],
-  HANDOFF: ["handoff.reconciled", "handoff.attempted", "handoff.receipt_recorded", "task.finished", "state.transition"]
+  BUILD: [
+    "task.started",
+    "checkpoint.recorded",
+    "validation.completed",
+    "finding.observed",
+    "state.transition"
+  ],
+  ASSURE: [
+    "review.completed",
+    "finding.observed",
+    "finding.resolved",
+    "verification.completed",
+    "state.transition"
+  ],
+  HANDOFF: [
+    "handoff.reconciled",
+    "handoff.attempted",
+    "handoff.receipt_recorded",
+    "task.finished",
+    "state.transition"
+  ]
 };
 var G3 = (...guards) => ({ guards });
-var TERMINALS = { blocked: G3("resume_metadata_valid"), cancelled: G3("terminal_source_recorded"), failed: G3("terminal_source_recorded") };
+var TERMINALS = {
+  blocked: G3("resume_metadata_valid"),
+  cancelled: G3("terminal_source_recorded"),
+  failed: G3("terminal_source_recorded")
+};
 var STATE_MACHINE_DEFINITION = {
-  new: { macroPhase: "INTAKE", stable: false, terminal: false, capsule: CAPSULE.INTAKE, events: EVENTS.INTAKE, transitions: { intaking: G3("task_initialized", "effective_constraints_valid"), ...TERMINALS } },
-  intaking: { macroPhase: "INTAKE", stable: false, terminal: false, capsule: CAPSULE.INTAKE, events: EVENTS.INTAKE, transitions: { discovering: G3("intake_complete", "routing_ready", "workspace_ready"), ...TERMINALS } },
-  discovering: { macroPhase: "SHAPE", stable: false, terminal: false, capsule: CAPSULE.SHAPE, events: EVENTS.SHAPE, transitions: { awaiting_profile_choice: G3("discovery_sufficient"), awaiting_intake_decision: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
-  awaiting_profile_choice: { macroPhase: "SHAPE", stable: false, terminal: false, capsule: CAPSULE.SHAPE, events: EVENTS.SHAPE, transitions: { planning: G3("profile_selected"), discovering: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
-  planning: { macroPhase: "SHAPE", stable: false, terminal: false, capsule: CAPSULE.SHAPE, events: EVENTS.SHAPE, transitions: { discovering: G3(), awaiting_intake_decision: G3(), awaiting_approval: G3("discovery_sufficient", "profile_selected", "contract_complete"), intaking: G3("intake_reopened"), ...TERMINALS } },
-  awaiting_intake_decision: { macroPhase: "INTAKE", stable: false, terminal: false, capsule: CAPSULE.INTAKE, events: EVENTS.INTAKE, transitions: { discovering: G3("intake_complete"), planning: G3("intake_complete", "discovery_sufficient", "profile_selected"), ...TERMINALS } },
-  awaiting_approval: { macroPhase: "GATE", stable: false, terminal: false, capsule: CAPSULE.GATE, events: EVENTS.GATE, transitions: {
-    planning: G3("gate_context_valid"),
-    resolving_assure: G3("gate_context_valid", "correction_budget_available"),
-    verifying: G3("gate_context_valid"),
-    executing: G3("gate_context_valid", "approval_current", "task_authorized"),
-    handing_off: G3("gate_context_valid", "verification_complete", "completion_approved", "handoff_intent_resolved"),
-    ready_for_handoff: G3("gate_context_valid", "verification_complete", "completion_approved", "handoff_intent_resolved"),
-    finished_local: G3("gate_context_valid", "verification_complete", "completion_approved", "handoff_intent_resolved"),
-    intaking: G3("intake_reopened"),
-    ...TERMINALS
-  } },
-  executing: { macroPhase: "BUILD", stable: false, terminal: false, capsule: CAPSULE.BUILD, events: EVENTS.BUILD, transitions: { validating: G3("task_authorized"), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
-  validating: { macroPhase: "BUILD", stable: false, terminal: false, capsule: CAPSULE.BUILD, events: EVENTS.BUILD, transitions: { executing: G3("validation_fresh", "task_authorized"), resolving_build: G3("correction_budget_available"), reviewing: G3("validation_fresh"), verifying: G3("validation_fresh", "review_satisfied"), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
-  resolving_build: { macroPhase: "BUILD", stable: false, terminal: false, capsule: CAPSULE.BUILD, events: EVENTS.BUILD, transitions: { validating: G3("correction_budget_available"), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
-  reviewing: { macroPhase: "ASSURE", stable: false, terminal: false, capsule: CAPSULE.ASSURE, events: EVENTS.ASSURE, transitions: { resolving_assure: G3("correction_budget_available"), verifying: G3("review_satisfied"), validating: G3(), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
-  resolving_assure: { macroPhase: "ASSURE", stable: false, terminal: false, capsule: CAPSULE.ASSURE, events: EVENTS.ASSURE, transitions: { reviewing: G3("correction_budget_available"), validating: G3(), planning: G3(), intaking: G3("intake_reopened"), ...TERMINALS } },
-  verifying: { macroPhase: "ASSURE", stable: false, terminal: false, capsule: CAPSULE.ASSURE, events: EVENTS.ASSURE, transitions: { validating: G3("correction_budget_available"), reviewing: G3(), planning: G3(), awaiting_approval: G3("verification_complete"), handing_off: G3("verification_complete", "handoff_intent_resolved"), ready_for_handoff: G3("verification_complete", "handoff_intent_resolved"), finished_local: G3("verification_complete", "handoff_intent_resolved"), intaking: G3("intake_reopened"), ...TERMINALS } },
-  handing_off: { macroPhase: "HANDOFF", stable: false, terminal: false, capsule: CAPSULE.HANDOFF, events: EVENTS.HANDOFF, transitions: { finished: G3("handoff_intent_resolved", "handoff_reconciled"), ready_for_handoff: G3("handoff_intent_resolved", "handoff_reconciled"), finished_local: G3("handoff_intent_resolved"), intaking: G3("intake_reopened"), ...TERMINALS } },
-  ready_for_handoff: { macroPhase: "HANDOFF", stable: true, terminal: false, capsule: CAPSULE.HANDOFF, events: EVENTS.HANDOFF, transitions: { handing_off: G3("handoff_intent_resolved", "handoff_reconciled"), intaking: G3("intake_reopened"), ...TERMINALS } },
-  blocked: { macroPhase: "resumeTo", stable: true, terminal: false, capsule: { consumes: ["resume.metadata", "freshness"], produces: ["resume.reconciliation"], invalidates: [] }, events: ["task.resumed", "state.transition"], transitions: {
-    intaking: G3("resume_metadata_valid", "resume_reconciled", "task_initialized", "effective_constraints_valid"),
-    discovering: G3("resume_metadata_valid", "resume_reconciled", "intake_complete", "routing_ready", "workspace_ready"),
-    awaiting_profile_choice: G3("resume_metadata_valid", "resume_reconciled", "discovery_sufficient"),
-    planning: G3("resume_metadata_valid", "resume_reconciled", "discovery_sufficient", "profile_selected"),
-    awaiting_intake_decision: G3("resume_metadata_valid", "resume_reconciled"),
-    awaiting_approval: G3("resume_metadata_valid", "resume_reconciled", "contract_complete"),
-    executing: G3("resume_metadata_valid", "resume_reconciled", "approval_current", "task_authorized"),
-    validating: G3("resume_metadata_valid", "resume_reconciled", "task_authorized"),
-    resolving_build: G3("resume_metadata_valid", "resume_reconciled", "correction_budget_available"),
-    reviewing: G3("resume_metadata_valid", "resume_reconciled", "validation_fresh"),
-    resolving_assure: G3("resume_metadata_valid", "resume_reconciled", "correction_budget_available"),
-    verifying: G3("resume_metadata_valid", "resume_reconciled", "review_satisfied"),
-    handing_off: G3("resume_metadata_valid", "resume_reconciled", "handoff_intent_resolved", "handoff_reconciled"),
-    cancelled: G3("terminal_source_recorded"),
-    failed: G3("terminal_source_recorded")
-  } },
-  cancelled: { macroPhase: "terminalSource", stable: true, terminal: true, transitions: {}, capsule: { consumes: ["terminal.source", "freshness"], produces: ["terminal.summary"], invalidates: [] }, events: ["task.cancelled"] },
-  failed: { macroPhase: "terminalSource", stable: true, terminal: true, transitions: {}, capsule: { consumes: ["terminal.source", "issues.active", "freshness"], produces: ["terminal.summary"], invalidates: [] }, events: ["task.failed"] },
-  finished_local: { macroPhase: "HANDOFF", stable: true, terminal: true, transitions: {}, capsule: CAPSULE.HANDOFF, events: ["task.finished_local"] },
-  finished: { macroPhase: "HANDOFF", stable: true, terminal: true, transitions: {}, capsule: CAPSULE.HANDOFF, events: ["task.finished"] }
+  new: {
+    macroPhase: "INTAKE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.INTAKE,
+    events: EVENTS.INTAKE,
+    transitions: { intaking: G3("task_initialized", "effective_constraints_valid"), ...TERMINALS }
+  },
+  intaking: {
+    macroPhase: "INTAKE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.INTAKE,
+    events: EVENTS.INTAKE,
+    transitions: {
+      discovering: G3("intake_complete", "routing_ready", "workspace_ready"),
+      ...TERMINALS
+    }
+  },
+  discovering: {
+    macroPhase: "SHAPE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.SHAPE,
+    events: EVENTS.SHAPE,
+    transitions: {
+      awaiting_profile_choice: G3("discovery_sufficient"),
+      awaiting_intake_decision: G3(),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  awaiting_profile_choice: {
+    macroPhase: "SHAPE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.SHAPE,
+    events: EVENTS.SHAPE,
+    transitions: {
+      planning: G3("profile_selected"),
+      discovering: G3(),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  planning: {
+    macroPhase: "SHAPE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.SHAPE,
+    events: EVENTS.SHAPE,
+    transitions: {
+      discovering: G3(),
+      awaiting_intake_decision: G3(),
+      awaiting_approval: G3("discovery_sufficient", "profile_selected", "contract_complete"),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  awaiting_intake_decision: {
+    macroPhase: "INTAKE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.INTAKE,
+    events: EVENTS.INTAKE,
+    transitions: {
+      discovering: G3("intake_complete"),
+      planning: G3("intake_complete", "discovery_sufficient", "profile_selected"),
+      ...TERMINALS
+    }
+  },
+  awaiting_approval: {
+    macroPhase: "GATE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.GATE,
+    events: EVENTS.GATE,
+    transitions: {
+      planning: G3("gate_context_valid"),
+      resolving_assure: G3("gate_context_valid", "correction_budget_available"),
+      verifying: G3("gate_context_valid"),
+      executing: G3("gate_context_valid", "approval_current", "task_authorized"),
+      handing_off: G3(
+        "gate_context_valid",
+        "verification_complete",
+        "completion_approved",
+        "handoff_intent_resolved"
+      ),
+      ready_for_handoff: G3(
+        "gate_context_valid",
+        "verification_complete",
+        "completion_approved",
+        "handoff_intent_resolved"
+      ),
+      finished_local: G3(
+        "gate_context_valid",
+        "verification_complete",
+        "completion_approved",
+        "handoff_intent_resolved"
+      ),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  executing: {
+    macroPhase: "BUILD",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.BUILD,
+    events: EVENTS.BUILD,
+    transitions: {
+      validating: G3("task_authorized"),
+      planning: G3(),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  validating: {
+    macroPhase: "BUILD",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.BUILD,
+    events: EVENTS.BUILD,
+    transitions: {
+      executing: G3("validation_fresh", "task_authorized"),
+      resolving_build: G3("correction_budget_available"),
+      reviewing: G3("validation_fresh"),
+      verifying: G3("validation_fresh", "review_satisfied"),
+      planning: G3(),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  resolving_build: {
+    macroPhase: "BUILD",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.BUILD,
+    events: EVENTS.BUILD,
+    transitions: {
+      validating: G3("correction_budget_available"),
+      planning: G3(),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  reviewing: {
+    macroPhase: "ASSURE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.ASSURE,
+    events: EVENTS.ASSURE,
+    transitions: {
+      resolving_assure: G3("correction_budget_available"),
+      verifying: G3("review_satisfied"),
+      validating: G3(),
+      planning: G3(),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  resolving_assure: {
+    macroPhase: "ASSURE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.ASSURE,
+    events: EVENTS.ASSURE,
+    transitions: {
+      reviewing: G3("correction_budget_available"),
+      validating: G3(),
+      planning: G3(),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  verifying: {
+    macroPhase: "ASSURE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.ASSURE,
+    events: EVENTS.ASSURE,
+    transitions: {
+      validating: G3("correction_budget_available"),
+      reviewing: G3(),
+      planning: G3(),
+      awaiting_approval: G3("verification_complete"),
+      handing_off: G3("verification_complete", "handoff_intent_resolved"),
+      ready_for_handoff: G3("verification_complete", "handoff_intent_resolved"),
+      finished_local: G3("verification_complete", "handoff_intent_resolved"),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  handing_off: {
+    macroPhase: "HANDOFF",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.HANDOFF,
+    events: EVENTS.HANDOFF,
+    transitions: {
+      finished: G3("handoff_intent_resolved", "handoff_reconciled"),
+      ready_for_handoff: G3("handoff_intent_resolved", "handoff_reconciled"),
+      finished_local: G3("handoff_intent_resolved"),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  ready_for_handoff: {
+    macroPhase: "HANDOFF",
+    stable: true,
+    terminal: false,
+    capsule: CAPSULE.HANDOFF,
+    events: EVENTS.HANDOFF,
+    transitions: {
+      handing_off: G3("handoff_intent_resolved", "handoff_reconciled"),
+      intaking: G3("intake_reopened"),
+      ...TERMINALS
+    }
+  },
+  blocked: {
+    macroPhase: "resumeTo",
+    stable: true,
+    terminal: false,
+    capsule: {
+      consumes: ["resume.metadata", "freshness"],
+      produces: ["resume.reconciliation"],
+      invalidates: []
+    },
+    events: ["task.resumed", "state.transition"],
+    transitions: {
+      intaking: G3(
+        "resume_metadata_valid",
+        "resume_reconciled",
+        "task_initialized",
+        "effective_constraints_valid"
+      ),
+      discovering: G3(
+        "resume_metadata_valid",
+        "resume_reconciled",
+        "intake_complete",
+        "routing_ready",
+        "workspace_ready"
+      ),
+      awaiting_profile_choice: G3(
+        "resume_metadata_valid",
+        "resume_reconciled",
+        "discovery_sufficient"
+      ),
+      planning: G3(
+        "resume_metadata_valid",
+        "resume_reconciled",
+        "discovery_sufficient",
+        "profile_selected"
+      ),
+      awaiting_intake_decision: G3("resume_metadata_valid", "resume_reconciled"),
+      awaiting_approval: G3("resume_metadata_valid", "resume_reconciled", "contract_complete"),
+      executing: G3(
+        "resume_metadata_valid",
+        "resume_reconciled",
+        "approval_current",
+        "task_authorized"
+      ),
+      validating: G3("resume_metadata_valid", "resume_reconciled", "task_authorized"),
+      resolving_build: G3(
+        "resume_metadata_valid",
+        "resume_reconciled",
+        "correction_budget_available"
+      ),
+      reviewing: G3("resume_metadata_valid", "resume_reconciled", "validation_fresh"),
+      resolving_assure: G3(
+        "resume_metadata_valid",
+        "resume_reconciled",
+        "correction_budget_available"
+      ),
+      verifying: G3("resume_metadata_valid", "resume_reconciled", "review_satisfied"),
+      handing_off: G3(
+        "resume_metadata_valid",
+        "resume_reconciled",
+        "handoff_intent_resolved",
+        "handoff_reconciled"
+      ),
+      cancelled: G3("terminal_source_recorded"),
+      failed: G3("terminal_source_recorded")
+    }
+  },
+  cancelled: {
+    macroPhase: "terminalSource",
+    stable: true,
+    terminal: true,
+    transitions: {},
+    capsule: {
+      consumes: ["terminal.source", "freshness"],
+      produces: ["terminal.summary"],
+      invalidates: []
+    },
+    events: ["task.cancelled"]
+  },
+  failed: {
+    macroPhase: "terminalSource",
+    stable: true,
+    terminal: true,
+    transitions: {},
+    capsule: {
+      consumes: ["terminal.source", "issues.active", "freshness"],
+      produces: ["terminal.summary"],
+      invalidates: []
+    },
+    events: ["task.failed"]
+  },
+  finished_local: {
+    macroPhase: "HANDOFF",
+    stable: true,
+    terminal: true,
+    transitions: {},
+    capsule: CAPSULE.HANDOFF,
+    events: ["task.finished_local"]
+  },
+  finished: {
+    macroPhase: "HANDOFF",
+    stable: true,
+    terminal: true,
+    transitions: {},
+    capsule: CAPSULE.HANDOFF,
+    events: ["task.finished"]
+  }
 };
 var STATE_MACHINE = deepFreeze(STATE_MACHINE_DEFINITION);
 var TASK_STATUSES = Object.freeze(Object.keys(STATE_MACHINE));
 function buildStateMachineProjection() {
-  return { macroPhases: [...MACRO_PHASES], guards: [...GUARD_IDS], states: TASK_STATUSES.map((status) => {
-    const state = STATE_MACHINE[status];
-    return {
-      status,
-      macroPhase: state.macroPhase,
-      stable: state.stable,
-      terminal: state.terminal,
-      transitions: Object.entries(state.transitions).map(([target, transition2]) => ({ target, guards: [...transition2.guards] })),
-      capsule: { consumes: [...state.capsule.consumes], produces: [...state.capsule.produces], invalidates: [...state.capsule.invalidates] },
-      events: [...state.events]
-    };
-  }) };
+  return {
+    macroPhases: [...MACRO_PHASES],
+    guards: [...GUARD_IDS],
+    states: TASK_STATUSES.map((status) => {
+      const state = STATE_MACHINE[status];
+      return {
+        status,
+        macroPhase: state.macroPhase,
+        stable: state.stable,
+        terminal: state.terminal,
+        transitions: Object.entries(state.transitions).map(([target, transition2]) => ({
+          target,
+          guards: [...transition2.guards]
+        })),
+        capsule: {
+          consumes: [...state.capsule.consumes],
+          produces: [...state.capsule.produces],
+          invalidates: [...state.capsule.invalidates]
+        },
+        events: [...state.events]
+      };
+    })
+  };
 }
 function isTaskStatus(value) {
   return typeof value === "string" && Object.hasOwn(STATE_MACHINE, value);
@@ -16589,20 +17188,32 @@ function deriveMacroPhase(state) {
   return derive(state.status, state, /* @__PURE__ */ new Set());
 }
 function derive(status, state, seen) {
-  if (seen.has(status)) throw new Error(`Cannot derive macro-phase: recursive source at ${status}.`);
+  if (seen.has(status))
+    throw new Error(`Cannot derive macro-phase: recursive source at ${status}.`);
   seen.add(status);
   const rule = STATE_MACHINE[status].macroPhase;
   if (rule !== "resumeTo" && rule !== "terminalSource") return rule;
   if (rule === "resumeTo") {
-    if (!state.resumeTo || !isOperationalResumeTarget(state.resumeTo)) throw new Error(`Cannot derive macro-phase for blocked: invalid resumeTo ${String(state.resumeTo)}.`);
+    if (!state.resumeTo || !isOperationalResumeTarget(state.resumeTo))
+      throw new Error(
+        `Cannot derive macro-phase for blocked: invalid resumeTo ${String(state.resumeTo)}.`
+      );
     return derive(state.resumeTo, state, seen);
   }
-  const event = [...state.history].reverse().find((candidate) => isRecord5(candidate) && candidate.type === "state.transition");
+  const event = [...state.history].toReversed().find(
+    (candidate) => isRecord5(candidate) && candidate.type === "state.transition"
+  );
   const source = event?.terminalSource;
-  if (event?.to !== status || !isTaskStatus(source) || event.from !== source || STATE_MACHINE[source].terminal) throw new Error(`Cannot derive macro-phase for ${status}: valid terminal source event missing.`);
+  if (event?.to !== status || !isTaskStatus(source) || event.from !== source || STATE_MACHINE[source].terminal)
+    throw new Error(
+      `Cannot derive macro-phase for ${status}: valid terminal source event missing.`
+    );
   if (source === "blocked") {
     const terminalResumeTo = event.terminalResumeTo;
-    if (!isTaskStatus(terminalResumeTo) || !isOperationalResumeTarget(terminalResumeTo)) throw new Error(`Cannot derive macro-phase for ${status}: blocked terminal source lacks operational resumeTo.`);
+    if (!isTaskStatus(terminalResumeTo) || !isOperationalResumeTarget(terminalResumeTo))
+      throw new Error(
+        `Cannot derive macro-phase for ${status}: blocked terminal source lacks operational resumeTo.`
+      );
     return derive(terminalResumeTo, { ...state, status: terminalResumeTo }, seen);
   }
   return derive(source, { ...state, status: source }, seen);
@@ -16651,10 +17262,12 @@ function validateDependencyGraph(input) {
   if (!input || input.schemaVersion !== 1 || !Array.isArray(input.nodes)) {
     throw new Error("Dependency graph must use schemaVersion 1 and contain nodes.");
   }
-  if (input.nodes.length > MAX_NODES) throw new Error(`Dependency graph exceeds ${MAX_NODES} nodes.`);
+  if (input.nodes.length > MAX_NODES)
+    throw new Error(`Dependency graph exceeds ${MAX_NODES} nodes.`);
   const nodes = /* @__PURE__ */ new Map();
   for (const candidate of input.nodes) {
-    if (!candidate || !ID_PATTERN.test(candidate.id)) throw new Error("Dependency node id is invalid.");
+    if (!candidate || !ID_PATTERN.test(candidate.id))
+      throw new Error("Dependency node id is invalid.");
     if (!DEPENDENCY_NODE_KINDS.includes(candidate.kind)) {
       throw new Error(`Dependency node ${candidate.id} kind is invalid.`);
     }
@@ -16697,7 +17310,7 @@ function validateDependencyGraph(input) {
   for (const id of nodes.keys()) visit(id);
   return {
     schemaVersion: 1,
-    nodes: [...nodes.values()].sort((left, right) => left.id.localeCompare(right.id))
+    nodes: [...nodes.values()].toSorted((left, right) => left.id.localeCompare(right.id))
   };
 }
 function dependencyClosure(graph, roots) {
@@ -16723,20 +17336,22 @@ function dependencyClosure(graph, roots) {
     output.add(current);
     for (const dependant of dependants.get(current) ?? []) queue.push(dependant);
   }
-  return [...output].sort();
+  return [...output].toSorted();
 }
 
 // src/shape-freshness.ts
-var TOKEN = /^[^\r\n\0]{1,1024}$/;
+var TOKEN = /^[^\r\n\u0000]{1,1024}$/;
 function isSourceFingerprintFresh(fingerprint2, observed, now = (/* @__PURE__ */ new Date()).toISOString()) {
   validateSourceFingerprint(fingerprint2);
   const observation = typeof observed === "string" ? { value: observed } : observed;
   if (!observation || observation.value !== fingerprint2.value) return false;
-  if (fingerprint2.kind === "command" && observation.inputDigest !== fingerprint2.inputDigest) return false;
+  if (fingerprint2.kind === "command" && observation.inputDigest !== fingerprint2.inputDigest)
+    return false;
   if (fingerprint2.kind === "external" && fingerprint2.expiresAt !== void 0) {
     const nowEpoch = Date.parse(now);
     const expiresEpoch = Date.parse(fingerprint2.expiresAt);
-    if (!Number.isFinite(nowEpoch) || !Number.isFinite(expiresEpoch)) throw new Error("Freshness timestamp is invalid.");
+    if (!Number.isFinite(nowEpoch) || !Number.isFinite(expiresEpoch))
+      throw new Error("Freshness timestamp is invalid.");
     if (nowEpoch >= expiresEpoch) return false;
   }
   return true;
@@ -16746,13 +17361,14 @@ function reconcileShapeFreshness(input) {
   const fingerprints = /* @__PURE__ */ new Map();
   for (const fingerprint2 of input.fingerprints) {
     validateSourceFingerprint(fingerprint2);
-    if (fingerprints.has(fingerprint2.id)) throw new Error(`Duplicate source fingerprint ${fingerprint2.id}.`);
+    if (fingerprints.has(fingerprint2.id))
+      throw new Error(`Duplicate source fingerprint ${fingerprint2.id}.`);
     fingerprints.set(fingerprint2.id, fingerprint2);
   }
   const staleFingerprintIds = [...fingerprints.values()].filter((fingerprint2) => {
     const observed = input.observedValues[fingerprint2.id];
     return observed === void 0 || !isSourceFingerprintFresh(fingerprint2, observed, input.now);
-  }).map((fingerprint2) => fingerprint2.id).sort();
+  }).map((fingerprint2) => fingerprint2.id).toSorted();
   const staleSet = new Set(staleFingerprintIds);
   const staleEvidenceIds = [];
   const reusedEvidenceIds = [];
@@ -16780,10 +17396,10 @@ function reconcileShapeFreshness(input) {
   }
   return {
     staleFingerprintIds,
-    staleEvidenceIds: staleEvidenceIds.sort(),
-    reusedEvidenceIds: reusedEvidenceIds.sort(),
+    staleEvidenceIds: staleEvidenceIds.toSorted(),
+    reusedEvidenceIds: reusedEvidenceIds.toSorted(),
     invalidatedNodeIds: staleRoots.size ? dependencyClosure(graph, [...staleRoots]) : [],
-    refreshTargetIds: staleEvidenceIds.map((id) => `refresh:${id}`).sort()
+    refreshTargetIds: staleEvidenceIds.map((id) => `refresh:${id}`).toSorted()
   };
 }
 function validateSourceFingerprint(fingerprint2) {
@@ -16824,21 +17440,28 @@ function validateEvidence(item, fingerprints, graphNodes) {
 }
 
 // src/shape.ts
-var TOKEN2 = /^[^\r\n\0]{1,1024}$/;
+var TOKEN2 = /^[^\r\n\u0000]{1,1024}$/;
 var ID = /^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]{0,255}$/;
-var RISKS = ["low", "medium", "high", "critical"];
-var IMPACTS = ["scope", "risk", "acceptance", "plan", "validation", "profile_recommendation"];
-var GUIDE_REASONS = [
+var RISKS = /* @__PURE__ */ new Set(["low", "medium", "high", "critical"]);
+var IMPACTS = /* @__PURE__ */ new Set([
+  "scope",
+  "risk",
+  "acceptance",
+  "plan",
+  "validation",
+  "profile_recommendation"
+]);
+var GUIDE_REASONS = /* @__PURE__ */ new Set([
   "architectural_boundary",
   "compatibility_migration",
   "non_obvious_order",
   "security_concurrency_performance",
   "mandatory_repository_pattern",
   "complex_rollback_deployment"
-];
+]);
 var MAX_ITEMS = 4096;
 function createShapeState(input) {
-  if (!RISKS.includes(input.risk) || !TOKEN2.test(input.intakeBriefRef)) {
+  if (!RISKS.has(input.risk) || !TOKEN2.test(input.intakeBriefRef)) {
     throw new Error("Shape state requires risk and Intake Brief reference.");
   }
   validateBudgetLimits(input.budget ?? {});
@@ -16853,7 +17476,7 @@ function createShapeState(input) {
     dependencyGraph: { schemaVersion: 1, nodes: [] },
     invalidations: [],
     budget: {
-      limits: { ...input.budget ?? {} },
+      limits: { ...input.budget },
       usage: { reasoningCalls: 0, inputTokens: 0, outputTokens: 0, contextBytes: 0 },
       continuations: 0
     },
@@ -16874,21 +17497,33 @@ function applyDiscoveryEvaluation(state, evaluation) {
     schemaVersion: 1,
     nodes: mergeById(state.dependencyGraph.nodes, evaluation.dependencyNodes)
   });
-  if ([discoveryTargets.length, evidence.length, sourceFingerprints.length, dependencyGraph.nodes.length].some((size) => size > MAX_ITEMS)) {
+  if ([
+    discoveryTargets.length,
+    evidence.length,
+    sourceFingerprints.length,
+    dependencyGraph.nodes.length
+  ].some((size) => size > MAX_ITEMS)) {
     throw new Error("Discovery evaluation exceeds SHAPE item bounds.");
   }
-  const candidate = recordShapeUsage({
-    ...state,
-    discoveryTargets,
-    evidence,
-    sourceFingerprints,
-    dependencyGraph
-  }, evaluation.usage ?? { reasoningCalls: 1 });
+  const candidate = recordShapeUsage(
+    {
+      ...state,
+      discoveryTargets,
+      evidence,
+      sourceFingerprints,
+      dependencyGraph
+    },
+    evaluation.usage ?? { reasoningCalls: 1 }
+  );
   validateShapeEvidence(candidate);
   const completeness = evaluateDiscoveryCompleteness(candidate);
-  const semanticContradictions = completeness.reasons.filter((reason) => reason !== "budget_checkpoint");
+  const semanticContradictions = completeness.reasons.filter(
+    (reason) => reason !== "budget_checkpoint"
+  );
   if (evaluation.semanticSufficient && semanticContradictions.length) {
-    throw new Error(`Discovery semantic sufficiency contradicts unresolved targets: ${semanticContradictions.join(", ")}.`);
+    throw new Error(
+      `Discovery semantic sufficiency contradicts unresolved targets: ${semanticContradictions.join(", ")}.`
+    );
   }
   if (!evaluation.semanticSufficient) return withoutDiscoveryReceipts(candidate);
   return candidate;
@@ -16897,11 +17532,13 @@ function evaluateDiscoveryCompleteness(state) {
   assertShapeStateEnvelope(state);
   const reasons = [];
   const unresolved = state.discoveryTargets.filter((target) => target.status !== "resolved");
-  if (unresolved.length) reasons.push(...unresolved.map((target) => `target:${target.id}:${target.status}`));
+  if (unresolved.length)
+    reasons.push(...unresolved.map((target) => `target:${target.id}:${target.status}`));
   for (const target of state.discoveryTargets.filter((item) => item.status === "resolved")) {
     if (!target.evidenceIds.length) reasons.push(`target:${target.id}:missing_evidence`);
     for (const evidenceId of target.evidenceIds) {
-      if (!state.evidence.some((evidence) => evidence.id === evidenceId)) reasons.push(`target:${target.id}:unknown_evidence:${evidenceId}`);
+      if (!state.evidence.some((evidence) => evidence.id === evidenceId))
+        reasons.push(`target:${target.id}:unknown_evidence:${evidenceId}`);
     }
   }
   if (!state.discoveryTargets.length) reasons.push("no_discovery_target");
@@ -16909,27 +17546,31 @@ function evaluateDiscoveryCompleteness(state) {
   if (state.budget.checkpoint) reasons.push("budget_checkpoint");
   try {
     validateShapeEvidence(state);
-    const observedValues = Object.fromEntries(state.sourceFingerprints.map((fingerprint2) => [
-      fingerprint2.id,
-      fingerprint2.kind === "command" ? { value: fingerprint2.value, inputDigest: fingerprint2.inputDigest } : fingerprint2.value
-    ]));
+    const observedValues = Object.fromEntries(
+      state.sourceFingerprints.map((fingerprint2) => [
+        fingerprint2.id,
+        fingerprint2.kind === "command" ? { value: fingerprint2.value, inputDigest: fingerprint2.inputDigest } : fingerprint2.value
+      ])
+    );
     const freshness = reconcileShapeFreshness({
       graph: state.dependencyGraph,
       fingerprints: state.sourceFingerprints,
       evidence: state.evidence,
       observedValues
     });
-    if (freshness.staleEvidenceIds.length) reasons.push(...freshness.staleEvidenceIds.map((id) => `stale_evidence:${id}`));
+    if (freshness.staleEvidenceIds.length)
+      reasons.push(...freshness.staleEvidenceIds.map((id) => `stale_evidence:${id}`));
   } catch (error) {
     reasons.push(error instanceof Error ? error.message : "invalid_evidence");
   }
-  return { complete: reasons.length === 0, reasons: [...new Set(reasons)].sort() };
+  return { complete: reasons.length === 0, reasons: [...new Set(reasons)].toSorted() };
 }
 function attestDiscoverySufficient(state) {
   const completeness = evaluateDiscoveryCompleteness(state);
-  if (!completeness.complete) throw new Error(`Discovery is incomplete: ${completeness.reasons.join(", ")}.`);
-  const completedIds = state.discoveryTargets.map((target) => target.id).sort();
-  const evidenceRefs = state.evidence.map((item) => item.id).sort();
+  if (!completeness.complete)
+    throw new Error(`Discovery is incomplete: ${completeness.reasons.join(", ")}.`);
+  const completedIds = state.discoveryTargets.map((target) => target.id).toSorted();
+  const evidenceRefs = state.evidence.map((item) => item.id).toSorted();
   const inputDigest = digest({
     intakeBriefRef: state.intakeBriefRef,
     risk: state.risk,
@@ -16961,7 +17602,9 @@ function createDecisionEscalation(state, input) {
   if (!ID.test(input.id) || !ID.test(input.decisionKey) || !TOKEN2.test(input.productImpact) || !TOKEN2.test(input.recommendationBasis) || !["discovering", "planning"].includes(input.priorRole)) {
     throw new Error("Decision Escalation identity or impact is invalid.");
   }
-  if (state.decisionEscalations.some((item) => item.id === input.id || item.decisionKey === input.decisionKey)) {
+  if (state.decisionEscalations.some(
+    (item) => item.id === input.id || item.decisionKey === input.decisionKey
+  )) {
     throw new Error("Decision Escalation identity already exists.");
   }
   if (input.options.length < 2 || input.options.length > 3 || new Set(input.options.map((option) => option.id)).size !== input.options.length) {
@@ -17002,7 +17645,10 @@ function resolveDecisionEscalation(state, input) {
   if (!escalation.options.some((option) => option.id === input.selectedOptionId) || !TOKEN2.test(input.evidenceRef)) {
     throw new Error("Decision Escalation requires explicit selected option and evidence.");
   }
-  const invalidatedNodeIds = dependencyClosure(state.dependencyGraph, escalation.affectedDependencyRootIds);
+  const invalidatedNodeIds = dependencyClosure(
+    state.dependencyGraph,
+    escalation.affectedDependencyRootIds
+  );
   const invalidatedSet = new Set(invalidatedNodeIds);
   const { activeEscalationId: _activeEscalationId, ...base } = withoutDiscoveryReceipts(state);
   const nextState = {
@@ -17011,17 +17657,31 @@ function resolveDecisionEscalation(state, input) {
       (target) => target.id === escalation.targetId ? { ...target, status: "stale" } : target
     ),
     decisionEscalations: state.decisionEscalations.map(
-      (item) => item.id === escalation.id ? { ...item, status: "resolved", selectedOptionId: input.selectedOptionId, answerEvidenceRef: input.evidenceRef } : item
+      (item) => item.id === escalation.id ? {
+        ...item,
+        status: "resolved",
+        selectedOptionId: input.selectedOptionId,
+        answerEvidenceRef: input.evidenceRef
+      } : item
     ),
-    invalidations: [...state.invalidations, {
-      rootIds: [...escalation.affectedDependencyRootIds],
-      invalidatedNodeIds,
-      reason: `decision:${escalation.decisionKey}`
-    }],
+    invalidations: [
+      ...state.invalidations,
+      {
+        rootIds: [...escalation.affectedDependencyRootIds],
+        invalidatedNodeIds,
+        reason: `decision:${escalation.decisionKey}`
+      }
+    ],
     evidence: state.evidence.filter((item) => !invalidatedSet.has(item.dependencyNodeId))
   };
-  const needsDiscovery = nextState.discoveryTargets.some((target) => ["open", "stale", "blocked"].includes(target.status));
-  return { state: nextState, resumeRole: needsDiscovery ? "discovering" : escalation.priorRole, invalidatedNodeIds };
+  const needsDiscovery = nextState.discoveryTargets.some(
+    (target) => ["open", "stale", "blocked"].includes(target.status)
+  );
+  return {
+    state: nextState,
+    resumeRole: needsDiscovery ? "discovering" : escalation.priorRole,
+    invalidatedNodeIds
+  };
 }
 function requestPreparationProfileChoice(state, input) {
   assertShapeStateEnvelope(state);
@@ -17055,10 +17715,12 @@ function requestPreparationProfileChoice(state, input) {
 function selectPreparationProfile(state, input) {
   assertShapeStateEnvelope(state);
   const choice = state.preparationProfileChoice;
-  if (!choice || choice.status !== "pending") throw new Error("Pending preparation profile choice does not exist.");
+  if (!choice || choice.status !== "pending")
+    throw new Error("Pending preparation profile choice does not exist.");
   if (!state.evaluatorReceipts.some(
     (receipt) => receipt.evaluator === "discovery" && receipt.receiptDigest === choice.discoveryReceiptDigest
-  )) throw new Error("Preparation profile choice is stale because Discovery changed.");
+  ))
+    throw new Error("Preparation profile choice is stale because Discovery changed.");
   if (!["quick", "plan"].includes(input.profile) || !TOKEN2.test(input.evidenceRef)) {
     throw new Error("Preparation profile requires explicit profile and evidence.");
   }
@@ -17078,14 +17740,20 @@ function applyPlanningEvaluation(state, evaluation) {
   if (!choice || choice.status !== "selected" || !choice.selectedProfile) {
     throw new Error("Planning requires selected preparation profile.");
   }
-  const discoveryReceipt = state.evaluatorReceipts.find((receipt2) => receipt2.evaluator === "discovery");
+  const discoveryReceipt = state.evaluatorReceipts.find(
+    (receipt2) => receipt2.evaluator === "discovery"
+  );
   if (!discoveryReceipt) throw new Error("Planning requires current Discovery receipt.");
-  if (!evaluation || !Array.isArray(evaluation.dependencyNodes)) throw new Error("Planning evaluation is structurally invalid.");
+  if (!evaluation || !Array.isArray(evaluation.dependencyNodes))
+    throw new Error("Planning evaluation is structurally invalid.");
   const dependencyGraph = validateDependencyGraph({
     schemaVersion: 1,
     nodes: mergeById(state.dependencyGraph.nodes, evaluation.dependencyNodes)
   });
-  let candidate = recordShapeUsage({ ...state, dependencyGraph }, evaluation.usage ?? { reasoningCalls: 1 });
+  let candidate = recordShapeUsage(
+    { ...state, dependencyGraph },
+    evaluation.usage ?? { reasoningCalls: 1 }
+  );
   if (evaluation.missingEvidenceTarget) {
     if (evaluation.semanticImplementable || evaluation.contract) {
       throw new Error("Missing Planning evidence cannot accompany implementable contract.");
@@ -17099,7 +17767,8 @@ function applyPlanningEvaluation(state, evaluation) {
       discoveryTargets: mergeById(candidate.discoveryTargets, [evaluation.missingEvidenceTarget])
     };
   }
-  if (!evaluation.contract) throw new Error("Planning evaluation requires contract or missing-evidence target.");
+  if (!evaluation.contract)
+    throw new Error("Planning evaluation requires contract or missing-evidence target.");
   if (evaluation.contract.profile !== choice.selectedProfile) {
     throw new Error("Planning contract profile does not match selected profile.");
   }
@@ -17114,7 +17783,9 @@ function applyPlanningEvaluation(state, evaluation) {
   candidate = { ...withoutPlanningReceipts(candidate), contract };
   const completeness = evaluateContractCompleteness(candidate);
   if (evaluation.semanticImplementable && !completeness.complete) {
-    throw new Error(`Planning semantic implementability contradicts contract: ${completeness.reasons.join(", ")}.`);
+    throw new Error(
+      `Planning semantic implementability contradicts contract: ${completeness.reasons.join(", ")}.`
+    );
   }
   if (!evaluation.semanticImplementable) {
     const { contract: _contract, ...withoutContract } = candidate;
@@ -17134,17 +17805,24 @@ function evaluateContractCompleteness(state) {
   const contract = state.contract;
   const reasons = [];
   const choice = state.preparationProfileChoice;
-  if (!choice || choice.status !== "selected" || !choice.selectedProfile) reasons.push("profile_not_selected");
-  if (!contract) return { complete: false, reasons: [...reasons, "contract_missing"].sort() };
+  if (!choice || choice.status !== "selected" || !choice.selectedProfile)
+    reasons.push("profile_not_selected");
+  if (!contract) return { complete: false, reasons: [...reasons, "contract_missing"].toSorted() };
   if (contract.schemaVersion !== 1 || !ID.test(contract.artifactId) || !Number.isInteger(contract.revision) || contract.revision < 1) {
     reasons.push("contract_identity");
   }
   if (contract.profile !== choice?.selectedProfile) reasons.push("profile_mismatch");
-  if (contract.risk !== state.risk || contract.intakeBriefRef !== state.intakeBriefRef) reasons.push("intake_binding");
-  const discoveryReceipt = state.evaluatorReceipts.find((receipt) => receipt.evaluator === "discovery");
-  if (!discoveryReceipt || contract.discoveryReceiptDigest !== discoveryReceipt.receiptDigest) reasons.push("discovery_binding");
-  if (!Array.isArray(contract.scope) || !contract.scope.length || contract.scope.some((item) => !TOKEN2.test(item))) reasons.push("scope");
-  if (contract.profile === "plan" && (!Array.isArray(contract.nonGoals) || !contract.nonGoals.length)) reasons.push("plan_non_goals");
+  if (contract.risk !== state.risk || contract.intakeBriefRef !== state.intakeBriefRef)
+    reasons.push("intake_binding");
+  const discoveryReceipt = state.evaluatorReceipts.find(
+    (receipt) => receipt.evaluator === "discovery"
+  );
+  if (!discoveryReceipt || contract.discoveryReceiptDigest !== discoveryReceipt.receiptDigest)
+    reasons.push("discovery_binding");
+  if (!Array.isArray(contract.scope) || !contract.scope.length || contract.scope.some((item) => !TOKEN2.test(item)))
+    reasons.push("scope");
+  if (contract.profile === "plan" && (!Array.isArray(contract.nonGoals) || !contract.nonGoals.length))
+    reasons.push("plan_non_goals");
   if (!contract.acceptanceCriteria.length) reasons.push("acceptance_criteria");
   if (!contract.tasks.length) reasons.push("tasks");
   if (!contract.validations.length) reasons.push("validations");
@@ -17184,12 +17862,15 @@ function evaluateContractCompleteness(state) {
   }
   if (contract.guide) {
     if (contract.profile !== "plan") reasons.push("quick_guide_forbidden");
-    if (graphNodes.get(contract.guide.dependencyNodeId)?.kind !== "guide") reasons.push("guide_dependency_node");
-    if (!contract.guide.content.length || contract.guide.content.some((item) => !TOKEN2.test(item))) reasons.push("guide_content");
+    if (graphNodes.get(contract.guide.dependencyNodeId)?.kind !== "guide")
+      reasons.push("guide_dependency_node");
+    if (!contract.guide.content.length || contract.guide.content.some((item) => !TOKEN2.test(item)))
+      reasons.push("guide_content");
     if (!contract.guide.requiredBecause.length) reasons.push("guide_reason");
     for (const reason of contract.guide.requiredBecause) {
-      if (!GUIDE_REASONS.includes(reason.kind)) reasons.push("guide_reason_kind");
-      if (!reason.evidenceIds.length && !reason.riskIds.length) reasons.push("Guide reason requires evidence or risk");
+      if (!GUIDE_REASONS.has(reason.kind)) reasons.push("guide_reason_kind");
+      if (!reason.evidenceIds.length && !reason.riskIds.length)
+        reasons.push("Guide reason requires evidence or risk");
       if (reason.evidenceIds.some((id) => !evidenceIds.has(id)) || reason.riskIds.some((id) => !riskIds.has(id))) {
         reasons.push("guide_reason_reference");
       }
@@ -17200,9 +17881,10 @@ function evaluateContractCompleteness(state) {
   } catch (error) {
     reasons.push(error instanceof Error ? error.message : "dependency_graph");
   }
-  if (contract.digest !== digest(contractProjectionForDigest(contract))) reasons.push("contract_digest");
+  if (contract.digest !== digest(contractProjectionForDigest(contract)))
+    reasons.push("contract_digest");
   if (state.budget.checkpoint) reasons.push("budget_checkpoint");
-  return { complete: reasons.length === 0, reasons: [...new Set(reasons)].sort() };
+  return { complete: reasons.length === 0, reasons: [...new Set(reasons)].toSorted() };
 }
 function attestContractComplete(state) {
   const completeness = evaluateContractCompleteness(state);
@@ -17213,7 +17895,7 @@ function attestContractComplete(state) {
     ...state.contract.acceptanceCriteria.map((item) => item.id),
     ...state.contract.tasks.map((item) => item.id),
     ...state.contract.validations.map((item) => item.id)
-  ].sort();
+  ].toSorted();
   const inputDigest = digest({
     contract: state.contract,
     dependencyGraph: state.dependencyGraph,
@@ -17224,7 +17906,7 @@ function attestContractComplete(state) {
     evaluator: "planning",
     outcome: "contract_complete",
     inputDigest,
-    evidenceRefs: state.evidence.map((item) => item.id).sort(),
+    evidenceRefs: state.evidence.map((item) => item.id).toSorted(),
     subjectIds,
     completedIds: subjectIds,
     receiptDigest: ""
@@ -17297,17 +17979,19 @@ function reconcileShapeResume(state, observedValues, now) {
   }
   const invalidated = new Set(result.invalidatedNodeIds);
   const staleEvidence = new Set(result.staleEvidenceIds);
-  const refreshTargets = state.evidence.filter((item) => staleEvidence.has(item.id)).map((item) => ({
-    id: `refresh:${item.id}`,
-    question: `Refresh stale evidence ${item.id}`,
-    createdBecause: "Referenced source fingerprint changed during resume reconciliation.",
-    createdAt: now ?? (/* @__PURE__ */ new Date()).toISOString(),
-    materialImpacts: ["plan", "validation"],
-    candidateSourceRefs: item.provenanceRefs,
-    status: "open",
-    evidenceIds: [],
-    dependencyNodeId: item.dependencyNodeId
-  }));
+  const refreshTargets = state.evidence.filter((item) => staleEvidence.has(item.id)).map(
+    (item) => ({
+      id: `refresh:${item.id}`,
+      question: `Refresh stale evidence ${item.id}`,
+      createdBecause: "Referenced source fingerprint changed during resume reconciliation.",
+      createdAt: now ?? (/* @__PURE__ */ new Date()).toISOString(),
+      materialImpacts: ["plan", "validation"],
+      candidateSourceRefs: item.provenanceRefs,
+      status: "open",
+      evidenceIds: [],
+      dependencyNodeId: item.dependencyNodeId
+    })
+  );
   const contract = selectivelyInvalidateContract(state.contract, invalidated);
   const invalidatesContract = contract !== state.contract;
   const invalidatesProjection = [...invalidated].some(
@@ -17326,11 +18010,14 @@ function reconcileShapeResume(state, observedValues, now) {
       refreshTargets
     ),
     evidence: state.evidence.filter((item) => !invalidated.has(item.dependencyNodeId)),
-    invalidations: [...state.invalidations, {
-      rootIds: result.staleFingerprintIds.map((id) => state.sourceFingerprints.find((item) => item.id === id)?.dependencyNodeId).filter((id) => id !== void 0),
-      invalidatedNodeIds: result.invalidatedNodeIds,
-      reason: "resume:source_freshness"
-    }],
+    invalidations: [
+      ...state.invalidations,
+      {
+        rootIds: result.staleFingerprintIds.map((id) => state.sourceFingerprints.find((item) => item.id === id)?.dependencyNodeId).filter((id) => id !== void 0),
+        invalidatedNodeIds: result.invalidatedNodeIds,
+        reason: "resume:source_freshness"
+      }
+    ],
     ...contract ? { contract } : {},
     ...!(invalidatesProjection || invalidatesContract) && state.projection ? { projection: state.projection } : {},
     evaluatorReceipts: state.evaluatorReceipts.filter(
@@ -17341,7 +18028,7 @@ function reconcileShapeResume(state, observedValues, now) {
     state: copyWithoutUndefined(next),
     reusedEvidenceIds: result.reusedEvidenceIds,
     staleEvidenceIds: result.staleEvidenceIds,
-    refreshTargetIds: refreshTargets.map((item) => item.id).sort(),
+    refreshTargetIds: refreshTargets.map((item) => item.id).toSorted(),
     invalidatedNodeIds: result.invalidatedNodeIds,
     reasoningRequired: true
   };
@@ -17366,7 +18053,8 @@ function validateShapeState(value) {
   }
   if (state.activeEscalationId && !state.decisionEscalations.some(
     (item) => item.id === state.activeEscalationId && item.status === "active"
-  )) throw new Error("Active Decision Escalation reference is invalid.");
+  ))
+    throw new Error("Active Decision Escalation reference is invalid.");
   if (state.preparationProfileChoice) {
     validateCheckpoint(state.preparationProfileChoice.checkpoint);
     if (state.preparationProfileChoice.status === "selected" && (!state.preparationProfileChoice.selectedProfile || !TOKEN2.test(state.preparationProfileChoice.selectionEvidenceRef ?? ""))) {
@@ -17376,11 +18064,13 @@ function validateShapeState(value) {
   if (state.contract) evaluateContractCompleteness(state);
   for (const receipt of state.evaluatorReceipts) {
     const { receiptDigest, ...base } = receipt;
-    if (receiptDigest !== digest(base)) throw new Error(`${receipt.evaluator} evaluator receipt digest is invalid.`);
+    if (receiptDigest !== digest(base))
+      throw new Error(`${receipt.evaluator} evaluator receipt digest is invalid.`);
   }
 }
 function validateDecisionEscalationRecord(state, escalation) {
-  if (escalation.schemaVersion !== 1 || !ID.test(escalation.id) || !ID.test(escalation.decisionKey) || !ID.test(escalation.targetId) || !TOKEN2.test(escalation.productImpact) || !TOKEN2.test(escalation.recommendationBasis) || !["discovering", "planning"].includes(escalation.priorRole) || !["active", "resolved"].includes(escalation.status) || !state.discoveryTargets.some((target) => target.id === escalation.targetId)) throw new Error("Decision Escalation record is malformed.");
+  if (escalation.schemaVersion !== 1 || !ID.test(escalation.id) || !ID.test(escalation.decisionKey) || !ID.test(escalation.targetId) || !TOKEN2.test(escalation.productImpact) || !TOKEN2.test(escalation.recommendationBasis) || !["discovering", "planning"].includes(escalation.priorRole) || !["active", "resolved"].includes(escalation.status) || !state.discoveryTargets.some((target) => target.id === escalation.targetId))
+    throw new Error("Decision Escalation record is malformed.");
   if (escalation.options.length < 2 || escalation.options.length > 3 || new Set(escalation.options.map((option) => option.id)).size !== escalation.options.length) {
     throw new Error(`Decision Escalation ${escalation.id} options are invalid.`);
   }
@@ -17395,7 +18085,9 @@ function validateDecisionEscalationRecord(state, escalation) {
   dependencyClosure(state.dependencyGraph, escalation.affectedDependencyRootIds);
   if (escalation.status === "resolved") {
     if (!escalation.selectedOptionId || !escalation.options.some((option) => option.id === escalation.selectedOptionId) || !TOKEN2.test(escalation.answerEvidenceRef ?? "")) {
-      throw new Error(`Resolved Decision Escalation ${escalation.id} lacks explicit answer evidence.`);
+      throw new Error(
+        `Resolved Decision Escalation ${escalation.id} lacks explicit answer evidence.`
+      );
     }
   } else if (escalation.selectedOptionId !== void 0 || escalation.answerEvidenceRef !== void 0) {
     throw new Error(`Active Decision Escalation ${escalation.id} cannot contain answer.`);
@@ -17403,12 +18095,17 @@ function validateDecisionEscalationRecord(state, escalation) {
 }
 function selectivelyInvalidateContract(contract, invalidated) {
   if (!contract) return void 0;
-  const acceptanceCriteria = contract.acceptanceCriteria.filter((item) => !invalidated.has(item.dependencyNodeId));
+  const acceptanceCriteria = contract.acceptanceCriteria.filter(
+    (item) => !invalidated.has(item.dependencyNodeId)
+  );
   const tasks = contract.tasks.filter((item) => !invalidated.has(item.dependencyNodeId));
-  const validations = contract.validations.filter((item) => !invalidated.has(item.dependencyNodeId));
+  const validations = contract.validations.filter(
+    (item) => !invalidated.has(item.dependencyNodeId)
+  );
   const risks = contract.risks.filter((item) => !invalidated.has(item.dependencyNodeId));
   const guide = contract.guide && !invalidated.has(contract.guide.dependencyNodeId) ? contract.guide : void 0;
-  if (acceptanceCriteria.length === contract.acceptanceCriteria.length && tasks.length === contract.tasks.length && validations.length === contract.validations.length && risks.length === contract.risks.length && guide === contract.guide) return contract;
+  if (acceptanceCriteria.length === contract.acceptanceCriteria.length && tasks.length === contract.tasks.length && validations.length === contract.validations.length && risks.length === contract.risks.length && guide === contract.guide)
+    return contract;
   const { guide: _priorGuide, ...base } = contract;
   return {
     ...base,
@@ -17423,7 +18120,7 @@ function validateDiscoveryTarget(target) {
   if (!target || !ID.test(target.id) || !TOKEN2.test(target.question) || !TOKEN2.test(target.createdBecause) || !Number.isFinite(Date.parse(target.createdAt)) || !ID.test(target.dependencyNodeId) || !["open", "resolved", "escalated", "blocked", "stale"].includes(target.status)) {
     throw new Error("Discovery Target is malformed.");
   }
-  if (!Array.isArray(target.materialImpacts) || !target.materialImpacts.length || target.materialImpacts.some((impact) => !IMPACTS.includes(impact)) || new Set(target.materialImpacts).size !== target.materialImpacts.length) {
+  if (!Array.isArray(target.materialImpacts) || !target.materialImpacts.length || target.materialImpacts.some((impact) => !IMPACTS.has(impact)) || new Set(target.materialImpacts).size !== target.materialImpacts.length) {
     throw new Error(`Discovery Target ${target.id} material impacts are invalid.`);
   }
   if (!Array.isArray(target.candidateSourceRefs) || !target.candidateSourceRefs.length || target.candidateSourceRefs.some((ref) => !TOKEN2.test(ref))) {
@@ -17434,10 +18131,12 @@ function validateDiscoveryTarget(target) {
   }
 }
 function validateShapeEvidence(state) {
-  const observedValues = Object.fromEntries(state.sourceFingerprints.map((fingerprint2) => [
-    fingerprint2.id,
-    fingerprint2.kind === "command" ? { value: fingerprint2.value, inputDigest: fingerprint2.inputDigest } : fingerprint2.value
-  ]));
+  const observedValues = Object.fromEntries(
+    state.sourceFingerprints.map((fingerprint2) => [
+      fingerprint2.id,
+      fingerprint2.kind === "command" ? { value: fingerprint2.value, inputDigest: fingerprint2.inputDigest } : fingerprint2.value
+    ])
+  );
   reconcileShapeFreshness({
     graph: state.dependencyGraph,
     fingerprints: state.sourceFingerprints,
@@ -17458,22 +18157,28 @@ function validateCheckpoint(checkpoint) {
   }
 }
 function assertShapeStateEnvelope(state) {
-  if (!state || state.schemaVersion !== 1 || !RISKS.includes(state.risk) || !TOKEN2.test(state.intakeBriefRef) || !Array.isArray(state.discoveryTargets) || !Array.isArray(state.evidence) || !Array.isArray(state.sourceFingerprints) || !Array.isArray(state.decisionEscalations) || !state.budget || !state.semanticRetryCounts || !Array.isArray(state.evaluatorReceipts)) {
+  if (!state || state.schemaVersion !== 1 || !RISKS.has(state.risk) || !TOKEN2.test(state.intakeBriefRef) || !Array.isArray(state.discoveryTargets) || !Array.isArray(state.evidence) || !Array.isArray(state.sourceFingerprints) || !Array.isArray(state.decisionEscalations) || !state.budget || !state.semanticRetryCounts || !Array.isArray(state.evaluatorReceipts)) {
     throw new Error("SHAPE state is malformed.");
   }
 }
 function validateBudgetLimits(limits) {
   for (const [key, value] of Object.entries(limits)) {
-    if (!["maxReasoningCalls", "maxInputTokens", "maxOutputTokens", "maxContextBytes"].includes(key) || !Number.isInteger(value) || value <= 0) {
+    if (!["maxReasoningCalls", "maxInputTokens", "maxOutputTokens", "maxContextBytes"].includes(
+      key
+    ) || !Number.isInteger(value) || value <= 0) {
       throw new Error(`SHAPE budget limit ${key} is invalid.`);
     }
   }
 }
 function budgetReason(limits, usage) {
-  if (limits.maxReasoningCalls !== void 0 && usage.reasoningCalls >= limits.maxReasoningCalls) return "reasoning_calls";
-  if (limits.maxInputTokens !== void 0 && usage.inputTokens >= limits.maxInputTokens) return "input_tokens";
-  if (limits.maxOutputTokens !== void 0 && usage.outputTokens >= limits.maxOutputTokens) return "output_tokens";
-  if (limits.maxContextBytes !== void 0 && usage.contextBytes >= limits.maxContextBytes) return "context_bytes";
+  if (limits.maxReasoningCalls !== void 0 && usage.reasoningCalls >= limits.maxReasoningCalls)
+    return "reasoning_calls";
+  if (limits.maxInputTokens !== void 0 && usage.inputTokens >= limits.maxInputTokens)
+    return "input_tokens";
+  if (limits.maxOutputTokens !== void 0 && usage.outputTokens >= limits.maxOutputTokens)
+    return "output_tokens";
+  if (limits.maxContextBytes !== void 0 && usage.contextBytes >= limits.maxContextBytes)
+    return "context_bytes";
   return void 0;
 }
 function nonNegativeInteger(value, label) {
@@ -17483,16 +18188,33 @@ function nonNegativeInteger(value, label) {
 function withoutDiscoveryReceipts(state) {
   if (state.preparationProfileChoice?.status === "pending") {
     const { preparationProfileChoice: _choice, ...base } = state;
-    return { ...base, evaluatorReceipts: state.evaluatorReceipts.filter((receipt) => receipt.evaluator !== "discovery") };
+    return {
+      ...base,
+      evaluatorReceipts: state.evaluatorReceipts.filter(
+        (receipt) => receipt.evaluator !== "discovery"
+      )
+    };
   }
-  return { ...state, evaluatorReceipts: state.evaluatorReceipts.filter((receipt) => receipt.evaluator !== "discovery") };
+  return {
+    ...state,
+    evaluatorReceipts: state.evaluatorReceipts.filter(
+      (receipt) => receipt.evaluator !== "discovery"
+    )
+  };
 }
 function withoutPlanningReceipts(state) {
-  return { ...state, evaluatorReceipts: state.evaluatorReceipts.filter((receipt) => receipt.evaluator !== "planning") };
+  return {
+    ...state,
+    evaluatorReceipts: state.evaluatorReceipts.filter(
+      (receipt) => receipt.evaluator !== "planning"
+    )
+  };
 }
 function validateContractItem(item, kind, graphNodes, reasons) {
-  if (!ID.test(item.id) || !TOKEN2.test(item.description)) reasons.push(`${kind}:${item.id}:content`);
-  if (graphNodes.get(item.dependencyNodeId)?.kind !== kind) reasons.push(`${kind}:${item.id}:dependency_node`);
+  if (!ID.test(item.id) || !TOKEN2.test(item.description))
+    reasons.push(`${kind}:${item.id}:content`);
+  if (graphNodes.get(item.dependencyNodeId)?.kind !== kind)
+    reasons.push(`${kind}:${item.id}:dependency_node`);
 }
 function uniqueIds(items, label, reasons) {
   const ids = /* @__PURE__ */ new Set();
@@ -17509,7 +18231,7 @@ function contractProjectionForDigest(contract) {
 function mergeById(left, right) {
   const output = new Map(left.map((item) => [item.id, copy2(item)]));
   for (const item of right) output.set(item.id, copy2(item));
-  return [...output.values()].sort((a, b) => a.id.localeCompare(b.id));
+  return [...output.values()].toSorted((a, b) => a.id.localeCompare(b.id));
 }
 function digest(value) {
   return createHash("sha256").update(JSON.stringify(canonicalize(value))).digest("hex");
@@ -17518,7 +18240,7 @@ function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value).filter(([, nested]) => nested !== void 0).sort(([left], [right]) => left.localeCompare(right)).map(([key, nested]) => [key, canonicalize(nested)])
+      Object.entries(value).filter(([, nested]) => nested !== void 0).toSorted(([left], [right]) => left.localeCompare(right)).map(([key, nested]) => [key, canonicalize(nested)])
     );
   }
   return value;
@@ -17567,12 +18289,7 @@ var state_schema_default = {
       minimum: 0
     },
     risk: {
-      enum: [
-        "low",
-        "medium",
-        "high",
-        "critical"
-      ]
+      enum: ["low", "medium", "high", "critical"]
     },
     shape: {
       $ref: "#/$defs/shapeState"
@@ -17584,10 +18301,7 @@ var state_schema_default = {
       $ref: "#/$defs/verificationRequirements"
     },
     pendingGate: {
-      enum: [
-        "pre_build",
-        "completion"
-      ]
+      enum: ["pre_build", "completion"]
     },
     resumeTo: {
       $ref: "#/$defs/resumeTarget"
@@ -17664,14 +18378,10 @@ var state_schema_default = {
             const: "blocked"
           }
         },
-        required: [
-          "status"
-        ]
+        required: ["status"]
       },
       then: {
-        required: [
-          "resumeTo"
-        ],
+        required: ["resumeTo"],
         properties: {
           resumeTo: {
             $ref: "#/$defs/resumeTarget"
@@ -17690,14 +18400,10 @@ var state_schema_default = {
             const: "ready_for_handoff"
           }
         },
-        required: [
-          "status"
-        ]
+        required: ["status"]
       },
       then: {
-        required: [
-          "resumeTo"
-        ],
+        required: ["resumeTo"],
         properties: {
           resumeTo: {
             const: "handing_off"
@@ -17714,22 +18420,15 @@ var state_schema_default = {
         properties: {
           status: {
             not: {
-              enum: [
-                "blocked",
-                "ready_for_handoff"
-              ]
+              enum: ["blocked", "ready_for_handoff"]
             }
           }
         },
-        required: [
-          "status"
-        ]
+        required: ["status"]
       },
       then: {
         not: {
-          required: [
-            "resumeTo"
-          ]
+          required: ["resumeTo"]
         }
       }
     },
@@ -17740,21 +18439,13 @@ var state_schema_default = {
             const: "awaiting_approval"
           }
         },
-        required: [
-          "status"
-        ]
+        required: ["status"]
       },
       then: {
-        required: [
-          "pendingGate",
-          "contractDigest"
-        ],
+        required: ["pendingGate", "contractDigest"],
         properties: {
           pendingGate: {
-            enum: [
-              "pre_build",
-              "completion"
-            ]
+            enum: ["pre_build", "completion"]
           },
           contractDigest: {
             $ref: "#/$defs/text"
@@ -17785,14 +18476,10 @@ var state_schema_default = {
             ]
           }
         },
-        required: [
-          "status"
-        ]
+        required: ["status"]
       },
       then: {
-        required: [
-          "shape"
-        ],
+        required: ["shape"],
         properties: {
           shape: {
             $ref: "#/$defs/shapeState"
@@ -17857,10 +18544,7 @@ var state_schema_default = {
     historyReference: {
       type: "object",
       additionalProperties: false,
-      required: [
-        "kind",
-        "ref"
-      ],
+      required: ["kind", "ref"],
       properties: {
         kind: {
           enum: [
@@ -17897,12 +18581,7 @@ var state_schema_default = {
     workflowEvent: {
       type: "object",
       additionalProperties: false,
-      required: [
-        "sequence",
-        "at",
-        "type",
-        "refs"
-      ],
+      required: ["sequence", "at", "type", "refs"],
       properties: {
         sequence: {
           type: "integer",
@@ -17954,15 +18633,7 @@ var state_schema_default = {
     transitionEvent: {
       type: "object",
       additionalProperties: false,
-      required: [
-        "sequence",
-        "at",
-        "type",
-        "from",
-        "to",
-        "revision",
-        "sourceFingerprint"
-      ],
+      required: ["sequence", "at", "type", "from", "to", "revision", "sourceFingerprint"],
       properties: {
         sequence: {
           type: "integer",
@@ -17994,10 +18665,7 @@ var state_schema_default = {
           $ref: "#/$defs/resumeTarget"
         },
         gateContext: {
-          enum: [
-            "pre_build",
-            "completion"
-          ]
+          enum: ["pre_build", "completion"]
         },
         contractDigest: {
           $ref: "#/$defs/text"
@@ -18062,11 +18730,7 @@ var state_schema_default = {
     activeArtifact: {
       type: "object",
       additionalProperties: false,
-      required: [
-        "artifactId",
-        "ownerRef",
-        "fingerprint"
-      ],
+      required: ["artifactId", "ownerRef", "fingerprint"],
       properties: {
         artifactId: {
           $ref: "#/$defs/text"
@@ -18082,10 +18746,7 @@ var state_schema_default = {
     activeWorktree: {
       type: "object",
       additionalProperties: false,
-      required: [
-        "worktreeRef",
-        "gitFingerprint"
-      ],
+      required: ["worktreeRef", "gitFingerprint"],
       properties: {
         worktreeRef: {
           $ref: "#/$defs/text"
@@ -18190,10 +18851,7 @@ var state_schema_default = {
           minimum: 0
         },
         blockedReason: {
-          enum: [
-            "semantic_output_invalid",
-            "answer_required"
-          ]
+          enum: ["semantic_output_invalid", "answer_required"]
         },
         metrics: {
           $ref: "#/$defs/intakeMetrics"
@@ -18203,12 +18861,7 @@ var state_schema_default = {
     intakeBrief: {
       type: "object",
       additionalProperties: false,
-      required: [
-        "schemaVersion",
-        "risk",
-        "provenance",
-        "technicalUnknowns"
-      ],
+      required: ["schemaVersion", "risk", "provenance", "technicalUnknowns"],
       properties: {
         schemaVersion: {
           const: 1
@@ -18220,12 +18873,7 @@ var state_schema_default = {
           type: "object"
         },
         risk: {
-          enum: [
-            "low",
-            "medium",
-            "high",
-            "critical"
-          ]
+          enum: ["low", "medium", "high", "critical"]
         },
         provenance: {
           type: "object"
@@ -18278,12 +18926,7 @@ var state_schema_default = {
           const: 1
         },
         risk: {
-          enum: [
-            "low",
-            "medium",
-            "high",
-            "critical"
-          ]
+          enum: ["low", "medium", "high", "critical"]
         },
         intakeBriefRef: {
           $ref: "#/$defs/text"
@@ -18436,7 +19079,8 @@ var StateValidationError = class extends Error {
   code;
 };
 function createState(input) {
-  if (!nonEmpty(input.taskId) || !isRisk(input.risk)) throw new Error("createState requires taskId and risk.");
+  if (!nonEmpty(input.taskId) || !isRisk(input.risk))
+    throw new Error("createState requires taskId and risk.");
   const contextCapsule = input.contextCapsule ?? defaultContextCapsule(input.configSnapshot, input.policySnapshot);
   const state = {
     schemaVersion: 3,
@@ -18449,7 +19093,14 @@ function createState(input) {
     issues: [],
     reviewCycle: 0,
     remainingActions: [],
-    history: [{ sequence: 1, at: normalizeEventAt(input.at), type: "task.created", refs: [{ kind: "task", ref: "state:taskId" }] }],
+    history: [
+      {
+        sequence: 1,
+        at: normalizeEventAt(input.at),
+        type: "task.created",
+        refs: [{ kind: "task", ref: "state:taskId" }]
+      }
+    ],
     ...input.activeArtifact ? { activeArtifact: copy3(input.activeArtifact) } : {},
     ...input.activeWorktree ? { activeWorktree: copy3(input.activeWorktree) } : {},
     contextCapsule: copy3(contextCapsule),
@@ -18459,7 +19110,11 @@ function createState(input) {
     ...input.routingSnapshot ? { routingSnapshot: copy3(input.routingSnapshot) } : {},
     routingPolicyVersion: ROUTING_POLICY_VERSION,
     routingDecisions: [],
-    ...input.verificationRequirements ? { verificationRequirements: normalizeVerificationRequirements(input.verificationRequirements) } : {}
+    ...input.verificationRequirements ? {
+      verificationRequirements: normalizeVerificationRequirements(
+        input.verificationRequirements
+      )
+    } : {}
   };
   assertStateV3(state);
   return state;
@@ -18467,35 +19122,86 @@ function createState(input) {
 function loadStateV3(value) {
   if (!isRecord6(value) || value.schemaVersion !== 3) {
     const version = isRecord6(value) ? String(value.schemaVersion) : "missing";
-    throw new StateValidationError("state_schema_incompatible", `Task state schema ${version} is incompatible; schemaVersion 3 required. No migration is available.`);
+    throw new StateValidationError(
+      "state_schema_incompatible",
+      `Task state schema ${version} is incompatible; schemaVersion 3 required. No migration is available.`
+    );
   }
   assertStateV3(value);
   return copy3(value);
 }
 function assertStateV3(value) {
   const result = validateStateV3(value);
-  if (!result.valid) throw new StateValidationError("state_invalid", `Task state V3 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`);
+  if (!result.valid)
+    throw new StateValidationError(
+      "state_invalid",
+      `Task state V3 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`
+    );
   const state = value;
-  if (!isTaskStatus(state.status) || !isRisk(state.risk)) throw new StateValidationError("state_invalid", "Task state V3 status or risk is invalid.");
+  if (!isTaskStatus(state.status) || !isRisk(state.risk))
+    throw new StateValidationError("state_invalid", "Task state V3 status or risk is invalid.");
   validateHistory(state);
-  if (state.intake && state.intake.brief.risk !== state.risk) throw new StateValidationError("state_invalid", "Task risk contradicts Intake Brief risk.");
+  if (state.intake && state.intake.brief.risk !== state.risk)
+    throw new StateValidationError("state_invalid", "Task risk contradicts Intake Brief risk.");
   if (state.shape) {
     try {
       validateShapeState(state.shape);
     } catch (error) {
-      throw new StateValidationError("state_invalid", `Persisted ShapeState is invalid: ${error instanceof Error ? error.message : "unknown error"}.`);
+      throw new StateValidationError(
+        "state_invalid",
+        `Persisted ShapeState is invalid: ${error instanceof Error ? error.message : "unknown error"}.`
+      );
     }
-    if (state.shape.risk !== state.risk || state.shape.intakeBriefRef !== "state:intake.brief") throw new StateValidationError("state_invalid", "Shape state is not bound to current Intake Brief and risk.");
+    if (state.shape.risk !== state.risk || state.shape.intakeBriefRef !== "state:intake.brief")
+      throw new StateValidationError(
+        "state_invalid",
+        "Shape state is not bound to current Intake Brief and risk."
+      );
   }
-  if (["discovering", "awaiting_profile_choice", "planning", "awaiting_intake_decision", "awaiting_approval", "executing", "validating", "resolving_build", "reviewing", "resolving_assure", "verifying", "handing_off", "ready_for_handoff", "finished_local", "finished"].includes(state.status) && !state.shape) {
-    throw new StateValidationError("state_invalid", `Task status ${state.status} requires persisted ShapeState.`);
+  if ([
+    "discovering",
+    "awaiting_profile_choice",
+    "planning",
+    "awaiting_intake_decision",
+    "awaiting_approval",
+    "executing",
+    "validating",
+    "resolving_build",
+    "reviewing",
+    "resolving_assure",
+    "verifying",
+    "handing_off",
+    "ready_for_handoff",
+    "finished_local",
+    "finished"
+  ].includes(state.status) && !state.shape) {
+    throw new StateValidationError(
+      "state_invalid",
+      `Task status ${state.status} requires persisted ShapeState.`
+    );
   }
   if (state.status === "blocked") {
-    if (!state.resumeTo || !isOperationalResumeTarget(state.resumeTo) || !state.remainingActions.length) throw new StateValidationError("state_invalid", "Blocked state requires exact operational resume metadata.");
+    if (!state.resumeTo || !isOperationalResumeTarget(state.resumeTo) || !state.remainingActions.length)
+      throw new StateValidationError(
+        "state_invalid",
+        "Blocked state requires exact operational resume metadata."
+      );
   } else if (state.status === "ready_for_handoff") {
-    if (state.resumeTo !== "handing_off" || !state.remainingActions.length) throw new StateValidationError("state_invalid", "ready_for_handoff requires handing_off resume metadata.");
-  } else if (state.resumeTo !== void 0) throw new StateValidationError("state_invalid", "Only blocked or ready_for_handoff may contain resumeTo.");
-  if (state.status === "awaiting_approval" && (!state.pendingGate || !nonEmpty(state.contractDigest))) throw new StateValidationError("state_invalid", "awaiting_approval requires gate and contract digest.");
+    if (state.resumeTo !== "handing_off" || !state.remainingActions.length)
+      throw new StateValidationError(
+        "state_invalid",
+        "ready_for_handoff requires handing_off resume metadata."
+      );
+  } else if (state.resumeTo !== void 0)
+    throw new StateValidationError(
+      "state_invalid",
+      "Only blocked or ready_for_handoff may contain resumeTo."
+    );
+  if (state.status === "awaiting_approval" && (!state.pendingGate || !nonEmpty(state.contractDigest)))
+    throw new StateValidationError(
+      "state_invalid",
+      "awaiting_approval requires gate and contract digest."
+    );
 }
 function guardStateFingerprint(state) {
   return digest2({
@@ -18520,84 +19226,198 @@ function guardStateFingerprint(state) {
 }
 function createGuardAttestation(state, guard, input) {
   assertStateV3(state);
-  if (!GUARD_IDS.includes(guard)) throw new Error(`Unknown transition guard ${String(guard)}.`);
+  if (!GUARD_ID_SET.has(guard)) throw new Error(`Unknown transition guard ${guard}.`);
   if (guard === "intake_complete") {
     validateCompleteIntake(state);
-    return createEvaluatorEvidence(state, guard, "deterministic-check", { evaluator: "intake", outcome: "intake_complete", inputDigest: digest2(state.intake), evidenceRefs: [...input.evidenceRefs], subjectIds: ["objective", "success_signal", "risk"], completedIds: ["objective", "success_signal", "risk"] });
+    return createEvaluatorEvidence(state, guard, "deterministic-check", {
+      evaluator: "intake",
+      outcome: "intake_complete",
+      inputDigest: digest2(state.intake),
+      evidenceRefs: [...input.evidenceRefs],
+      subjectIds: ["objective", "success_signal", "risk"],
+      completedIds: ["objective", "success_signal", "risk"]
+    });
   }
   if (TRUSTED_GUARDS.has(guard)) throw new Error(`Guard ${guard} requires trusted evaluator.`);
   if (guard === "profile_selected") validateSelectedProfile(state);
-  const evidence = { schemaVersion: 1, guard, stateRevision: state.revision, stateFingerprint: guardStateFingerprint(state), observedFingerprint: input.observedFingerprint, evidenceRefs: [...input.evidenceRefs], provenance: input.provenance, result: input.result ?? "passed" };
+  const evidence = {
+    schemaVersion: 1,
+    guard,
+    stateRevision: state.revision,
+    stateFingerprint: guardStateFingerprint(state),
+    observedFingerprint: input.observedFingerprint,
+    evidenceRefs: [...input.evidenceRefs],
+    provenance: input.provenance,
+    result: input.result ?? "passed"
+  };
   validateGuardEvidence(state, evidence);
   return evidence;
 }
 var trustedEvidence = /* @__PURE__ */ new WeakSet();
 function evaluateDiscoveryGuard(state, receipt) {
   assertStateV3(state);
-  if (!state.shape || !evaluateDiscoveryCompleteness(state.shape).complete) throw new Error("Discovery evaluator requires current complete Shape Discovery.");
-  const current = state.shape.evaluatorReceipts.find((candidate) => candidate.evaluator === "discovery" && candidate.receiptDigest === receipt.receiptDigest);
-  if (!current || digestWithoutReceipt(current) !== digestWithoutReceipt(receipt)) throw new Error("Discovery receipt is stale or not persisted.");
-  return createEvaluatorEvidence(state, "discovery_sufficient", "repository-observation", { evaluator: "discovery", outcome: "discovery_sufficient", inputDigest: receipt.inputDigest, evidenceRefs: receipt.evidenceRefs, subjectIds: receipt.subjectIds, completedIds: receipt.completedIds });
+  if (!state.shape || !evaluateDiscoveryCompleteness(state.shape).complete)
+    throw new Error("Discovery evaluator requires current complete Shape Discovery.");
+  const current = state.shape.evaluatorReceipts.find(
+    (candidate) => candidate.evaluator === "discovery" && candidate.receiptDigest === receipt.receiptDigest
+  );
+  if (!current || digestWithoutReceipt(current) !== digestWithoutReceipt(receipt))
+    throw new Error("Discovery receipt is stale or not persisted.");
+  return createEvaluatorEvidence(state, "discovery_sufficient", "repository-observation", {
+    evaluator: "discovery",
+    outcome: "discovery_sufficient",
+    inputDigest: receipt.inputDigest,
+    evidenceRefs: receipt.evidenceRefs,
+    subjectIds: receipt.subjectIds,
+    completedIds: receipt.completedIds
+  });
 }
 function evaluatePlanningGuard(state, receipt) {
   assertStateV3(state);
-  if (!state.shape || !evaluateContractCompleteness(state.shape).complete || state.shape.contract?.digest !== state.contractDigest && state.status === "awaiting_approval") throw new Error("Planning evaluator requires current complete Shape contract.");
-  const current = state.shape.evaluatorReceipts.find((candidate) => candidate.evaluator === "planning" && candidate.receiptDigest === receipt.receiptDigest);
-  if (!current || digestWithoutReceipt(current) !== digestWithoutReceipt(receipt)) throw new Error("Planning receipt is stale or not persisted.");
-  return createEvaluatorEvidence(state, "contract_complete", "deterministic-check", { evaluator: "planning", outcome: "contract_complete", inputDigest: receipt.inputDigest, evidenceRefs: receipt.evidenceRefs, subjectIds: receipt.subjectIds, completedIds: receipt.completedIds });
+  if (!state.shape || !evaluateContractCompleteness(state.shape).complete || state.shape.contract?.digest !== state.contractDigest && state.status === "awaiting_approval")
+    throw new Error("Planning evaluator requires current complete Shape contract.");
+  const current = state.shape.evaluatorReceipts.find(
+    (candidate) => candidate.evaluator === "planning" && candidate.receiptDigest === receipt.receiptDigest
+  );
+  if (!current || digestWithoutReceipt(current) !== digestWithoutReceipt(receipt))
+    throw new Error("Planning receipt is stale or not persisted.");
+  return createEvaluatorEvidence(state, "contract_complete", "deterministic-check", {
+    evaluator: "planning",
+    outcome: "contract_complete",
+    inputDigest: receipt.inputDigest,
+    evidenceRefs: receipt.evidenceRefs,
+    subjectIds: receipt.subjectIds,
+    completedIds: receipt.completedIds
+  });
 }
 function evaluateVerification(state, input) {
   assertStateV3(state);
   const requirements = state.verificationRequirements;
   if (!requirements) throw new Error("Verification requires state-bound verificationRequirements.");
-  assertExactObservations(state, requirements.criterionIds, input.criteria, "acceptance criteria", true);
-  assertExactObservations(state, requirements.mandatoryCheckIds, input.mandatoryChecks, "mandatory checks", false);
+  assertExactObservations(
+    state,
+    requirements.criterionIds,
+    input.criteria,
+    "acceptance criteria",
+    true
+  );
+  assertExactObservations(
+    state,
+    requirements.mandatoryCheckIds,
+    input.mandatoryChecks,
+    "mandatory checks",
+    false
+  );
   const observations = [...input.criteria, ...input.mandatoryChecks];
-  const ids = [...requirements.criterionIds.map((id) => `criterion:${id}`), ...requirements.mandatoryCheckIds.map((id) => `check:${id}`)];
-  return createEvaluatorEvidence(state, "verification_complete", "deterministic-check", { evaluator: "verification", outcome: "complete", inputDigest: digest2({ requirements, input }), evidenceRefs: observations.map((item) => item.evidenceRef), subjectIds: ids, completedIds: ids });
+  const ids = [
+    ...requirements.criterionIds.map((id) => `criterion:${id}`),
+    ...requirements.mandatoryCheckIds.map((id) => `check:${id}`)
+  ];
+  return createEvaluatorEvidence(state, "verification_complete", "deterministic-check", {
+    evaluator: "verification",
+    outcome: "complete",
+    inputDigest: digest2({ requirements, input }),
+    evidenceRefs: observations.map((item) => item.evidenceRef),
+    subjectIds: ids,
+    completedIds: ids
+  });
 }
 function evaluateHandoffIntent(state, input) {
   assertStateV3(state);
-  if (!nonEmpty(input.intentEvidenceRef) || !Array.isArray(input.actions)) throw new Error("Handoff intent requires action set and evidence.");
-  assertUnique(input.actions.map((item) => item.id), "handoff action IDs", true);
-  for (const item of input.actions) if (item.stateRevision !== state.revision || !nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef)) throw new Error(`Handoff action ${item.id} is stale or malformed.`);
+  if (!nonEmpty(input.intentEvidenceRef) || !Array.isArray(input.actions))
+    throw new Error("Handoff intent requires action set and evidence.");
+  assertUnique(
+    input.actions.map((item) => item.id),
+    "handoff action IDs",
+    true
+  );
+  for (const item of input.actions)
+    if (item.stateRevision !== state.revision || !nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef))
+      throw new Error(`Handoff action ${item.id} is stale or malformed.`);
   const selected = input.actions.filter((item) => item.disposition !== "not_selected").map((item) => item.id);
-  if (input.delivery === "local" && selected.length) throw new Error("Local handoff cannot select external actions.");
-  if (input.delivery === "external" && !selected.length) throw new Error("External handoff requires selected action.");
-  return createEvaluatorEvidence(state, "handoff_intent_resolved", "repository-observation", { evaluator: "handoff_intent", outcome: input.delivery === "local" ? "local_only" : "external_selected", inputDigest: digest2(input), evidenceRefs: [input.intentEvidenceRef, ...input.actions.map((item) => item.evidenceRef)], subjectIds: input.actions.map((item) => item.id), completedIds: selected });
+  if (input.delivery === "local" && selected.length)
+    throw new Error("Local handoff cannot select external actions.");
+  if (input.delivery === "external" && !selected.length)
+    throw new Error("External handoff requires selected action.");
+  return createEvaluatorEvidence(state, "handoff_intent_resolved", "repository-observation", {
+    evaluator: "handoff_intent",
+    outcome: input.delivery === "local" ? "local_only" : "external_selected",
+    inputDigest: digest2(input),
+    evidenceRefs: [input.intentEvidenceRef, ...input.actions.map((item) => item.evidenceRef)],
+    subjectIds: input.actions.map((item) => item.id),
+    completedIds: selected
+  });
 }
 function evaluateHandoffReconciliation(state, intent, input) {
   assertStateV3(state);
   validateGuardEvidence(state, intent);
-  if (!trustedEvidence.has(intent) || intent.evaluatorReceipt?.evaluator !== "handoff_intent" || intent.evaluatorReceipt.outcome !== "external_selected") throw new Error("Handoff reconciliation requires trusted external intent.");
-  assertSameIds(intent.evaluatorReceipt.completedIds, input.observations.map((item) => item.actionId), "handoff actions");
+  if (!trustedEvidence.has(intent) || intent.evaluatorReceipt?.evaluator !== "handoff_intent" || intent.evaluatorReceipt.outcome !== "external_selected")
+    throw new Error("Handoff reconciliation requires trusted external intent.");
+  assertSameIds(
+    intent.evaluatorReceipt.completedIds,
+    input.observations.map((item) => item.actionId),
+    "handoff actions"
+  );
   const completed = [];
   for (const item of input.observations) {
-    if (item.stateRevision !== state.revision || !nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef)) throw new Error(`Handoff observation ${item.actionId} is stale or malformed.`);
+    if (item.stateRevision !== state.revision || !nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef))
+      throw new Error(`Handoff observation ${item.actionId} is stale or malformed.`);
     if (item.status === "completed") {
-      if (!nonEmpty(item.receiptRef)) throw new Error(`Completed handoff action ${item.actionId} requires receiptRef.`);
+      if (!nonEmpty(item.receiptRef))
+        throw new Error(`Completed handoff action ${item.actionId} requires receiptRef.`);
       completed.push(item.actionId);
-    } else if (item.receiptRef !== void 0) throw new Error(`Incomplete handoff action ${item.actionId} cannot contain receiptRef.`);
+    } else if (item.receiptRef !== void 0)
+      throw new Error(`Incomplete handoff action ${item.actionId} cannot contain receiptRef.`);
   }
-  return createEvaluatorEvidence(state, "handoff_reconciled", "repository-observation", { evaluator: "handoff_reconciliation", outcome: completed.length === input.observations.length ? "complete" : "action_required", inputDigest: digest2(input), evidenceRefs: input.observations.flatMap((item) => [item.evidenceRef, ...item.receiptRef ? [item.receiptRef] : []]), subjectIds: input.observations.map((item) => item.actionId), completedIds: completed });
+  return createEvaluatorEvidence(state, "handoff_reconciled", "repository-observation", {
+    evaluator: "handoff_reconciliation",
+    outcome: completed.length === input.observations.length ? "complete" : "action_required",
+    inputDigest: digest2(input),
+    evidenceRefs: input.observations.flatMap((item) => [
+      item.evidenceRef,
+      ...item.receiptRef ? [item.receiptRef] : []
+    ]),
+    subjectIds: input.observations.map((item) => item.actionId),
+    completedIds: completed
+  });
 }
 function evaluateCompletionApproval(state, decision) {
   assertStateV3(state);
-  if (state.status !== "awaiting_approval" || state.pendingGate !== "completion" || decision.decision !== "approved") throw new Error("Completion evaluator requires approved completion gate.");
+  if (state.status !== "awaiting_approval" || state.pendingGate !== "completion" || decision.decision !== "approved")
+    throw new Error("Completion evaluator requires approved completion gate.");
   validateGateDecision(state, decision);
-  return createEvaluatorEvidence(state, "completion_approved", "human-approval", { evaluator: "completion", outcome: "approved", inputDigest: digest2(decision), evidenceRefs: [decision.evidenceRef], subjectIds: [state.contractDigest], completedIds: [decision.evidenceRef] });
+  return createEvaluatorEvidence(state, "completion_approved", "human-approval", {
+    evaluator: "completion",
+    outcome: "approved",
+    inputDigest: digest2(decision),
+    evidenceRefs: [decision.evidenceRef],
+    subjectIds: [state.contractDigest],
+    completedIds: [decision.evidenceRef]
+  });
 }
 function createGateDecision(state, input) {
   assertStateV3(state);
-  if (state.status !== "awaiting_approval" || !state.pendingGate || !state.contractDigest || !nonEmpty(input.evidenceRef)) throw new Error("Gate decision requires current gate, contract, and evidence.");
-  return { schemaVersion: 1, gate: state.pendingGate, decision: input.decision, stateRevision: state.revision, stateFingerprint: guardStateFingerprint(state), evidenceRef: input.evidenceRef, contractDigest: state.contractDigest };
+  if (state.status !== "awaiting_approval" || !state.pendingGate || !state.contractDigest || !nonEmpty(input.evidenceRef))
+    throw new Error("Gate decision requires current gate, contract, and evidence.");
+  return {
+    schemaVersion: 1,
+    gate: state.pendingGate,
+    decision: input.decision,
+    stateRevision: state.revision,
+    stateFingerprint: guardStateFingerprint(state),
+    evidenceRef: input.evidenceRef,
+    contractDigest: state.contractDigest
+  };
 }
 function updateShapeState(state, shape, input) {
   assertStateV3(state);
   if (deriveMacroPhase(state) !== "SHAPE" && state.status !== "awaiting_intake_decision") {
-    throw new Error("ShapeState may change only in SHAPE or while resolving linked Intake escalation.");
+    throw new Error(
+      "ShapeState may change only in SHAPE or while resolving linked Intake escalation."
+    );
   }
-  if (!isRisk(shape.risk) || shape.risk !== state.risk || shape.intakeBriefRef !== "state:intake.brief") throw new Error("Shape update must remain bound to current Intake Brief and risk.");
+  if (!isRisk(shape.risk) || shape.risk !== state.risk || shape.intakeBriefRef !== "state:intake.brief")
+    throw new Error("Shape update must remain bound to current Intake Brief and risk.");
   return recordHistoryEvent({ ...state, shape: copy3(shape) }, input);
 }
 function addRoutingDecision(state, decision) {
@@ -18608,7 +19428,12 @@ function recordHistoryEvent(state, input) {
   assertStateV3(state);
   if (STATE_MACHINE[state.status].terminal) throw new Error("Terminal state history is immutable.");
   validateHistoryReferences(input.refs, `Workflow event ${input.type}`);
-  const event = { sequence: nextSequence(state), at: normalizeEventAt(input.at), type: input.type, refs: copy3(input.refs) };
+  const event = {
+    sequence: nextSequence(state),
+    at: normalizeEventAt(input.at),
+    type: input.type,
+    refs: copy3(input.refs)
+  };
   return compactAndValidate({ ...state, history: [...state.history, event] });
 }
 function updateResumeContext(state, input) {
@@ -18619,20 +19444,32 @@ function updateResumeContext(state, input) {
     remainingActions: input.remainingActions ? [...input.remainingActions] : [...state.remainingActions],
     ...input.activeArtifact === void 0 ? state.activeArtifact ? { activeArtifact: copy3(state.activeArtifact) } : {} : input.activeArtifact === null ? {} : { activeArtifact: copy3(input.activeArtifact) },
     ...input.activeWorktree === void 0 ? state.activeWorktree ? { activeWorktree: copy3(state.activeWorktree) } : {} : input.activeWorktree === null ? {} : { activeWorktree: copy3(input.activeWorktree) },
-    contextCapsule: input.contextCapsule ? copy3(input.contextCapsule) : copy3(state.contextCapsule ?? defaultContextCapsule(state.configSnapshot, state.policySnapshot))
+    contextCapsule: input.contextCapsule ? copy3(input.contextCapsule) : copy3(
+      state.contextCapsule ?? defaultContextCapsule(state.configSnapshot, state.policySnapshot)
+    )
   };
-  return recordHistoryEvent(updated, { type: "context.updated", refs: [{ kind: "context-capsule", ref: "state:contextCapsule" }], ...input.at ? { at: input.at } : {} });
+  return recordHistoryEvent(updated, {
+    type: "context.updated",
+    refs: [{ kind: "context-capsule", ref: "state:contextCapsule" }],
+    ...input.at ? { at: input.at } : {}
+  });
 }
 function transition(state, next, options = {}) {
   assertStateV3(state);
   validateTransitionOptionKeys(options);
-  if (!isTaskStatus(next)) throw new Error(`Invalid state transition from ${state.status} to ${String(next)}.`);
+  if (!isTaskStatus(next))
+    throw new Error(`Invalid state transition from ${state.status} to ${String(next)}.`);
   const contract = transitionContract(state.status, next);
   if (!contract) throw new Error(`Invalid state transition from ${state.status} to ${next}.`);
   const structural = validateStructuralGuards(state, next, options, contract.guards);
   const evidence = validateEvidenceSet(state, options.guardEvidence ?? [], contract.guards);
-  const missing = contract.guards.filter((guard) => !structural.has(guard) && evidence.get(guard)?.result !== "passed" && evidence.get(guard)?.result !== "not_applicable");
-  if (missing.length) throw new Error(`Unmet transition guards from ${state.status} to ${next}: ${missing.join(", ")}.`);
+  const missing = contract.guards.filter(
+    (guard) => !structural.has(guard) && evidence.get(guard)?.result !== "passed" && evidence.get(guard)?.result !== "not_applicable"
+  );
+  if (missing.length)
+    throw new Error(
+      `Unmet transition guards from ${state.status} to ${next}: ${missing.join(", ")}.`
+    );
   validateTrustedTarget(next, evidence);
   const sourceFingerprint = guardStateFingerprint(state);
   const metadata = transitionMetadata(state, next, options);
@@ -18644,31 +19481,51 @@ function transition(state, next, options = {}) {
     to: next,
     revision: state.revision + 1,
     sourceFingerprint,
-    ...next === "cancelled" || next === "failed" ? { terminalSource: state.status, ...state.status === "blocked" && state.resumeTo ? { terminalResumeTo: state.resumeTo } : {} } : {},
+    ...next === "cancelled" || next === "failed" ? {
+      terminalSource: state.status,
+      ...state.status === "blocked" && state.resumeTo ? { terminalResumeTo: state.resumeTo } : {}
+    } : {},
     ...metadata.pendingGate ? { gateContext: metadata.pendingGate, contractDigest: metadata.contractDigest } : state.pendingGate && options.gateDecision ? { gateContext: state.pendingGate, contractDigest: state.contractDigest } : {},
     ...evidence.size ? { guardEvidence: [...evidence.values()].map(copy3) } : {},
     ...options.gateDecision ? { gateDecision: copy3(options.gateDecision) } : {}
   };
   let shape = state.shape;
-  if (next === "discovering" && !shape) shape = createShapeState({ risk: state.risk, intakeBriefRef: "state:intake.brief" });
+  if (next === "discovering" && !shape)
+    shape = createShapeState({ risk: state.risk, intakeBriefRef: "state:intake.brief" });
   const { resumeTo: _resume, pendingGate: _gate, contractDigest: _contract, ...base } = state;
-  const output = { ...base, status: next, revision: state.revision + 1, ...metadata, ...shape ? { shape } : {}, history: [...state.history, event] };
+  const output = {
+    ...base,
+    status: next,
+    revision: state.revision + 1,
+    ...metadata,
+    ...shape ? { shape } : {},
+    history: [...state.history, event]
+  };
   return compactAndValidate(output);
 }
 function compareSnapshot(state, current) {
   const reasons = [];
   if (stable(state.configSnapshot) !== stable(current.config)) reasons.push("config_changed");
   if (stable(state.policySnapshot) !== stable(current.policy)) reasons.push("policy_changed");
-  if (state.routingSnapshot && current.routingSnapshot && routingStable(state.routingSnapshot) !== routingStable(current.routingSnapshot)) reasons.push("routing_changed");
+  if (state.routingSnapshot && current.routingSnapshot && routingStable(state.routingSnapshot) !== routingStable(current.routingSnapshot))
+    reasons.push("routing_changed");
   return { changed: reasons.length > 0, reasons };
 }
 function transitionMetadata(state, next, options) {
-  if (next === "blocked") return { resumeTo: options.resumeTo, remainingActions: [...options.remainingActions ?? []], ...state.pendingGate ? { pendingGate: state.pendingGate } : {}, ...state.contractDigest ? { contractDigest: state.contractDigest } : {} };
-  if (next === "ready_for_handoff") return { resumeTo: "handing_off", remainingActions: [...options.remainingActions ?? []] };
+  if (next === "blocked")
+    return {
+      resumeTo: options.resumeTo,
+      remainingActions: [...options.remainingActions ?? []],
+      ...state.pendingGate ? { pendingGate: state.pendingGate } : {},
+      ...state.contractDigest ? { contractDigest: state.contractDigest } : {}
+    };
+  if (next === "ready_for_handoff")
+    return { resumeTo: "handing_off", remainingActions: [...options.remainingActions ?? []] };
   if (next === "awaiting_approval") {
     const pendingGate = state.status === "planning" ? "pre_build" : "completion";
     const contractDigest = state.status === "planning" ? options.contractDigest : state.contractDigest;
-    if (!nonEmpty(contractDigest)) throw new Error("awaiting_approval requires current contract digest.");
+    if (!nonEmpty(contractDigest))
+      throw new Error("awaiting_approval requires current contract digest.");
     return { pendingGate, contractDigest, remainingActions: [] };
   }
   return { remainingActions: [] };
@@ -18676,70 +19533,115 @@ function transitionMetadata(state, next, options) {
 function validateStructuralGuards(state, next, options, required2) {
   const satisfied = /* @__PURE__ */ new Set();
   if (required2.includes("task_initialized")) {
-    if (!nonEmpty(state.taskId) || !isRecord6(state.configSnapshot) || !isRecord6(state.policySnapshot)) throw new Error("task_initialized failed.");
+    if (!nonEmpty(state.taskId) || !isRecord6(state.configSnapshot) || !isRecord6(state.policySnapshot))
+      throw new Error("task_initialized failed.");
     satisfied.add("task_initialized");
   }
   if (required2.includes("resume_metadata_valid")) {
     if (next === "blocked") {
-      if (!options.resumeTo || !isOperationalResumeTarget(options.resumeTo) || !options.remainingActions?.length) throw new Error("blocked requires operational resumeTo and remainingActions.");
+      if (!options.resumeTo || !isOperationalResumeTarget(options.resumeTo) || !options.remainingActions?.length)
+        throw new Error("blocked requires operational resumeTo and remainingActions.");
     } else if (state.status === "blocked") {
-      if (next !== state.resumeTo) throw new Error(`blocked may transition only to exact resumeTo ${state.resumeTo}.`);
+      if (next !== state.resumeTo)
+        throw new Error(`blocked may transition only to exact resumeTo ${state.resumeTo}.`);
     } else throw new Error(`resume_metadata_valid is not applicable from ${state.status}.`);
     satisfied.add("resume_metadata_valid");
   }
   if (required2.includes("terminal_source_recorded")) {
-    if (options.terminalSource !== state.status) throw new Error(`${next} requires terminalSource equal to ${state.status}.`);
+    if (options.terminalSource !== state.status)
+      throw new Error(`${next} requires terminalSource equal to ${state.status}.`);
     satisfied.add("terminal_source_recorded");
   }
   if (required2.includes("gate_context_valid")) {
     if (!options.gateDecision) throw new Error("Gate exit requires decision.");
     validateGateDecision(state, options.gateDecision);
-    if (!gateDecisionAllows(options.gateDecision, next)) throw new Error(`Gate decision cannot transition to ${next}.`);
+    if (!gateDecisionAllows(options.gateDecision, next))
+      throw new Error(`Gate decision cannot transition to ${next}.`);
     satisfied.add("gate_context_valid");
   }
-  if (next === "ready_for_handoff" && !options.remainingActions?.length) throw new Error("ready_for_handoff requires remainingActions.");
-  if (options.contractDigest !== void 0 && (state.status !== "planning" || next !== "awaiting_approval")) throw new Error("contractDigest may only enter GATE from Planning.");
-  if (state.status === "planning" && next === "awaiting_approval" && state.shape?.contract?.digest !== options.contractDigest) throw new Error("GATE digest must match canonical Shape contract.");
+  if (next === "ready_for_handoff" && !options.remainingActions?.length)
+    throw new Error("ready_for_handoff requires remainingActions.");
+  if (options.contractDigest !== void 0 && (state.status !== "planning" || next !== "awaiting_approval"))
+    throw new Error("contractDigest may only enter GATE from Planning.");
+  if (state.status === "planning" && next === "awaiting_approval" && state.shape?.contract?.digest !== options.contractDigest)
+    throw new Error("GATE digest must match canonical Shape contract.");
   return satisfied;
 }
 function validateEvidenceSet(state, items, required2) {
   const output = /* @__PURE__ */ new Map();
   for (const item of items) {
     validateGuardEvidence(state, item);
-    if (!required2.includes(item.guard) || STRUCTURAL_GUARDS.has(item.guard)) throw new Error(`Guard evidence for ${item.guard} is not applicable.`);
-    if (TRUSTED_GUARDS.has(item.guard) && !trustedEvidence.has(item)) throw new Error(`Guard ${item.guard} requires trusted evaluator evidence from current runtime.`);
+    if (!required2.includes(item.guard) || STRUCTURAL_GUARDS.has(item.guard))
+      throw new Error(`Guard evidence for ${item.guard} is not applicable.`);
+    if (TRUSTED_GUARDS.has(item.guard) && !trustedEvidence.has(item))
+      throw new Error(
+        `Guard ${item.guard} requires trusted evaluator evidence from current runtime.`
+      );
     if (output.has(item.guard)) throw new Error(`Duplicate guard evidence for ${item.guard}.`);
     output.set(item.guard, item);
   }
   return output;
 }
 function validateGuardEvidence(state, evidence) {
-  if (evidence.schemaVersion !== 1 || !GUARD_IDS.includes(evidence.guard) || evidence.stateRevision !== state.revision || evidence.stateFingerprint !== guardStateFingerprint(state) || !nonEmpty(evidence.observedFingerprint) || !evidence.evidenceRefs?.length || !evidence.evidenceRefs.every(nonEmpty) || !["deterministic-check", "human-approval", "repository-observation"].includes(evidence.provenance)) throw new Error(`Guard evidence for ${String(evidence.guard)} is stale, malformed, or unproven.`);
+  if (evidence.schemaVersion !== 1 || !GUARD_ID_SET.has(evidence.guard) || evidence.stateRevision !== state.revision || evidence.stateFingerprint !== guardStateFingerprint(state) || !nonEmpty(evidence.observedFingerprint) || !evidence.evidenceRefs?.length || !evidence.evidenceRefs.every(nonEmpty) || !["deterministic-check", "human-approval", "repository-observation"].includes(
+    evidence.provenance
+  ))
+    throw new Error(`Guard evidence for ${evidence.guard} is stale, malformed, or unproven.`);
   if (TRUSTED_GUARDS.has(evidence.guard)) validateEvaluatorReceipt(evidence, state);
-  else if (evidence.evaluatorReceipt) throw new Error(`Guard ${evidence.guard} cannot contain evaluatorReceipt.`);
+  else if (evidence.evaluatorReceipt)
+    throw new Error(`Guard ${evidence.guard} cannot contain evaluatorReceipt.`);
 }
 function createEvaluatorEvidence(state, guard, provenance, input) {
-  if (!input.evidenceRefs.length) throw new Error(`${guard} evaluator requires evidence references.`);
-  const base = { schemaVersion: 1, ...input, stateRevision: state.revision, stateFingerprint: guardStateFingerprint(state) };
+  if (!input.evidenceRefs.length)
+    throw new Error(`${guard} evaluator requires evidence references.`);
+  const base = {
+    schemaVersion: 1,
+    ...input,
+    stateRevision: state.revision,
+    stateFingerprint: guardStateFingerprint(state)
+  };
   const receipt = { ...base, receiptDigest: digest2(base) };
-  const evidence = deepFreeze2({ schemaVersion: 1, guard, stateRevision: state.revision, stateFingerprint: guardStateFingerprint(state), observedFingerprint: receipt.receiptDigest, evidenceRefs: [...receipt.evidenceRefs], provenance, result: "passed", evaluatorReceipt: receipt });
+  const evidence = deepFreeze2({
+    schemaVersion: 1,
+    guard,
+    stateRevision: state.revision,
+    stateFingerprint: guardStateFingerprint(state),
+    observedFingerprint: receipt.receiptDigest,
+    evidenceRefs: [...receipt.evidenceRefs],
+    provenance,
+    result: "passed",
+    evaluatorReceipt: receipt
+  });
   validateGuardEvidence(state, evidence);
   trustedEvidence.add(evidence);
   return evidence;
 }
 function validateEvaluatorReceipt(evidence, state) {
   const receipt = evidence.evaluatorReceipt;
-  const evaluators = { intake_complete: "intake", discovery_sufficient: "discovery", contract_complete: "planning", verification_complete: "verification", handoff_intent_resolved: "handoff_intent", handoff_reconciled: "handoff_reconciliation", completion_approved: "completion" };
-  if (!receipt || receipt.evaluator !== evaluators[evidence.guard] || receipt.stateRevision !== state.revision || receipt.stateFingerprint !== guardStateFingerprint(state) || receipt.receiptDigest !== digest2({ ...receipt, receiptDigest: void 0 }) || evidence.observedFingerprint !== receipt.receiptDigest || !sameIds(evidence.evidenceRefs, receipt.evidenceRefs)) throw new Error(`Trusted evaluator receipt for ${evidence.guard} is stale or malformed.`);
+  const evaluators = {
+    intake_complete: "intake",
+    discovery_sufficient: "discovery",
+    contract_complete: "planning",
+    verification_complete: "verification",
+    handoff_intent_resolved: "handoff_intent",
+    handoff_reconciled: "handoff_reconciliation",
+    completion_approved: "completion"
+  };
+  if (!receipt || receipt.evaluator !== evaluators[evidence.guard] || receipt.stateRevision !== state.revision || receipt.stateFingerprint !== guardStateFingerprint(state) || receipt.receiptDigest !== digest2({ ...receipt, receiptDigest: void 0 }) || evidence.observedFingerprint !== receipt.receiptDigest || !sameIds(evidence.evidenceRefs, receipt.evidenceRefs))
+    throw new Error(`Trusted evaluator receipt for ${evidence.guard} is stale or malformed.`);
 }
 function validateTrustedTarget(next, evidence) {
   const intent = evidence.get("handoff_intent_resolved")?.evaluatorReceipt;
-  if (next === "finished_local" && intent?.outcome !== "local_only") throw new Error("finished_local requires local handoff intent.");
-  if (["handing_off", "ready_for_handoff", "finished"].includes(next) && intent && intent.outcome !== "external_selected") throw new Error(`${next} requires external handoff intent.`);
-  if (next === "finished" && evidence.get("handoff_reconciled")?.evaluatorReceipt?.outcome !== "complete") throw new Error("finished requires complete handoff reconciliation.");
+  if (next === "finished_local" && intent?.outcome !== "local_only")
+    throw new Error("finished_local requires local handoff intent.");
+  if (["handing_off", "ready_for_handoff", "finished"].includes(next) && intent && intent.outcome !== "external_selected")
+    throw new Error(`${next} requires external handoff intent.`);
+  if (next === "finished" && evidence.get("handoff_reconciled")?.evaluatorReceipt?.outcome !== "complete")
+    throw new Error("finished requires complete handoff reconciliation.");
 }
 function validateGateDecision(state, decision) {
-  if (state.status !== "awaiting_approval" || decision.gate !== state.pendingGate || decision.stateRevision !== state.revision || decision.stateFingerprint !== guardStateFingerprint(state) || decision.contractDigest !== state.contractDigest || !nonEmpty(decision.evidenceRef)) throw new Error("Gate decision is stale or bound to another state.");
+  if (state.status !== "awaiting_approval" || decision.gate !== state.pendingGate || decision.stateRevision !== state.revision || decision.stateFingerprint !== guardStateFingerprint(state) || decision.contractDigest !== state.contractDigest || !nonEmpty(decision.evidenceRef))
+    throw new Error("Gate decision is stale or bound to another state.");
 }
 function gateDecisionAllows(decision, target) {
   return decision.gate === "pre_build" ? decision.decision === "approved" ? target === "executing" : target === "planning" : decision.decision === "approved" ? ["handing_off", "ready_for_handoff", "finished_local"].includes(target) : ["resolving_assure", "verifying"].includes(target);
@@ -18750,65 +19652,119 @@ function transitionContract(from, to) {
 function validateCompleteIntake(state) {
   const intake = state.intake;
   const signal = intake?.brief.successSignal;
-  if (!intake || !intake.semanticComplete || !intake.deterministicComplete || intake.activeQuestion || intake.contradictions.length || intake.blockedReason || !nonEmpty(intake.brief.objective) || !signal || !nonEmpty(signal.description) || !nonEmpty(signal.observationMethod) || intake.brief.risk !== state.risk) throw new Error("intake_complete requires complete current Intake Brief.");
+  if (!intake || !intake.semanticComplete || !intake.deterministicComplete || intake.activeQuestion || intake.contradictions.length || intake.blockedReason || !nonEmpty(intake.brief.objective) || !signal || !nonEmpty(signal.description) || !nonEmpty(signal.observationMethod) || intake.brief.risk !== state.risk)
+    throw new Error("intake_complete requires complete current Intake Brief.");
 }
 function validateSelectedProfile(state) {
   const choice = state.shape?.preparationProfileChoice;
-  if (!choice || choice.status !== "selected" || !choice.selectedProfile || !nonEmpty(choice.selectionEvidenceRef)) throw new Error("profile_selected requires explicit persisted Quick/Plan answer.");
+  if (!choice || choice.status !== "selected" || !choice.selectedProfile || !nonEmpty(choice.selectionEvidenceRef))
+    throw new Error("profile_selected requires explicit persisted Quick/Plan answer.");
 }
 function assertExactObservations(state, required2, observed, label, nonEmptyRequired) {
   assertUnique(required2, `${label} required IDs`, !nonEmptyRequired);
-  assertSameIds(required2, observed.map((item) => item.id), label);
-  for (const item of observed) if (item.stateRevision !== state.revision || item.exitCode !== 0 || !nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef)) throw new Error(`${label} observation ${item.id} did not pass or is stale.`);
+  assertSameIds(
+    required2,
+    observed.map((item) => item.id),
+    label
+  );
+  for (const item of observed)
+    if (item.stateRevision !== state.revision || item.exitCode !== 0 || !nonEmpty(item.observedFingerprint) || !nonEmpty(item.evidenceRef))
+      throw new Error(`${label} observation ${item.id} did not pass or is stale.`);
 }
 function normalizeVerificationRequirements(input) {
   assertUnique(input.criterionIds, "criterion IDs");
   assertUnique(input.mandatoryCheckIds, "check IDs", true);
-  return { ...copy3(input), requirementsDigest: digest2({ criterionIds: input.criterionIds, mandatoryCheckIds: input.mandatoryCheckIds }) };
+  return {
+    ...copy3(input),
+    requirementsDigest: digest2({
+      criterionIds: input.criterionIds,
+      mandatoryCheckIds: input.mandatoryCheckIds
+    })
+  };
 }
 function validateHistory(state) {
-  if (!Array.isArray(state.history) || !state.history.length) throw new StateValidationError("state_invalid", "Task state history is empty.");
+  if (!Array.isArray(state.history) || !state.history.length)
+    throw new StateValidationError("state_invalid", "Task state history is empty.");
   let previous = state.historySummary?.lastSequence ?? 0;
   let latestStatus = state.historySummary?.lastTransition?.to ?? "new";
   let revision = state.historySummary?.lastTransition?.revision ?? 0;
   for (const event of state.history) {
-    if (!Number.isInteger(event.sequence) || event.sequence <= previous || !validAt(event.at)) throw new StateValidationError("state_invalid", "History sequence or timestamp is invalid.");
+    if (!Number.isInteger(event.sequence) || event.sequence <= previous || !validAt(event.at))
+      throw new StateValidationError("state_invalid", "History sequence or timestamp is invalid.");
     previous = event.sequence;
     if (event.type === "state.transition") {
       const contract = transitionContract(event.from, event.to);
-      if (!isTaskStatus(event.from) || !isTaskStatus(event.to) || event.from !== latestStatus || !contract) throw new StateValidationError("state_invalid", `History edge ${event.from} -> ${event.to} is invalid.`);
-      if (event.revision !== revision + 1) throw new StateValidationError("state_invalid", "History transition revision is non-monotonic.");
+      if (!isTaskStatus(event.from) || !isTaskStatus(event.to) || event.from !== latestStatus || !contract)
+        throw new StateValidationError(
+          "state_invalid",
+          `History edge ${event.from} -> ${event.to} is invalid.`
+        );
+      if (event.revision !== revision + 1)
+        throw new StateValidationError(
+          "state_invalid",
+          "History transition revision is non-monotonic."
+        );
       validatePersistedTransitionEvent(event, contract);
       revision = event.revision;
       latestStatus = event.to;
     }
   }
-  if (latestStatus !== state.status) throw new StateValidationError("state_invalid", `History latest status ${latestStatus} differs from ${state.status}.`);
-  if (revision !== state.revision) throw new StateValidationError("state_invalid", `History latest revision ${revision} differs from ${state.revision}.`);
+  if (latestStatus !== state.status)
+    throw new StateValidationError(
+      "state_invalid",
+      `History latest status ${latestStatus} differs from ${state.status}.`
+    );
+  if (revision !== state.revision)
+    throw new StateValidationError(
+      "state_invalid",
+      `History latest revision ${revision} differs from ${state.revision}.`
+    );
 }
 function validatePersistedTransitionEvent(event, contract) {
-  if (!nonEmpty(event.sourceFingerprint)) throw new StateValidationError("state_invalid", "Transition source fingerprint is missing.");
+  if (!nonEmpty(event.sourceFingerprint))
+    throw new StateValidationError("state_invalid", "Transition source fingerprint is missing.");
   if (event.to === "cancelled" || event.to === "failed") {
-    if (event.terminalSource !== event.from) throw new StateValidationError("state_invalid", "Terminal transition source is invalid.");
+    if (event.terminalSource !== event.from)
+      throw new StateValidationError("state_invalid", "Terminal transition source is invalid.");
   } else if (event.terminalSource !== void 0 || event.terminalResumeTo !== void 0) {
-    throw new StateValidationError("state_invalid", "Non-terminal transition contains terminal source metadata.");
+    throw new StateValidationError(
+      "state_invalid",
+      "Non-terminal transition contains terminal source metadata."
+    );
   }
-  const expected = contract.guards.filter((guard) => !STRUCTURAL_GUARDS.has(guard)).sort();
+  const expected = contract.guards.filter((guard) => !STRUCTURAL_GUARDS.has(guard)).toSorted();
   const evidence = event.guardEvidence ?? [];
-  if (!sameIds(expected, evidence.map((item) => item.guard).sort())) {
-    throw new StateValidationError("state_invalid", `Transition ${event.from} -> ${event.to} guard evidence is incomplete.`);
+  if (!sameIds(expected, evidence.map((item) => item.guard).toSorted())) {
+    throw new StateValidationError(
+      "state_invalid",
+      `Transition ${event.from} -> ${event.to} guard evidence is incomplete.`
+    );
   }
   for (const item of evidence) {
-    if (item.schemaVersion !== 1 || item.stateRevision !== event.revision - 1 || item.stateFingerprint !== event.sourceFingerprint || !nonEmpty(item.observedFingerprint) || !item.evidenceRefs.length || !item.evidenceRefs.every(nonEmpty) || !["passed", "not_applicable"].includes(item.result) || item.result === "not_applicable" && item.guard !== "review_satisfied") throw new StateValidationError("state_invalid", `Persisted guard ${item.guard} is malformed or stale.`);
+    if (item.schemaVersion !== 1 || item.stateRevision !== event.revision - 1 || item.stateFingerprint !== event.sourceFingerprint || !nonEmpty(item.observedFingerprint) || !item.evidenceRefs.length || !item.evidenceRefs.every(nonEmpty) || !["passed", "not_applicable"].includes(item.result) || item.result === "not_applicable" && item.guard !== "review_satisfied")
+      throw new StateValidationError(
+        "state_invalid",
+        `Persisted guard ${item.guard} is malformed or stale.`
+      );
     if (TRUSTED_GUARDS.has(item.guard)) validatePersistedEvaluatorReceipt(item);
-    else if (item.evaluatorReceipt !== void 0) throw new StateValidationError("state_invalid", `Non-trusted guard ${item.guard} contains evaluator receipt.`);
+    else if (item.evaluatorReceipt !== void 0)
+      throw new StateValidationError(
+        "state_invalid",
+        `Non-trusted guard ${item.guard} contains evaluator receipt.`
+      );
   }
   if (contract.guards.includes("gate_context_valid")) {
     if (!event.gateDecision || event.gateDecision.stateRevision !== event.revision - 1 || event.gateDecision.stateFingerprint !== event.sourceFingerprint || event.gateDecision.gate !== event.gateContext || event.gateDecision.contractDigest !== event.contractDigest) {
-      throw new StateValidationError("state_invalid", "Persisted gate decision context is invalid.");
+      throw new StateValidationError(
+        "state_invalid",
+        "Persisted gate decision context is invalid."
+      );
     }
   } else if (event.gateDecision !== void 0) {
-    throw new StateValidationError("state_invalid", "Gate decision is attached to non-gate transition.");
+    throw new StateValidationError(
+      "state_invalid",
+      "Gate decision is attached to non-gate transition."
+    );
   }
 }
 function validatePersistedEvaluatorReceipt(evidence) {
@@ -18822,19 +19778,30 @@ function validatePersistedEvaluatorReceipt(evidence) {
     handoff_reconciled: "handoff_reconciliation",
     completion_approved: "completion"
   };
-  if (!receipt || receipt.evaluator !== evaluators[evidence.guard] || receipt.stateRevision !== evidence.stateRevision || receipt.stateFingerprint !== evidence.stateFingerprint || receipt.receiptDigest !== digest2({ ...receipt, receiptDigest: void 0 }) || evidence.observedFingerprint !== receipt.receiptDigest || !sameIds(evidence.evidenceRefs, receipt.evidenceRefs)) throw new StateValidationError("state_invalid", `Persisted evaluator receipt for ${evidence.guard} is invalid.`);
+  if (!receipt || receipt.evaluator !== evaluators[evidence.guard] || receipt.stateRevision !== evidence.stateRevision || receipt.stateFingerprint !== evidence.stateFingerprint || receipt.receiptDigest !== digest2({ ...receipt, receiptDigest: void 0 }) || evidence.observedFingerprint !== receipt.receiptDigest || !sameIds(evidence.evidenceRefs, receipt.evidenceRefs))
+    throw new StateValidationError(
+      "state_invalid",
+      `Persisted evaluator receipt for ${evidence.guard} is invalid.`
+    );
 }
 function validateHistoryReferences(refs, label) {
-  if (!Array.isArray(refs) || !refs.length || refs.length > HISTORY_REFERENCE_LIMIT) throw new Error(`${label} requires 1-${HISTORY_REFERENCE_LIMIT} references.`);
+  if (!Array.isArray(refs) || !refs.length || refs.length > HISTORY_REFERENCE_LIMIT)
+    throw new Error(`${label} requires 1-${HISTORY_REFERENCE_LIMIT} references.`);
   let chars = 0;
   for (const item of refs) {
-    if (!HISTORY_REFERENCE_KINDS.has(item.kind) || !REF.test(item.ref) || item.fingerprint !== void 0 && !REF.test(item.fingerprint)) throw new Error(`${label} contains invalid reference.`);
+    if (!HISTORY_REFERENCE_KINDS.has(item.kind) || !REF.test(item.ref) || item.fingerprint !== void 0 && !REF.test(item.fingerprint))
+      throw new Error(`${label} contains invalid reference.`);
     chars += item.ref.length + (item.fingerprint?.length ?? 0);
   }
-  if (chars > HISTORY_REFERENCE_TOTAL_CHARS) throw new Error(`${label} references exceed character budget.`);
+  if (chars > HISTORY_REFERENCE_TOTAL_CHARS)
+    throw new Error(`${label} references exceed character budget.`);
 }
 function compactAndValidate(state) {
-  const output = state.history.length <= HISTORY_LIMIT ? state : { ...state, history: state.history.slice(-HISTORY_LIMIT), historySummary: summarizeHistory(state) };
+  const output = state.history.length <= HISTORY_LIMIT ? state : {
+    ...state,
+    history: state.history.slice(-HISTORY_LIMIT),
+    historySummary: summarizeHistory(state)
+  };
   assertStateV3(output);
   return output;
 }
@@ -18844,21 +19811,73 @@ function summarizeHistory(state) {
   const last = removed.at(-1);
   const typeCounts = {};
   for (const item of removed) typeCounts[item.type] = (typeCounts[item.type] ?? 0) + 1;
-  const transition2 = [...removed].reverse().find((item) => item.type === "state.transition");
-  return { removedCount: removed.length, firstSequence: first.sequence, lastSequence: last.sequence, firstAt: first.at, lastAt: last.at, typeCounts, ...transition2 ? { lastTransition: { sequence: transition2.sequence, revision: transition2.revision, to: transition2.to } } : {} };
+  const lastTransition = removed.toReversed().find((item) => item.type === "state.transition");
+  return {
+    removedCount: removed.length,
+    firstSequence: first.sequence,
+    lastSequence: last.sequence,
+    firstAt: first.at,
+    lastAt: last.at,
+    typeCounts,
+    ...lastTransition ? {
+      lastTransition: {
+        sequence: lastTransition.sequence,
+        revision: lastTransition.revision,
+        to: lastTransition.to
+      }
+    } : {}
+  };
 }
 function nextSequence(state) {
   return Math.max(state.historySummary?.lastSequence ?? 0, state.history.at(-1)?.sequence ?? 0) + 1;
 }
 function defaultContextCapsule(config, policy) {
-  return { schemaVersion: 1, entries: [{ section: "constraints", ownerRef: "state:configSnapshot", provenanceRef: "state:configSnapshot", fingerprintRefs: ["config"] }, { section: "constraints", ownerRef: "state:policySnapshot", provenanceRef: "state:policySnapshot", fingerprintRefs: ["policy"] }], fingerprints: [{ id: "config", kind: "config", value: digest2(config), provenanceRef: "state:configSnapshot" }, { id: "policy", kind: "policy", value: digest2(policy), provenanceRef: "state:policySnapshot" }] };
+  return {
+    schemaVersion: 1,
+    entries: [
+      {
+        section: "constraints",
+        ownerRef: "state:configSnapshot",
+        provenanceRef: "state:configSnapshot",
+        fingerprintRefs: ["config"]
+      },
+      {
+        section: "constraints",
+        ownerRef: "state:policySnapshot",
+        provenanceRef: "state:policySnapshot",
+        fingerprintRefs: ["policy"]
+      }
+    ],
+    fingerprints: [
+      {
+        id: "config",
+        kind: "config",
+        value: digest2(config),
+        provenanceRef: "state:configSnapshot"
+      },
+      {
+        id: "policy",
+        kind: "policy",
+        value: digest2(policy),
+        provenanceRef: "state:policySnapshot"
+      }
+    ]
+  };
 }
 function routingStable(snapshot) {
   const { capturedAt: _capturedAt, ...rest } = snapshot;
   return stable(rest);
 }
 function validateTransitionOptionKeys(options) {
-  const allowed = /* @__PURE__ */ new Set(["resumeTo", "remainingActions", "terminalSource", "guardEvidence", "gateDecision", "contractDigest", "at"]);
+  const allowed = /* @__PURE__ */ new Set([
+    "resumeTo",
+    "remainingActions",
+    "terminalSource",
+    "guardEvidence",
+    "gateDecision",
+    "contractDigest",
+    "at"
+  ]);
   const unknown = Object.keys(options).filter((key) => !allowed.has(key));
   if (unknown.length) throw new Error(`Unknown transition options: ${unknown.join(", ")}.`);
 }
@@ -18867,10 +19886,11 @@ function assertSameIds(expected, actual, label) {
   if (!sameIds(expected, actual)) throw new Error(`${label} do not exactly cover required IDs.`);
 }
 function assertUnique(values, label, allowEmpty = false) {
-  if (!Array.isArray(values) || !allowEmpty && !values.length || !values.every(nonEmpty) || new Set(values).size !== values.length) throw new Error(`${label} must contain unique non-empty values.`);
+  if (!Array.isArray(values) || !allowEmpty && !values.length || !values.every(nonEmpty) || new Set(values).size !== values.length)
+    throw new Error(`${label} must contain unique non-empty values.`);
 }
 function sameIds(left, right) {
-  return left.length === right.length && [...left].sort().every((item, index) => item === [...right].sort()[index]);
+  return left.length === right.length && [...left].toSorted().every((item, index) => item === [...right].toSorted()[index]);
 }
 function digestWithoutReceipt(value) {
   const { receiptDigest: _digest, ...rest } = value;
@@ -18884,7 +19904,10 @@ function stable(value) {
 }
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
-  if (isRecord6(value)) return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== void 0).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonical(item)]));
+  if (isRecord6(value))
+    return Object.fromEntries(
+      Object.entries(value).filter(([, item]) => item !== void 0).toSorted(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonical(item)])
+    );
   return value;
 }
 function copy3(value) {
@@ -18913,9 +19936,44 @@ function isRisk(value) {
   return ["low", "medium", "high", "critical"].includes(value);
 }
 var REF = /^[A-Za-z0-9][A-Za-z0-9._:/#@+~=-]{0,511}$/;
-var HISTORY_REFERENCE_KINDS = /* @__PURE__ */ new Set(["task", "shape", "artifact", "worktree", "context-capsule", "context", "issue", "correction", "gate", "scope", "handoff", "evidence", "receipt", "command", "criterion", "decision", "policy", "config", "git", "symbol"]);
-var STRUCTURAL_GUARDS = /* @__PURE__ */ new Set(["task_initialized", "resume_metadata_valid", "terminal_source_recorded", "gate_context_valid"]);
-var TRUSTED_GUARDS = /* @__PURE__ */ new Set(["intake_complete", "discovery_sufficient", "contract_complete", "verification_complete", "handoff_intent_resolved", "handoff_reconciled", "completion_approved"]);
+var GUARD_ID_SET = new Set(GUARD_IDS);
+var HISTORY_REFERENCE_KINDS = /* @__PURE__ */ new Set([
+  "task",
+  "shape",
+  "artifact",
+  "worktree",
+  "context-capsule",
+  "context",
+  "issue",
+  "correction",
+  "gate",
+  "scope",
+  "handoff",
+  "evidence",
+  "receipt",
+  "command",
+  "criterion",
+  "decision",
+  "policy",
+  "config",
+  "git",
+  "symbol"
+]);
+var STRUCTURAL_GUARDS = /* @__PURE__ */ new Set([
+  "task_initialized",
+  "resume_metadata_valid",
+  "terminal_source_recorded",
+  "gate_context_valid"
+]);
+var TRUSTED_GUARDS = /* @__PURE__ */ new Set([
+  "intake_complete",
+  "discovery_sufficient",
+  "contract_complete",
+  "verification_complete",
+  "handoff_intent_resolved",
+  "handoff_reconciled",
+  "completion_approved"
+]);
 
 // src/state-store.ts
 var STATE_FILENAME = "state.yaml";
@@ -18951,7 +20009,8 @@ var TaskStateStore = class {
   #fs;
   #temporaryId;
   constructor(workspaceRoot, options = {}) {
-    if (!workspaceRoot || workspaceRoot.includes("\0")) throw new StateStoreError("state_path_invalid", "Workspace root is invalid.");
+    if (!workspaceRoot || workspaceRoot.includes("\0"))
+      throw new StateStoreError("state_path_invalid", "Workspace root is invalid.");
     try {
       this.workspaceRoot = realpathSync2(resolve2(workspaceRoot));
       if (!lstatSync2(this.workspaceRoot).isDirectory()) throw new Error();
@@ -18966,7 +20025,8 @@ var TaskStateStore = class {
     assertSafeTaskId2(taskId);
     const directory = resolve2(this.tasksRoot, taskId);
     const rel = relative(this.tasksRoot, directory);
-    if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new StateStoreError("state_path_invalid", "Task ID resolves outside task root.");
+    if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel))
+      throw new StateStoreError("state_path_invalid", "Task ID resolves outside task root.");
     return { directory, statePath: join4(directory, STATE_FILENAME) };
   }
   async load(taskId) {
@@ -18977,7 +20037,8 @@ var TaskStateStore = class {
     try {
       source = await this.#fs.readFile(paths.statePath);
     } catch (error) {
-      if (hasCode2(error, "ENOENT")) throw new StateStoreError("state_not_found", "Task state does not exist.");
+      if (hasCode2(error, "ENOENT"))
+        throw new StateStoreError("state_not_found", "Task state does not exist.");
       throw new StateStoreError("state_read_failed", "Task state could not be read.");
     }
     let parsed;
@@ -18990,10 +20051,15 @@ var TaskStateStore = class {
     try {
       state = loadStateV3(parsed);
     } catch (error) {
-      if (error instanceof StateValidationError) throw new StateStoreError(error.code, error.message);
+      if (error instanceof StateValidationError)
+        throw new StateStoreError(error.code, error.message);
       throw error;
     }
-    if (state.taskId !== taskId) throw new StateStoreError("state_task_mismatch", "Task state taskId differs from requested task.");
+    if (state.taskId !== taskId)
+      throw new StateStoreError(
+        "state_task_mismatch",
+        "Task state taskId differs from requested task."
+      );
     return state;
   }
   async save(taskId, value) {
@@ -19002,10 +20068,15 @@ var TaskStateStore = class {
     try {
       state = loadStateV3(value);
     } catch (error) {
-      if (error instanceof StateValidationError) throw new StateStoreError(error.code, error.message);
+      if (error instanceof StateValidationError)
+        throw new StateStoreError(error.code, error.message);
       throw error;
     }
-    if (state.taskId !== taskId) throw new StateStoreError("state_task_mismatch", "Task state taskId differs from requested task.");
+    if (state.taskId !== taskId)
+      throw new StateStoreError(
+        "state_task_mismatch",
+        "Task state taskId differs from requested task."
+      );
     const serialized = (0, import_yaml3.stringify)(state);
     try {
       loadStateV3((0, import_yaml3.parse)(serialized));
@@ -19018,7 +20089,8 @@ var TaskStateStore = class {
   }
   async #atomicWrite(destination, directory, data) {
     const id = this.#temporaryId();
-    if (!id || /[\\/\0]/.test(id)) throw new StateStoreError("state_path_invalid", "Temporary identifier is invalid.");
+    if (!id || /[\\/\u0000]/.test(id))
+      throw new StateStoreError("state_path_invalid", "Temporary identifier is invalid.");
     const temporary = join4(directory, `.${STATE_FILENAME}.${id}.tmp`);
     let owns = true;
     try {
@@ -19027,7 +20099,10 @@ var TaskStateStore = class {
       owns = false;
     } catch (error) {
       if (hasCode2(error, "EEXIST")) owns = false;
-      throw new StateStoreError("state_write_failed", "Task state could not be written atomically.");
+      throw new StateStoreError(
+        "state_write_failed",
+        "Task state could not be written atomically."
+      );
     } finally {
       if (owns) await this.#fs.unlink(temporary).catch(() => void 0);
     }
@@ -19037,46 +20112,65 @@ var TaskStateStore = class {
       try {
         await this.#fs.mkdir(path, { mode: 448 });
       } catch (error) {
-        if (!hasCode2(error, "EEXIST")) throw new StateStoreError("state_write_failed", "Task directory could not be created.");
+        if (!hasCode2(error, "EEXIST"))
+          throw new StateStoreError("state_write_failed", "Task directory could not be created.");
       }
       await this.#assertDirectory(path, false);
     }
     await this.#assertContainment(taskDirectory);
   }
   async #assertExistingDirectory(taskDirectory) {
-    for (const path of [join4(this.workspaceRoot, ".codex"), this.tasksRoot, taskDirectory]) await this.#assertDirectory(path, false);
+    for (const path of [join4(this.workspaceRoot, ".codex"), this.tasksRoot, taskDirectory])
+      await this.#assertDirectory(path, false);
     await this.#assertContainment(taskDirectory);
   }
   async #assertDirectory(path, optional) {
     try {
       const stat = await this.#fs.lstat(path);
-      if (stat.isSymbolicLink() || !stat.isDirectory()) throw new StateStoreError("state_path_invalid", "State path contains symlink or non-directory.");
+      if (stat.isSymbolicLink() || !stat.isDirectory())
+        throw new StateStoreError(
+          "state_path_invalid",
+          "State path contains symlink or non-directory."
+        );
     } catch (error) {
       if (error instanceof StateStoreError) throw error;
       if (optional && hasCode2(error, "ENOENT")) return;
-      if (hasCode2(error, "ENOENT")) throw new StateStoreError("state_not_found", "Task state directory does not exist.");
+      if (hasCode2(error, "ENOENT"))
+        throw new StateStoreError("state_not_found", "Task state directory does not exist.");
       throw new StateStoreError("state_read_failed", "Task directory could not be inspected.");
     }
   }
   async #assertRegularFile(path, optional) {
     try {
       const stat = await this.#fs.lstat(path);
-      if (stat.isSymbolicLink() || !stat.isFile()) throw new StateStoreError("state_path_invalid", "State path is symlink or non-file.");
+      if (stat.isSymbolicLink() || !stat.isFile())
+        throw new StateStoreError("state_path_invalid", "State path is symlink or non-file.");
     } catch (error) {
       if (error instanceof StateStoreError) throw error;
       if (optional && hasCode2(error, "ENOENT")) return;
-      if (hasCode2(error, "ENOENT")) throw new StateStoreError("state_not_found", "Task state file does not exist.");
+      if (hasCode2(error, "ENOENT"))
+        throw new StateStoreError("state_not_found", "Task state file does not exist.");
       throw new StateStoreError("state_read_failed", "Task state path could not be inspected.");
     }
   }
   async #assertContainment(taskDirectory) {
     try {
-      const [root, task] = await Promise.all([this.#fs.realpath(this.tasksRoot), this.#fs.realpath(taskDirectory)]);
+      const [root, task] = await Promise.all([
+        this.#fs.realpath(this.tasksRoot),
+        this.#fs.realpath(taskDirectory)
+      ]);
       const rel = relative(root, task);
-      if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new StateStoreError("state_path_invalid", "Task directory resolves outside task root.");
+      if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel))
+        throw new StateStoreError(
+          "state_path_invalid",
+          "Task directory resolves outside task root."
+        );
     } catch (error) {
       if (error instanceof StateStoreError) throw error;
-      throw new StateStoreError("state_path_invalid", "Task directory could not be resolved safely.");
+      throw new StateStoreError(
+        "state_path_invalid",
+        "Task directory could not be resolved safely."
+      );
     }
   }
 };
@@ -19084,7 +20178,8 @@ function createTaskStateStore(workspaceRoot, options = {}) {
   return new TaskStateStore(workspaceRoot, options);
 }
 function assertSafeTaskId2(value) {
-  if (!value || value === "." || value === ".." || /[\\/\0]/.test(value)) throw new StateStoreError("state_path_invalid", "Task ID must be one non-traversing segment.");
+  if (!value || value === "." || value === ".." || /[\\/\u0000]/.test(value))
+    throw new StateStoreError("state_path_invalid", "Task ID must be one non-traversing segment.");
 }
 function hasCode2(error, code) {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
@@ -19189,8 +20284,10 @@ function createLifecycleMetricEvent(input) {
   if (!LIFECYCLE_METRICS.includes(input.metric) || !nonNegativeFinite(input.value)) {
     throw new Error("Metric event metric or value is invalid.");
   }
-  if (input.sequence !== void 0 && (!Number.isInteger(input.sequence) || input.sequence < 0)) throw new Error("Metric sequence is invalid.");
-  if (input.occurredAtEpochMs !== void 0 && (!Number.isInteger(input.occurredAtEpochMs) || input.occurredAtEpochMs < 0)) throw new Error("Metric timestamp is invalid.");
+  if (input.sequence !== void 0 && (!Number.isInteger(input.sequence) || input.sequence < 0))
+    throw new Error("Metric sequence is invalid.");
+  if (input.occurredAtEpochMs !== void 0 && (!Number.isInteger(input.occurredAtEpochMs) || input.occurredAtEpochMs < 0))
+    throw new Error("Metric timestamp is invalid.");
   validateDimensions(input);
   validateMeasurementSource(input.metric, input.measurement, input.source);
   return {
@@ -19214,7 +20311,10 @@ function createMetricRunId() {
 }
 function tryCreateLifecycleMetricEvent(input) {
   try {
-    return { accepted: true, event: createLifecycleMetricEvent(input) };
+    return {
+      accepted: true,
+      event: createLifecycleMetricEvent(input)
+    };
   } catch {
     return { accepted: false, errorCode: "metric_rejected" };
   }
@@ -19223,7 +20323,8 @@ function summarizeLifecycleTrace(input) {
   if (!nonEmpty2(input.runId) || !isPreparationProfile(input.preparationProfile) || !["contract_fixture", "runtime"].includes(input.source)) {
     throw new Error("Trace identity, preparation profile, or source is invalid.");
   }
-  if (input.source === "runtime" && !isUuid(input.runId)) throw new Error("Runtime trace requires opaque UUID runId.");
+  if (input.source === "runtime" && !isUuid(input.runId))
+    throw new Error("Runtime trace requires opaque UUID runId.");
   if (!Array.isArray(input.statuses) || input.statuses.length < 2 || input.statuses[0] !== "new") {
     throw new Error("Lifecycle trace must start at new and contain a transition.");
   }
@@ -19237,15 +20338,22 @@ function summarizeLifecycleTrace(input) {
   }
   const terminalStatus = statuses.at(-1);
   if (!STATE_MACHINE[terminalStatus].stable && !STATE_MACHINE[terminalStatus].terminal) {
-    throw new Error(`Lifecycle trace must end at stable or terminal status; received ${terminalStatus}.`);
+    throw new Error(
+      `Lifecycle trace must end at stable or terminal status; received ${terminalStatus}.`
+    );
   }
   const phases = unique(statuses.map((status, index) => tracePhase(status, statuses, index)));
   const edges = statuses.slice(1).map((to, index) => ({ from: statuses[index], to }));
   const falseSuccessDetections = input.falseSuccessDetections;
-  if (!Number.isInteger(falseSuccessDetections) || falseSuccessDetections < 0) throw new Error("falseSuccessDetections must be a non-negative integer.");
-  if (!["contract_tests", "operator_audit"].includes(input.falseSuccessDetectionSource)) throw new Error("falseSuccessDetectionSource is required.");
+  if (!Number.isInteger(falseSuccessDetections) || falseSuccessDetections < 0)
+    throw new Error("falseSuccessDetections must be a non-negative integer.");
+  if (!["contract_tests", "operator_audit"].includes(input.falseSuccessDetectionSource))
+    throw new Error("falseSuccessDetectionSource is required.");
   const expectedAuditSource = input.source === "contract_fixture" ? "contract_tests" : "operator_audit";
-  if (input.falseSuccessDetectionSource !== expectedAuditSource) throw new Error(`Trace source ${input.source} requires false-success source ${expectedAuditSource}.`);
+  if (input.falseSuccessDetectionSource !== expectedAuditSource)
+    throw new Error(
+      `Trace source ${input.source} requires false-success source ${expectedAuditSource}.`
+    );
   const tokenUsage = input.tokenUsage ? validateTokenUsage(input.tokenUsage) : { availability: "unavailable" };
   const latency = input.latency === void 0 ? { availability: "unavailable" } : validateLatency(input.latency);
   return {
@@ -19256,9 +20364,13 @@ function summarizeLifecycleTrace(input) {
     statuses,
     phases,
     transitions: edges.length,
-    gates: edges.filter(({ from, to }) => to === "awaiting_approval" && (from === "planning" || from === "verifying")).length,
+    gates: edges.filter(
+      ({ from, to }) => to === "awaiting_approval" && (from === "planning" || from === "verifying")
+    ).length,
     blocks: edges.filter(({ to }) => to === "blocked").length,
-    resumes: edges.filter(({ from, to }) => from === "blocked" && to !== "cancelled" && to !== "failed").length,
+    resumes: edges.filter(
+      ({ from, to }) => from === "blocked" && to !== "cancelled" && to !== "failed"
+    ).length,
     validationRuns: edges.filter(({ to }) => to === "validating").length,
     reviewRuns: edges.filter(({ to }) => to === "reviewing").length,
     buildResolutionCycles: edges.filter(({ to }) => to === "resolving_build").length,
@@ -19282,23 +20394,46 @@ function buildBaselineReport(input) {
     samples
   };
   const validation = validateBaselineReport(report);
-  if (!validation.valid) throw new Error(`Invalid baseline report: ${validation.errors.join("; ")}.`);
+  if (!validation.valid)
+    throw new Error(`Invalid baseline report: ${validation.errors.join("; ")}.`);
   return report;
 }
 function validateBaselineReport(value) {
   const errors = [];
   if (!isRecord7(value)) return { valid: false, errors: ["report must be an object"] };
-  exactKeys(value, ["schemaVersion", "baselineId", "capturedAt", "contractVersion", "source", "limitations", "samples"], "report", errors);
+  exactKeys(
+    value,
+    [
+      "schemaVersion",
+      "baselineId",
+      "capturedAt",
+      "contractVersion",
+      "source",
+      "limitations",
+      "samples"
+    ],
+    "report",
+    errors
+  );
   if (value.schemaVersion !== 1) errors.push("schemaVersion must equal 1");
-  if (!nonEmpty2(value.baselineId) || !isIsoDate(value.capturedAt) || value.contractVersion !== "P0" || value.source !== "contract_fixture") errors.push("report identity is invalid");
+  if (!nonEmpty2(value.baselineId) || !isIsoDate(value.capturedAt) || value.contractVersion !== "P0" || value.source !== "contract_fixture")
+    errors.push("report identity is invalid");
   const limitations = value.limitations;
-  const allowedLimitations = ["contract_fixture_not_runtime", "token_telemetry_unavailable", "latency_telemetry_unavailable"];
-  if (!Array.isArray(limitations) || JSON.stringify(limitations) !== JSON.stringify(allowedLimitations)) errors.push("limitations are invalid");
-  if (!Array.isArray(value.samples) || value.samples.length !== 3) errors.push("baseline requires exactly three samples");
+  const allowedLimitations = [
+    "contract_fixture_not_runtime",
+    "token_telemetry_unavailable",
+    "latency_telemetry_unavailable"
+  ];
+  if (!Array.isArray(limitations) || JSON.stringify(limitations) !== JSON.stringify(allowedLimitations))
+    errors.push("limitations are invalid");
+  if (!Array.isArray(value.samples) || value.samples.length !== 3)
+    errors.push("baseline requires exactly three samples");
   else {
     const profiles = [];
-    for (const [index, sample] of value.samples.entries()) validateSummary(sample, index, profiles, errors);
-    if (!profiles.includes("quick") || !profiles.includes("plan")) errors.push("samples must cover quick and plan");
+    for (const [index, sample] of value.samples.entries())
+      validateSummary(sample, index, profiles, errors);
+    if (!profiles.includes("quick") || !profiles.includes("plan"))
+      errors.push("samples must cover quick and plan");
   }
   return { valid: errors.length === 0, errors };
 }
@@ -19307,34 +20442,41 @@ function validateSummary(value, index, profiles, errors) {
     errors.push(`sample ${index} must be an object`);
     return;
   }
-  exactKeys(value, [
-    "schemaVersion",
-    "sampleIdHash",
-    "preparationProfile",
-    "source",
-    "statuses",
-    "phases",
-    "transitions",
-    "gates",
-    "blocks",
-    "resumes",
-    "validationRuns",
-    "reviewRuns",
-    "buildResolutionCycles",
-    "assureResolutionCycles",
-    "terminalStatus",
-    "falseSuccessDetections",
-    "falseSuccessDetectionSource",
-    "tokenUsage",
-    "latency"
-  ], `sample ${index}`, errors);
+  exactKeys(
+    value,
+    [
+      "schemaVersion",
+      "sampleIdHash",
+      "preparationProfile",
+      "source",
+      "statuses",
+      "phases",
+      "transitions",
+      "gates",
+      "blocks",
+      "resumes",
+      "validationRuns",
+      "reviewRuns",
+      "buildResolutionCycles",
+      "assureResolutionCycles",
+      "terminalStatus",
+      "falseSuccessDetections",
+      "falseSuccessDetectionSource",
+      "tokenUsage",
+      "latency"
+    ],
+    `sample ${index}`,
+    errors
+  );
   if (value.schemaVersion !== 1 || !isPreparationProfile(value.preparationProfile) || value.source !== "contract_fixture" || !/^[a-f0-9]{64}$/.test(String(value.sampleIdHash))) {
     errors.push(`sample ${index} identity is invalid`);
     return;
   }
   profiles.push(value.preparationProfile);
-  if (!Number.isInteger(value.falseSuccessDetections) || Number(value.falseSuccessDetections) < 0) errors.push(`sample ${index} falseSuccessDetections is invalid`);
-  if (value.falseSuccessDetectionSource !== "contract_tests") errors.push(`sample ${index} falseSuccessDetectionSource is invalid`);
+  if (!Number.isInteger(value.falseSuccessDetections) || Number(value.falseSuccessDetections) < 0)
+    errors.push(`sample ${index} falseSuccessDetections is invalid`);
+  if (value.falseSuccessDetectionSource !== "contract_tests")
+    errors.push(`sample ${index} falseSuccessDetectionSource is invalid`);
   try {
     const rebuilt = summarizeLifecycleTrace({
       runId: "validation-placeholder",
@@ -19344,14 +20486,30 @@ function validateSummary(value, index, profiles, errors) {
       falseSuccessDetections: value.falseSuccessDetections,
       falseSuccessDetectionSource: value.falseSuccessDetectionSource
     });
-    for (const field of ["phases", "transitions", "gates", "blocks", "resumes", "validationRuns", "reviewRuns", "buildResolutionCycles", "assureResolutionCycles", "terminalStatus"]) {
-      if (JSON.stringify(value[field]) !== JSON.stringify(rebuilt[field])) errors.push(`sample ${index} ${field} is inconsistent with statuses`);
+    for (const field of [
+      "phases",
+      "transitions",
+      "gates",
+      "blocks",
+      "resumes",
+      "validationRuns",
+      "reviewRuns",
+      "buildResolutionCycles",
+      "assureResolutionCycles",
+      "terminalStatus"
+    ]) {
+      if (JSON.stringify(value[field]) !== JSON.stringify(rebuilt[field]))
+        errors.push(`sample ${index} ${field} is inconsistent with statuses`);
     }
   } catch (error) {
-    errors.push(`sample ${index} trace invalid: ${error instanceof Error ? error.message : "unknown"}`);
+    errors.push(
+      `sample ${index} trace invalid: ${error instanceof Error ? error.message : "unknown"}`
+    );
   }
-  if (!isUnavailable(value.tokenUsage)) errors.push(`sample ${index} tokenUsage must be unavailable for P0 fixture`);
-  if (!isUnavailable(value.latency)) errors.push(`sample ${index} latency must be unavailable for P0 fixture`);
+  if (!isUnavailable(value.tokenUsage))
+    errors.push(`sample ${index} tokenUsage must be unavailable for P0 fixture`);
+  if (!isUnavailable(value.latency))
+    errors.push(`sample ${index} latency must be unavailable for P0 fixture`);
 }
 function validateMeasurementSource(metric, measurement, source) {
   const valid = TOKEN_METRICS.has(metric) && measurement === "measured" && source === "native_token_api" || TOKEN_METRICS.has(metric) && measurement === "estimated" && source === "explicit_token_estimate" || metric === "token_proxy_context_bytes" && measurement === "estimated" && source === "context_bytes_proxy" || (metric === "latency_ms" || metric === "resume_to_first_action_ms") && measurement === "measured" && source === "monotonic_clock" || metric === "false_success_detections" && measurement === "measured" && source === "operator_audit" || ["unused_phase_outputs", "duplicated_fields", "silent_resume_divergences"].includes(metric) && measurement === "measured" && source === "operator_audit" || [
@@ -19373,7 +20531,9 @@ function validateMeasurementSource(metric, measurement, source) {
     "shape_planning_sessions",
     "shape_targeted_invalidations",
     "shape_evidence_reuses"
-  ].includes(metric) && measurement === "measured" && source === "orchestrator_counter" || ["validation_runs", "correction_cycles", "gates", "blocks", "transition_errors"].includes(metric) && measurement === "measured" && source === "state_history";
+  ].includes(metric) && measurement === "measured" && source === "orchestrator_counter" || ["validation_runs", "correction_cycles", "gates", "blocks", "transition_errors"].includes(
+    metric
+  ) && measurement === "measured" && source === "state_history";
   if (!valid) throw new Error(`Metric ${metric} measurement/source mismatch.`);
 }
 function validateDimensions(input) {
@@ -19385,18 +20545,21 @@ function validateDimensions(input) {
     throw new Error(`Metric ${input.metric} cannot contain model or effort dimensions.`);
   }
   if (input.metric === "model_calls" || input.metric === "routing_decisions") {
-    if (!["normal", "warning", "critical", "unknown"].includes(String(input.quotaPressure))) throw new Error(`${input.metric} requires quotaPressure dimension.`);
+    if (!["normal", "warning", "critical", "unknown"].includes(String(input.quotaPressure)))
+      throw new Error(`${input.metric} requires quotaPressure dimension.`);
   } else if (input.quotaPressure !== void 0) {
     throw new Error(`Metric ${input.metric} cannot contain quotaPressure dimension.`);
   }
 }
 function validateTokenUsage(value) {
-  if (!nonNegativeFinite(value.inputTokens) || !nonNegativeFinite(value.outputTokens)) throw new Error("Token usage values are invalid.");
+  if (!nonNegativeFinite(value.inputTokens) || !nonNegativeFinite(value.outputTokens))
+    throw new Error("Token usage values are invalid.");
   validateMeasurementSource("input_tokens", value.measurement, value.source);
   return { availability: "available", ...value };
 }
 function validateLatency(input) {
-  if (!isRecord7(input) || Object.keys(input).some((key) => !["value", "measurement", "source"].includes(key)) || Object.keys(input).length !== 3 || !nonNegativeFinite(input.value) || input.measurement !== "measured" || input.source !== "monotonic_clock") throw new Error("Latency observation is invalid or mislabeled.");
+  if (!isRecord7(input) || Object.keys(input).some((key) => !["value", "measurement", "source"].includes(key)) || Object.keys(input).length !== 3 || !nonNegativeFinite(input.value) || input.measurement !== "measured" || input.source !== "monotonic_clock")
+    throw new Error("Latency observation is invalid or mislabeled.");
   return { availability: "available", ...input };
 }
 function tracePhase(status, statuses, index) {
@@ -19463,7 +20626,8 @@ function nextCorrectionAction(input) {
 // src/shape-projection.ts
 import { createHash as createHash5 } from "node:crypto";
 function renderPlanProjection(contract, options = {}) {
-  if (contract.profile !== "plan") throw new Error("Only Plan contract may render Markdown projection.");
+  if (contract.profile !== "plan")
+    throw new Error("Only Plan contract may render Markdown projection.");
   const path = options.path ?? defaultPath(options.date, options.slug);
   validateProjectionPath(path);
   const markdown = render(contract, "Proposed");
@@ -19478,7 +20642,8 @@ function renderPlanProjection(contract, options = {}) {
 }
 function approvePlanProjection(projection) {
   validateProjection(projection);
-  if (projection.status !== "Proposed") throw new Error("Only Proposed Plan projection may become Approved.");
+  if (projection.status !== "Proposed")
+    throw new Error("Only Proposed Plan projection may become Approved.");
   const markdown = projection.markdown.replace(/^Status: Proposed$/m, "Status: Approved");
   return {
     ...projection,
@@ -19489,7 +20654,8 @@ function approvePlanProjection(projection) {
 }
 function detectPlanProjectionDrift(projection, observedContent) {
   validateProjection(projection);
-  if (typeof observedContent !== "string") throw new Error("Observed Plan projection content must be text.");
+  if (typeof observedContent !== "string")
+    throw new Error("Observed Plan projection content must be text.");
   return fingerprint(observedContent) !== projection.contentFingerprint;
 }
 function reconcilePlanProjection(projection, observedContent, action) {
@@ -19593,7 +20759,8 @@ var DELEGATION_ANSWER = /^(?:you decide|decide for me|choose for me|à toi de d�
 var ADVANCE_ANSWER = /^(?:next|continue|go ahead|shape|(?:passe|passer|avance|avancer).*(?:étape|etape|stage|shape|suite).*)$/i;
 function applyInitialIntakeEvaluation(state, evaluation, at2) {
   assertIntakeWritable(state);
-  if (state.intake?.activeQuestion) throw new Error("Initial Intake evaluation cannot replace an active question.");
+  if (state.intake?.activeQuestion)
+    throw new Error("Initial Intake evaluation cannot replace an active question.");
   const intake = state.intake ?? createIntakeState({
     risk: state.risk,
     sourceRefs: ["request"],
@@ -19607,7 +20774,11 @@ function applyInitialIntakeEvaluation(state, evaluation, at2) {
     throw new Error("Initial user decisions must be attributable to explicit request.");
   }
   const contradictions = evaluation.contradictions.map(sanitizeText).filter(Boolean);
-  const nextQuestion = evaluation.nextQuestion ? validateDecisionQuestion(evaluation.nextQuestion, { ...intake, decisions, answeredDecisionKeys: decisions.map((item) => item.key) }) : void 0;
+  const nextQuestion = evaluation.nextQuestion ? validateDecisionQuestion(evaluation.nextQuestion, {
+    ...intake,
+    decisions,
+    answeredDecisionKeys: decisions.map((item) => item.key)
+  }) : void 0;
   const candidate = {
     schemaVersion: 1,
     brief,
@@ -19673,7 +20844,10 @@ function setDecisionQuestion(state, question, at2) {
     freshnessRefs: ["state:configSnapshot", "state:policySnapshot"],
     ...at2 ? { capturedAt: at2 } : {}
   });
-  if (intake.activeQuestion) throw new Error("Active Decision Question must be answered or cancelled before another question.");
+  if (intake.activeQuestion)
+    throw new Error(
+      "Active Decision Question must be answered or cancelled before another question."
+    );
   const normalized = validateDecisionQuestion(question, intake);
   const distinct = !intake.answeredDecisionKeys.includes(normalized.decisionKey);
   const updated = {
@@ -19713,9 +20887,12 @@ function applyIntakeResponse(state, answer, evaluation, at2) {
   }
   const brief = sanitizeBrief(evaluation.brief);
   const resolved = evaluation.resolvedDecisions.map(validateDecision);
-  const riskDecision = resolved.find((decision) => decision.key === "risk" && decision.source === "user");
+  const riskDecision = resolved.find(
+    (decision) => decision.key === "risk" && decision.source === "user"
+  );
   const riskChanged = brief.risk !== state.risk;
-  if (riskChanged && !riskDecision) throw new Error("Intake Brief risk change requires an explicit user decision.");
+  if (riskChanged && !riskDecision)
+    throw new Error("Intake Brief risk change requires an explicit user decision.");
   const resolutionKeys = new Set(resolved.map((item) => item.key));
   const activeResolved = resolutionKeys.has(intake.activeQuestion.decisionKey);
   let nextQuestion;
@@ -19724,11 +20901,16 @@ function applyIntakeResponse(state, answer, evaluation, at2) {
     const base = {
       ...intakeWithoutQuestion,
       decisions: mergeDecisions(intake.decisions, resolved),
-      answeredDecisionKeys: unique2([...intake.answeredDecisionKeys, ...resolved.map((item) => item.key)])
+      answeredDecisionKeys: unique2([
+        ...intake.answeredDecisionKeys,
+        ...resolved.map((item) => item.key)
+      ])
     };
     nextQuestion = validateDecisionQuestion(evaluation.nextQuestion, base);
     if (!activeResolved && nextQuestion.decisionKey !== intake.activeQuestion.decisionKey) {
-      throw new Error(`Unresolved decision ${intake.activeQuestion.decisionKey} must remain active.`);
+      throw new Error(
+        `Unresolved decision ${intake.activeQuestion.decisionKey} must remain active.`
+      );
     }
     if (!activeResolved) {
       nextQuestion = {
@@ -19737,9 +20919,14 @@ function applyIntakeResponse(state, answer, evaluation, at2) {
       };
     }
   } else if (!activeResolved) {
-    throw new Error(`Evaluation neither resolved nor clarified decision ${intake.activeQuestion.decisionKey}.`);
+    throw new Error(
+      `Evaluation neither resolved nor clarified decision ${intake.activeQuestion.decisionKey}.`
+    );
   }
-  const answeredDecisionKeys = unique2([...intake.answeredDecisionKeys, ...resolved.map((item) => item.key)]);
+  const answeredDecisionKeys = unique2([
+    ...intake.answeredDecisionKeys,
+    ...resolved.map((item) => item.key)
+  ]);
   const contradictions = evaluation.contradictions.map(sanitizeText).filter(Boolean);
   const metrics = updateMetrics(intake.metrics, resolved, evaluation);
   const checkpointDue = metrics.distinctQuestions > 0 && metrics.distinctQuestions % 5 === 0 && answeredDecisionKeys.length >= metrics.distinctQuestions;
@@ -19798,11 +20985,13 @@ function evaluateIntakeCompleteness(intake) {
   if (!intake.brief.successSignal || !nonEmpty3(intake.brief.successSignal.description) || !nonEmpty3(intake.brief.successSignal.observationMethod)) {
     missingDecisionKeys.push("success_signal");
   }
-  if (!["low", "medium", "high", "critical"].includes(intake.brief.risk)) missingDecisionKeys.push("risk");
+  if (!["low", "medium", "high", "critical"].includes(intake.brief.risk))
+    missingDecisionKeys.push("risk");
   if (intake.activeQuestion) reasons.push(`active_question:${intake.activeQuestion.decisionKey}`);
   if (intake.contradictions.length) reasons.push("contradictions");
   if (!intake.semanticComplete) reasons.push("semantic_incomplete");
-  if (!intake.brief.technicalUnknowns.every(validTechnicalUnknown)) reasons.push("untyped_technical_unknown");
+  if (!intake.brief.technicalUnknowns.every(validTechnicalUnknown))
+    reasons.push("untyped_technical_unknown");
   return {
     complete: missingDecisionKeys.length === 0 && reasons.length === 0,
     missingDecisionKeys: unique2(missingDecisionKeys),
@@ -19839,7 +21028,8 @@ function rejectPrematureAdvance(state, at2) {
 function invalidateIntakeDecisions(state, decisionKeys, reason, at2) {
   if (!state.intake) throw new Error("Intake state is missing.");
   const keys = unique2(decisionKeys.map(sanitizeText).filter(Boolean));
-  if (!keys.length || !nonEmpty3(sanitizeText(reason))) throw new Error("Intake invalidation requires decision keys and reason.");
+  if (!keys.length || !nonEmpty3(sanitizeText(reason)))
+    throw new Error("Intake invalidation requires decision keys and reason.");
   const timestamp = normalizeAt2(at2);
   const invalidations = keys.map((decisionKey) => ({
     decisionKey,
@@ -19911,10 +21101,15 @@ function validateDecisionQuestion(question, intake) {
   const determiningImpact = sanitizeText(question.determiningImpact);
   const prompt = sanitizeText(question.prompt);
   const recommendationBasis = sanitizeText(question.recommendationBasis);
-  if (![id, decisionKey, missingInformation, determiningImpact, prompt, recommendationBasis].every(nonEmpty3)) {
-    throw new Error("Decision Question requires id, decisionKey, missing information, determining impact, prompt, and recommendation basis.");
+  if (![id, decisionKey, missingInformation, determiningImpact, prompt, recommendationBasis].every(
+    nonEmpty3
+  )) {
+    throw new Error(
+      "Decision Question requires id, decisionKey, missing information, determining impact, prompt, and recommendation basis."
+    );
   }
-  if (intake.answeredDecisionKeys.includes(decisionKey)) throw new Error(`Decision ${decisionKey} was already answered.`);
+  if (intake.answeredDecisionKeys.includes(decisionKey))
+    throw new Error(`Decision ${decisionKey} was already answered.`);
   if (!Array.isArray(question.options) || question.options.length < 2 || question.options.length > 3) {
     throw new Error("Decision Question requires 2\u20133 mutually exclusive options.");
   }
@@ -19932,8 +21127,9 @@ function validateDecisionQuestion(question, intake) {
   if (options[0]?.id !== question.recommendedOptionId) {
     throw new Error("Recommended option must be listed first.");
   }
-  if (question.freeFormAllowed !== true) throw new Error("Decision Question must allow free-form input.");
-  if (!["high", "medium", "low"].includes(question.recommendationConfidence)) throw new Error("Decision Question recommendation confidence is invalid.");
+  if (!question.freeFormAllowed) throw new Error("Decision Question must allow free-form input.");
+  if (!["high", "medium", "low"].includes(question.recommendationConfidence))
+    throw new Error("Decision Question recommendation confidence is invalid.");
   if (!Number.isInteger(question.clarificationCount) || question.clarificationCount < 0 || question.clarificationCount > 2) {
     throw new Error("Decision Question clarificationCount must be 0\u20132.");
   }
@@ -19961,9 +21157,12 @@ function validateDecision(value) {
     recommendationDisposition: value.recommendationDisposition,
     dependsOn: unique2((value.dependsOn ?? []).map(sanitizeText).filter(Boolean)).slice(0, MAX_LIST)
   };
-  if (!decision.key || !decision.value || !decision.provenanceRef) throw new Error("Normalized decision requires key, value, and provenance.");
-  if (!["user", "repository"].includes(decision.source)) throw new Error("Normalized decision source is invalid.");
-  if (!["accepted", "modified", "not_applicable"].includes(decision.recommendationDisposition)) throw new Error("Recommendation disposition is invalid.");
+  if (!decision.key || !decision.value || !decision.provenanceRef)
+    throw new Error("Normalized decision requires key, value, and provenance.");
+  if (!["user", "repository"].includes(decision.source))
+    throw new Error("Normalized decision source is invalid.");
+  if (!["accepted", "modified", "not_applicable"].includes(decision.recommendationDisposition))
+    throw new Error("Recommendation disposition is invalid.");
   return decision;
 }
 function sanitizeBrief(value) {
@@ -19974,7 +21173,8 @@ function sanitizeBrief(value) {
     description: sanitizeText(unknown.description),
     owner: "shape"
   })).slice(0, MAX_LIST);
-  if (!technicalUnknowns.every(validTechnicalUnknown)) throw new Error("Technical unknowns must be typed and owned by SHAPE.");
+  if (!technicalUnknowns.every(validTechnicalUnknown))
+    throw new Error("Technical unknowns must be typed and owned by SHAPE.");
   const brief = {
     schemaVersion: 1,
     ...nonEmpty3(sanitizeText(value.objective)) ? { objective: sanitizeText(value.objective) } : {},
@@ -20001,7 +21201,8 @@ function sanitizeBrief(value) {
     ...optionalText("urgency", value.urgency),
     ...optionalList("scopeBoundaries", value.scopeBoundaries)
   };
-  if (!["low", "medium", "high", "critical"].includes(brief.risk)) throw new Error("Intake Brief risk is invalid.");
+  if (!["low", "medium", "high", "critical"].includes(brief.risk))
+    throw new Error("Intake Brief risk is invalid.");
   return brief;
 }
 function mergeDecisions(existing, incoming) {
@@ -20017,7 +21218,9 @@ function updateMetrics(current, decisions, evaluation) {
     recommendationsAccepted: current.recommendationsAccepted + decisions.filter((item) => item.recommendationDisposition === "accepted").length,
     recommendationsModified: current.recommendationsModified + decisions.filter((item) => item.recommendationDisposition === "modified").length,
     ...evaluation.inputTokens === void 0 ? {} : { inputTokens: (current.inputTokens ?? 0) + nonNegativeInteger2(evaluation.inputTokens) },
-    ...evaluation.outputTokens === void 0 ? {} : { outputTokens: (current.outputTokens ?? 0) + nonNegativeInteger2(evaluation.outputTokens) },
+    ...evaluation.outputTokens === void 0 ? {} : {
+      outputTokens: (current.outputTokens ?? 0) + nonNegativeInteger2(evaluation.outputTokens)
+    },
     ...evaluation.latencyMs === void 0 ? {} : { latencyMs: (current.latencyMs ?? 0) + nonNegativeInteger2(evaluation.latencyMs) }
   };
 }
@@ -20035,18 +21238,20 @@ function emptyMetrics() {
 }
 function assertIntakeWritable(state) {
   assertTaskState(state);
-  if (deriveMacroPhase(state) !== "INTAKE") throw new Error("Decision Questions may be changed only in INTAKE.");
+  if (deriveMacroPhase(state) !== "INTAKE")
+    throw new Error("Decision Questions may be changed only in INTAKE.");
 }
 function assertTaskState(state) {
   const result = validateStateV3(state);
-  if (!result.valid) throw new Error(`Task state is invalid: ${JSON.stringify(result.errors.slice(0, 3))}`);
+  if (!result.valid)
+    throw new Error(`Task state is invalid: ${JSON.stringify(result.errors.slice(0, 3))}`);
 }
 function validTechnicalUnknown(value) {
   return nonEmpty3(value.key) && ["code", "dependency", "architecture", "validation", "operations"].includes(value.kind) && nonEmpty3(value.description) && value.owner === "shape";
 }
 function sanitizeText(value) {
   if (typeof value !== "string") return "";
-  return value.replace(SECRET2, "[REDACTED]").replace(EMAIL2, "[REDACTED_EMAIL]").replace(PHONE, "[REDACTED_PHONE]").replace(/[\0\r\n]+/g, " ").trim().slice(0, MAX_TEXT);
+  return value.replace(SECRET2, "[REDACTED]").replace(EMAIL2, "[REDACTED_EMAIL]").replace(PHONE, "[REDACTED_PHONE]").replace(/[\u0000\r\n]+/g, " ").trim().slice(0, MAX_TEXT);
 }
 function sanitizeList(values) {
   return unique2(values.map(sanitizeText).filter(Boolean)).slice(0, MAX_LIST);
@@ -20083,7 +21288,9 @@ function digest3(value) {
 function canonicalize2(value) {
   if (Array.isArray(value)) return value.map(canonicalize2);
   if (typeof value === "object" && value !== null) {
-    return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, nested]) => [key, canonicalize2(nested)]));
+    return Object.fromEntries(
+      Object.entries(value).toSorted(([left], [right]) => left.localeCompare(right)).map(([key, nested]) => [key, canonicalize2(nested)])
+    );
   }
   return value;
 }
@@ -20107,7 +21314,8 @@ function discoverVerificationCommands(root) {
   const guided = existsSync3(agents) ? readFileSync3(agents, "utf8").match(/npm run [\w:-]+|npm test/g) ?? [] : [];
   const manifest = path + "/package.json";
   const scripts = existsSync3(manifest) ? JSON.parse(readFileSync3(manifest, "utf8")).scripts ?? {} : {};
-  if (guided.length) return { source: "AGENTS.md", commands: [...guided, ...scripts.test ? ["npm test"] : []] };
+  if (guided.length)
+    return { source: "AGENTS.md", commands: [...guided, ...scripts.test ? ["npm test"] : []] };
   return { source: "limited", commands: [] };
 }
 
@@ -20119,7 +21327,9 @@ function isDelegableStage(stage) {
 }
 async function delegateStage(stage, runner, decision) {
   if (!isDelegableStage(stage) || MUTATING_STAGES.has(stage)) {
-    throw new Error("Mutation and validation stages stay with the parent workflow; no delegation permitted.");
+    throw new Error(
+      "Mutation and validation stages stay with the parent workflow; no delegation permitted."
+    );
   }
   return runner(decision);
 }
@@ -20130,15 +21340,22 @@ async function runInvocation(argv, options = {}) {
   if (invocation.command === "init") return runInit(options.init);
   if (invocation.command === "config_show" || invocation.command === "config_validate") {
     const config2 = resolveRuntimeConfig(options.configSources);
-    return invocation.command === "config_show" ? { command: invocation.command, status: "ok", data: invocation.explain ? explainConfig(config2) : config2.value } : { command: invocation.command, status: "valid", data: { valid: true } };
+    return invocation.command === "config_show" ? {
+      command: invocation.command,
+      status: "ok",
+      data: invocation.explain ? explainConfig(config2) : config2.value
+    } : { command: invocation.command, status: "valid", data: { valid: true } };
   }
   if (invocation.command === "benchmark_summary") {
     const summary = await createBenchmarkStore(options.workspaceRoot ?? process.cwd()).summary();
     return { command: "benchmark_summary", status: "ok", data: summary };
   }
   if (invocation.command === "status") {
-    if (!invocation.taskId) return { command: "status", status: "read-only", data: { taskId: void 0 } };
-    const loaded = await createTaskStateStore(options.workspaceRoot ?? process.cwd()).load(invocation.taskId);
+    if (!invocation.taskId)
+      return { command: "status", status: "read-only", data: { taskId: void 0 } };
+    const loaded = await createTaskStateStore(options.workspaceRoot ?? process.cwd()).load(
+      invocation.taskId
+    );
     return {
       command: "status",
       status: loaded.status,
@@ -20156,12 +21373,16 @@ async function runInvocation(argv, options = {}) {
   const capture = options.captureSnapshot ?? captureRoutingSnapshot;
   const subscription = isRecord8(config.value.subscription) ? config.value.subscription : {};
   const snapshotResult = await capture({
-    ...options.appServer ?? {},
+    ...options.appServer,
     config: {
       plan: typeof subscription.plan === "string" ? subscription.plan : "auto",
       ...typeof subscription.planOverride === "string" ? { planOverride: subscription.planOverride } : {},
       ...typeof subscription.multiplierOverride === "number" ? { multiplierOverride: subscription.multiplierOverride } : {},
-      ...Array.isArray(subscription.modelAllowlist) ? { modelAllowlist: subscription.modelAllowlist.filter((model) => typeof model === "string") } : {},
+      ...Array.isArray(subscription.modelAllowlist) ? {
+        modelAllowlist: subscription.modelAllowlist.filter(
+          (model) => typeof model === "string"
+        )
+      } : {},
       ...isRecord8(subscription.quota) ? {
         quota: {
           ...typeof subscription.quota.warningPercent === "number" ? { warningPercent: subscription.quota.warningPercent } : {},
@@ -20189,7 +21410,9 @@ async function runInvocation(argv, options = {}) {
     }
   }
   const decisions = ROUTING_TASKS2.map((task) => chooseRoute(routingSnapshot, task));
-  const unavailable = decisions.some((decision) => decision.model === null || decision.effort === null);
+  const unavailable = decisions.some(
+    (decision) => decision.model === null || decision.effort === null
+  );
   const permissionRequired = snapshotResult.failure?.code === "app_server_permission_denied";
   return {
     command: invocation.command,
