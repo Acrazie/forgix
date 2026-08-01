@@ -14,6 +14,12 @@ test("parses an unclassified run objective", async () => {
 
 test("treats legacy mode words as objective text and parses read-only subcommands", async () => {
   const { parseInvocation } = sourceApi;
+  expect(parseInvocation(["--help"])).toEqual({ command: "help" });
+  expect(parseInvocation(["help", "with", "tests"])).toEqual({
+    command: "run",
+    objective: "help with tests",
+    flags: {},
+  });
   expect(parseInvocation(["init"])).toEqual({
     command: "init",
   });

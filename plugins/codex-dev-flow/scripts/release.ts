@@ -99,9 +99,7 @@ function git(args: readonly string[]): string {
 
 function assertSupportedPlatform(): void {
   if (process.platform === "win32") {
-    throw new ReleaseError(
-      "Windows is not supported by release workflow V1. Use macOS; Linux is best-effort.",
-    );
+    throw new ReleaseError("Windows is not supported by release workflow V1. Use Linux or macOS.");
   }
 }
 

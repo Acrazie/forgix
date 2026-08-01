@@ -5,6 +5,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
 
+test("renders stable CLI help without runtime routing", async () => {
+  const result = await sourceApi.runInvocation(["--help"]);
+
+  expect(result).toEqual({
+    command: "help",
+    status: "ok",
+    data: { text: sourceApi.HELP_TEXT },
+  });
+  expect(sourceApi.HELP_TEXT).toContain("Usage: codex-dev-flow");
+  expect(sourceApi.HELP_TEXT).toContain("config validate [--json]");
+});
+
 function routingResult() {
   return {
     available: true,

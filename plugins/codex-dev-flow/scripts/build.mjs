@@ -13,7 +13,7 @@ export async function createDistributionBundle() {
     outfile: OUTPUT_PATH,
     platform: "node",
     sourcemap: false,
-    target: "node22.18",
+    target: "node24.0",
     write: false,
     banner: {
       js: '#!/usr/bin/env node\nimport { createRequire } from "node:module"; const require = createRequire(import.meta.url);',

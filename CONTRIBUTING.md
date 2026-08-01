@@ -4,10 +4,11 @@ Thanks for helping improve Codex Dev Flow. This guide covers repository developm
 
 ## Prerequisites
 
-- Node.js 22.18 or newer.
+- Node.js 24 or newer.
 - Bun 1.3 or newer.
 - Git.
 - GitHub CLI (`gh`) for releases.
+- Linux or macOS. Windows is not supported.
 
 ## Set up the project
 
@@ -106,6 +107,8 @@ bun run --cwd plugins/codex-dev-flow typecheck
 bun run --cwd plugins/codex-dev-flow test
 bun run --cwd plugins/codex-dev-flow test:coverage
 bun run --cwd plugins/codex-dev-flow test:randomization
+bun run --cwd plugins/codex-dev-flow check:size
+bun run --cwd plugins/codex-dev-flow test:runtime
 bun run --cwd plugins/codex-dev-flow release:test
 bun run check
 ```
@@ -113,6 +116,10 @@ bun run check
 The pre-commit hook runs `bun run check:staged`. Its small Bun adapter passes only staged,
 supported files to Oxfmt in check-only mode and native Oxlint. It never formats files or
 mutates the index; the complete root check remains the authoritative gate.
+
+Artifact budgets block deterministic bundle, packed package, or unpacked package growth
+beyond recorded headroom. Fast Gate, Full Gate, and cold CLI-start timings are reported
+for observation only; timing noise never changes a command's exit status.
 
 ## Releases
 
@@ -126,8 +133,7 @@ Interactive flow selects plugin, npm, or combined release; previews without dura
 changes; checks GitHub/npm authentication; validates release; and asks before publishing.
 It requires clean, synchronized `main`. Missing auth prints corrective command. Partial
 publication is detected on next run and can resume without creating another version.
-Release automation is supported on macOS, expected to work on Linux, and not guaranteed
-on Windows.
+Release automation is supported on Linux and macOS. Windows is unsupported.
 
 ## Pull requests
 

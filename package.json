@@ -14,13 +14,14 @@
     "format:check": "oxfmt --check .",
     "lint": "oxlint --disable-nested-config .",
     "lint:type-aware": "oxlint --disable-nested-config --type-aware .",
+    "pack:runtime": "bun run --cwd plugins/codex-dev-flow pack:runtime",
     "prepare": "husky",
     "release": "bun run --cwd plugins/codex-dev-flow release",
-    "test:tools": "bun test test/check-staged.test.ts",
+    "test:tools": "bun test test/*.test.ts",
     "typecheck:tools": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
-    "@types/node": "26.1.1",
+    "@types/node": "24.13.3",
     "husky": "9.1.7",
     "oxfmt": "0.61.0",
     "oxlint": "1.76.0",

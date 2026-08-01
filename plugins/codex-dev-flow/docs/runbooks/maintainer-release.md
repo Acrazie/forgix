@@ -4,7 +4,8 @@
 
 This runbook is the canonical production-release procedure for Codex Dev Flow. A
 maintainer runs it from a trusted local workstation. The repository currently has no
-CI workflow and CI does not publish the npm package or the Codex plugin.
+publishing workflow; CI validates releases but does not publish the npm package or the
+Codex plugin.
 
 Use the repository release program rather than invoking `npm publish`, creating tags,
 or editing release versions manually:
@@ -29,7 +30,8 @@ from Conventional Commits; maintainer retains final version authority.
 
 ## Preconditions
 
-- Run on macOS. Linux is best-effort. Windows is rejected.
+- Run on Linux or macOS. Windows is rejected.
+- Install Node.js 24 or newer.
 - Install repository-pinned Bun version from root `package.json`.
 - Install `git` and GitHub CLI `gh`.
 - Have push permission for `origin/main` and release creation permission on GitHub.
