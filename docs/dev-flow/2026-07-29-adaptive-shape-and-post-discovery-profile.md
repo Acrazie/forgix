@@ -724,4 +724,3 @@ Implementation is complete only when:
 - no runtime/public type accepts legacy task modes or V1/V2 state;
 - nominal metrics prove one Discovery and one Planning session structurally, while
   measured token/latency claims remain unavailable until real telemetry exists.
-

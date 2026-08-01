@@ -129,7 +129,12 @@ export interface TaskState {
 export type IntakeDecisionSource = "user" | "repository";
 export type RecommendationDisposition = "accepted" | "modified" | "not_applicable";
 export type DecisionQuestionConfidence = "high" | "medium" | "low";
-export type TechnicalUnknownKind = "code" | "dependency" | "architecture" | "validation" | "operations";
+export type TechnicalUnknownKind =
+  | "code"
+  | "dependency"
+  | "architecture"
+  | "validation"
+  | "operations";
 
 export interface IntakeSuccessSignal {
   description: string;
@@ -180,7 +185,9 @@ export interface DecisionQuestion {
   missingInformation: string;
   determiningImpact: string;
   prompt: string;
-  options: [DecisionQuestionOption, DecisionQuestionOption] | [DecisionQuestionOption, DecisionQuestionOption, DecisionQuestionOption];
+  options:
+    | [DecisionQuestionOption, DecisionQuestionOption]
+    | [DecisionQuestionOption, DecisionQuestionOption, DecisionQuestionOption];
   recommendedOptionId: string;
   recommendationBasis: string;
   recommendationConfidence: DecisionQuestionConfidence;
@@ -425,12 +432,27 @@ export interface GuardEvidenceRecord {
   evaluatorReceipt?: EvaluatorReceiptRecord;
 }
 
-export type TrustedEvaluator = "intake" | "discovery" | "planning" | "verification" | "handoff_intent" | "handoff_reconciliation" | "completion";
+export type TrustedEvaluator =
+  | "intake"
+  | "discovery"
+  | "planning"
+  | "verification"
+  | "handoff_intent"
+  | "handoff_reconciliation"
+  | "completion";
 
 export interface EvaluatorReceiptRecord {
   schemaVersion: 1;
   evaluator: TrustedEvaluator;
-  outcome: "intake_complete" | "discovery_sufficient" | "contract_complete" | "complete" | "local_only" | "external_selected" | "action_required" | "approved";
+  outcome:
+    | "intake_complete"
+    | "discovery_sufficient"
+    | "contract_complete"
+    | "complete"
+    | "local_only"
+    | "external_selected"
+    | "action_required"
+    | "approved";
   stateRevision: number;
   stateFingerprint: string;
   inputDigest: string;

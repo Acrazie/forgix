@@ -1,6 +1,10 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface } from "node:readline";
-import { buildRoutingSnapshot, createUnavailableRoutingSnapshot, type BuiltRoutingSnapshot } from "./routing.js";
+import {
+  buildRoutingSnapshot,
+  createUnavailableRoutingSnapshot,
+  type BuiltRoutingSnapshot,
+} from "./routing.js";
 import type { ModelId } from "./types.js";
 
 export interface AppServerOptions {
@@ -29,7 +33,7 @@ export class AppServerError extends Error {
   constructor(
     message: string,
     readonly kind: "timeout" | "permission" | "spawn" | "rpc" | "closed" | "unknown" = "unknown",
-    readonly stderr = ""
+    readonly stderr = "",
   ) {
     super(message);
   }
@@ -51,7 +55,10 @@ export interface AppServerFailure {
 
 export class AppServerClient {
   private readonly process: ChildProcessWithoutNullStreams;
-  private readonly pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
+  private readonly pending = new Map<
+    number,
+    { resolve: (value: unknown) => void; reject: (error: Error) => void }
+  >();
   private nextId = 1;
   private closed = false;
   private stderr = "";
@@ -68,16 +75,20 @@ export class AppServerClient {
       if (this.stderr.length >= MAX_STDERR_CHARS) return;
       this.stderr = (this.stderr + String(chunk)).slice(0, MAX_STDERR_CHARS);
     });
-    this.process.on("error", (error) => this.fail(new AppServerError(error.message, "spawn", this.stderr)));
+    this.process.on("error", (error) =>
+      this.fail(new AppServerError(error.message, "spawn", this.stderr)),
+    );
     this.process.on("close", () => {
       const kind = looksLikePermissionFailure(this.stderr) ? "permission" : "closed";
-      this.fail(new AppServerError("app-server closed before completing request", kind, this.stderr));
+      this.fail(
+        new AppServerError("app-server closed before completing request", kind, this.stderr),
+      );
     });
   }
 
   async readSnapshot(config?: AppServerOptions["config"]): Promise<BuiltRoutingSnapshot> {
     await this.request("initialize", {
-      clientInfo: { name: "codex-dev-flow", title: "Codex Dev Flow", version: "0.1.0" }
+      clientInfo: { name: "codex-dev-flow", title: "Codex Dev Flow", version: "0.1.0" },
     });
     this.notify("initialized", {});
     const account = await this.request("account/read", { refreshToken: false });
@@ -106,7 +117,9 @@ export class AppServerClient {
         this.process.stdin.write(JSON.stringify({ id, method, params }) + "\n");
       } catch (error) {
         this.pending.delete(id);
-        reject(error instanceof Error ? error : new AppServerError("failed to write to app-server"));
+        reject(
+          error instanceof Error ? error : new AppServerError("failed to write to app-server"),
+        );
       }
     });
   }
@@ -123,7 +136,9 @@ export class AppServerClient {
     if (!pending) return;
     this.pending.delete(message.id);
     if (message.error) {
-      pending.reject(new AppServerError(message.error.message ?? "app-server request failed", "rpc"));
+      pending.reject(
+        new AppServerError(message.error.message ?? "app-server request failed", "rpc"),
+      );
       return;
     }
     pending.resolve(message.result);
@@ -141,7 +156,9 @@ export interface CapturedRoutingSnapshot extends BuiltRoutingSnapshot {
   failure?: AppServerFailure;
 }
 
-export async function captureRoutingSnapshot(options: AppServerOptions = {}): Promise<CapturedRoutingSnapshot> {
+export async function captureRoutingSnapshot(
+  options: AppServerOptions = {},
+): Promise<CapturedRoutingSnapshot> {
   const client = new AppServerClient(options);
   const timeoutMs = options.timeoutMs ?? 1500;
   try {
@@ -150,8 +167,9 @@ export async function captureRoutingSnapshot(options: AppServerOptions = {}): Pr
     const failure = classifyAppServerFailure(error);
     return {
       ...createUnavailableRoutingSnapshot(),
-      error: failure.code === "app_server_timeout" ? "app-server timeout" : "app-server unavailable",
-      failure
+      error:
+        failure.code === "app_server_timeout" ? "app-server timeout" : "app-server unavailable",
+      failure,
     };
   } finally {
     client.close();
@@ -160,7 +178,10 @@ export async function captureRoutingSnapshot(options: AppServerOptions = {}): Pr
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new AppServerError("app-server timeout", "timeout")), timeoutMs);
+    const timer = setTimeout(
+      () => reject(new AppServerError("app-server timeout", "timeout")),
+      timeoutMs,
+    );
     promise.then(
       (value) => {
         clearTimeout(timer);
@@ -169,7 +190,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
       (error: unknown) => {
         clearTimeout(timer);
         reject(error);
-      }
+      },
     );
   });
 }
@@ -178,14 +199,17 @@ const MAX_STDERR_CHARS = 8_192;
 
 function classifyAppServerFailure(error: unknown): AppServerFailure {
   if (error instanceof AppServerError) {
-    if (error.kind === "timeout") return { code: "app_server_timeout", retryableWithApproval: false };
-    if (error.kind === "spawn") return { code: "app_server_spawn_failed", retryableWithApproval: false };
-    if (error.kind === "rpc") return { code: "app_server_rpc_failed", retryableWithApproval: false };
+    if (error.kind === "timeout")
+      return { code: "app_server_timeout", retryableWithApproval: false };
+    if (error.kind === "spawn")
+      return { code: "app_server_spawn_failed", retryableWithApproval: false };
+    if (error.kind === "rpc")
+      return { code: "app_server_rpc_failed", retryableWithApproval: false };
     if (error.kind === "permission" || looksLikePermissionFailure(error.stderr)) {
       return {
         code: "app_server_permission_denied",
         ...(mentionsCodexHome(error.stderr) ? { path: "~/.codex" as const } : {}),
-        retryableWithApproval: true
+        retryableWithApproval: true,
       };
     }
     if (error.kind === "closed") return { code: "app_server_closed", retryableWithApproval: false };

@@ -12,12 +12,12 @@ test("resolves config in source order and records leaf provenance", async () => 
         schemaVersion: 1,
         finish: { pullRequest: "optional" },
         worktree: { mode: "auto" },
-        merge: "never"
-      }
+        merge: "never",
+      },
     },
     { source: "user", value: { finish: { pullRequest: "required" } } },
     { source: "repo", value: { worktree: { mode: "required" } } },
-    { source: "local", value: { finish: { pullRequest: "optional" } } }
+    { source: "local", value: { finish: { pullRequest: "optional" } } },
   ]);
 
   assert.equal(resolved.value.finish.pullRequest, "optional");
@@ -29,19 +29,21 @@ test("resolves config in source order and records leaf provenance", async () => 
 
 test("accepts explicit external plugin and skill allowlists", async () => {
   const { resolveConfig } = await import(bundle);
-  const resolved = resolveConfig([{
-    source: "repo",
-    value: {
-      schemaVersion: 1,
-      integrations: {
-        plugins: ["impeccable"],
-        skills: ["impeccable:frontend-design"]
-      }
-    }
-  }]);
+  const resolved = resolveConfig([
+    {
+      source: "repo",
+      value: {
+        schemaVersion: 1,
+        integrations: {
+          plugins: ["impeccable"],
+          skills: ["impeccable:frontend-design"],
+        },
+      },
+    },
+  ]);
   assert.deepEqual(resolved.value.integrations, {
     plugins: ["impeccable"],
-    skills: ["impeccable:frontend-design"]
+    skills: ["impeccable:frontend-design"],
   });
 });
 
@@ -54,10 +56,10 @@ test("rejects an attempt to weaken a locked policy", async () => {
         schemaVersion: 1,
         finish: { pullRequest: "optional" },
         worktree: { mode: "auto" },
-        merge: "never"
-      }
+        merge: "never",
+      },
     },
-    { source: "local", value: { finish: { pullRequest: "optional" } } }
+    { source: "local", value: { finish: { pullRequest: "optional" } } },
   ]);
 
   assert.throws(
@@ -67,31 +69,43 @@ test("rejects an attempt to weaken a locked policy", async () => {
         requirements: { "finish.pullRequest": "required" },
         prohibitions: {},
         bounds: {},
-        locks: ["finish.pullRequest"]
+        locks: ["finish.pullRequest"],
       }),
     (error) =>
       error instanceof PolicyError &&
       error.exitCode === EXIT_CODES.POLICY_CONTRADICTION &&
       error.path === "finish.pullRequest" &&
-      error.source === "local"
+      error.source === "local",
   );
 });
 
 test("subscription config is strict, versioned, and explainable", async () => {
-  const { DEFAULT_CONFIG, explainConfig, resolveConfig, resolveSubscriptionMultiplier, validateSchema } = await import(bundle);
+  const {
+    DEFAULT_CONFIG,
+    explainConfig,
+    resolveConfig,
+    resolveSubscriptionMultiplier,
+    validateSchema,
+  } = await import(bundle);
   const valid = validateSchema("config", DEFAULT_CONFIG);
   assert.equal(valid.valid, true);
-  assert.equal(validateSchema("config", {
-    schemaVersion: 1,
-    subscription: { ...DEFAULT_CONFIG.subscription, modelAllowlist: ["gpt-5.5"] }
-  }).valid, false);
-  assert.equal(validateSchema("config", {
-    schemaVersion: 1,
-    subscription: { ...DEFAULT_CONFIG.subscription, unexpected: true }
-  }).valid, false);
-  const explained = explainConfig(resolveConfig([
-    { source: "user", value: { subscription: { plan: "plus" } } }
-  ]));
+  assert.equal(
+    validateSchema("config", {
+      schemaVersion: 1,
+      subscription: { ...DEFAULT_CONFIG.subscription, modelAllowlist: ["gpt-5.5"] },
+    }).valid,
+    false,
+  );
+  assert.equal(
+    validateSchema("config", {
+      schemaVersion: 1,
+      subscription: { ...DEFAULT_CONFIG.subscription, unexpected: true },
+    }).valid,
+    false,
+  );
+  const explained = explainConfig(
+    resolveConfig([{ source: "user", value: { subscription: { plan: "plus" } } }]),
+  );
   assert.equal(explained.value.subscription.plan, "plus");
   assert.equal(explained.provenance["subscription.plan"], "user");
   assert.equal(explained.provenance["subscription.quota.warningPercent"], "defaults");

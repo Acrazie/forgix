@@ -1,0 +1,52 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "pedantic": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "node"],
+  "options": {
+    "denyWarnings": true,
+    "maxWarnings": 0,
+    "reportUnusedDisableDirectives": "error",
+    "typeAware": false,
+    "typeCheck": false
+  },
+  "rules": {
+    "typescript/no-unsafe-type-assertion": "off"
+  },
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/coverage/**",
+    ".worktrees/**",
+    ".codex/tasks/**",
+    ".codex/benchmarks/**",
+    "plugins/codex-dev-flow/test/fixtures/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "plugins/codex-dev-flow/src/benchmark.ts",
+        "plugins/codex-dev-flow/src/init.ts",
+        "plugins/codex-dev-flow/src/release.ts",
+        "plugins/codex-dev-flow/src/state-store.ts",
+        "plugins/codex-dev-flow/test/lifecycle-paths.test.mjs",
+        "plugins/codex-dev-flow/test/state-store.test.mjs"
+      ],
+      "rules": {
+        "eslint/no-await-in-loop": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+      "rules": {
+        "typescript/no-floating-promises": "off"
+      }
+    }
+  ]
+}

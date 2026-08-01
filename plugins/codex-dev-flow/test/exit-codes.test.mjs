@@ -12,6 +12,6 @@ test("bundle exports stable workflow exit codes", async () => {
     STATE_CONFLICT: 5,
     BLOCKED: 6,
     HANDOFF_REQUIRED: 7,
-    INTERNAL_ERROR: 10
+    INTERNAL_ERROR: 10,
   });
 });

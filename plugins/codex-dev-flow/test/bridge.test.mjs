@@ -15,6 +15,6 @@ test("bridge rejects mutation delegation", async () => {
   const { delegateStage } = await import(bundle);
   await assert.rejects(
     () => delegateStage("execute", async () => "must not run"),
-    /parent workflow/
+    /parent workflow/,
   );
 });

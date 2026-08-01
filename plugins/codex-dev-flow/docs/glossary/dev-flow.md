@@ -36,6 +36,12 @@ An opt-in, local, gitignored post-task record containing a completed satisfactio
 survey, allowlisted execution metrics, and deterministic deviation facts. It is outside
 the lifecycle, never changes task outcome, and is never uploaded automatically.
 
+## Bun test suite
+
+The repository's sole automated test suite, discovered and executed by `bun:test`.
+Its success proves behavior under Bun but is not, by itself, Node.js runtime
+compatibility evidence.
+
 ## Cachebuster
 
 The timestamp-derived suffix in the Codex plugin manifest version that gives one plugin
@@ -45,6 +51,12 @@ product version.
 ## Configuration provenance
 
 The source that supplied an effective configuration value.
+
+## Coverage ratchet
+
+The Full Gate rule that initializes Bun source-coverage thresholds from a measured
+post-migration baseline, blocks regressions below them, and allows increases without
+allowing silent decreases.
 
 ## Context Capsule
 
@@ -85,6 +97,12 @@ A constraint whose violation or change can alter the expected outcome, success s
 risk, scope, solution, validation, or lifecycle transition. Preferences without
 such impact are not INTAKE questions.
 
+## Deterministic size budget
+
+The blocking Full Gate cap for bundle, packed-package, or unpacked-package bytes,
+derived from a committed baseline with explicit headroom and changed only through a
+reviewed explanation.
+
 ## Discovery target
 
 One stable, resumable SHAPE investigation unit containing a precise technical question,
@@ -106,6 +124,12 @@ dependency impact, and fresh validation evidence.
 
 A failed validation, review, or verification check tracked by a stable `issue_id`.
 
+## Fast Gate
+
+The low-latency, non-authoritative pre-commit quality gate. It checks formatting and
+linting only for staged supported files, never mutates them, and delegates all quality
+policy to repository scripts.
+
 ## Finding
 
 An actionable review issue tracked by a stable `issue_id`.
@@ -114,6 +138,17 @@ An actionable review issue tracked by a stable `issue_id`.
 
 SHAPE evidence whose exact source fingerprints still match. Freshness is evaluated per
 referenced source; unrelated repository changes do not make an evidence item stale.
+
+## Formatting policy
+
+The repository-wide conservative Oxfmt contract that normalizes presentation while
+preserving prose wrapping, import order, and package-manifest field order.
+
+## Full Gate
+
+The authoritative repository-wide CI quality gate. It checks formatting, linting, type
+correctness, build output, the complete automated test suite, and distribution behavior
+regardless of whether a local hook ran.
 
 ## Gate
 
@@ -143,12 +178,24 @@ constraints, required patterns, migration rules, or sequencing details needed to
 prevent implementation drift. It is not a second plan and does not contain decorative
 prose or redundant pseudo-code.
 
+## Integration Test Layer
+
+The `bun:test` layer that exercises the built bundle or a complete composed workflow
+when module composition, generated artifacts, or cross-module behavior is material to
+the contract.
+
 ## Late Intake decision
 
 An explicit product decision requested after SHAPE discovery reveals a
 product-impacting technical choice. It is presented in `awaiting_intake_decision`,
 selectively invalidates its dependency closure, and resumes the prior SHAPE work without
 rerunning initial INTAKE.
+
+## Lint policy
+
+The version-pinned Oxlint contract that blocks correctness, suspicious, and performance
+diagnostics plus unused disable directives, while leaving style, pedantic, restriction,
+and nursery categories disabled initially.
 
 ## Macro-phase
 
@@ -167,12 +214,24 @@ An identifier for one observation of an issue in one workflow run.
 
 A schema-approved requirement, prohibition, bound, or lock applied after configuration resolution.
 
+## Platform contract
+
+The operating-system compatibility claim backed by targeted CI evidence. The current
+contract supports Linux and macOS; Windows remains explicitly unsupported.
+
 ## Preparation profile choice
 
 The explicit Quick-or-Plan choice made after `discovery_sufficient` and before Planning.
 It is persisted with its evidence-backed recommendation in
 `awaiting_profile_choice`. An explicit plan request or policy lock may resolve it
 without presenting a redundant or false choice.
+
+## Quality scope
+
+The repository-wide set of maintained source, configuration, schema, workflow, and
+documentation files governed by the Fast and Full Gates. Generated, vendored, cached,
+lock, and distribution files are excluded explicitly when not safely excluded by the
+quality tool itself.
 
 ## Planning role
 
@@ -182,10 +241,10 @@ Discovery Target.
 
 ## Partial release
 
-A release whose Git, npm-registry, GitHub Release, or local Codex installation actions
-have not all reached their intended state. It is resumed by reconciling external state
-and performing only the missing idempotent action, never by rolling back published
-artifacts.
+A release whose Git, npm-registry, or GitHub Release actions have not all reached their
+intended state. It is resumed by reconciling external state and performing only the
+missing idempotent action, never by rolling back published artifacts. Optional local
+Codex installation is not publication state; retry it directly when needed.
 
 ## Phase contract
 
@@ -232,6 +291,17 @@ steps.
 
 An identifier associating related issues after explicit investigation.
 
+## Randomized test seed
+
+The Bun-generated value that determines one CI test order, is retained in logs, and
+allows an order-dependent failure to be reproduced exactly without retries.
+
+## Runtime Smoke Suite
+
+The narrow Full Gate suite that exercises the built and packaged CLI with the supported
+Node.js runtime. It covers bundle import, CLI execution, configuration validation, and
+package binary resolution without duplicating the Bun test suite.
+
 ## Assurance lane
 
 An independent review concern activated by applicable risk. Critical lanes may be
@@ -253,6 +323,23 @@ criteria.
 The person, role, test, metric, or system authorized to judge a success signal when
 multiple validation authorities could require different proof.
 
+## Type-aware linting
+
+The Full Gate Oxlint profile that builds TypeScript type information through
+`oxlint-tsgolint` to run semantic rules. It supplements rather than replaces
+`tsc --noEmit`.
+
+## Unit Test Layer
+
+The `bun:test` layer that imports TypeScript source modules directly and proves isolated
+deterministic behavior, boundaries, and failure contracts without requiring a bundle.
+
+## Workspace root
+
+The private Bun package that owns the repository-wide lockfile, quality dependencies,
+hook installation, and orchestration scripts while leaving publishable plugin
+dependencies declared by the plugin workspace.
+
 ## Shape State
 
 The aggregate owning SHAPE discovery targets, evidence, source fingerprints, decision
@@ -267,6 +354,12 @@ The effective configuration and policy retained when a task starts, used to dete
 
 A non-progressing state that waits for a user action or external-state change. A stable
 state may be resumable, such as `blocked` or `ready_for_handoff`, or terminal.
+
+## Staged-file adapter
+
+The tested Bun script that converts Git's NUL-delimited staged path set into safe,
+batched Oxfmt and Oxlint arguments for the Fast Gate. It never mutates working-tree or
+index content.
 
 ## Terminal source
 

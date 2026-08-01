@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "semi": true,
+  "singleQuote": false,
+  "trailingComma": "all",
+  "proseWrap": "preserve",
+  "sortImports": false,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/coverage/**",
+    ".worktrees/**",
+    ".codex/tasks/**",
+    ".codex/benchmarks/**",
+    "docs/roadmap.md",
+    "bun.lock",
+    "plugins/codex-dev-flow/test/fixtures/**",
+    "plugins/codex-dev-flow/docs/baselines/**",
+    "plugins/codex-dev-flow/docs/lifecycle-contract.projection.json"
+  ]
+}

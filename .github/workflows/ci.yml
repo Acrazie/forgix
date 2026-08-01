@@ -8,9 +8,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: plugins/codex-dev-flow
     strategy:
       matrix:
         node: [22, 24]
@@ -20,6 +17,8 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
       - run: bun install --frozen-lockfile
       - run: bun run check
-      - run: node dist/dev-flow.mjs config validate --json
+      - run: node plugins/codex-dev-flow/dist/dev-flow.mjs config validate --json

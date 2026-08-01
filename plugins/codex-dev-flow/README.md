@@ -72,4 +72,5 @@ forbidden.
 Normative behavior: [lifecycle contract](docs/lifecycle-contract.md). Shape decisions:
 [ADR 0009](docs/adr/0009-separate-intake-decisions-from-shape-discovery.md),
 [ADR 0010](docs/adr/0010-choose-quick-or-plan-after-discovery.md). Artifact rules:
-[docs/artifacts.md](docs/artifacts.md).
+[docs/artifacts.md](docs/artifacts.md). Maintainer publication procedure:
+[release runbook](docs/runbooks/maintainer-release.md).

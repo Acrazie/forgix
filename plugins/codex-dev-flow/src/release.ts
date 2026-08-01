@@ -52,13 +52,17 @@ export class ReleaseError extends Error {
 const STABLE_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const PLUGIN_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\+codex\.(\d{14})$/;
 
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
 export function parseStableVersion(value: string): StableVersion {
   const match = STABLE_VERSION.exec(value);
   if (!match) throw new ReleaseError(`Expected stable semantic version, received "${value}".`);
   return {
     major: Number(match[1]),
     minor: Number(match[2]),
-    patch: Number(match[3])
+    patch: Number(match[3]),
   };
 }
 
@@ -88,15 +92,15 @@ export function semanticBase(pluginVersion: string): string {
 }
 
 export function formatCachebuster(date: Date): string {
-  if (Number.isNaN(date.getTime())) throw new ReleaseError("Cannot create cachebuster from invalid date.");
-  const pad = (value: number) => String(value).padStart(2, "0");
+  if (Number.isNaN(date.getTime()))
+    throw new ReleaseError("Cannot create cachebuster from invalid date.");
   return [
     date.getUTCFullYear(),
-    pad(date.getUTCMonth() + 1),
-    pad(date.getUTCDate()),
-    pad(date.getUTCHours()),
-    pad(date.getUTCMinutes()),
-    pad(date.getUTCSeconds())
+    pad2(date.getUTCMonth() + 1),
+    pad2(date.getUTCDate()),
+    pad2(date.getUTCHours()),
+    pad2(date.getUTCMinutes()),
+    pad2(date.getUTCSeconds()),
   ].join("");
 }
 
@@ -123,7 +127,8 @@ export function createReleasePlan(input: {
   let cachebuster: string | undefined;
 
   if (target !== "plugin") {
-    if (!input.nextPackageVersion) throw new ReleaseError("npm release requires a next package version.");
+    if (!input.nextPackageVersion)
+      throw new ReleaseError("npm release requires a next package version.");
     parseStableVersion(input.nextPackageVersion);
     if (compareVersions(input.nextPackageVersion, currentPackageVersion) <= 0) {
       throw new ReleaseError("Next npm version must be greater than current package version.");
@@ -151,7 +156,7 @@ export function createReleasePlan(input: {
     identity,
     tag: identity,
     commitMessage: `chore(release): ${identity}`,
-    ...(cachebuster ? { cachebuster } : {})
+    ...(cachebuster ? { cachebuster } : {}),
   };
 }
 
@@ -209,18 +214,23 @@ export function parseReleaseCommit(subject: string): {
   identity: string;
   version: string;
 } | null {
-  const match = /^chore\(release\): (v|npm-v|plugin-v)(\d+\.\d+\.\d+)(?:-codex\.\d{14})?$/.exec(subject);
+  const match = /^chore\(release\): (v|npm-v|plugin-v)(\d+\.\d+\.\d+)(?:-codex\.\d{14})?$/.exec(
+    subject,
+  );
   if (!match) return null;
   const prefix = match[1];
   const identity = subject.slice("chore(release): ".length);
   return {
     target: prefix === "v" ? "both" : prefix === "npm-v" ? "npm" : "plugin",
     identity,
-    version: match[2]!
+    version: match[2]!,
   };
 }
 
-export function missingPublicationSteps(target: ReleaseTarget, state: PublicationState): PublicationStep[] {
+export function missingPublicationSteps(
+  target: ReleaseTarget,
+  state: PublicationState,
+): PublicationStep[] {
   const steps: PublicationStep[] = [];
   if (!state.pushed) steps.push("push");
   if (target !== "plugin" && !state.npmPublished) steps.push("npm");
@@ -238,7 +248,7 @@ export async function captureFileSnapshots(paths: readonly string[]): Promise<Fi
         if ((error as NodeJS.ErrnoException).code === "ENOENT") return { path, existed: false };
         throw error;
       }
-    })
+    }),
   );
 }
 
@@ -260,25 +270,25 @@ export async function restoreFileSnapshots(snapshots: readonly FileSnapshot[]): 
 export function runCommand(
   command: string,
   args: readonly string[],
-  options: Omit<SpawnSyncOptionsWithStringEncoding, "encoding"> = {}
+  options: Omit<SpawnSyncOptionsWithStringEncoding, "encoding"> = {},
 ): CommandResult {
   const result = spawnSync(command, args, {
     ...options,
     encoding: "utf8",
-    stdio: options.stdio ?? ["ignore", "pipe", "pipe"]
+    stdio: options.stdio ?? ["ignore", "pipe", "pipe"],
   });
   if (result.error) throw new ReleaseError(`${command} unavailable: ${result.error.message}`);
   return {
     stdout: result.stdout ?? "",
     stderr: result.stderr ?? "",
-    status: result.status ?? 1
+    status: result.status ?? 1,
   };
 }
 
 export function requireCommand(
   command: string,
   args: readonly string[],
-  options: Omit<SpawnSyncOptionsWithStringEncoding, "encoding"> = {}
+  options: Omit<SpawnSyncOptionsWithStringEncoding, "encoding"> = {},
 ): CommandResult {
   const result = runCommand(command, args, options);
   if (result.status !== 0) {

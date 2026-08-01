@@ -10,7 +10,7 @@ import {
   outro,
   select,
   spinner,
-  text
+  text,
 } from "@clack/prompts";
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -36,11 +36,13 @@ import {
   type ReleasePlan,
   type ReleaseTarget,
   type VersionBump,
-  type PublicationState
+  type PublicationState,
 } from "../src/release.ts";
 
 const pluginRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const repoRoot = requireCommand("git", ["rev-parse", "--show-toplevel"], { cwd: pluginRoot }).stdout.trim();
+const repoRoot = requireCommand("git", ["rev-parse", "--show-toplevel"], {
+  cwd: pluginRoot,
+}).stdout.trim();
 const packagePath = resolve(pluginRoot, "package.json");
 const manifestPath = resolve(pluginRoot, ".codex-plugin/plugin.json");
 const lockPath = resolve(pluginRoot, "bun.lock");
@@ -71,7 +73,7 @@ function runCheck(
   command: string,
   args: readonly string[],
   cwd = repoRoot,
-  interactive = false
+  interactive = false,
 ): void {
   if (interactive) {
     log.step(label);
@@ -97,24 +99,34 @@ function git(args: readonly string[]): string {
 
 function assertSupportedPlatform(): void {
   if (process.platform === "win32") {
-    throw new ReleaseError("Windows is not supported by release workflow V1. Use macOS; Linux is best-effort.");
+    throw new ReleaseError(
+      "Windows is not supported by release workflow V1. Use macOS; Linux is best-effort.",
+    );
   }
 }
 
 function assertCleanMain(): void {
   const branch = git(["branch", "--show-current"]);
-  if (branch !== "main") throw new ReleaseError(`Release requires branch "main"; current branch is "${branch}".`);
+  if (branch !== "main")
+    throw new ReleaseError(`Release requires branch "main"; current branch is "${branch}".`);
   const status = git(["status", "--porcelain=v1", "--untracked-files=all"]);
-  if (status) throw new ReleaseError("Release requires a clean worktree. Commit, stash, or remove local changes.");
+  if (status)
+    throw new ReleaseError(
+      "Release requires a clean worktree. Commit, stash, or remove local changes.",
+    );
 }
 
 function syncMain(mode: ReleaseMode): void {
   const localHead = git(["rev-parse", "HEAD"]);
   if (mode === "preview") {
-    const remote = requireCommand("git", ["ls-remote", "origin", "refs/heads/main"], { cwd: repoRoot }).stdout;
+    const remote = requireCommand("git", ["ls-remote", "origin", "refs/heads/main"], {
+      cwd: repoRoot,
+    }).stdout;
     const remoteHead = remote.split(/\s/)[0];
     if (!remoteHead || remoteHead !== localHead) {
-      throw new ReleaseError("Preview requires local main to equal origin/main. Run `git pull --ff-only` first.");
+      throw new ReleaseError(
+        "Preview requires local main to equal origin/main. Run `git pull --ff-only` first.",
+      );
     }
     return;
   }
@@ -135,7 +147,8 @@ function syncMain(mode: ReleaseMode): void {
 
 function assertAuthentication(target: ReleaseTarget): void {
   const gh = runCommand("gh", ["auth", "status"], { cwd: repoRoot });
-  if (gh.status !== 0) throw new ReleaseError("GitHub authentication missing. Run `gh auth login`, then rerun.");
+  if (gh.status !== 0)
+    throw new ReleaseError("GitHub authentication missing. Run `gh auth login`, then rerun.");
   if (target !== "plugin") {
     const npm = runCommand("bun", ["pm", "whoami"], { cwd: pluginRoot });
     if (npm.status !== 0) {
@@ -146,31 +159,38 @@ function assertAuthentication(target: ReleaseTarget): void {
 
 async function npmVersionPublished(version: string): Promise<boolean> {
   const response = await fetch(`https://registry.npmjs.org/${packageName}/${version}`, {
-    headers: { accept: "application/json" }
+    headers: { accept: "application/json" },
   });
   if (response.status === 404) return false;
-  if (!response.ok) throw new ReleaseError(`npm registry check failed with HTTP ${response.status}.`);
+  if (!response.ok)
+    throw new ReleaseError(`npm registry check failed with HTTP ${response.status}.`);
   return true;
 }
 
 function remoteTagCommit(tag: string): string | null {
-  const output = requireCommand("git", ["ls-remote", "origin", `refs/tags/${tag}`, `refs/tags/${tag}^{}`], {
-    cwd: repoRoot
-  }).stdout.trim();
+  const output = requireCommand(
+    "git",
+    ["ls-remote", "origin", `refs/tags/${tag}`, `refs/tags/${tag}^{}`],
+    {
+      cwd: repoRoot,
+    },
+  ).stdout.trim();
   if (!output) return null;
-  const peeled = output
-    .split("\n")
-    .find((line) => line.endsWith(`refs/tags/${tag}^{}`));
+  const peeled = output.split("\n").find((line) => line.endsWith(`refs/tags/${tag}^{}`));
   return (peeled ?? output.split("\n")[0]!).split(/\s/)[0] ?? null;
 }
 
 function githubReleaseExists(tag: string): boolean {
-  return runCommand("gh", ["release", "view", tag, "--json", "tagName"], { cwd: repoRoot }).status === 0;
+  return (
+    runCommand("gh", ["release", "view", tag, "--json", "tagName"], { cwd: repoRoot }).status === 0
+  );
 }
 
 function remoteMainCommit(): string | null {
-  const output = requireCommand("git", ["ls-remote", "origin", "refs/heads/main"], { cwd: repoRoot }).stdout.trim();
-  return output ? output.split(/\s/)[0] ?? null : null;
+  const output = requireCommand("git", ["ls-remote", "origin", "refs/heads/main"], {
+    cwd: repoRoot,
+  }).stdout.trim();
+  return output ? (output.split(/\s/)[0] ?? null) : null;
 }
 
 async function externalState(plan: ReleasePlan, head: string): Promise<PublicationState> {
@@ -178,7 +198,7 @@ async function externalState(plan: ReleasePlan, head: string): Promise<Publicati
   return {
     pushed: remoteMainCommit() === head && tagCommit === head,
     npmPublished: plan.target === "plugin" ? true : await npmVersionPublished(plan.packageVersion),
-    githubRelease: githubReleaseExists(plan.tag)
+    githubRelease: githubReleaseExists(plan.tag),
   };
 }
 
@@ -204,9 +224,9 @@ function generateNotes(tag: string): string {
       "-f",
       "target_commitish=main",
       "--jq",
-      ".body"
+      ".body",
     ],
-    { cwd: repoRoot }
+    { cwd: repoRoot },
   );
   return result.stdout.trim() || `Release ${tag}`;
 }
@@ -219,12 +239,17 @@ async function readJson(path: string): Promise<Record<string, unknown>> {
   return JSON.parse(await readFile(path, "utf8")) as Record<string, unknown>;
 }
 
-function currentVersions(packageJson: Record<string, unknown>, manifest: Record<string, unknown>): {
+function currentVersions(
+  packageJson: Record<string, unknown>,
+  manifest: Record<string, unknown>,
+): {
   packageVersion: string;
   pluginVersion: string;
 } {
-  if (typeof packageJson.version !== "string") throw new ReleaseError("package.json version is missing.");
-  if (typeof manifest.version !== "string") throw new ReleaseError("plugin.json version is missing.");
+  if (typeof packageJson.version !== "string")
+    throw new ReleaseError("package.json version is missing.");
+  if (typeof manifest.version !== "string")
+    throw new ReleaseError("plugin.json version is missing.");
   parseStableVersion(packageJson.version);
   semanticBase(manifest.version);
   return { packageVersion: packageJson.version, pluginVersion: manifest.version };
@@ -244,8 +269,8 @@ async function chooseTarget(): Promise<ReleaseTarget> {
     options: [
       { value: "both", label: "Plugin + npm", hint: "recommended" },
       { value: "plugin", label: "Codex plugin" },
-      { value: "npm", label: "npm package" }
-    ]
+      { value: "npm", label: "npm package" },
+    ],
   });
   if (cancelled(answer)) return abortFromPrompt();
   return answer;
@@ -257,8 +282,8 @@ async function chooseMode(): Promise<ReleaseMode> {
     initialValue: "publish",
     options: [
       { value: "publish", label: "Prepare and publish" },
-      { value: "preview", label: "Preview only", hint: "read-only" }
-    ]
+      { value: "preview", label: "Preview only", hint: "read-only" },
+    ],
   });
   if (cancelled(answer)) return abortFromPrompt();
   return answer;
@@ -268,17 +293,29 @@ async function chooseVersion(current: string, recommendation: VersionBump): Prom
   const versions = {
     patch: incrementVersion(current, "patch"),
     minor: incrementVersion(current, "minor"),
-    major: incrementVersion(current, "major")
+    major: incrementVersion(current, "major"),
   };
   const answer = await select<VersionBump | "custom">({
     message: `Next npm version (recommended: ${recommendation})`,
     initialValue: recommendation,
     options: [
-      { value: "patch", label: `Patch — ${versions.patch}`, ...(recommendation === "patch" ? { hint: "recommended" } : {}) },
-      { value: "minor", label: `Minor — ${versions.minor}`, ...(recommendation === "minor" ? { hint: "recommended" } : {}) },
-      { value: "major", label: `Major — ${versions.major}`, ...(recommendation === "major" ? { hint: "recommended" } : {}) },
-      { value: "custom", label: "Custom stable version" }
-    ]
+      {
+        value: "patch",
+        label: `Patch — ${versions.patch}`,
+        ...(recommendation === "patch" ? { hint: "recommended" } : {}),
+      },
+      {
+        value: "minor",
+        label: `Minor — ${versions.minor}`,
+        ...(recommendation === "minor" ? { hint: "recommended" } : {}),
+      },
+      {
+        value: "major",
+        label: `Major — ${versions.major}`,
+        ...(recommendation === "major" ? { hint: "recommended" } : {}),
+      },
+      { value: "custom", label: "Custom stable version" },
+    ],
   });
   if (cancelled(answer)) return abortFromPrompt();
   if (answer !== "custom") return versions[answer];
@@ -291,21 +328,24 @@ async function chooseVersion(current: string, recommendation: VersionBump): Prom
         if (!value) return "Version required.";
         parseStableVersion(value);
         if (compareVersions(value, current) <= 0) return `Version must be greater than ${current}.`;
+        return undefined;
       } catch (error) {
         return displayError(error);
       }
-    }
+    },
   });
   if (cancelled(custom)) return abortFromPrompt();
   return custom;
 }
 
 function planSummary(plan: ReleasePlan, mode: ReleaseMode): string {
-  const files = [...new Set([
-    ...(plan.target !== "npm" ? [".codex-plugin/plugin.json"] : []),
-    ...(plan.target !== "plugin" ? ["package.json", "bun.lock"] : []),
-    "dist/dev-flow.mjs"
-  ])];
+  const files = [
+    ...new Set([
+      ...(plan.target !== "npm" ? [".codex-plugin/plugin.json"] : []),
+      ...(plan.target !== "plugin" ? ["package.json", "bun.lock"] : []),
+      "dist/dev-flow.mjs",
+    ]),
+  ];
   return [
     `Action: ${mode === "preview" ? "preview only" : "prepare and publish"}`,
     `Target: ${plan.target}`,
@@ -314,7 +354,7 @@ function planSummary(plan: ReleasePlan, mode: ReleaseMode): string {
     `Tag: ${plan.tag}`,
     `Files: ${files.join(", ")}`,
     "Checks: auth, Git sync, frozen install, typecheck, build, tests, manifest, package dry-run, availability",
-    `Order: push → ${plan.target === "plugin" ? "" : "bun publish → "}GitHub Release${plan.target === "npm" ? "" : " → optional local install"}`
+    `Order: push → ${plan.target === "plugin" ? "" : "bun publish → "}GitHub Release${plan.target === "npm" ? "" : " → optional local install"}`,
   ].join("\n");
 }
 
@@ -333,7 +373,7 @@ async function runPreflightValidations(target: ReleaseTarget, readOnly: boolean)
     "Frozen Bun install",
     "bun",
     ["install", "--frozen-lockfile", ...(readOnly ? ["--dry-run"] : [])],
-    pluginRoot
+    pluginRoot,
   );
   runCheck("Typecheck", "bun", ["run", "typecheck"], pluginRoot);
   runCheck("Deterministic build", "bun", ["run", "build"], pluginRoot);
@@ -343,7 +383,12 @@ async function runPreflightValidations(target: ReleaseTarget, readOnly: boolean)
   const manifest = await readJson(manifestPath);
   validatePluginManifest(manifest);
   if (target !== "plugin") {
-    runCheck("npm package content", "bun", ["pm", "pack", "--dry-run", "--ignore-scripts"], pluginRoot);
+    runCheck(
+      "npm package content",
+      "bun",
+      ["pm", "pack", "--dry-run", "--ignore-scripts"],
+      pluginRoot,
+    );
   }
 }
 
@@ -355,17 +400,23 @@ async function runPreparedValidations(plan: ReleasePlan): Promise<void> {
       "npm package dry-run",
       "bun",
       ["publish", "--dry-run", "--ignore-scripts", "--access", "public"],
-      pluginRoot
+      pluginRoot,
     );
   }
 }
 
 async function assertVersionsAvailable(plan: ReleasePlan): Promise<void> {
-  if (runCommand("git", ["show-ref", "--verify", "--quiet", `refs/tags/${plan.tag}`], { cwd: repoRoot }).status === 0) {
+  if (
+    runCommand("git", ["show-ref", "--verify", "--quiet", `refs/tags/${plan.tag}`], {
+      cwd: repoRoot,
+    }).status === 0
+  ) {
     throw new ReleaseError(`Local Git tag "${plan.tag}" already exists.`);
   }
-  if (remoteTagCommit(plan.tag)) throw new ReleaseError(`Git tag "${plan.tag}" already exists on origin.`);
-  if (githubReleaseExists(plan.tag)) throw new ReleaseError(`GitHub Release "${plan.tag}" already exists.`);
+  if (remoteTagCommit(plan.tag))
+    throw new ReleaseError(`Git tag "${plan.tag}" already exists on origin.`);
+  if (githubReleaseExists(plan.tag))
+    throw new ReleaseError(`GitHub Release "${plan.tag}" already exists.`);
   if (plan.target !== "plugin" && (await npmVersionPublished(plan.packageVersion))) {
     throw new ReleaseError(`npm version ${packageName}@${plan.packageVersion} already exists.`);
   }
@@ -377,18 +428,34 @@ async function optionalLocalInstall(target: ReleaseTarget): Promise<void> {
     message: "Refresh local Codex plugin now?",
     initialValue: false,
     active: "Yes",
-    inactive: "No"
+    inactive: "No",
   });
   if (cancelled(answer) || !answer) {
     log.info("Local plugin unchanged. Start a new Codex thread after installing this release.");
     return;
   }
-  runCheck("Upgrade marketplace", "codex", ["plugin", "marketplace", "upgrade", marketplace], repoRoot, true);
-  runCheck("Install plugin", "codex", ["plugin", "add", `${packageName}@${marketplace}`], repoRoot, true);
+  runCheck(
+    "Upgrade marketplace",
+    "codex",
+    ["plugin", "marketplace", "upgrade", marketplace],
+    repoRoot,
+    true,
+  );
+  runCheck(
+    "Install plugin",
+    "codex",
+    ["plugin", "add", `${packageName}@${marketplace}`],
+    repoRoot,
+    true,
+  );
   log.info("Start a new Codex thread to load updated plugin.");
 }
 
-async function publishMissing(plan: ReleasePlan, notes: string, state: PublicationState): Promise<void> {
+async function publishMissing(
+  plan: ReleasePlan,
+  notes: string,
+  state: PublicationState,
+): Promise<void> {
   if (!state.pushed) {
     const head = git(["rev-parse", "HEAD"]);
     const remoteTag = remoteTagCommit(plan.tag);
@@ -400,7 +467,7 @@ async function publishMissing(plan: ReleasePlan, notes: string, state: Publicati
       "git",
       ["push", "--atomic", "origin", "main", ...(remoteTag ? [] : [`refs/tags/${plan.tag}`])],
       repoRoot,
-      true
+      true,
     );
     externalPublicationStarted = true;
   }
@@ -410,11 +477,16 @@ async function publishMissing(plan: ReleasePlan, notes: string, state: Publicati
   }
   if (!state.githubRelease) {
     externalPublicationStarted = true;
-    runCheck(
-      "Create GitHub Release",
-      "gh",
-      ["release", "create", plan.tag, "--verify-tag", "--title", plan.tag, "--notes", notes]
-    );
+    runCheck("Create GitHub Release", "gh", [
+      "release",
+      "create",
+      plan.tag,
+      "--verify-tag",
+      "--title",
+      plan.tag,
+      "--notes",
+      notes,
+    ]);
   }
 }
 
@@ -443,7 +515,7 @@ async function maybeResumePartialRelease(): Promise<boolean> {
     tag: release.identity,
     commitMessage: subject,
     packageVersion: versions.packageVersion,
-    pluginVersion: versions.pluginVersion
+    pluginVersion: versions.pluginVersion,
   };
 
   const head = git(["rev-parse", "HEAD"]);
@@ -460,21 +532,21 @@ async function maybeResumePartialRelease(): Promise<boolean> {
       `Tag/identity: ${plan.tag}`,
       `Push: ${state.pushed ? "complete" : "missing"}`,
       `npm: ${state.npmPublished ? "complete/not applicable" : "missing"}`,
-      `GitHub Release: ${state.githubRelease ? "complete" : "missing"}`
+      `GitHub Release: ${state.githubRelease ? "complete" : "missing"}`,
     ].join("\n"),
-    "Partial release detected"
+    "Partial release detected",
   );
   const answer = await confirm({
     message: "Resume missing publication steps?",
     initialValue: true,
     active: "Yes",
-    inactive: "No"
+    inactive: "No",
   });
   if (cancelled(answer) || !answer) return abortFromPrompt();
   if (!state.pushed && !remoteTagCommit(plan.tag) && localTag.status !== 0) {
     requireCommand("git", ["tag", "-a", plan.tag, "-m", plan.commitMessage], {
       cwd: repoRoot,
-      stdio: "inherit"
+      stdio: "inherit",
     });
   }
   const notes = generateNotes(plan.tag);
@@ -529,11 +601,14 @@ async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
 
     requireCommand("git", ["add", "--", ...changedPaths], { cwd: repoRoot });
     indexTouched = true;
-    requireCommand("git", ["commit", "-m", plan.commitMessage], { cwd: repoRoot, stdio: "inherit" });
+    requireCommand("git", ["commit", "-m", plan.commitMessage], {
+      cwd: repoRoot,
+      stdio: "inherit",
+    });
     localCommitCreated = true;
     requireCommand("git", ["tag", "-a", plan.tag, "-m", plan.commitMessage], {
       cwd: repoRoot,
-      stdio: "inherit"
+      stdio: "inherit",
     });
     localTagCreated = true;
 
@@ -544,14 +619,14 @@ async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
       message: "Publish this release?",
       initialValue: false,
       active: "Yes",
-      inactive: "No"
+      inactive: "No",
     });
     if (cancelled(approved) || !approved) return abortFromPrompt();
 
     const state: PublicationState = {
       pushed: false,
       npmPublished: plan.target === "plugin",
-      githubRelease: false
+      githubRelease: false,
     };
     await publishMissing(plan, notes, state);
     cleanup = undefined;
@@ -589,10 +664,12 @@ async function main(): Promise<void> {
     currentPackageVersion: current.packageVersion,
     currentPluginVersion: current.pluginVersion,
     ...(nextPackageVersion ? { nextPackageVersion } : {}),
-    now: new Date()
+    now: new Date(),
   });
   if (target !== "npm" && plan.pluginVersion === current.pluginVersion) {
-    throw new ReleaseError("Generated plugin cachebuster matches current version. Wait one second and rerun.");
+    throw new ReleaseError(
+      "Generated plugin cachebuster matches current version. Wait one second and rerun.",
+    );
   }
 
   await assertVersionsAvailable(plan);

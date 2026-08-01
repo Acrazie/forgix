@@ -7,7 +7,7 @@ export const DEPENDENCY_NODE_KINDS = Object.freeze([
   "risk",
   "validation",
   "guide",
-  "projection"
+  "projection",
 ] as const);
 
 export type DependencyNodeKind = (typeof DEPENDENCY_NODE_KINDS)[number];
@@ -31,11 +31,13 @@ export function validateDependencyGraph(input: DependencyGraph): DependencyGraph
   if (!input || input.schemaVersion !== 1 || !Array.isArray(input.nodes)) {
     throw new Error("Dependency graph must use schemaVersion 1 and contain nodes.");
   }
-  if (input.nodes.length > MAX_NODES) throw new Error(`Dependency graph exceeds ${MAX_NODES} nodes.`);
+  if (input.nodes.length > MAX_NODES)
+    throw new Error(`Dependency graph exceeds ${MAX_NODES} nodes.`);
 
   const nodes = new Map<string, DependencyNode>();
   for (const candidate of input.nodes) {
-    if (!candidate || !ID_PATTERN.test(candidate.id)) throw new Error("Dependency node id is invalid.");
+    if (!candidate || !ID_PATTERN.test(candidate.id))
+      throw new Error("Dependency node id is invalid.");
     if (!(DEPENDENCY_NODE_KINDS as readonly string[]).includes(candidate.kind)) {
       throw new Error(`Dependency node ${candidate.id} kind is invalid.`);
     }
@@ -55,7 +57,7 @@ export function validateDependencyGraph(input: DependencyGraph): DependencyGraph
     nodes.set(candidate.id, {
       id: candidate.id,
       kind: candidate.kind,
-      dependsOn: [...candidate.dependsOn]
+      dependsOn: [...candidate.dependsOn],
     });
   }
 
@@ -81,7 +83,7 @@ export function validateDependencyGraph(input: DependencyGraph): DependencyGraph
 
   return {
     schemaVersion: 1,
-    nodes: [...nodes.values()].sort((left, right) => left.id.localeCompare(right.id))
+    nodes: [...nodes.values()].toSorted((left, right) => left.id.localeCompare(right.id)),
   };
 }
 
@@ -110,6 +112,5 @@ export function dependencyClosure(graph: DependencyGraph, roots: readonly string
     output.add(current);
     for (const dependant of dependants.get(current) ?? []) queue.push(dependant);
   }
-  return [...output].sort();
+  return [...output].toSorted();
 }
-

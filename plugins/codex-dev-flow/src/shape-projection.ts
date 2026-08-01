@@ -13,9 +13,10 @@ export interface RenderedPlanProjection extends PlanProjectionRecord {
 
 export function renderPlanProjection(
   contract: CanonicalChangeContract,
-  options: RenderPlanProjectionOptions = {}
+  options: RenderPlanProjectionOptions = {},
 ): RenderedPlanProjection {
-  if (contract.profile !== "plan") throw new Error("Only Plan contract may render Markdown projection.");
+  if (contract.profile !== "plan")
+    throw new Error("Only Plan contract may render Markdown projection.");
   const path = options.path ?? defaultPath(options.date, options.slug);
   validateProjectionPath(path);
   const markdown = render(contract, "Proposed");
@@ -25,33 +26,40 @@ export function renderPlanProjection(
     status: "Proposed",
     contractDigest: contract.digest,
     contentFingerprint: fingerprint(markdown),
-    markdown
+    markdown,
   };
 }
 
 export function approvePlanProjection(projection: RenderedPlanProjection): RenderedPlanProjection {
   validateProjection(projection);
-  if (projection.status !== "Proposed") throw new Error("Only Proposed Plan projection may become Approved.");
+  if (projection.status !== "Proposed")
+    throw new Error("Only Proposed Plan projection may become Approved.");
   const markdown = projection.markdown.replace(/^Status: Proposed$/m, "Status: Approved");
   return {
     ...projection,
     status: "Approved",
     contentFingerprint: fingerprint(markdown),
-    markdown
+    markdown,
   };
 }
 
-export function detectPlanProjectionDrift(projection: PlanProjectionRecord, observedContent: string): boolean {
+export function detectPlanProjectionDrift(
+  projection: PlanProjectionRecord,
+  observedContent: string,
+): boolean {
   validateProjection(projection);
-  if (typeof observedContent !== "string") throw new Error("Observed Plan projection content must be text.");
+  if (typeof observedContent !== "string")
+    throw new Error("Observed Plan projection content must be text.");
   return fingerprint(observedContent) !== projection.contentFingerprint;
 }
 
 export function reconcilePlanProjection(
   projection: RenderedPlanProjection,
   observedContent: string,
-  action: "regenerate" | "integrate"
-): { action: "regenerate"; projection: RenderedPlanProjection } | { action: "integrate"; observedContent: string } {
+  action: "regenerate" | "integrate",
+):
+  | { action: "regenerate"; projection: RenderedPlanProjection }
+  | { action: "integrate"; observedContent: string } {
   if (!detectPlanProjectionDrift(projection, observedContent)) {
     throw new Error("Plan projection reconciliation requires detected drift.");
   }
@@ -80,27 +88,30 @@ function render(contract: CanonicalChangeContract, status: "Proposed" | "Approve
     "",
     "### Acceptance criteria",
     "",
-    ...contract.acceptanceCriteria.map((criterion) =>
-      `- [${criterion.id}] ${criterion.description} (validation: ${criterion.validationIds.join(", ")})`
+    ...contract.acceptanceCriteria.map(
+      (criterion) =>
+        `- [${criterion.id}] ${criterion.description} (validation: ${criterion.validationIds.join(", ")})`,
     ),
     "",
     "## Plan",
     "",
-    ...contract.tasks.map((task, index) =>
-      `${index + 1}. [${task.id}] ${task.description} (covers: ${task.criterionIds.join(", ")})`
+    ...contract.tasks.map(
+      (task, index) =>
+        `${index + 1}. [${task.id}] ${task.description} (covers: ${task.criterionIds.join(", ")})`,
     ),
     "",
     "## Validation",
     "",
-    ...contract.validations.map((validation) =>
-      `- [${validation.id}] ${validation.description}${validation.command ? ` — \`${validation.command}\`` : ""}`
+    ...contract.validations.map(
+      (validation) =>
+        `- [${validation.id}] ${validation.description}${validation.command ? ` — \`${validation.command}\`` : ""}`,
     ),
     "",
     "## Risks",
     "",
     ...(contract.risks.length
       ? contract.risks.map((risk) => `- [${risk.id}] ${risk.description} Control: ${risk.control}`)
-      : ["- None identified."])
+      : ["- None identified."]),
   ];
   if (contract.guide) {
     lines.push(
@@ -110,9 +121,10 @@ function render(contract: CanonicalChangeContract, status: "Proposed" | "Approve
       ...bullets(contract.guide.content),
       "",
       "Required because:",
-      ...contract.guide.requiredBecause.map((reason) =>
-        `- ${reason.kind} (evidence: ${reason.evidenceIds.join(", ") || "none"}; risks: ${reason.riskIds.join(", ") || "none"})`
-      )
+      ...contract.guide.requiredBecause.map(
+        (reason) =>
+          `- ${reason.kind} (evidence: ${reason.evidenceIds.join(", ") || "none"}; risks: ${reason.riskIds.join(", ") || "none"})`,
+      ),
     );
   }
   return `${lines.join("\n")}\n`;
@@ -125,16 +137,27 @@ function defaultPath(date = new Date().toISOString().slice(0, 10), slug = "chang
 }
 
 function validateProjectionPath(path: string): void {
-  if (!path || path.startsWith("/") || path.startsWith("\\") || path.split(/[\\/]/).includes("..")
-    || path.includes("\0") || !path.endsWith(".md")) {
+  if (
+    !path ||
+    path.startsWith("/") ||
+    path.startsWith("\\") ||
+    path.split(/[\\/]/).includes("..") ||
+    path.includes("\u0000") ||
+    !path.endsWith(".md")
+  ) {
     throw new Error("Plan projection requires safe repository-relative Markdown path.");
   }
 }
 
 function validateProjection(projection: PlanProjectionRecord): void {
-  if (!projection || projection.schemaVersion !== 1 || !["Proposed", "Approved"].includes(projection.status)
-    || !/^[a-f0-9]{64}$/.test(projection.contentFingerprint)
-    || typeof projection.contractDigest !== "string" || !projection.contractDigest.length) {
+  if (
+    !projection ||
+    projection.schemaVersion !== 1 ||
+    !["Proposed", "Approved"].includes(projection.status) ||
+    !/^[a-f0-9]{64}$/.test(projection.contentFingerprint) ||
+    typeof projection.contractDigest !== "string" ||
+    !projection.contractDigest.length
+  ) {
     throw new Error("Plan projection record is invalid.");
   }
   validateProjectionPath(projection.path);
@@ -145,15 +168,16 @@ function bullets(items: readonly string[]): string[] {
 }
 
 function titleFromArtifact(artifactId: string): string {
-  return artifactId
-    .replace(/^artifact[.:/-]?/, "")
-    .split(/[._:/-]+/)
-    .filter(Boolean)
-    .map((part) => part[0]!.toUpperCase() + part.slice(1))
-    .join(" ") || "Change Plan";
+  return (
+    artifactId
+      .replace(/^artifact[.:/-]?/, "")
+      .split(/[._:/-]+/)
+      .filter(Boolean)
+      .map((part) => part[0]!.toUpperCase() + part.slice(1))
+      .join(" ") || "Change Plan"
+  );
 }
 
 function fingerprint(content: string): string {
   return createHash("sha256").update(content).digest("hex");
 }
-

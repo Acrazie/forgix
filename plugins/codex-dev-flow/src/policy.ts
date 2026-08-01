@@ -15,7 +15,7 @@ export class PolicyError extends Error {
   constructor(
     message: string,
     readonly path: string,
-    readonly source: string | undefined
+    readonly source: string | undefined,
   ) {
     super(message);
   }
@@ -34,7 +34,7 @@ export function applyPolicy(config: ResolvedConfig, policy: PolicyInput): Resolv
       throw new PolicyError(
         "Policy requires " + path + " to be " + JSON.stringify(required) + ".",
         path,
-        config.provenance[path]
+        config.provenance[path],
       );
     }
   }
@@ -43,7 +43,7 @@ export function applyPolicy(config: ResolvedConfig, policy: PolicyInput): Resolv
       throw new PolicyError(
         "Policy prohibits " + path + " from being " + JSON.stringify(forbidden) + ".",
         path,
-        config.provenance[path]
+        config.provenance[path],
       );
     }
   }

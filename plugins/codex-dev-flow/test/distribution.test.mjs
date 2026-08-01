@@ -19,25 +19,32 @@ test("distribution bundle imports as ESM", async () => {
   assert.equal(typeof module.main, "function");
 });
 
-test("package binary executes through a package-manager symlink", { skip: process.platform === "win32" }, () => {
-  const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-bin-"));
-  const binary = join(directory, "codex-dev-flow");
-  symlinkSync(fileURLToPath(new URL("../dist/dev-flow.mjs", import.meta.url)), binary);
+test(
+  "package binary executes through a package-manager symlink",
+  { skip: process.platform === "win32" },
+  () => {
+    const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-bin-"));
+    const binary = join(directory, "codex-dev-flow");
+    symlinkSync(fileURLToPath(new URL("../dist/dev-flow.mjs", import.meta.url)), binary);
 
-  try {
-    const result = spawnSync(binary, ["config", "validate", "--json"], { encoding: "utf8" });
-    assert.equal(result.status, 0, result.stderr);
-    const output = JSON.parse(result.stdout);
-    assert.equal(output.command, "config_validate");
-    assert.equal(output.status, "valid");
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
-});
+    try {
+      const result = spawnSync(binary, ["config", "validate", "--json"], { encoding: "utf8" });
+      assert.equal(result.status, 0, result.stderr);
+      const output = JSON.parse(result.stdout);
+      assert.equal(output.command, "config_validate");
+      assert.equal(output.status, "valid");
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  },
+);
 
 test("init rejects non-interactive invocation explicitly", () => {
   const bundle = fileURLToPath(new URL("../dist/dev-flow.mjs", import.meta.url));
-  const result = spawnSync(process.execPath, [bundle, "init"], { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
+  const result = spawnSync(process.execPath, [bundle, "init"], {
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+  });
   assert.equal(result.status, 10);
   assert.match(result.stderr, /init requires an interactive terminal/);
 });
@@ -65,7 +72,15 @@ test("package exposes the standalone codex-dev-flow binary", () => {
   assert.equal(manifest.dependencies, undefined);
   assert.equal(manifest.publishConfig.access, "public");
   assert.equal(manifest.bin["codex-dev-flow"], "dist/dev-flow.mjs");
-  assert.deepEqual(manifest.files, [".codex-plugin/", "dist/", "docs/", "schemas/", "skills/", "LICENSE", "README.md"]);
+  assert.deepEqual(manifest.files, [
+    ".codex-plugin/",
+    "dist/",
+    "docs/",
+    "schemas/",
+    "skills/",
+    "LICENSE",
+    "README.md",
+  ]);
   assert.equal(manifest.scripts.prepack, "bun run build");
   assert.equal(manifest.scripts.prepublishOnly, "bun run check");
   assert.equal(existsSync(new URL("../LICENSE", import.meta.url)), true);
@@ -79,7 +94,7 @@ test("npm package contains runtime assets and excludes development files", () =>
     const result = spawnSync("bun", ["pm", "pack", "--dry-run", "--ignore-scripts"], {
       cwd: root,
       encoding: "utf8",
-      env: { ...process.env, BUN_INSTALL_CACHE_DIR: directory }
+      env: { ...process.env, BUN_INSTALL_CACHE_DIR: directory },
     });
     assert.equal(result.status, 0, result.stderr);
     const paths = result.stdout
@@ -93,13 +108,26 @@ test("npm package contains runtime assets and excludes development files", () =>
       "schemas/config.schema.json",
       "skills/dev-flow/SKILL.md",
       "LICENSE",
-      "README.md"
+      "README.md",
     ]) {
-      assert.equal(paths.some((path) => path.endsWith(required)), true, `${required} must be published`);
+      assert.equal(
+        paths.some((path) => path.endsWith(required)),
+        true,
+        `${required} must be published`,
+      );
     }
-    assert.equal(paths.some((path) => path.startsWith("src/")), false);
-    assert.equal(paths.some((path) => path.startsWith("test/")), false);
-    assert.equal(paths.some((path) => path.startsWith(".github/")), false);
+    assert.equal(
+      paths.some((path) => path.startsWith("src/")),
+      false,
+    );
+    assert.equal(
+      paths.some((path) => path.startsWith("test/")),
+      false,
+    );
+    assert.equal(
+      paths.some((path) => path.startsWith(".github/")),
+      false,
+    );
     assert.equal(paths.includes(".codex/dev-flow.yaml"), false);
   } finally {
     rmSync(directory, { recursive: true, force: true });

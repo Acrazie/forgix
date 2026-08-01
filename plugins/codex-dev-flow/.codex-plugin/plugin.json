@@ -6,12 +6,7 @@
     "name": "codex-dev-flow contributors"
   },
   "license": "MIT",
-  "keywords": [
-    "codex",
-    "workflow",
-    "testing",
-    "review"
-  ],
+  "keywords": ["codex", "workflow", "testing", "review"],
   "skills": "./skills/",
   "interface": {
     "displayName": "Codex Dev Flow",
@@ -19,11 +14,7 @@
     "longDescription": "A portable Codex workflow for planned, tested, reviewed changes.",
     "developerName": "codex-dev-flow contributors",
     "category": "Productivity",
-    "capabilities": [
-      "Write"
-    ],
-    "defaultPrompt": [
-      "Use $dev-flow to plan and implement a change."
-    ]
+    "capabilities": ["Write"],
+    "defaultPrompt": ["Use $dev-flow to plan and implement a change."]
   }
 }
