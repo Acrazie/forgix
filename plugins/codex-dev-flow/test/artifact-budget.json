@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "baseline": {
     "bundleBytes": 812575,
-    "packedBytes": 222399,
-    "unpackedBytes": 1011304
+    "packedBytes": 224899,
+    "unpackedBytes": 1018646
   },
   "headroom": {
     "bundleBytes": 81920,
@@ -12,8 +12,8 @@
   },
   "maximum": {
     "bundleBytes": 894495,
-    "packedBytes": 246975,
-    "unpackedBytes": 1113704
+    "packedBytes": 249475,
+    "unpackedBytes": 1121046
   },
   "manifest": [
     ".codex-plugin/plugin.json",
@@ -43,6 +43,8 @@
     "docs/adr/0021-randomize-tests-without-retries.md",
     "docs/adr/0022-use-one-root-bun-workspace.md",
     "docs/adr/0023-deliver-quality-toolchain-in-three-pull-requests.md",
+    "docs/adr/0024-make-gate-a-minimal-plan-approval.md",
+    "docs/adr/0025-end-the-lifecycle-after-assure.md",
     "docs/artifacts.md",
     "docs/baselines/2026-07-18-p0-lifecycle.json",
     "docs/design.md",

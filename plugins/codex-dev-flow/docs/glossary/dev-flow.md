@@ -8,8 +8,8 @@ policy-selected representation.
 
 ## Approval
 
-An immutable human authorization bound to a gate type and canonical contract digest.
-It is invalidated when a material field of that contract changes.
+In TaskState V3, an immutable human authorization bound to a gate type and canonical
+contract digest. The accepted V4 design replaces it with one Plan Approval Receipt.
 
 ## Change artifact
 
@@ -152,8 +152,16 @@ regardless of whether a local hook ran.
 
 ## Gate
 
-A control that authorizes a transition after checking required evidence and, when
-applicable, a content-bound Approval.
+A control that authorizes a transition after checking required evidence. In the accepted
+V4 design, GATE is exactly one deterministic pre-BUILD validation and explicit user
+approval of the canonical implementation contract.
+
+## Gate preflight
+
+The accepted V4 pure deterministic check that validates current SHAPE completion,
+contract digest, criterion coverage, evidence freshness, and escalation closure before
+asking the user to approve the plan. It performs no model, network, discovery, or
+subprocess operation.
 
 ## Hand-off
 
@@ -162,7 +170,9 @@ The Git or GitHub work required after code and verification are complete.
 ## Handoff receipt
 
 A structured identity and observed result for a commit, push, or pull-request action,
-used to reconcile retries without duplicating external work.
+used by TaskState V3 to reconcile retries without duplicating external work. The
+accepted V4 lifecycle removes this receipt and delegates external delivery to native
+Codex behavior.
 
 ## Intake Brief
 
@@ -199,8 +209,9 @@ and nursery categories disabled initially.
 
 ## Macro-phase
 
-One of the six public lifecycle stages: INTAKE, SHAPE, GATE, BUILD, ASSURE, or HANDOFF.
-It is derived from internal task status and is never persisted independently.
+One public lifecycle stage derived from internal task status and never persisted
+independently. V3 has INTAKE, SHAPE, GATE, BUILD, ASSURE, and HANDOFF. The accepted V4
+contract has five: INTAKE, SHAPE, GATE, BUILD, and ASSURE.
 
 ## Issue ID
 
@@ -252,9 +263,17 @@ The uniform declaration of a macro-phase's intent, preconditions, consumed and p
 capsule fields, ownership, events, proof, failures, resume rules, invalidation, and
 metrics.
 
+## Plan Approval Receipt
+
+The accepted V4 immutable user authorization for the complete local canonical change
+contract. It is bound to task/artifact identity, full contract digest, state revision,
+state fingerprint, actor, and timestamp. Any digest change invalidates it. It never
+authorizes an external Git, GitHub, registry, or release action.
+
 ## Ready for handoff
 
-A resumable state where code and verification are complete but an external Git or GitHub action cannot run.
+A TaskState V3 resumable state where code and verification are complete but an external
+Git or GitHub action cannot run. The accepted V4 lifecycle removes this state.
 
 ## Quick profile
 
