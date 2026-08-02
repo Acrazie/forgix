@@ -3,7 +3,7 @@ import { constants, lstatSync, realpathSync, type Stats } from "node:fs";
 import * as nodeFs from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse, stringify } from "yaml";
-import { StateValidationError, loadStateV3 } from "./state.js";
+import { StateValidationError, loadStateV4 } from "./state.js";
 import type { TaskState } from "./types.js";
 
 export const STATE_FILENAME = "state.yaml";
@@ -113,7 +113,7 @@ export class TaskStateStore {
     }
     let state: TaskState;
     try {
-      state = loadStateV3(parsed);
+      state = loadStateV4(parsed);
     } catch (error) {
       if (error instanceof StateValidationError)
         throw new StateStoreError(error.code, error.message);
@@ -130,7 +130,7 @@ export class TaskStateStore {
     const paths = this.paths(taskId);
     let state: TaskState;
     try {
-      state = loadStateV3(value);
+      state = loadStateV4(value);
     } catch (error) {
       if (error instanceof StateValidationError)
         throw new StateStoreError(error.code, error.message);
@@ -143,9 +143,9 @@ export class TaskStateStore {
       );
     const serialized = stringify(state);
     try {
-      loadStateV3(parse(serialized));
+      loadStateV4(parse(serialized));
     } catch {
-      throw new StateStoreError("state_invalid", "Serialized V3 state failed validation.");
+      throw new StateStoreError("state_invalid", "Serialized V4 state failed validation.");
     }
     await this.#ensureDirectory(paths.directory);
     await this.#assertRegularFile(paths.statePath, true);

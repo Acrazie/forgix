@@ -7,7 +7,7 @@ export interface StateValidationResult {
   valid: boolean;
   errors: readonly unknown[];
 }
-export function validateStateV3(value: unknown): StateValidationResult {
+export function validateStateV4(value: unknown): StateValidationResult {
   const valid = validate(value);
   return { valid, errors: validate.errors ? [...validate.errors] : [] };
 }

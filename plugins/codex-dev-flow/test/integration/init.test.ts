@@ -33,7 +33,7 @@ test("init writes validated configuration and explains automatic skill routing",
   const { runInvocation, validateSchema } = sourceApi;
   const root = await mkdtemp(join(tmpdir(), "dev-flow-init-"));
   const prompts = scriptedPrompts({
-    selects: ["required", "required", "plus", "write"],
+    selects: ["required", "plus", "write"],
     texts: ["60", "85", "impeccable", "impeccable:frontend-design"],
   });
   try {
@@ -46,7 +46,7 @@ test("init writes validated configuration and explains automatic skill routing",
       skills: ["impeccable:frontend-design"],
     });
     expect(config.worktree.mode).toBe("required");
-    expect(config.finish.pullRequest).toBe("required");
+    expect(config.finish).toBeUndefined();
     expect(config.subscription.plan).toBe("plus");
     expect(config.subscription.quota.warningPercent).toBe(60);
     expect(config.subscription.quota.criticalPercent).toBe(85);
@@ -66,7 +66,7 @@ test("review can revisit subscription before one atomic write", async () => {
   const { runInvocation } = sourceApi;
   const root = await mkdtemp(join(tmpdir(), "dev-flow-init-revisit-"));
   const prompts = scriptedPrompts({
-    selects: ["auto", "optional", "plus", "subscription", "pro_20x", "write"],
+    selects: ["auto", "plus", "subscription", "pro_20x", "write"],
     texts: ["50", "80", "", "", "55", "90"],
   });
   try {
@@ -89,13 +89,13 @@ test("cancellation preserves an existing configuration byte-for-byte", async () 
   const root = await mkdtemp(join(tmpdir(), "dev-flow-init-cancel-"));
   try {
     const firstPrompts = scriptedPrompts({
-      selects: ["auto", "optional", "auto", "write"],
+      selects: ["auto", "auto", "write"],
       texts: ["50", "80", "", ""],
     });
     const first = await runInvocation(["init"], { init: { cwd: root, prompts: firstPrompts } });
     const before = await readFile(first.data.path, "utf8");
     const cancelPrompts = scriptedPrompts({
-      selects: ["auto", "optional", "auto", "cancel"],
+      selects: ["auto", "auto", "cancel"],
       texts: ["50", "80", "", ""],
     });
     const second = await runInvocation(["init"], { init: { cwd: root, prompts: cancelPrompts } });

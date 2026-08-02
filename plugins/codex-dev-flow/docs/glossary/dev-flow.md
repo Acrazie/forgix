@@ -8,8 +8,8 @@ policy-selected representation.
 
 ## Approval
 
-In TaskState V3, an immutable human authorization bound to a gate type and canonical
-contract digest. The accepted V4 design replaces it with one Plan Approval Receipt.
+An immutable human authorization bound to complete local canonical contract digest. In
+TaskState V4 this is one Plan Approval Receipt.
 
 ## Change artifact
 
@@ -163,16 +163,10 @@ contract digest, criterion coverage, evidence freshness, and escalation closure 
 asking the user to approve the plan. It performs no model, network, discovery, or
 subprocess operation.
 
-## Hand-off
+## External delivery
 
-The Git or GitHub work required after code and verification are complete.
-
-## Handoff receipt
-
-A structured identity and observed result for a commit, push, or pull-request action,
-used by TaskState V3 to reconcile retries without duplicating external work. The
-accepted V4 lifecycle removes this receipt and delegates external delivery to native
-Codex behavior.
+Git, GitHub, registry, or release work performed after Dev Flow reaches `finished`. It is
+outside TaskState V4 and requires native Codex authorization.
 
 ## Intake Brief
 
@@ -210,8 +204,7 @@ and nursery categories disabled initially.
 ## Macro-phase
 
 One public lifecycle stage derived from internal task status and never persisted
-independently. V3 has INTAKE, SHAPE, GATE, BUILD, ASSURE, and HANDOFF. The accepted V4
-contract has five: INTAKE, SHAPE, GATE, BUILD, and ASSURE.
+independently. V4 has INTAKE, SHAPE, GATE, BUILD, and ASSURE.
 
 ## Issue ID
 
@@ -269,11 +262,6 @@ The accepted V4 immutable user authorization for the complete local canonical ch
 contract. It is bound to task/artifact identity, full contract digest, state revision,
 state fingerprint, actor, and timestamp. Any digest change invalidates it. It never
 authorizes an external Git, GitHub, registry, or release action.
-
-## Ready for handoff
-
-A TaskState V3 resumable state where code and verification are complete but an external
-Git or GitHub action cannot run. The accepted V4 lifecycle removes this state.
 
 ## Quick profile
 
@@ -372,7 +360,7 @@ The effective configuration and policy retained when a task starts, used to dete
 ## Stable state
 
 A non-progressing state that waits for a user action or external-state change. A stable
-state may be resumable, such as `blocked` or `ready_for_handoff`, or terminal.
+state may be resumable, such as `blocked`, or terminal.
 
 ## Staged-file adapter
 

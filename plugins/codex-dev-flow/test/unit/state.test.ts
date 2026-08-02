@@ -1,11 +1,11 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
 import * as sourceApi from "../../src/cli.ts";
 import { expect, test } from "bun:test";
-import { attest, taskInput, toDiscovering, toGate, toPlanning } from "../support/helpers-v3.ts";
+import { attest, taskInput, toDiscovering, toGate, toPlanning } from "../support/helpers-v4.ts";
 import { expectThrown } from "../support/expect-error.ts";
 const api = async () => sourceApi;
 
-test("V3 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE statuses", async () => {
+test("V4 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE statuses", async () => {
   const a = await api();
   expect(a.TASK_STATUSES).toEqual(Object.keys(a.STATE_MACHINE));
   for (const status of [
@@ -22,7 +22,7 @@ test("V3 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE status
   expect(a.GUARD_IDS.includes("profile_selected")).toBe(true);
   expect(JSON.stringify(a.buildStateMachineProjection()).includes("modes")).toBe(false);
   expect(Object.isFrozen(a.STATE_MACHINE)).toBe(true);
-  expect(a.createState(taskInput()).schemaVersion).toBe(3);
+  expect(a.createState(taskInput()).schemaVersion).toBe(4);
 });
 
 test("every Intake enters Discovery; direct BUILD bypass is impossible", async () => {
@@ -50,7 +50,8 @@ test("Discovery, explicit profile choice, Planning, then generic GATE are enforc
   expect(planning.status).toBe("planning");
   expect(planning.shape.preparationProfileChoice.selectedProfile).toBe("quick");
   const gate = await toGate(a, "plan", "ordered-shape-3");
-  expect(gate.pendingGate).toBe("pre_build");
+  expect(gate.contractDigest).toBe(gate.shape.contract.digest);
+  expect(gate.pendingGate).toBeUndefined();
   expect(gate.shape.contract.profile).toBe("plan");
 });
 
@@ -81,18 +82,18 @@ test("Decision Escalation enters INTAKE and resumes exact SHAPE role", async () 
   expect(() => a.transition(waiting, "executing")).toThrow(/Invalid state transition/);
 });
 
-test("V1/V2 are rejected explicitly; no migration API remains", async () => {
+test("V1/V2/V3 are rejected explicitly; no migration API remains", async () => {
   const a = await api();
-  for (const schemaVersion of [1, 2])
+  for (const schemaVersion of [1, 2, 3])
     expectThrown(
-      () => a.loadStateV3({ schemaVersion }),
+      () => a.loadStateV4({ schemaVersion }),
       (error) =>
         error instanceof a.StateValidationError &&
         error.code === "state_schema_incompatible" &&
         /No migration/.test(error.message),
     );
   expect(a.migrateStateToV2).toBe(undefined);
-  expect(() => a.loadStateV3({ ...a.createState(taskInput("strict")), mode: "quick" })).toThrow(
+  expect(() => a.loadStateV4({ ...a.createState(taskInput("strict")), mode: "quick" })).toThrow(
     /schema validation failed/,
   );
 });
@@ -102,15 +103,15 @@ test("GATE decision and blocked resume remain state-bound", async () => {
   let state = await toGate(a, "quick", "gate-resume");
   const decision = a.createGateDecision(state, {
     decision: "approved",
-    evidenceRef: "approval:pre",
   });
   state = a.transition(state, "executing", {
     gateDecision: decision,
-    guardEvidence: attest(a, state, "approval_current", "task_authorized"),
+    guardEvidence: attest(a, state, "task_authorized"),
   });
+  expect(state.planApproval.contractDigest).toBe(state.contractDigest);
   state = a.transition(state, "blocked", {
     resumeTo: "executing",
-    remainingActions: ["Restore write access"],
+    resumeReason: "Restore write access",
   });
   expect(() => a.transition(state, "planning")).toThrow(/exact resumeTo/);
   const resumed = a.transition(state, "executing", {
@@ -128,5 +129,5 @@ test("durable trusted receipts reject post-persistence tampering", async () => {
     .flatMap((item) => item.guardEvidence ?? [])
     .find((item) => item.guard === "contract_complete");
   evidence.evaluatorReceipt.inputDigest = "tampered";
-  expect(() => a.loadStateV3(tampered)).toThrow(/evaluator receipt.*invalid/i);
+  expect(() => a.loadStateV4(tampered)).toThrow(/evaluator receipt.*invalid/i);
 });

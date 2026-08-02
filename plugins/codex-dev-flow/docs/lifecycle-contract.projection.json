@@ -4,8 +4,7 @@
     "SHAPE",
     "GATE",
     "BUILD",
-    "ASSURE",
-    "HANDOFF"
+    "ASSURE"
   ],
   "guards": [
     "task_initialized",
@@ -26,10 +25,7 @@
     "resume_metadata_valid",
     "resume_reconciled",
     "terminal_source_recorded",
-    "gate_context_valid",
-    "handoff_intent_resolved",
-    "handoff_reconciled",
-    "completion_approved"
+    "gate_decision_valid"
   ],
   "states": [
     {
@@ -227,8 +223,7 @@
           "shape.dependency-closure",
           "approvals",
           "build",
-          "assurance",
-          "handoff"
+          "assurance"
         ]
       },
       "events": [
@@ -309,8 +304,7 @@
           "shape.dependency-closure",
           "approvals",
           "build",
-          "assurance",
-          "handoff"
+          "assurance"
         ]
       },
       "events": [
@@ -397,8 +391,7 @@
           "shape.dependency-closure",
           "approvals",
           "build",
-          "assurance",
-          "handoff"
+          "assurance"
         ]
       },
       "events": [
@@ -496,55 +489,21 @@
         {
           "target": "planning",
           "guards": [
-            "gate_context_valid"
-          ]
-        },
-        {
-          "target": "resolving_assure",
-          "guards": [
-            "gate_context_valid",
-            "correction_budget_available"
-          ]
-        },
-        {
-          "target": "verifying",
-          "guards": [
-            "gate_context_valid"
+            "gate_decision_valid"
           ]
         },
         {
           "target": "executing",
           "guards": [
-            "gate_context_valid",
-            "approval_current",
+            "gate_decision_valid",
             "task_authorized"
           ]
         },
         {
-          "target": "handing_off",
+          "target": "cancelled",
           "guards": [
-            "gate_context_valid",
-            "verification_complete",
-            "completion_approved",
-            "handoff_intent_resolved"
-          ]
-        },
-        {
-          "target": "ready_for_handoff",
-          "guards": [
-            "gate_context_valid",
-            "verification_complete",
-            "completion_approved",
-            "handoff_intent_resolved"
-          ]
-        },
-        {
-          "target": "finished_local",
-          "guards": [
-            "gate_context_valid",
-            "verification_complete",
-            "completion_approved",
-            "handoff_intent_resolved"
+            "gate_decision_valid",
+            "terminal_source_recorded"
           ]
         },
         {
@@ -560,12 +519,6 @@
           ]
         },
         {
-          "target": "cancelled",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        },
-        {
           "target": "failed",
           "guards": [
             "terminal_source_recorded"
@@ -575,11 +528,11 @@
       "capsule": {
         "consumes": [
           "shape.contract",
-          "risk",
-          "assurance.verificationEvidence"
+          "shape.evidence",
+          "risk"
         ],
         "produces": [
-          "approvals"
+          "planApproval"
         ],
         "invalidates": [
           "approvals"
@@ -650,7 +603,6 @@
         "invalidates": [
           "build.validationEvidence",
           "assurance",
-          "handoff.receipts",
           "approvals"
         ]
       },
@@ -740,7 +692,6 @@
         "invalidates": [
           "build.validationEvidence",
           "assurance",
-          "handoff.receipts",
           "approvals"
         ]
       },
@@ -810,7 +761,6 @@
         "invalidates": [
           "build.validationEvidence",
           "assurance",
-          "handoff.receipts",
           "approvals"
         ]
       },
@@ -888,7 +838,6 @@
         "invalidates": [
           "assurance.findings",
           "assurance.verificationEvidence",
-          "handoff.receipts",
           "approvals"
         ]
       },
@@ -960,7 +909,6 @@
         "invalidates": [
           "assurance.findings",
           "assurance.verificationEvidence",
-          "handoff.receipts",
           "approvals"
         ]
       },
@@ -993,30 +941,9 @@
           "guards": []
         },
         {
-          "target": "awaiting_approval",
+          "target": "finished",
           "guards": [
             "verification_complete"
-          ]
-        },
-        {
-          "target": "handing_off",
-          "guards": [
-            "verification_complete",
-            "handoff_intent_resolved"
-          ]
-        },
-        {
-          "target": "ready_for_handoff",
-          "guards": [
-            "verification_complete",
-            "handoff_intent_resolved"
-          ]
-        },
-        {
-          "target": "finished_local",
-          "guards": [
-            "verification_complete",
-            "handoff_intent_resolved"
           ]
         },
         {
@@ -1059,7 +986,6 @@
         "invalidates": [
           "assurance.findings",
           "assurance.verificationEvidence",
-          "handoff.receipts",
           "approvals"
         ]
       },
@@ -1068,141 +994,6 @@
         "finding.observed",
         "finding.resolved",
         "verification.completed",
-        "state.transition"
-      ]
-    },
-    {
-      "status": "handing_off",
-      "macroPhase": "HANDOFF",
-      "stable": false,
-      "terminal": false,
-      "transitions": [
-        {
-          "target": "finished",
-          "guards": [
-            "handoff_intent_resolved",
-            "handoff_reconciled"
-          ]
-        },
-        {
-          "target": "ready_for_handoff",
-          "guards": [
-            "handoff_intent_resolved",
-            "handoff_reconciled"
-          ]
-        },
-        {
-          "target": "finished_local",
-          "guards": [
-            "handoff_intent_resolved"
-          ]
-        },
-        {
-          "target": "intaking",
-          "guards": [
-            "intake_reopened"
-          ]
-        },
-        {
-          "target": "blocked",
-          "guards": [
-            "resume_metadata_valid"
-          ]
-        },
-        {
-          "target": "cancelled",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        },
-        {
-          "target": "failed",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        }
-      ],
-      "capsule": {
-        "consumes": [
-          "shape.contract",
-          "assurance.verificationEvidence",
-          "workspace",
-          "handoff"
-        ],
-        "produces": [
-          "handoff.identities",
-          "handoff.receipts"
-        ],
-        "invalidates": [
-          "handoff.receipts"
-        ]
-      },
-      "events": [
-        "handoff.reconciled",
-        "handoff.attempted",
-        "handoff.receipt_recorded",
-        "task.finished",
-        "state.transition"
-      ]
-    },
-    {
-      "status": "ready_for_handoff",
-      "macroPhase": "HANDOFF",
-      "stable": true,
-      "terminal": false,
-      "transitions": [
-        {
-          "target": "handing_off",
-          "guards": [
-            "handoff_intent_resolved",
-            "handoff_reconciled"
-          ]
-        },
-        {
-          "target": "intaking",
-          "guards": [
-            "intake_reopened"
-          ]
-        },
-        {
-          "target": "blocked",
-          "guards": [
-            "resume_metadata_valid"
-          ]
-        },
-        {
-          "target": "cancelled",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        },
-        {
-          "target": "failed",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        }
-      ],
-      "capsule": {
-        "consumes": [
-          "shape.contract",
-          "assurance.verificationEvidence",
-          "workspace",
-          "handoff"
-        ],
-        "produces": [
-          "handoff.identities",
-          "handoff.receipts"
-        ],
-        "invalidates": [
-          "handoff.receipts"
-        ]
-      },
-      "events": [
-        "handoff.reconciled",
-        "handoff.attempted",
-        "handoff.receipt_recorded",
-        "task.finished",
         "state.transition"
       ]
     },
@@ -1313,15 +1104,6 @@
           ]
         },
         {
-          "target": "handing_off",
-          "guards": [
-            "resume_metadata_valid",
-            "resume_reconciled",
-            "handoff_intent_resolved",
-            "handoff_reconciled"
-          ]
-        },
-        {
           "target": "cancelled",
           "guards": [
             "terminal_source_recorded"
@@ -1391,49 +1173,27 @@
       ]
     },
     {
-      "status": "finished_local",
-      "macroPhase": "HANDOFF",
-      "stable": true,
-      "terminal": true,
-      "transitions": [],
-      "capsule": {
-        "consumes": [
-          "shape.contract",
-          "assurance.verificationEvidence",
-          "workspace",
-          "handoff"
-        ],
-        "produces": [
-          "handoff.identities",
-          "handoff.receipts"
-        ],
-        "invalidates": [
-          "handoff.receipts"
-        ]
-      },
-      "events": [
-        "task.finished_local"
-      ]
-    },
-    {
       "status": "finished",
-      "macroPhase": "HANDOFF",
+      "macroPhase": "ASSURE",
       "stable": true,
       "terminal": true,
       "transitions": [],
       "capsule": {
         "consumes": [
           "shape.contract",
-          "assurance.verificationEvidence",
-          "workspace",
-          "handoff"
+          "build",
+          "issues.active",
+          "freshness"
         ],
         "produces": [
-          "handoff.identities",
-          "handoff.receipts"
+          "assurance",
+          "issues.active",
+          "freshness.commands"
         ],
         "invalidates": [
-          "handoff.receipts"
+          "assurance.findings",
+          "assurance.verificationEvidence",
+          "approvals"
         ]
       },
       "events": [

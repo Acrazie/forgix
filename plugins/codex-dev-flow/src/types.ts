@@ -99,21 +99,22 @@ export interface Policy {
 }
 
 export interface TaskState {
-  schemaVersion: 3;
+  schemaVersion: 4;
   taskId: string;
   status: TaskStatus;
   revision: number;
   risk: RiskLevel;
   shape?: ShapeState;
   contractDigest?: string;
+  planApproval?: PlanApprovalReceipt;
+  verificationReceipt?: VerificationReceipt;
   verificationRequirements?: VerificationRequirements;
-  pendingGate?: ApprovalGate;
   resumeTo?: TaskStatus;
+  resumeReason?: string;
   configSnapshot: Record<string, unknown>;
   policySnapshot: Policy;
   issues: unknown[];
   reviewCycle: number;
-  remainingActions: string[];
   history: DurableHistoryEvent[];
   historySummary?: HistorySummary;
   activeArtifact?: ActiveArtifactReference;
@@ -248,7 +249,7 @@ export interface BenchmarkSurveyAnswers {
 }
 
 export interface BenchmarkDeviationFact {
-  code: "unplanned_new_file" | "forbidden_new_file" | "missing_validation" | "missing_handoff";
+  code: "unplanned_new_file" | "forbidden_new_file" | "missing_validation";
   surfaceRef: string;
 }
 
@@ -257,7 +258,7 @@ export interface BenchmarkRecord {
   taskId: string;
   recordedAt: string;
   preparationProfile: PreparationProfile | "unselected";
-  outcome: "finished_local" | "finished" | "failed";
+  outcome: "finished" | "failed";
   authority: "canonical_change_contract";
   survey: BenchmarkSurveyAnswers;
   deviations: BenchmarkDeviationFact[];
@@ -289,7 +290,6 @@ export type HistoryReferenceKind =
   | "correction"
   | "gate"
   | "scope"
-  | "handoff"
   | "evidence"
   | "receipt"
   | "command"
@@ -307,13 +307,11 @@ export interface HistoryReference {
 }
 
 export interface HistoryGateAnchor {
-  gateContext: ApprovalGate;
   contractDigest: string;
   entrySequence: number;
   entryRevision: number;
-  entryFrom: "planning" | "verifying";
+  entryFrom: "planning";
   sourceFingerprint: string;
-  verificationReceipt?: EvaluatorReceiptRecord;
 }
 
 export type WorkflowHistoryEventType =
@@ -325,8 +323,6 @@ export type WorkflowHistoryEventType =
   | "artifact.recorded"
   | "issue.recorded"
   | "correction.recorded"
-  | "handoff.attempted"
-  | "handoff.result"
   | "context.updated"
   | "intake.question_recorded"
   | "intake.answer_recorded"
@@ -410,15 +406,12 @@ export interface StateHistoryEvent {
   sourceFingerprint: string;
   terminalSource?: TaskStatus;
   terminalResumeTo?: TaskStatus;
-  gateContext?: ApprovalGate;
   contractDigest?: string;
   guardEvidence?: GuardEvidenceRecord[];
   gateDecision?: GateDecisionRecord;
 }
 
 export type DurableHistoryEvent = StateHistoryEvent | WorkflowHistoryEvent;
-
-export type ApprovalGate = "pre_build" | "completion";
 
 export interface GuardEvidenceRecord {
   schemaVersion: 1;
@@ -432,27 +425,12 @@ export interface GuardEvidenceRecord {
   evaluatorReceipt?: EvaluatorReceiptRecord;
 }
 
-export type TrustedEvaluator =
-  | "intake"
-  | "discovery"
-  | "planning"
-  | "verification"
-  | "handoff_intent"
-  | "handoff_reconciliation"
-  | "completion";
+export type TrustedEvaluator = "intake" | "discovery" | "planning" | "verification";
 
 export interface EvaluatorReceiptRecord {
   schemaVersion: 1;
   evaluator: TrustedEvaluator;
-  outcome:
-    | "intake_complete"
-    | "discovery_sufficient"
-    | "contract_complete"
-    | "complete"
-    | "local_only"
-    | "external_selected"
-    | "action_required"
-    | "approved";
+  outcome: "intake_complete" | "discovery_sufficient" | "contract_complete" | "complete";
   stateRevision: number;
   stateFingerprint: string;
   inputDigest: string;
@@ -464,12 +442,34 @@ export interface EvaluatorReceiptRecord {
 
 export interface GateDecisionRecord {
   schemaVersion: 1;
-  gate: ApprovalGate;
   decision: "approved" | "rejected" | "change_requested";
+  actor: "user";
+  decidedAt: string;
+  taskId: string;
+  artifactId: string;
   stateRevision: number;
   stateFingerprint: string;
-  evidenceRef: string;
   contractDigest: string;
+  instructionRef?: string;
+  receiptDigest: string;
+}
+
+export interface PlanApprovalReceipt extends GateDecisionRecord {
+  decision: "approved";
+}
+
+export interface VerificationReceipt {
+  schemaVersion: 1;
+  verifiedAt: string;
+  taskId: string;
+  contractDigest: string;
+  stateRevision: number;
+  stateFingerprint: string;
+  requirementsDigest: string;
+  criterionIds: readonly string[];
+  validationIds: readonly string[];
+  evidenceRefs: readonly string[];
+  receiptDigest: string;
 }
 
 export interface IssueIdentity {

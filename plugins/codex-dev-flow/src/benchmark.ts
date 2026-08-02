@@ -10,7 +10,7 @@ import type {
 } from "./types.js";
 
 export const BENCHMARK_DIRECTORY = join(".codex", "benchmarks");
-const ELIGIBLE_OUTCOMES = new Set(["finished_local", "finished", "failed"]);
+const ELIGIBLE_OUTCOMES = new Set(["finished", "failed"]);
 const MAX_COMMENT = 2_000;
 const MAX_FILES = 256;
 const SECRET = /\b(?:sk-[A-Za-z0-9_-]{8,}|(?:api[_-]?key|token|password|secret)\s*[:=]\s*\S+)\b/gi;
@@ -19,14 +19,12 @@ const EMAIL = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 export interface BenchmarkActualSurface {
   createdFiles: string[];
   validationComplete: boolean;
-  handoffComplete: boolean;
 }
 
 export interface BenchmarkAuthority {
   plannedFiles?: string[];
   forbidNewFiles?: boolean;
   validationRequired?: boolean;
-  handoffRequired?: boolean;
 }
 
 export interface CreateBenchmarkRecordInput {
@@ -58,9 +56,7 @@ export function shouldOfferBenchmarkSurvey(
 export function createBenchmarkRecord(input: CreateBenchmarkRecordInput): BenchmarkRecord {
   assertSafeTaskId(input.taskId);
   if (!ELIGIBLE_OUTCOMES.has(input.outcome))
-    throw new Error(
-      "Benchmark survey is available only after finished_local, finished, or failed.",
-    );
+    throw new Error("Benchmark survey is available only after finished or failed.");
   const survey = validateSurvey(input.survey);
   const authority = input.canonicalChangeContract;
   if (!authority) throw new Error("Benchmark requires canonical Shape contract authority.");
@@ -93,9 +89,6 @@ export function classifyBenchmarkDeviations(
   }
   if (authority.validationRequired && !actual.validationComplete) {
     deviations.push({ code: "missing_validation", surfaceRef: "validation" });
-  }
-  if (authority.handoffRequired && !actual.handoffComplete) {
-    deviations.push({ code: "missing_handoff", surfaceRef: "handoff" });
   }
   return deviations;
 }
@@ -234,9 +227,8 @@ function emptySummary(): BenchmarkSummary {
       unplanned_new_file: 0,
       forbidden_new_file: 0,
       missing_validation: 0,
-      missing_handoff: 0,
     },
-    outcomes: { finished_local: 0, finished: 0, failed: 0 },
+    outcomes: { finished: 0, failed: 0 },
   };
 }
 
@@ -306,12 +298,9 @@ function validateRecord(value: unknown): asserts value is BenchmarkRecord {
   for (const deviation of value.deviations) {
     if (
       !isRecord(deviation) ||
-      ![
-        "unplanned_new_file",
-        "forbidden_new_file",
-        "missing_validation",
-        "missing_handoff",
-      ].includes(deviation.code as string) ||
+      !["unplanned_new_file", "forbidden_new_file", "missing_validation"].includes(
+        deviation.code as string,
+      ) ||
       typeof deviation.surfaceRef !== "string" ||
       !deviation.surfaceRef ||
       deviation.surfaceRef.length > 512 ||

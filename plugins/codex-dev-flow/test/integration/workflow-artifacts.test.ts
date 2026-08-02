@@ -15,7 +15,7 @@ test("public workflow defines logical versioned artifacts", () => {
   expect(skill).toMatch(/Plan creates one parent-rendered Proposed\s+Markdown/i);
   expect(skill).toMatch(/Parent alone writes ShapeState and Plan projection/i);
   expect(skill).toMatch(/belongs to active\s+worktree/i);
-  expect(skill).toMatch(/commit or handoff/i);
+  expect(skill).toMatch(/repository retention policy/i);
   expect(skill).toMatch(/Reuse existing artifact\s+identity/i);
   expect(skill).toMatch(/repository choices only/i);
 });

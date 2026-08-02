@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { preflightGate } from "./gate.js";
 import {
   GUARD_IDS,
   STATE_MACHINE,
@@ -19,11 +20,10 @@ import {
   type PlanningReceipt,
   type ShapeState,
 } from "./shape.js";
-import { validateStateV3 } from "./state-validator.js";
+import { validateStateV4 } from "./state-validator.js";
 import type {
   ActiveArtifactReference,
   ActiveWorktreeReference,
-  ApprovalGate,
   ContextCapsule,
   EvaluatorReceiptRecord,
   GateDecisionRecord,
@@ -31,12 +31,14 @@ import type {
   HistoryReferenceKind,
   IntakeState,
   Policy,
+  PlanApprovalReceipt,
   RiskLevel,
   RoutingDecision,
   RoutingSnapshot,
   StateHistoryEvent,
   TaskState,
   VerificationRequirements,
+  VerificationReceipt,
   WorkflowHistoryEvent,
   WorkflowHistoryEventType,
 } from "./types.js";
@@ -74,7 +76,7 @@ export type GateDecision = GateDecisionRecord;
 
 export interface TransitionOptions {
   resumeTo?: TaskStatus;
-  remainingActions?: string[];
+  resumeReason?: string;
   terminalSource?: TaskStatus;
   guardEvidence?: readonly GuardEvidence[];
   gateDecision?: GateDecision;
@@ -89,7 +91,6 @@ export interface RecordHistoryEventInput {
 }
 
 export interface ResumeContextInput {
-  remainingActions?: string[];
   activeArtifact?: ActiveArtifactReference | null;
   activeWorktree?: ActiveWorktreeReference | null;
   contextCapsule?: ContextCapsule;
@@ -109,7 +110,8 @@ export interface CreateGuardAttestationInput {
 
 export interface CreateGateDecisionInput {
   decision: GateDecision["decision"];
-  evidenceRef: string;
+  instructionRef?: string;
+  at?: string;
 }
 export interface EvaluatorObservation {
   id: string;
@@ -122,30 +124,6 @@ export interface VerificationEvaluatorInput {
   criteria: readonly EvaluatorObservation[];
   mandatoryChecks: readonly EvaluatorObservation[];
 }
-export interface HandoffIntentAction {
-  id: string;
-  disposition: "required" | "selected" | "not_selected";
-  stateRevision: number;
-  observedFingerprint: string;
-  evidenceRef: string;
-}
-export interface HandoffIntentEvaluatorInput {
-  delivery: "local" | "external";
-  intentEvidenceRef: string;
-  actions: readonly HandoffIntentAction[];
-}
-export interface HandoffObservation {
-  actionId: string;
-  status: "completed" | "pending" | "blocked";
-  stateRevision: number;
-  observedFingerprint: string;
-  evidenceRef: string;
-  receiptRef?: string;
-}
-export interface HandoffReconciliationEvaluatorInput {
-  observations: readonly HandoffObservation[];
-}
-
 export class StateValidationError extends Error {
   constructor(
     readonly code: "state_schema_incompatible" | "state_invalid",
@@ -162,7 +140,7 @@ export function createState(input: CreateTaskInput): TaskState {
   const contextCapsule =
     input.contextCapsule ?? defaultContextCapsule(input.configSnapshot, input.policySnapshot);
   const state: TaskState = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     taskId: input.taskId,
     status: "new",
     revision: 0,
@@ -171,7 +149,6 @@ export function createState(input: CreateTaskInput): TaskState {
     policySnapshot: copy(input.policySnapshot),
     issues: [],
     reviewCycle: 0,
-    remainingActions: [],
     history: [
       {
         sequence: 1,
@@ -197,32 +174,32 @@ export function createState(input: CreateTaskInput): TaskState {
         }
       : {}),
   };
-  assertStateV3(state);
+  assertStateV4(state);
   return state;
 }
 
-export function loadStateV3(value: unknown): TaskState {
-  if (!isRecord(value) || value.schemaVersion !== 3) {
+export function loadStateV4(value: unknown): TaskState {
+  if (!isRecord(value) || value.schemaVersion !== 4) {
     const version = isRecord(value) ? String(value.schemaVersion) : "missing";
     throw new StateValidationError(
       "state_schema_incompatible",
-      `Task state schema ${version} is incompatible; schemaVersion 3 required. No migration is available.`,
+      `Task state schema ${version} is incompatible; schemaVersion 4 required. No migration is available.`,
     );
   }
-  assertStateV3(value);
+  assertStateV4(value);
   return copy(value as TaskState);
 }
 
-export function assertStateV3(value: unknown): asserts value is TaskState {
-  const result = validateStateV3(value);
+export function assertStateV4(value: unknown): asserts value is TaskState {
+  const result = validateStateV4(value);
   if (!result.valid)
     throw new StateValidationError(
       "state_invalid",
-      `Task state V3 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`,
+      `Task state V4 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`,
     );
   const state = value as TaskState;
   if (!isTaskStatus(state.status) || !isRisk(state.risk))
-    throw new StateValidationError("state_invalid", "Task state V3 status or risk is invalid.");
+    throw new StateValidationError("state_invalid", "Task state V4 status or risk is invalid.");
   validateHistory(state);
   if (state.intake && state.intake.brief.risk !== state.risk)
     throw new StateValidationError("state_invalid", "Task risk contradicts Intake Brief risk.");
@@ -254,9 +231,6 @@ export function assertStateV3(value: unknown): asserts value is TaskState {
       "reviewing",
       "resolving_assure",
       "verifying",
-      "handing_off",
-      "ready_for_handoff",
-      "finished_local",
       "finished",
     ].includes(state.status) &&
     !state.shape
@@ -270,31 +244,36 @@ export function assertStateV3(value: unknown): asserts value is TaskState {
     if (
       !state.resumeTo ||
       !isOperationalResumeTarget(state.resumeTo) ||
-      !state.remainingActions.length
+      !nonEmpty(state.resumeReason)
     )
       throw new StateValidationError(
         "state_invalid",
         "Blocked state requires exact operational resume metadata.",
       );
-  } else if (state.status === "ready_for_handoff") {
-    if (state.resumeTo !== "handing_off" || !state.remainingActions.length)
-      throw new StateValidationError(
-        "state_invalid",
-        "ready_for_handoff requires handing_off resume metadata.",
-      );
-  } else if (state.resumeTo !== undefined)
-    throw new StateValidationError(
-      "state_invalid",
-      "Only blocked or ready_for_handoff may contain resumeTo.",
-    );
+  } else if (state.resumeTo !== undefined || state.resumeReason !== undefined)
+    throw new StateValidationError("state_invalid", "Only blocked may contain resume metadata.");
+  if (state.status === "awaiting_approval" && !nonEmpty(state.contractDigest))
+    throw new StateValidationError("state_invalid", "awaiting_approval requires contract digest.");
+  if (state.planApproval) validatePlanApproval(state, state.planApproval);
   if (
-    state.status === "awaiting_approval" &&
-    (!state.pendingGate || !nonEmpty(state.contractDigest))
+    [
+      "executing",
+      "validating",
+      "resolving_build",
+      "reviewing",
+      "resolving_assure",
+      "verifying",
+      "finished",
+    ].includes(state.status) &&
+    !state.planApproval
   )
     throw new StateValidationError(
       "state_invalid",
-      "awaiting_approval requires gate and contract digest.",
+      `${state.status} requires current PlanApprovalReceipt.`,
     );
+  if (state.verificationReceipt) validateVerificationReceipt(state, state.verificationReceipt);
+  if (state.status === "finished" && !state.verificationReceipt)
+    throw new StateValidationError("state_invalid", "finished requires VerificationReceipt.");
 }
 
 export function guardStateFingerprint(state: TaskState): string {
@@ -305,9 +284,10 @@ export function guardStateFingerprint(state: TaskState): string {
     revision: state.revision,
     risk: state.risk,
     resumeTo: state.resumeTo,
-    remainingActions: state.remainingActions,
-    pendingGate: state.pendingGate,
+    resumeReason: state.resumeReason,
     contractDigest: state.contractDigest,
+    planApproval: state.planApproval,
+    verificationReceipt: state.verificationReceipt,
     configSnapshot: state.configSnapshot,
     policySnapshot: state.policySnapshot,
     routingSnapshot: state.routingSnapshot,
@@ -324,7 +304,7 @@ export function createGuardAttestation(
   guard: GuardId,
   input: CreateGuardAttestationInput,
 ): GuardEvidence {
-  assertStateV3(state);
+  assertStateV4(state);
   if (!GUARD_ID_SET.has(guard)) throw new Error(`Unknown transition guard ${guard}.`);
   if (guard === "intake_complete") {
     validateCompleteIntake(state);
@@ -339,6 +319,10 @@ export function createGuardAttestation(
   }
   if (TRUSTED_GUARDS.has(guard)) throw new Error(`Guard ${guard} requires trusted evaluator.`);
   if (guard === "profile_selected") validateSelectedProfile(state);
+  if (guard === "approval_current") {
+    if (!state.planApproval) throw new Error("approval_current requires PlanApprovalReceipt.");
+    validatePlanApproval(state, state.planApproval);
+  }
   const evidence: GuardEvidence = {
     schemaVersion: 1,
     guard,
@@ -356,7 +340,7 @@ export function createGuardAttestation(
 const trustedEvidence = new WeakSet<object>();
 
 export function evaluateDiscoveryGuard(state: TaskState, receipt: DiscoveryReceipt): GuardEvidence {
-  assertStateV3(state);
+  assertStateV4(state);
   if (!state.shape || !evaluateDiscoveryCompleteness(state.shape).complete)
     throw new Error("Discovery evaluator requires current complete Shape Discovery.");
   const current = state.shape.evaluatorReceipts.find(
@@ -376,7 +360,7 @@ export function evaluateDiscoveryGuard(state: TaskState, receipt: DiscoveryRecei
 }
 
 export function evaluatePlanningGuard(state: TaskState, receipt: PlanningReceipt): GuardEvidence {
-  assertStateV3(state);
+  assertStateV4(state);
   if (
     !state.shape ||
     !evaluateContractCompleteness(state.shape).complete ||
@@ -403,7 +387,7 @@ export function evaluateVerification(
   state: TaskState,
   input: VerificationEvaluatorInput,
 ): GuardEvidence {
-  assertStateV3(state);
+  assertStateV4(state);
   const requirements = state.verificationRequirements;
   if (!requirements) throw new Error("Verification requires state-bound verificationRequirements.");
   assertExactObservations(
@@ -435,128 +419,40 @@ export function evaluateVerification(
   });
 }
 
-export function evaluateHandoffIntent(
-  state: TaskState,
-  input: HandoffIntentEvaluatorInput,
-): GuardEvidence {
-  assertStateV3(state);
-  if (!nonEmpty(input.intentEvidenceRef) || !Array.isArray(input.actions))
-    throw new Error("Handoff intent requires action set and evidence.");
-  assertUnique(
-    input.actions.map((item) => item.id),
-    "handoff action IDs",
-    true,
-  );
-  for (const item of input.actions)
-    if (
-      item.stateRevision !== state.revision ||
-      !nonEmpty(item.observedFingerprint) ||
-      !nonEmpty(item.evidenceRef)
-    )
-      throw new Error(`Handoff action ${item.id} is stale or malformed.`);
-  const selected = input.actions
-    .filter((item) => item.disposition !== "not_selected")
-    .map((item) => item.id);
-  if (input.delivery === "local" && selected.length)
-    throw new Error("Local handoff cannot select external actions.");
-  if (input.delivery === "external" && !selected.length)
-    throw new Error("External handoff requires selected action.");
-  return createEvaluatorEvidence(state, "handoff_intent_resolved", "repository-observation", {
-    evaluator: "handoff_intent",
-    outcome: input.delivery === "local" ? "local_only" : "external_selected",
-    inputDigest: digest(input),
-    evidenceRefs: [input.intentEvidenceRef, ...input.actions.map((item) => item.evidenceRef)],
-    subjectIds: input.actions.map((item) => item.id),
-    completedIds: selected,
-  });
-}
-
-export function evaluateHandoffReconciliation(
-  state: TaskState,
-  intent: GuardEvidence,
-  input: HandoffReconciliationEvaluatorInput,
-): GuardEvidence {
-  assertStateV3(state);
-  validateGuardEvidence(state, intent);
-  if (
-    !trustedEvidence.has(intent) ||
-    intent.evaluatorReceipt?.evaluator !== "handoff_intent" ||
-    intent.evaluatorReceipt.outcome !== "external_selected"
-  )
-    throw new Error("Handoff reconciliation requires trusted external intent.");
-  assertSameIds(
-    intent.evaluatorReceipt.completedIds,
-    input.observations.map((item) => item.actionId),
-    "handoff actions",
-  );
-  const completed: string[] = [];
-  for (const item of input.observations) {
-    if (
-      item.stateRevision !== state.revision ||
-      !nonEmpty(item.observedFingerprint) ||
-      !nonEmpty(item.evidenceRef)
-    )
-      throw new Error(`Handoff observation ${item.actionId} is stale or malformed.`);
-    if (item.status === "completed") {
-      if (!nonEmpty(item.receiptRef))
-        throw new Error(`Completed handoff action ${item.actionId} requires receiptRef.`);
-      completed.push(item.actionId);
-    } else if (item.receiptRef !== undefined)
-      throw new Error(`Incomplete handoff action ${item.actionId} cannot contain receiptRef.`);
-  }
-  return createEvaluatorEvidence(state, "handoff_reconciled", "repository-observation", {
-    evaluator: "handoff_reconciliation",
-    outcome: completed.length === input.observations.length ? "complete" : "action_required",
-    inputDigest: digest(input),
-    evidenceRefs: input.observations.flatMap((item) => [
-      item.evidenceRef,
-      ...(item.receiptRef ? [item.receiptRef] : []),
-    ]),
-    subjectIds: input.observations.map((item) => item.actionId),
-    completedIds: completed,
-  });
-}
-
-export function evaluateCompletionApproval(
-  state: TaskState,
-  decision: GateDecision,
-): GuardEvidence {
-  assertStateV3(state);
-  if (
-    state.status !== "awaiting_approval" ||
-    state.pendingGate !== "completion" ||
-    decision.decision !== "approved"
-  )
-    throw new Error("Completion evaluator requires approved completion gate.");
-  validateGateDecision(state, decision);
-  return createEvaluatorEvidence(state, "completion_approved", "human-approval", {
-    evaluator: "completion",
-    outcome: "approved",
-    inputDigest: digest(decision),
-    evidenceRefs: [decision.evidenceRef],
-    subjectIds: [state.contractDigest!],
-    completedIds: [decision.evidenceRef],
-  });
-}
-
 export function createGateDecision(state: TaskState, input: CreateGateDecisionInput): GateDecision {
-  assertStateV3(state);
-  if (
-    state.status !== "awaiting_approval" ||
-    !state.pendingGate ||
-    !state.contractDigest ||
-    !nonEmpty(input.evidenceRef)
-  )
-    throw new Error("Gate decision requires current gate, contract, and evidence.");
-  return {
-    schemaVersion: 1,
-    gate: state.pendingGate,
+  assertStateV4(state);
+  const unknown = Object.keys(input).filter(
+    (key) => !["decision", "instructionRef", "at"].includes(key),
+  );
+  if (unknown.length) throw new Error(`Unknown Gate decision fields: ${unknown.join(", ")}.`);
+  if (!(["approved", "change_requested", "rejected"] as const).includes(input.decision))
+    throw new Error("Gate decision kind is invalid.");
+  if (input.at !== undefined && !validAt(input.at))
+    throw new Error("Gate decision time is invalid.");
+  const contract = state.shape?.contract;
+  if (state.status !== "awaiting_approval" || !state.contractDigest || !contract)
+    throw new Error("Gate decision requires current canonical contract.");
+  const preflight = preflightGate(state);
+  if (!preflight.ready) throw new Error(`Gate preflight failed: ${preflight.reason}.`);
+  if (input.decision === "change_requested" && !nonEmpty(input.instructionRef))
+    throw new Error("Gate change request requires structured instruction reference.");
+  if (input.instructionRef !== undefined && !REF.test(input.instructionRef))
+    throw new Error("Gate instruction reference is invalid.");
+  if (input.decision !== "change_requested" && input.instructionRef !== undefined)
+    throw new Error("Only Gate change request may contain instruction reference.");
+  const base = {
+    schemaVersion: 1 as const,
     decision: input.decision,
+    actor: "user" as const,
+    decidedAt: normalizeEventAt(input.at),
+    taskId: state.taskId,
+    artifactId: contract.artifactId,
     stateRevision: state.revision,
     stateFingerprint: guardStateFingerprint(state),
-    evidenceRef: input.evidenceRef,
     contractDigest: state.contractDigest,
+    ...(input.instructionRef ? { instructionRef: input.instructionRef } : {}),
   };
+  return { ...base, receiptDigest: digest(base) };
 }
 
 export function updateShapeState(
@@ -580,7 +476,7 @@ export function updateShapeState(
     at?: string;
   },
 ): TaskState {
-  assertStateV3(state);
+  assertStateV4(state);
   if (deriveMacroPhase(state) !== "SHAPE" && state.status !== "awaiting_intake_decision") {
     throw new Error(
       "ShapeState may change only in SHAPE or while resolving linked Intake escalation.",
@@ -592,16 +488,32 @@ export function updateShapeState(
     shape.intakeBriefRef !== "state:intake.brief"
   )
     throw new Error("Shape update must remain bound to current Intake Brief and risk.");
-  return recordHistoryEvent({ ...state, shape: copy(shape) }, input);
+  const contractChanged = state.shape?.contract?.digest !== shape.contract?.digest;
+  const {
+    planApproval: _approval,
+    verificationReceipt: _verification,
+    contractDigest: _contractDigest,
+    ...withoutReceipts
+  } = state;
+  return recordHistoryEvent(
+    contractChanged
+      ? {
+          ...withoutReceipts,
+          shape: copy(shape),
+          ...(shape.contract ? { contractDigest: shape.contract.digest } : {}),
+        }
+      : { ...state, shape: copy(shape) },
+    input,
+  );
 }
 
 export function addRoutingDecision(state: TaskState, decision: RoutingDecision): TaskState {
-  assertStateV3(state);
+  assertStateV4(state);
   return { ...state, routingDecisions: [...(state.routingDecisions ?? []), copy(decision)] };
 }
 
 export function recordHistoryEvent(state: TaskState, input: RecordHistoryEventInput): TaskState {
-  assertStateV3(state);
+  assertStateV4(state);
   if (STATE_MACHINE[state.status].terminal) throw new Error("Terminal state history is immutable.");
   validateHistoryReferences(input.refs, `Workflow event ${input.type}`);
   const event: WorkflowHistoryEvent = {
@@ -614,13 +526,10 @@ export function recordHistoryEvent(state: TaskState, input: RecordHistoryEventIn
 }
 
 export function updateResumeContext(state: TaskState, input: ResumeContextInput): TaskState {
-  assertStateV3(state);
+  assertStateV4(state);
   const { activeArtifact: _a, activeWorktree: _w, ...base } = state;
   const updated: TaskState = {
     ...base,
-    remainingActions: input.remainingActions
-      ? [...input.remainingActions]
-      : [...state.remainingActions],
     ...(input.activeArtifact === undefined
       ? state.activeArtifact
         ? { activeArtifact: copy(state.activeArtifact) }
@@ -653,7 +562,7 @@ export function transition(
   next: TaskStatus,
   options: TransitionOptions = {},
 ): TaskState {
-  assertStateV3(state);
+  assertStateV4(state);
   validateTransitionOptionKeys(options);
   if (!isTaskStatus(next))
     throw new Error(`Invalid state transition from ${state.status} to ${String(next)}.`);
@@ -671,12 +580,12 @@ export function transition(
     throw new Error(
       `Unmet transition guards from ${state.status} to ${next}: ${missing.join(", ")}.`,
     );
-  validateTrustedTarget(next, evidence);
   const sourceFingerprint = guardStateFingerprint(state);
   const metadata = transitionMetadata(state, next, options);
+  const eventAt = normalizeEventAt(options.at);
   const event: StateHistoryEvent = {
     sequence: nextSequence(state),
-    at: normalizeEventAt(options.at),
+    at: eventAt,
     type: "state.transition",
     from: state.status,
     to: next,
@@ -690,24 +599,43 @@ export function transition(
             : {}),
         }
       : {}),
-    ...(metadata.pendingGate
-      ? { gateContext: metadata.pendingGate, contractDigest: metadata.contractDigest }
-      : state.pendingGate && options.gateDecision
-        ? { gateContext: state.pendingGate, contractDigest: state.contractDigest }
-        : {}),
+    ...(next === "awaiting_approval" || options.gateDecision
+      ? { contractDigest: metadata.contractDigest ?? state.contractDigest }
+      : {}),
     ...(evidence.size ? { guardEvidence: [...evidence.values()].map(copy) } : {}),
     ...(options.gateDecision ? { gateDecision: copy(options.gateDecision) } : {}),
   };
   let shape = state.shape;
   if (next === "discovering" && !shape)
     shape = createShapeState({ risk: state.risk, intakeBriefRef: "state:intake.brief" });
-  const { resumeTo: _resume, pendingGate: _gate, contractDigest: _contract, ...base } = state;
+  const {
+    resumeTo: _resume,
+    resumeReason: _resumeReason,
+    planApproval: _approval,
+    verificationReceipt: _verification,
+    ...base
+  } = state;
+  const approvedDecision =
+    options.gateDecision?.decision === "approved"
+      ? (options.gateDecision as PlanApprovalReceipt)
+      : undefined;
+  const planApproval = approvedDecision
+    ? approvedDecision
+    : next === "planning" || next === "intaking" || next === "discovering"
+      ? undefined
+      : state.planApproval;
+  const verificationReceipt =
+    next === "finished"
+      ? createVerificationReceipt(state, evidence.get("verification_complete"), eventAt)
+      : state.verificationReceipt;
   const output: TaskState = {
     ...base,
     status: next,
     revision: state.revision + 1,
     ...metadata,
     ...(shape ? { shape } : {}),
+    ...(planApproval ? { planApproval: copy(planApproval) } : {}),
+    ...(verificationReceipt ? { verificationReceipt } : {}),
     history: [...state.history, event],
   };
   return compactAndValidate(output);
@@ -733,29 +661,24 @@ function transitionMetadata(
   state: TaskState,
   next: TaskStatus,
   options: TransitionOptions,
-): Pick<TaskState, "remainingActions"> & {
+): {
   resumeTo?: TaskStatus;
-  pendingGate?: ApprovalGate;
+  resumeReason?: string;
   contractDigest?: string;
 } {
   if (next === "blocked")
     return {
       resumeTo: options.resumeTo!,
-      remainingActions: [...(options.remainingActions ?? [])],
-      ...(state.pendingGate ? { pendingGate: state.pendingGate } : {}),
+      resumeReason: options.resumeReason!,
       ...(state.contractDigest ? { contractDigest: state.contractDigest } : {}),
     };
-  if (next === "ready_for_handoff")
-    return { resumeTo: "handing_off", remainingActions: [...(options.remainingActions ?? [])] };
   if (next === "awaiting_approval") {
-    const pendingGate: ApprovalGate = state.status === "planning" ? "pre_build" : "completion";
-    const contractDigest =
-      state.status === "planning" ? options.contractDigest : state.contractDigest;
+    const contractDigest = options.contractDigest;
     if (!nonEmpty(contractDigest))
       throw new Error("awaiting_approval requires current contract digest.");
-    return { pendingGate, contractDigest, remainingActions: [] };
+    return { contractDigest };
   }
-  return { remainingActions: [] };
+  return state.contractDigest ? { contractDigest: state.contractDigest } : {};
 }
 
 function validateStructuralGuards(
@@ -779,9 +702,9 @@ function validateStructuralGuards(
       if (
         !options.resumeTo ||
         !isOperationalResumeTarget(options.resumeTo) ||
-        !options.remainingActions?.length
+        !nonEmpty(options.resumeReason)
       )
-        throw new Error("blocked requires operational resumeTo and remainingActions.");
+        throw new Error("blocked requires operational resumeTo and resumeReason.");
     } else if (state.status === "blocked") {
       if (next !== state.resumeTo)
         throw new Error(`blocked may transition only to exact resumeTo ${state.resumeTo}.`);
@@ -793,15 +716,13 @@ function validateStructuralGuards(
       throw new Error(`${next} requires terminalSource equal to ${state.status}.`);
     satisfied.add("terminal_source_recorded");
   }
-  if (required.includes("gate_context_valid")) {
+  if (required.includes("gate_decision_valid")) {
     if (!options.gateDecision) throw new Error("Gate exit requires decision.");
     validateGateDecision(state, options.gateDecision);
     if (!gateDecisionAllows(options.gateDecision, next))
       throw new Error(`Gate decision cannot transition to ${next}.`);
-    satisfied.add("gate_context_valid");
+    satisfied.add("gate_decision_valid");
   }
-  if (next === "ready_for_handoff" && !options.remainingActions?.length)
-    throw new Error("ready_for_handoff requires remainingActions.");
   if (
     options.contractDigest !== undefined &&
     (state.status !== "planning" || next !== "awaiting_approval")
@@ -859,13 +780,7 @@ function createEvaluatorEvidence(
   state: TaskState,
   guard: Extract<
     GuardId,
-    | "intake_complete"
-    | "discovery_sufficient"
-    | "contract_complete"
-    | "verification_complete"
-    | "handoff_intent_resolved"
-    | "handoff_reconciled"
-    | "completion_approved"
+    "intake_complete" | "discovery_sufficient" | "contract_complete" | "verification_complete"
   >,
   provenance: GuardEvidenceProvenance,
   input: Omit<
@@ -905,9 +820,6 @@ function validateEvaluatorReceipt(evidence: GuardEvidence, state: TaskState): vo
     discovery_sufficient: "discovery",
     contract_complete: "planning",
     verification_complete: "verification",
-    handoff_intent_resolved: "handoff_intent",
-    handoff_reconciled: "handoff_reconciliation",
-    completion_approved: "completion",
   };
   if (
     !receipt ||
@@ -921,42 +833,103 @@ function validateEvaluatorReceipt(evidence: GuardEvidence, state: TaskState): vo
     throw new Error(`Trusted evaluator receipt for ${evidence.guard} is stale or malformed.`);
 }
 
-function validateTrustedTarget(next: TaskStatus, evidence: Map<GuardId, GuardEvidence>): void {
-  const intent = evidence.get("handoff_intent_resolved")?.evaluatorReceipt;
-  if (next === "finished_local" && intent?.outcome !== "local_only")
-    throw new Error("finished_local requires local handoff intent.");
-  if (
-    ["handing_off", "ready_for_handoff", "finished"].includes(next) &&
-    intent &&
-    intent.outcome !== "external_selected"
-  )
-    throw new Error(`${next} requires external handoff intent.`);
-  if (
-    next === "finished" &&
-    evidence.get("handoff_reconciled")?.evaluatorReceipt?.outcome !== "complete"
-  )
-    throw new Error("finished requires complete handoff reconciliation.");
-}
-
 function validateGateDecision(state: TaskState, decision: GateDecision): void {
   if (
     state.status !== "awaiting_approval" ||
-    decision.gate !== state.pendingGate ||
+    decision.schemaVersion !== 1 ||
+    !["approved", "change_requested", "rejected"].includes(decision.decision) ||
+    decision.actor !== "user" ||
+    decision.taskId !== state.taskId ||
+    decision.artifactId !== state.shape?.contract?.artifactId ||
     decision.stateRevision !== state.revision ||
     decision.stateFingerprint !== guardStateFingerprint(state) ||
     decision.contractDigest !== state.contractDigest ||
-    !nonEmpty(decision.evidenceRef)
+    decision.receiptDigest !== digest({ ...decision, receiptDigest: undefined }) ||
+    !validAt(decision.decidedAt) ||
+    (decision.instructionRef !== undefined && !REF.test(decision.instructionRef)) ||
+    (decision.decision === "change_requested") !== nonEmpty(decision.instructionRef)
   )
     throw new Error("Gate decision is stale or bound to another state.");
 }
+
+function validatePlanApproval(state: TaskState, receipt: TaskState["planApproval"] & {}): void {
+  if (
+    receipt.decision !== "approved" ||
+    receipt.actor !== "user" ||
+    receipt.taskId !== state.taskId ||
+    receipt.artifactId !== state.shape?.contract?.artifactId ||
+    receipt.receiptDigest !== digest({ ...receipt, receiptDigest: undefined }) ||
+    !validAt(receipt.decidedAt) ||
+    receipt.instructionRef !== undefined ||
+    receipt.stateRevision >= state.revision ||
+    receipt.contractDigest !== state.contractDigest ||
+    receipt.contractDigest !== state.shape?.contract?.digest
+  )
+    throw new StateValidationError(
+      "state_invalid",
+      "PlanApprovalReceipt is stale or bound to another contract.",
+    );
+}
+
+function createVerificationReceipt(
+  state: TaskState,
+  evidence: GuardEvidence | undefined,
+  verifiedAt: string,
+): VerificationReceipt {
+  const evaluator = evidence?.evaluatorReceipt;
+  const requirements = state.verificationRequirements;
+  const contractDigest = state.shape?.contract?.digest;
+  if (
+    !evidence ||
+    !trustedEvidence.has(evidence) ||
+    evaluator?.evaluator !== "verification" ||
+    evaluator.outcome !== "complete" ||
+    !requirements ||
+    !contractDigest
+  )
+    throw new Error("finished requires trusted current verification evidence.");
+  const base = {
+    schemaVersion: 1 as const,
+    verifiedAt,
+    taskId: state.taskId,
+    contractDigest,
+    stateRevision: state.revision,
+    stateFingerprint: guardStateFingerprint(state),
+    requirementsDigest: requirements.requirementsDigest,
+    criterionIds: [...requirements.criterionIds],
+    validationIds: [...requirements.mandatoryCheckIds],
+    evidenceRefs: [...evaluator.evidenceRefs],
+  };
+  return { ...base, receiptDigest: digest(base) };
+}
+
+function validateVerificationReceipt(state: TaskState, receipt: VerificationReceipt): void {
+  if (
+    receipt.schemaVersion !== 1 ||
+    receipt.taskId !== state.taskId ||
+    receipt.contractDigest !== state.shape?.contract?.digest ||
+    receipt.requirementsDigest !== state.verificationRequirements?.requirementsDigest ||
+    receipt.receiptDigest !== digest({ ...receipt, receiptDigest: undefined }) ||
+    !validAt(receipt.verifiedAt) ||
+    receipt.stateRevision !== state.revision - 1 ||
+    receipt.stateFingerprint !==
+      state.history.toReversed().find((event) => event.type === "state.transition")
+        ?.sourceFingerprint ||
+    !sameIds(receipt.criterionIds, state.verificationRequirements?.criterionIds ?? []) ||
+    !sameIds(receipt.validationIds, state.verificationRequirements?.mandatoryCheckIds ?? []) ||
+    !receipt.criterionIds.length ||
+    !receipt.evidenceRefs.length ||
+    !receipt.evidenceRefs.every(nonEmpty) ||
+    new Set(receipt.evidenceRefs).size !== receipt.evidenceRefs.length
+  )
+    throw new StateValidationError("state_invalid", "VerificationReceipt is invalid.");
+}
 function gateDecisionAllows(decision: GateDecision, target: TaskStatus): boolean {
-  return decision.gate === "pre_build"
-    ? decision.decision === "approved"
-      ? target === "executing"
-      : target === "planning"
-    : decision.decision === "approved"
-      ? ["handing_off", "ready_for_handoff", "finished_local"].includes(target)
-      : ["resolving_assure", "verifying"].includes(target);
+  return decision.decision === "approved"
+    ? target === "executing"
+    : decision.decision === "change_requested"
+      ? target === "planning"
+      : target === "cancelled";
 }
 function transitionContract(from: TaskStatus, to: TaskStatus): TransitionContract | undefined {
   return (STATE_MACHINE[from].transitions as Readonly<Record<string, TransitionContract>>)[to];
@@ -1116,13 +1089,23 @@ function validatePersistedTransitionEvent(
         `Non-trusted guard ${item.guard} contains evaluator receipt.`,
       );
   }
-  if (contract.guards.includes("gate_context_valid")) {
+  if (contract.guards.includes("gate_decision_valid")) {
     if (
       !event.gateDecision ||
       event.gateDecision.stateRevision !== event.revision - 1 ||
       event.gateDecision.stateFingerprint !== event.sourceFingerprint ||
-      event.gateDecision.gate !== event.gateContext ||
-      event.gateDecision.contractDigest !== event.contractDigest
+      event.gateDecision.contractDigest !== event.contractDigest ||
+      event.gateDecision.schemaVersion !== 1 ||
+      !["approved", "change_requested", "rejected"].includes(event.gateDecision.decision) ||
+      event.gateDecision.actor !== "user" ||
+      !gateDecisionAllows(event.gateDecision, event.to) ||
+      !validAt(event.gateDecision.decidedAt) ||
+      (event.gateDecision.instructionRef !== undefined &&
+        !REF.test(event.gateDecision.instructionRef)) ||
+      (event.gateDecision.decision === "change_requested") !==
+        nonEmpty(event.gateDecision.instructionRef) ||
+      event.gateDecision.receiptDigest !==
+        digest({ ...event.gateDecision, receiptDigest: undefined })
     ) {
       throw new StateValidationError(
         "state_invalid",
@@ -1144,9 +1127,6 @@ function validatePersistedEvaluatorReceipt(evidence: GuardEvidenceRecord): void 
     discovery_sufficient: "discovery",
     contract_complete: "planning",
     verification_complete: "verification",
-    handoff_intent_resolved: "handoff_intent",
-    handoff_reconciled: "handoff_reconciliation",
-    completion_approved: "completion",
   };
   if (
     !receipt ||
@@ -1187,7 +1167,7 @@ function compactAndValidate(state: TaskState): TaskState {
           history: state.history.slice(-HISTORY_LIMIT),
           historySummary: summarizeHistory(state),
         };
-  assertStateV3(output);
+  assertStateV4(output);
   return output;
 }
 function summarizeHistory(state: TaskState): TaskState["historySummary"] {
@@ -1261,7 +1241,7 @@ function routingStable(snapshot: RoutingSnapshot): string {
 function validateTransitionOptionKeys(options: TransitionOptions): void {
   const allowed = new Set([
     "resumeTo",
-    "remainingActions",
+    "resumeReason",
     "terminalSource",
     "guardEvidence",
     "gateDecision",
@@ -1353,7 +1333,6 @@ const HISTORY_REFERENCE_KINDS = new Set<HistoryReferenceKind>([
   "correction",
   "gate",
   "scope",
-  "handoff",
   "evidence",
   "receipt",
   "command",
@@ -1368,14 +1347,11 @@ const STRUCTURAL_GUARDS = new Set<GuardId>([
   "task_initialized",
   "resume_metadata_valid",
   "terminal_source_recorded",
-  "gate_context_valid",
+  "gate_decision_valid",
 ]);
 const TRUSTED_GUARDS = new Set<GuardId>([
   "intake_complete",
   "discovery_sufficient",
   "contract_complete",
   "verification_complete",
-  "handoff_intent_resolved",
-  "handoff_reconciled",
-  "completion_approved",
 ]);

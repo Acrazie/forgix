@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Codex Dev Flow task state V3",
+  "title": "Codex Dev Flow task state V4",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -13,12 +13,11 @@
     "policySnapshot",
     "issues",
     "reviewCycle",
-    "remainingActions",
     "history"
   ],
   "properties": {
     "schemaVersion": {
-      "const": 3
+      "const": 4
     },
     "taskId": {
       "$ref": "#/$defs/text"
@@ -42,9 +41,6 @@
     "verificationRequirements": {
       "$ref": "#/$defs/verificationRequirements"
     },
-    "pendingGate": {
-      "enum": ["pre_build", "completion"]
-    },
     "resumeTo": {
       "$ref": "#/$defs/resumeTarget"
     },
@@ -60,12 +56,6 @@
     "reviewCycle": {
       "type": "integer",
       "minimum": 0
-    },
-    "remainingActions": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/text"
-      }
     },
     "history": {
       "type": "array",
@@ -110,6 +100,15 @@
     },
     "benchmarkEnabled": {
       "type": "boolean"
+    },
+    "resumeReason": {
+      "$ref": "#/$defs/text"
+    },
+    "planApproval": {
+      "$ref": "#/$defs/planApprovalReceipt"
+    },
+    "verificationReceipt": {
+      "$ref": "#/$defs/verificationReceipt"
     }
   },
   "allOf": [
@@ -123,36 +122,13 @@
         "required": ["status"]
       },
       "then": {
-        "required": ["resumeTo"],
+        "required": ["resumeTo", "resumeReason"],
         "properties": {
           "resumeTo": {
             "$ref": "#/$defs/resumeTarget"
           },
-          "remainingActions": {
-            "type": "array",
-            "minItems": 1
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "const": "ready_for_handoff"
-          }
-        },
-        "required": ["status"]
-      },
-      "then": {
-        "required": ["resumeTo"],
-        "properties": {
-          "resumeTo": {
-            "const": "handing_off"
-          },
-          "remainingActions": {
-            "type": "array",
-            "minItems": 1
+          "resumeReason": {
+            "$ref": "#/$defs/text"
           }
         }
       }
@@ -162,7 +138,7 @@
         "properties": {
           "status": {
             "not": {
-              "enum": ["blocked", "ready_for_handoff"]
+              "const": "blocked"
             }
           }
         },
@@ -170,7 +146,14 @@
       },
       "then": {
         "not": {
-          "required": ["resumeTo"]
+          "anyOf": [
+            {
+              "required": ["resumeTo"]
+            },
+            {
+              "required": ["resumeReason"]
+            }
+          ]
         }
       }
     },
@@ -184,13 +167,28 @@
         "required": ["status"]
       },
       "then": {
-        "required": ["pendingGate", "contractDigest"],
+        "required": ["contractDigest"],
         "properties": {
-          "pendingGate": {
-            "enum": ["pre_build", "completion"]
-          },
           "contractDigest": {
             "$ref": "#/$defs/text"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "finished"
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["verificationReceipt"],
+        "properties": {
+          "verificationReceipt": {
+            "$ref": "#/$defs/verificationReceipt"
           }
         }
       }
@@ -211,9 +209,6 @@
               "reviewing",
               "resolving_assure",
               "verifying",
-              "handing_off",
-              "ready_for_handoff",
-              "finished_local",
               "finished"
             ]
           }
@@ -257,12 +252,9 @@
         "reviewing",
         "resolving_assure",
         "verifying",
-        "handing_off",
-        "ready_for_handoff",
         "blocked",
         "cancelled",
         "failed",
-        "finished_local",
         "finished"
       ]
     },
@@ -279,8 +271,7 @@
         "resolving_build",
         "reviewing",
         "resolving_assure",
-        "verifying",
-        "handing_off"
+        "verifying"
       ]
     },
     "historyReference": {
@@ -300,7 +291,6 @@
             "correction",
             "gate",
             "scope",
-            "handoff",
             "evidence",
             "receipt",
             "command",
@@ -342,8 +332,6 @@
             "artifact.recorded",
             "issue.recorded",
             "correction.recorded",
-            "handoff.attempted",
-            "handoff.result",
             "context.updated",
             "intake.question_recorded",
             "intake.answer_recorded",
@@ -406,9 +394,6 @@
         "terminalResumeTo": {
           "$ref": "#/$defs/resumeTarget"
         },
-        "gateContext": {
-          "enum": ["pre_build", "completion"]
-        },
         "contractDigest": {
           "$ref": "#/$defs/text"
         },
@@ -420,7 +405,7 @@
           }
         },
         "gateDecision": {
-          "type": "object"
+          "$ref": "#/$defs/gateDecision"
         }
       }
     },
@@ -462,9 +447,6 @@
           }
         },
         "lastTransition": {
-          "type": "object"
-        },
-        "activeGate": {
           "type": "object"
         }
       }
@@ -794,6 +776,174 @@
         },
         "zeroQuestionPath": {
           "type": "boolean"
+        }
+      }
+    },
+    "gateDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "decision",
+        "actor",
+        "decidedAt",
+        "taskId",
+        "artifactId",
+        "stateRevision",
+        "stateFingerprint",
+        "contractDigest",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "decision": {
+          "enum": ["approved", "change_requested", "rejected"]
+        },
+        "actor": {
+          "const": "user"
+        },
+        "decidedAt": {
+          "type": "string"
+        },
+        "taskId": {
+          "$ref": "#/$defs/text"
+        },
+        "artifactId": {
+          "$ref": "#/$defs/text"
+        },
+        "stateRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stateFingerprint": {
+          "$ref": "#/$defs/text"
+        },
+        "contractDigest": {
+          "$ref": "#/$defs/text"
+        },
+        "instructionRef": {
+          "$ref": "#/$defs/ref"
+        },
+        "receiptDigest": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "planApprovalReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "decision",
+        "actor",
+        "decidedAt",
+        "taskId",
+        "artifactId",
+        "stateRevision",
+        "stateFingerprint",
+        "contractDigest",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "decision": {
+          "const": "approved"
+        },
+        "actor": {
+          "const": "user"
+        },
+        "decidedAt": {
+          "type": "string"
+        },
+        "taskId": {
+          "$ref": "#/$defs/text"
+        },
+        "artifactId": {
+          "$ref": "#/$defs/text"
+        },
+        "stateRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stateFingerprint": {
+          "$ref": "#/$defs/text"
+        },
+        "contractDigest": {
+          "$ref": "#/$defs/text"
+        },
+        "receiptDigest": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "verificationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "verifiedAt",
+        "taskId",
+        "contractDigest",
+        "stateRevision",
+        "stateFingerprint",
+        "requirementsDigest",
+        "criterionIds",
+        "validationIds",
+        "evidenceRefs",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "verifiedAt": {
+          "type": "string"
+        },
+        "taskId": {
+          "$ref": "#/$defs/text"
+        },
+        "contractDigest": {
+          "$ref": "#/$defs/text"
+        },
+        "stateRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stateFingerprint": {
+          "$ref": "#/$defs/text"
+        },
+        "requirementsDigest": {
+          "$ref": "#/$defs/text"
+        },
+        "criterionIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "validationIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "receiptDigest": {
+          "$ref": "#/$defs/text"
         }
       }
     }

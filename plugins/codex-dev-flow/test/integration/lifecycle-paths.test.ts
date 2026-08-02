@@ -1,7 +1,7 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
 import * as sourceApi from "../../src/cli.ts";
 import { expect, test } from "bun:test";
-import { attest, toGate } from "../support/helpers-v3.ts";
+import { attest, toGate } from "../support/helpers-v4.ts";
 const api = async () => sourceApi;
 
 function observation(state, id) {
@@ -19,34 +19,25 @@ function verification(a, state) {
     mandatoryChecks: [observation(state, "test")],
   });
 }
-function localIntent(a, state) {
-  return a.evaluateHandoffIntent(state, {
-    delivery: "local",
-    intentEvidenceRef: `intent:local:${state.revision}`,
-    actions: [],
-  });
-}
-
 async function finish(profile) {
   const a = await api();
   let state = await toGate(a, profile, `lifecycle-${profile}`);
   state = a.transition(state, "executing", {
     gateDecision: a.createGateDecision(state, {
       decision: "approved",
-      evidenceRef: `approval:${profile}`,
     }),
-    guardEvidence: attest(a, state, "approval_current", "task_authorized"),
+    guardEvidence: attest(a, state, "task_authorized"),
   });
   state = a.transition(state, "validating", { guardEvidence: attest(a, state, "task_authorized") });
   state = a.transition(state, "verifying", {
     guardEvidence: attest(a, state, "validation_fresh", "review_satisfied"),
   });
-  return a.transition(state, "finished_local", {
-    guardEvidence: [verification(a, state), localIntent(a, state)],
+  return a.transition(state, "finished", {
+    guardEvidence: [verification(a, state)],
   });
 }
 
-test("Quick and Plan both traverse all six phases", async () => {
+test("Quick and Plan both traverse all five phases", async () => {
   const a = await api();
   for (const profile of ["quick", "plan"]) {
     const state = await finish(profile);
@@ -62,21 +53,21 @@ test("Quick and Plan both traverse all six phases", async () => {
           }),
         ),
     );
-    for (const phase of ["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE", "HANDOFF"])
+    for (const phase of ["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE"])
       expect(phases.has(phase), `${profile} lacks ${phase}`).toBeTruthy();
-    expect(state.status).toBe("finished_local");
+    expect(state.status).toBe("finished");
+    expect(state.verificationReceipt).toBeTruthy();
   }
 });
 
 test("validation and assurance correction loops remain profile-neutral", async () => {
   const a = await api();
-  let state = await toGate(a, "plan", "loops-v3");
+  let state = await toGate(a, "plan", "loops-v4");
   state = a.transition(state, "executing", {
     gateDecision: a.createGateDecision(state, {
       decision: "approved",
-      evidenceRef: "approval:loops",
     }),
-    guardEvidence: attest(a, state, "approval_current", "task_authorized"),
+    guardEvidence: attest(a, state, "task_authorized"),
   });
   state = a.transition(state, "validating", { guardEvidence: attest(a, state, "task_authorized") });
   state = a.transition(state, "resolving_build", {
@@ -118,9 +109,8 @@ test("trusted terminal guards reject raw attestations and stale observations", a
   state = a.transition(state, "executing", {
     gateDecision: a.createGateDecision(state, {
       decision: "approved",
-      evidenceRef: "approval:trusted",
     }),
-    guardEvidence: attest(a, state, "approval_current", "task_authorized"),
+    guardEvidence: attest(a, state, "task_authorized"),
   });
   state = a.transition(state, "validating", { guardEvidence: attest(a, state, "task_authorized") });
   state = a.transition(state, "verifying", {

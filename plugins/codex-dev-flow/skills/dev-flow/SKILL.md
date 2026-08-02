@@ -6,11 +6,11 @@ description: Use when planning, implementing, debugging, reviewing, or verifying
 # Dev Flow
 
 Follow [lifecycle contract](../../docs/lifecycle-contract.md): exactly INTAKE, SHAPE,
-GATE, BUILD, ASSURE, HANDOFF. Macro-phase derives from internal status; never invent or
-persist another phase. Canonical registry, strict V2 state, durable state store, adaptive
+GATE, BUILD, ASSURE, then `finished`. Macro-phase derives from internal status; never
+invent or persist another phase. Canonical registry, strict V4 state, durable state store, adaptive
 INTAKE runtime, and local benchmark store are available primitives; full provider
 orchestration remains incomplete. Never claim a durable transition, Approval binding,
-or handoff receipt without deterministic evidence.
+or verification receipt without deterministic evidence.
 
 Parse invocation with bundled deterministic script before acting.
 
@@ -161,15 +161,25 @@ material change.
 
 ## GATE
 
-Quick and Plan both enter GATE with canonical contract. Bind Approval to gate type,
-actor, time, artifact identity, and canonical contract digest—not boolean approval or
-path. Risk/policy decides stronger or completion Approval; preparation profile never
-weakens safety.
+Quick and Plan both enter one minimal GATE with canonical contract. Before display, run
+pure deterministic preflight only: current SHAPE receipt, exact digest, contract
+completeness/coverage, risk controls, fresh evidence, no open escalation, and current
+approval reuse. No model call, network, Discovery, or subprocess.
 
-Material objective, scope, acceptance-criteria, profile, risk, plan-behavior, or required
-policy-control change invalidates affected Approval before further writes. Present
-structured delta for reapproval. If deterministic Approval persistence is unavailable,
-record limitation and do not claim bound Approval exists.
+Render exactly five concise lines: objective; task/criterion/validation counts; risks and
+controls; short digest; actions. Accept only explicit user intent:
+
+- approve current plan -> persist compact Plan Approval Receipt, enter `executing`;
+- change with non-empty instruction -> enter `planning`, invalidating old receipt;
+- reject -> enter `cancelled`;
+- view -> show contract without mutation and return to same card.
+
+Silence, ambiguity, or non-interactive execution never approves. Preflight failure
+returns to targeted Discovery, Planning, or INTAKE decision route and reports exact
+reason. Bind approval to actor, time, task/artifact identity, state revision/fingerprint,
+and complete canonical contract digest. Exact digest change invalidates it; time alone
+does not. Approval never authorizes commit, push, PR, registry, release, or other
+external action.
 
 ## BUILD
 
@@ -179,7 +189,7 @@ broader checks.
 
 Correctable local validation failure enters build resolution; use `debug-root-cause`
 after two failed code corrections. Material contract change stops writes and returns to
-SHAPE/GATE. Scope expansion never inherits old Approval.
+SHAPE then GATE. Scope expansion never inherits old Approval.
 
 ## ASSURE
 
@@ -195,30 +205,20 @@ validation; review-only corrections return through review; evidence-only correct
 return through verification.
 
 Use `verify-change` to map every acceptance criterion to fresh evidence. Narrow green
-check proves only covered behavior. Policy may require completion GATE; otherwise
-verification proceeds to HANDOFF.
+check proves only covered behavior. Successful verification persists compact
+Verification Receipt bound to current contract/evidence and transitions directly to
+sole success terminal `finished`.
 
-## HANDOFF
-
-Resolve every commit/push/PR action as required, selected, or not selected. Reconcile
-local/remote state before each side effect. Persisted identities and receipts are target
-requirements; without evidence, never claim idempotency or completion. Never merge.
-
-- no external intent -> `finished_local`;
-- selected/required actions all receipted -> `finished`;
-- recoverable missing permission/action -> `ready_for_handoff`;
-- non-recoverable required-outcome failure -> `failed`.
-
-`ready_for_handoff` is stable and resumable, not terminal. Resume reconciles first and
-may become `finished` directly only if matching receipts already prove completion.
+Commit, push, pull request, registry, release, and other delivery work is outside Dev
+Flow lifecycle/state. Native Codex may perform it afterward under its own explicit
+authorization. GATE approval grants no authority for those actions.
 
 ### Opt-in local benchmark
 
 Benchmark is out-of-band and never changes lifecycle outcome.
 
-- Offer only when persisted `benchmarkEnabled=true` and truthful outcome is
-  `finished_local`, `finished`, or `failed`. Never offer for blocked,
-  ready-for-handoff, or cancelled.
+- Offer only when persisted `benchmarkEnabled=true` and truthful outcome is `finished`
+  or `failed`. Never offer for blocked or cancelled.
 - Ask exactly three deterministic, no-model questions: satisfaction 1–5; conformance
   yes/partial/no; plugin value useful/neutral/counterproductive. Optional comment follows.
 - No response or incomplete three required answers means no record and total exclusion.
@@ -232,21 +232,21 @@ Benchmark is out-of-band and never changes lifecycle outcome.
 ## Resume, evidence, and artifacts
 
 Target local state lives under `.codex/tasks/`; versioned artifact belongs to active
-worktree and follows repository retention into commit or handoff. Reuse existing artifact
+worktree and follows repository retention policy. Reuse existing artifact
 identity; never duplicate task artifact. Legacy paths such as
 `docs/dev-flow/YYYY-MM-DD-<slug>.md`, `spec.md`, `plan.md`,
 `risk-and-rollback.md`, and `verification.md` are repository choices only.
 
-Resume must validate strict V3 state, reconcile config/policy/routing/artifact/Git/evidence,
+Resume must validate strict V4 state, reconcile config/policy/routing/artifact/Git/evidence,
 selectively invalidate stale projections, then continue first unproved action. Current
 runtime cannot yet enforce full provider resume. Report that limitation instead of fabricating
 durability.
 
 Never claim success without fresh evidence. Record commands, results, skipped checks,
-material deviations, issue identities, and remaining actions. Detailed contract/evidence
+material deviations, issue identities, and unresolved work. Detailed contract/evidence
 has one owner; compact state stores references. Definitions:
 [glossary](../../docs/glossary/dev-flow.md). Decisions:
 [Context Capsule](../../docs/adr/0002-share-an-invalidable-context-capsule.md),
-[Approval](../../docs/adr/0003-bind-approvals-to-canonical-contracts.md),
 [assurance](../../docs/adr/0004-scale-assurance-lanes-by-applicable-risk.md),
-[handoff](../../docs/adr/0005-make-handoff-intent-aware-and-idempotent.md).
+[minimal GATE](../../docs/adr/0024-make-gate-a-minimal-plan-approval.md), and
+[five-phase completion](../../docs/adr/0025-end-the-lifecycle-after-assure.md).

@@ -40,6 +40,13 @@ export const LIFECYCLE_METRICS = Object.freeze([
   "shape_evidence_reuses",
   "routing_decisions",
   "gates",
+  "gate_preflight_passes",
+  "gate_preflight_failures",
+  "gate_approvals",
+  "gate_change_requests",
+  "gate_rejections",
+  "gate_approval_reuses",
+  "gate_targeted_returns",
   "blocks",
   "transition_errors",
   "resume_to_first_action_ms",
@@ -288,9 +295,7 @@ export function summarizeLifecycleTrace(input: TraceSummaryInput): LifecycleTrac
     statuses,
     phases,
     transitions: edges.length,
-    gates: edges.filter(
-      ({ from, to }) => to === "awaiting_approval" && (from === "planning" || from === "verifying"),
-    ).length,
+    gates: edges.filter(({ from, to }) => to === "awaiting_approval" && from === "planning").length,
     blocks: edges.filter(({ to }) => to === "blocked").length,
     resumes: edges.filter(
       ({ from, to }) => from === "blocked" && to !== "cancelled" && to !== "failed",
@@ -502,12 +507,23 @@ function validateMeasurementSource(
       "shape_planning_sessions",
       "shape_targeted_invalidations",
       "shape_evidence_reuses",
+      "gate_preflight_passes",
+      "gate_preflight_failures",
+      "gate_approval_reuses",
     ].includes(metric) &&
       measurement === "measured" &&
       source === "orchestrator_counter") ||
-    (["validation_runs", "correction_cycles", "gates", "blocks", "transition_errors"].includes(
-      metric,
-    ) &&
+    ([
+      "validation_runs",
+      "correction_cycles",
+      "gates",
+      "gate_approvals",
+      "gate_change_requests",
+      "gate_rejections",
+      "gate_targeted_returns",
+      "blocks",
+      "transition_errors",
+    ].includes(metric) &&
       measurement === "measured" &&
       source === "state_history");
   if (!valid) throw new Error(`Metric ${metric} measurement/source mismatch.`);

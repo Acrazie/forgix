@@ -56,13 +56,11 @@ export interface InitOptions {
 }
 
 type WorktreeMode = "auto" | "required";
-type PullRequestMode = "optional" | "required";
 type SubscriptionPlan = "auto" | "plus" | "pro_5x" | "pro_20x";
 type ReviewAction = "write" | "workflow" | "subscription" | "integrations" | "cancel";
 
 interface InitDraft {
   worktreeMode: WorktreeMode;
-  pullRequest: PullRequestMode;
   plan: SubscriptionPlan;
   warningPercent: number;
   criticalPercent: number;
@@ -129,7 +127,7 @@ export async function runInit(options: InitOptions = {}): Promise<CliResult> {
             {
               value: "workflow",
               label: "Edit workflow behavior",
-              hint: "Worktrees and pull requests",
+              hint: "Worktree isolation",
             },
             {
               value: "subscription",
@@ -210,10 +208,7 @@ export function buildRoutingPreview(
 }
 
 async function collectWorkflow(prompts: InitPromptAdapter, draft: InitDraft): Promise<InitDraft> {
-  prompts.note(
-    "Choose how Dev Flow isolates changes and whether completion requires a pull request.",
-    "1/3 · Workflow behavior",
-  );
+  prompts.note("Choose how Dev Flow isolates changes.", "1/3 · Workflow behavior");
   const worktreeMode = await required(
     prompts,
     prompts.select<WorktreeMode>({
@@ -233,22 +228,7 @@ async function collectWorkflow(prompts: InitPromptAdapter, draft: InitDraft): Pr
       ],
     }),
   );
-  const pullRequest = await required(
-    prompts,
-    prompts.select<PullRequestMode>({
-      message: "Must a pull request be created before completion?",
-      initialValue: draft.pullRequest,
-      choices: [
-        { value: "optional", label: "Optional", hint: "Local verified handoff is allowed" },
-        {
-          value: "required",
-          label: "Required",
-          hint: "Workflow cannot finish without a pull request",
-        },
-      ],
-    }),
-  );
-  return { ...draft, worktreeMode, pullRequest };
+  return { ...draft, worktreeMode };
 }
 
 async function collectSubscription(
@@ -337,7 +317,6 @@ function buildConfiguration(
   draft: InitDraft,
 ): Record<string, unknown> {
   const worktree = record(current.worktree);
-  const finish = record(current.finish);
   const subscription = record(current.subscription);
   const quota = record(subscription.quota);
   const integrations = record(current.integrations);
@@ -345,7 +324,6 @@ function buildConfiguration(
     ...current,
     schemaVersion: 1,
     worktree: { ...worktree, mode: draft.worktreeMode },
-    finish: { ...finish, pullRequest: draft.pullRequest },
     merge: "never",
     subscription: {
       ...subscription,
@@ -363,13 +341,11 @@ function buildConfiguration(
 
 function draftFromConfiguration(current: Record<string, unknown>): InitDraft {
   const worktree = record(current.worktree);
-  const finish = record(current.finish);
   const subscription = record(current.subscription);
   const quota = record(subscription.quota);
   const integrations = record(current.integrations);
   return {
     worktreeMode: choiceValue(worktree.mode, ["auto", "required"], "auto"),
-    pullRequest: choiceValue(finish.pullRequest, ["optional", "required"], "optional"),
     plan: choiceValue(subscription.plan, ["auto", "plus", "pro_5x", "pro_20x"], "auto"),
     warningPercent: numberValue(quota.warningPercent, 50),
     criticalPercent: numberValue(quota.criticalPercent, 80),
@@ -382,7 +358,6 @@ function renderConfigurationSummary(path: string, draft: InitDraft): string {
   return [
     `Target: ${path}`,
     `Worktrees: ${draft.worktreeMode}`,
-    `Pull requests: ${draft.pullRequest}`,
     `Subscription: ${draft.plan === "auto" ? "automatic (Plus if unknown)" : draft.plan}`,
     `Quota pressure: warning ${draft.warningPercent}% · critical ${draft.criticalPercent}%`,
     `Plugins: ${draft.plugins.join(", ") || "none"}`,

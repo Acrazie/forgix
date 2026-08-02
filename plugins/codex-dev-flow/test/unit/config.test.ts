@@ -10,20 +10,18 @@ test("resolves config in source order and records leaf provenance", async () => 
       source: "defaults",
       value: {
         schemaVersion: 1,
-        finish: { pullRequest: "optional" },
         worktree: { mode: "auto" },
         merge: "never",
       },
     },
-    { source: "user", value: { finish: { pullRequest: "required" } } },
-    { source: "repo", value: { worktree: { mode: "required" } } },
-    { source: "local", value: { finish: { pullRequest: "optional" } } },
+    { source: "user", value: { worktree: { mode: "required" } } },
+    { source: "repo", value: { integrations: { plugins: ["impeccable"] } } },
+    { source: "local", value: { worktree: { mode: "auto" } } },
   ]);
 
-  expect(resolved.value.finish.pullRequest).toBe("optional");
-  expect(resolved.provenance["finish.pullRequest"]).toBe("local");
-  expect(resolved.value.worktree.mode).toBe("required");
-  expect(resolved.provenance["worktree.mode"]).toBe("repo");
+  expect(resolved.value.worktree.mode).toBe("auto");
+  expect(resolved.provenance["worktree.mode"]).toBe("local");
+  expect(resolved.provenance["integrations.plugins"]).toBe("repo");
   expect(resolved.value.merge).toBe("never");
 });
 
@@ -54,27 +52,26 @@ test("rejects an attempt to weaken a locked policy", async () => {
       source: "defaults",
       value: {
         schemaVersion: 1,
-        finish: { pullRequest: "optional" },
         worktree: { mode: "auto" },
         merge: "never",
       },
     },
-    { source: "local", value: { finish: { pullRequest: "optional" } } },
+    { source: "local", value: { worktree: { mode: "auto" } } },
   ]);
 
   expectThrown(
     () =>
       applyPolicy(resolved, {
         schemaVersion: 1,
-        requirements: { "finish.pullRequest": "required" },
+        requirements: { "worktree.mode": "required" },
         prohibitions: {},
         bounds: {},
-        locks: ["finish.pullRequest"],
+        locks: ["worktree.mode"],
       }),
     (error) =>
       error instanceof PolicyError &&
       error.exitCode === EXIT_CODES.POLICY_CONTRADICTION &&
-      error.path === "finish.pullRequest" &&
+      error.path === "worktree.mode" &&
       error.source === "local",
   );
 });

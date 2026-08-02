@@ -23,9 +23,9 @@ The invocation has no mode argument:
 
 `$dev-flow <objective>`
 
-Every task traverses all six operational phases:
+Every task traverses all five operational phases:
 
-`INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> HANDOFF`
+`INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished`
 
 SHAPE contains two strictly separated roles with one explicit profile choice between
 them:
@@ -129,14 +129,12 @@ logical digest, then projection status becomes `Approved` without changing contr
 content. A manual projection edit triggers explicit Planning reconciliation; the
 workflow neither imports nor overwrites it silently.
 
-GATE always executes and binds to the canonical logical digest. Quick may satisfy it
-through a lightweight policy/risk check when no explicit human approval is required.
-Plan requires approval of the durable content-bound contract before BUILD. Risk or
-policy may require stronger human gates for either profile.
+GATE always executes and binds explicit user approval to canonical logical digest for
+both profiles. Its V4 contract is defined by ADR 0024.
 
 BUILD always consumes the exact current SHAPE contract and never performs hidden
-shaping. ASSURE scales by applicable risk rather than profile. HANDOFF behavior is
-profile-independent.
+shaping. ASSURE scales by applicable risk rather than profile and reaches `finished`
+directly under ADR 0025.
 
 ## Consequences
 

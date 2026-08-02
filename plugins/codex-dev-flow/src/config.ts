@@ -48,7 +48,6 @@ export const DEFAULT_SUBSCRIPTION_CONFIG: SubscriptionConfig = {
 
 export const DEFAULT_CONFIG: Record<string, unknown> = {
   schemaVersion: 1,
-  finish: { pullRequest: "optional" },
   worktree: { mode: "auto" },
   merge: "never",
   integrations: { plugins: [], skills: [] },
