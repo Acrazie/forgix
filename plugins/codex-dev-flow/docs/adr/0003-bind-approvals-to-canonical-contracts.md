@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Accepted for TaskState V3. Superseded for V4 by ADR 0024.
 
 ## Context
 
