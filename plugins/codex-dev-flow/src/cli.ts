@@ -156,6 +156,22 @@ export {
   createTaskStateStore,
 } from "./state-store.js";
 
+export const HELP_TEXT = `Usage: codex-dev-flow <command|objective>
+
+Commands:
+  init
+  resume <task-id>
+  status [task-id]
+  benchmark summary
+  config show [--explain]
+  config validate [--json]
+  --help
+
+Workflow:
+  codex-dev-flow <objective>
+  codex-dev-flow --benchmark <objective>
+`;
+
 export interface RunInvocationOptions {
   configSources?: ConfigSource[];
   init?: InitOptions;
@@ -173,6 +189,9 @@ export async function runInvocation(
   options: RunInvocationOptions = {},
 ): Promise<CliResult> {
   const invocation = parseInvocation(argv);
+  if (invocation.command === "help") {
+    return { command: "help", status: "ok", data: { text: HELP_TEXT } };
+  }
   if (invocation.command === "init") return runInit(options.init);
   if (invocation.command === "config_show" || invocation.command === "config_validate") {
     const config = resolveRuntimeConfig(options.configSources);
@@ -344,7 +363,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function main(argv = process.argv.slice(2)): void {
   void runInvocation(argv).then(
     (result) => {
-      if (result.command !== "init") process.stdout.write(JSON.stringify(result) + "\n");
+      if (result.command === "help") process.stdout.write(HELP_TEXT);
+      else if (result.command !== "init") process.stdout.write(JSON.stringify(result) + "\n");
     },
     (error: unknown) => {
       const exitCode =

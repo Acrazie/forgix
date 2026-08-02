@@ -1,6 +1,7 @@
 import { EXIT_CODES } from "./exit-codes.js";
 
 export type ParsedInvocation =
+  | { command: "help" }
   | { command: "init" }
   | { command: "run"; objective: string; flags: { benchmark?: true } }
   | { command: "resume"; taskId: string }
@@ -25,6 +26,11 @@ export function parseInvocation(argv: string[]): ParsedInvocation {
   const [first, ...rest] = argv;
   if (!first) {
     invalid("An objective or subcommand is required.");
+  }
+
+  if (first === "--help") {
+    if (rest.length !== 0) invalid("help accepts no arguments.");
+    return { command: "help" };
   }
 
   if (first === "init") {

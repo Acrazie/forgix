@@ -1,0 +1,131 @@
+// @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { expect, test } from "bun:test";
+import { fileURLToPath } from "node:url";
+import { createDistributionBundle } from "../../scripts/build.mjs";
+
+test("distribution bundle exists", () => {
+  const bundle = new URL("../../dist/dev-flow.mjs", import.meta.url);
+  expect(existsSync(bundle)).toBe(true);
+  expect(readFileSync(bundle, "utf8").startsWith("#!/usr/bin/env node\n")).toBe(true);
+  if (process.platform !== "win32") expect(statSync(bundle).mode & 0o111).not.toBe(0);
+});
+
+test("distribution bundle imports as ESM", async () => {
+  const bundle = new URL("../../dist/dev-flow.mjs", import.meta.url);
+  const module = await import(bundle);
+  expect(typeof module.main).toBe("function");
+});
+
+test("distribution bundle matches the current source build", async () => {
+  const bundle = new URL("../../dist/dev-flow.mjs", import.meta.url);
+  expect(readFileSync(bundle)).toEqual(Buffer.from(await createDistributionBundle()));
+});
+
+test(
+  "package binary executes through a package-manager symlink",
+  { skip: process.platform === "win32" },
+  () => {
+    const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-bin-"));
+    const binary = join(directory, "codex-dev-flow");
+    symlinkSync(fileURLToPath(new URL("../../dist/dev-flow.mjs", import.meta.url)), binary);
+
+    try {
+      const result = spawnSync(binary, ["config", "validate", "--json"], { encoding: "utf8" });
+      expect(result.status, result.stderr).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.command).toBe("config_validate");
+      expect(output.status).toBe("valid");
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  },
+);
+
+test("init rejects non-interactive invocation explicitly", () => {
+  const bundle = fileURLToPath(new URL("../../dist/dev-flow.mjs", import.meta.url));
+  const result = spawnSync(process.execPath, [bundle, "init"], {
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  expect(result.status).toBe(10);
+  expect(result.stderr).toMatch(/init requires an interactive terminal/);
+});
+
+test("public skill isolates external skills behind configured allowlists", () => {
+  const skill = readFileSync(new URL("../../skills/dev-flow/SKILL.md", import.meta.url), "utf8");
+  expect(skill).toMatch(/integrations\.plugins/);
+  expect(skill).toMatch(/integrations\.skills/);
+  expect(skill).toMatch(/Do not invoke skills from other plugins/);
+  expect(skill).toMatch(/standalone CLI command/);
+  expect(skill).toMatch(/codex-dev-flow init/);
+  expect(skill).toMatch(/Do not refresh account, quota, or model data between skills/);
+  expect(skill).toMatch(/Never substitute a fallback model or effort/);
+  expect(skill).toMatch(/routing_permission_required/);
+  expect(skill).toMatch(/explicit user approval/);
+  expect(skill).toMatch(/Retry the same invocation at most once/);
+  expect(skill).toMatch(/Never escalate silently/);
+  expect(skill).toMatch(/If approval is denied or the retry fails, block/);
+});
+
+test("package exposes the standalone codex-dev-flow binary", () => {
+  const manifest = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
+  expect(manifest.private).toBe(undefined);
+  expect(manifest.license).toBe("MIT");
+  expect(manifest.dependencies).toBe(undefined);
+  expect(manifest.publishConfig.access).toBe("public");
+  expect(manifest.bin["codex-dev-flow"]).toBe("dist/dev-flow.mjs");
+  expect(manifest.files).toEqual([
+    ".codex-plugin/",
+    "dist/",
+    "docs/",
+    "schemas/",
+    "skills/",
+    "LICENSE",
+    "README.md",
+  ]);
+  expect(manifest.scripts.prepack).toBe("bun run build");
+  expect(manifest.scripts.prepublishOnly).toBe("bun run check");
+  expect(existsSync(new URL("../../LICENSE", import.meta.url))).toBe(true);
+});
+
+test("npm package contains runtime assets and excludes development files", () => {
+  const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-pack-"));
+  const root = fileURLToPath(new URL("../..", import.meta.url));
+
+  try {
+    const result = spawnSync("bun", ["pm", "pack", "--dry-run", "--ignore-scripts"], {
+      cwd: root,
+      encoding: "utf8",
+      env: { ...process.env, BUN_INSTALL_CACHE_DIR: directory },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const paths = result.stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    for (const required of [
+      ".codex-plugin/plugin.json",
+      "dist/dev-flow.mjs",
+      "schemas/config.schema.json",
+      "skills/dev-flow/SKILL.md",
+      "LICENSE",
+      "README.md",
+    ]) {
+      expect(
+        paths.some((path) => path.endsWith(required)),
+        `${required} must be published`,
+      ).toBe(true);
+    }
+    expect(paths.some((path) => path.startsWith("src/"))).toBe(false);
+    expect(paths.some((path) => path.startsWith("test/"))).toBe(false);
+    expect(paths.some((path) => path.startsWith(".github/"))).toBe(false);
+    expect(paths.includes(".codex/dev-flow.yaml")).toBe(false);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

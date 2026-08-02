@@ -32,8 +32,9 @@ Current green tests prove covered primitives only, not complete provider orchest
 
 ## Install
 
-Requirements: Codex plugin support, Node.js 22.18 or newer for bundled runtime, and Git
-for repository/worktree operations.
+Requirements: Codex plugin support, Node.js 24 or newer for bundled runtime, and Git
+for repository/worktree operations. Linux and macOS are supported. Windows is not
+supported.
 
 ```bash
 codex plugin marketplace add Acrazie/codex-dev-flow

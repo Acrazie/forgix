@@ -35,8 +35,8 @@
         "plugins/codex-dev-flow/src/init.ts",
         "plugins/codex-dev-flow/src/release.ts",
         "plugins/codex-dev-flow/src/state-store.ts",
-        "plugins/codex-dev-flow/test/lifecycle-paths.test.mjs",
-        "plugins/codex-dev-flow/test/state-store.test.mjs"
+        "plugins/codex-dev-flow/test/integration/lifecycle-paths.test.ts",
+        "plugins/codex-dev-flow/test/integration/state-store.test.ts"
       ],
       "rules": {
         "eslint/no-await-in-loop": "off"

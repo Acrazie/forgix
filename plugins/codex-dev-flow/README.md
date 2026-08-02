@@ -1,7 +1,8 @@
 # Codex Dev Flow
 
 Portable Codex plugin for evidence-based software changes. Runtime requires Node.js
-22.18+. Distributed ESM bundle installs nothing and performs no network access by itself.
+24+. Linux and macOS are supported; Windows is unsupported. Distributed ESM bundle
+installs nothing and performs no network access by itself.
 
 ## Current contract
 

@@ -15435,6 +15435,10 @@ function parseInvocation(argv) {
   if (!first) {
     invalid("An objective or subcommand is required.");
   }
+  if (first === "--help") {
+    if (rest.length !== 0) invalid("help accepts no arguments.");
+    return { command: "help" };
+  }
   if (first === "init") {
     if (rest.length !== 0) invalid("init accepts no arguments.");
     return { command: "init" };
@@ -21335,8 +21339,26 @@ async function delegateStage(stage, runner, decision) {
 }
 
 // src/cli.ts
+var HELP_TEXT = `Usage: codex-dev-flow <command|objective>
+
+Commands:
+  init
+  resume <task-id>
+  status [task-id]
+  benchmark summary
+  config show [--explain]
+  config validate [--json]
+  --help
+
+Workflow:
+  codex-dev-flow <objective>
+  codex-dev-flow --benchmark <objective>
+`;
 async function runInvocation(argv, options = {}) {
   const invocation = parseInvocation(argv);
+  if (invocation.command === "help") {
+    return { command: "help", status: "ok", data: { text: HELP_TEXT } };
+  }
   if (invocation.command === "init") return runInit(options.init);
   if (invocation.command === "config_show" || invocation.command === "config_validate") {
     const config2 = resolveRuntimeConfig(options.configSources);
@@ -21464,7 +21486,8 @@ function isRecord8(value) {
 function main(argv = process.argv.slice(2)) {
   void runInvocation(argv).then(
     (result) => {
-      if (result.command !== "init") process.stdout.write(JSON.stringify(result) + "\n");
+      if (result.command === "help") process.stdout.write(HELP_TEXT);
+      else if (result.command !== "init") process.stdout.write(JSON.stringify(result) + "\n");
     },
     (error) => {
       const exitCode = error instanceof InvocationError || isExitCodeError(error) ? error.exitCode : EXIT_CODES.INTERNAL_ERROR;
@@ -21491,6 +21514,7 @@ export {
   DEPENDENCY_NODE_KINDS,
   EXIT_CODES,
   GUARD_IDS,
+  HELP_TEXT,
   HISTORY_LIMIT,
   HISTORY_REFERENCE_LIMIT,
   HISTORY_REFERENCE_TOTAL_CHARS,
