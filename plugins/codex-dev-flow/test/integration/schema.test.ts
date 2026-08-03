@@ -2,29 +2,35 @@
 import * as sourceApi from "../../src/cli.ts";
 import { readFile } from "node:fs/promises";
 import { expect, test } from "bun:test";
-import { taskInput } from "../support/helpers-v3.ts";
+import { taskInput } from "../support/helpers-v4.ts";
 import { expectThrown } from "../support/expect-error.ts";
 const stateSchemaUrl = new URL("../../schemas/state.schema.json", import.meta.url);
+const lifecycleProjectionUrl = new URL(
+  "../../docs/lifecycle-contract.projection.json",
+  import.meta.url,
+);
 const api = async () => sourceApi;
 
-test("state schema is strict V3 and contains no legacy mode contract", async () => {
+test("state schema is strict V4 and contains no legacy mode contract", async () => {
   const schema = JSON.parse(await readFile(stateSchemaUrl, "utf8"));
-  expect(schema.title).toBe("Codex Dev Flow task state V3");
-  expect(schema.properties.schemaVersion.const).toBe(3);
+  expect(schema.title).toBe("Codex Dev Flow task state V4");
+  expect(schema.properties.schemaVersion.const).toBe(4);
   expect(schema.additionalProperties).toBe(false);
   expect("mode" in schema.properties).toBe(false);
   expect("modeConfirmed" in schema.properties).toBe(false);
   for (const status of ["intaking", "awaiting_profile_choice", "awaiting_intake_decision"])
     expect(schema.$defs.status.enum.includes(status)).toBeTruthy();
+  for (const removed of ["handing_off", "ready_for_handoff", "finished_local"])
+    expect(schema.$defs.status.enum.includes(removed)).toBe(false);
 });
 
-test("runtime V3 validation rejects extras and old schemas", async () => {
+test("runtime V4 validation rejects extras and old schemas", async () => {
   const a = await api();
-  const state = a.createState(taskInput("schema-v3"));
-  expect(a.loadStateV3(state).schemaVersion).toBe(3);
-  expect(() => a.loadStateV3({ ...state, unexpected: true })).toThrow(/schema validation failed/);
+  const state = a.createState(taskInput("schema-v4"));
+  expect(a.loadStateV4(state).schemaVersion).toBe(4);
+  expect(() => a.loadStateV4({ ...state, unexpected: true })).toThrow(/schema validation failed/);
   expectThrown(
-    () => a.loadStateV3({ schemaVersion: 2 }),
+    () => a.loadStateV4({ schemaVersion: 3 }),
     (error) =>
       error instanceof Error && "code" in error && error.code === "state_schema_incompatible",
   );
@@ -33,7 +39,9 @@ test("runtime V3 validation rejects extras and old schemas", async () => {
 test("registry projection has guards, capsules, events, and no mode arrays", async () => {
   const a = await api();
   const projection = a.buildStateMachineProjection();
-  expect(projection.macroPhases).toEqual(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE", "HANDOFF"]);
+  expect(JSON.parse(await readFile(lifecycleProjectionUrl, "utf8"))).toEqual(projection);
+  expect(projection.macroPhases).toEqual(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE"]);
+  expect(JSON.stringify(projection).toLowerCase()).not.toContain("handoff");
   expect(JSON.stringify(projection).includes('"modes"')).toBe(false);
   const discovering = projection.states.find((item) => item.status === "discovering");
   expect(
@@ -55,4 +63,12 @@ test("Quick and Plan share one Planning state and generic GATE boundary", async 
   ]);
   expect("executing" in a.STATE_MACHINE.intaking.transitions).toBe(false);
   expect("awaiting_mode_confirmation" in a.STATE_MACHINE).toBe(false);
+});
+
+test("public config has no approval bypass or external delivery contract", async () => {
+  const schema = JSON.parse(
+    await readFile(new URL("../../schemas/config.schema.json", import.meta.url), "utf8"),
+  );
+  const serialized = JSON.stringify(schema).toLowerCase();
+  expect(serialized).not.toMatch(/approval|bypass|handoff|pullrequest/);
 });

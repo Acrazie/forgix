@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "baselineId": "p0-shape-v3-contract-fixture",
-  "capturedAt": "2026-07-29T00:00:00.000Z",
+  "baselineId": "p0-taskstate-v4-contract-fixture",
+  "capturedAt": "2026-08-02T00:00:00.000Z",
   "contractVersion": "P0",
   "source": "contract_fixture",
   "limitations": [
@@ -25,15 +25,14 @@
         "executing",
         "validating",
         "verifying",
-        "finished_local"
+        "finished"
       ],
       "phases": [
         "INTAKE",
         "SHAPE",
         "GATE",
         "BUILD",
-        "ASSURE",
-        "HANDOFF"
+        "ASSURE"
       ],
       "transitions": 9,
       "gates": 1,
@@ -43,7 +42,7 @@
       "reviewRuns": 0,
       "buildResolutionCycles": 0,
       "assureResolutionCycles": 0,
-      "terminalStatus": "finished_local",
+      "terminalStatus": "finished",
       "falseSuccessDetections": 0,
       "falseSuccessDetectionSource": "contract_tests",
       "tokenUsage": {
@@ -69,15 +68,14 @@
         "validating",
         "reviewing",
         "verifying",
-        "finished_local"
+        "finished"
       ],
       "phases": [
         "INTAKE",
         "SHAPE",
         "GATE",
         "BUILD",
-        "ASSURE",
-        "HANDOFF"
+        "ASSURE"
       ],
       "transitions": 10,
       "gates": 1,
@@ -87,7 +85,7 @@
       "reviewRuns": 1,
       "buildResolutionCycles": 0,
       "assureResolutionCycles": 0,
-      "terminalStatus": "finished_local",
+      "terminalStatus": "finished",
       "falseSuccessDetections": 0,
       "falseSuccessDetectionSource": "contract_tests",
       "tokenUsage": {
@@ -115,15 +113,14 @@
         "validating",
         "reviewing",
         "verifying",
-        "finished_local"
+        "finished"
       ],
       "phases": [
         "INTAKE",
         "SHAPE",
         "GATE",
         "BUILD",
-        "ASSURE",
-        "HANDOFF"
+        "ASSURE"
       ],
       "transitions": 12,
       "gates": 1,
@@ -133,7 +130,7 @@
       "reviewRuns": 1,
       "buildResolutionCycles": 0,
       "assureResolutionCycles": 0,
-      "terminalStatus": "finished_local",
+      "terminalStatus": "finished",
       "falseSuccessDetections": 0,
       "falseSuccessDetectionSource": "contract_tests",
       "tokenUsage": {

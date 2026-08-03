@@ -88,7 +88,7 @@ or Plan preparation choice before Planning starts. This is a SHAPE projection ch
 not a product decision. Planning uses the selected profile without repeating Discovery.
 
 When Planning lacks evidence, it creates a new Discovery Target and yields to Discovery.
-After that target is resolved, Planning resumes from the shared state. The handoff is
+After that target is resolved, Planning resumes from shared state. The transfer is
 structured and dependency-linked, never a prose summary that causes either role to
 repeat the other's work.
 

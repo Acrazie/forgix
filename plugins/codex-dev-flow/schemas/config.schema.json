@@ -9,16 +9,6 @@
       "type": "integer",
       "const": 1
     },
-    "finish": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "pullRequest": {
-          "type": "string",
-          "enum": ["optional", "required"]
-        }
-      }
-    },
     "worktree": {
       "type": "object",
       "additionalProperties": false,

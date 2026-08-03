@@ -1,10 +1,10 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
 import * as sourceApi from "../../src/cli.ts";
 import { expect, test } from "bun:test";
-import { attest, taskInput, toDiscovering, toPlanning } from "../support/helpers-v3.ts";
+import { attest, taskInput, toDiscovering, toPlanning } from "../support/helpers-v4.ts";
 const api = async () => sourceApi;
 
-test("new V3 state stores compact owners and no derived macroPhase", async () => {
+test("new V4 state stores compact owners and no derived macroPhase", async () => {
   const a = await api();
   const state = a.createState(taskInput("owners"));
   expect("macroPhase" in state).toBe(false);
@@ -20,7 +20,7 @@ test("Shape work survives resume unchanged; no reset-all API exists", async () =
   const before = structuredClone(state.shape);
   state = a.transition(state, "blocked", {
     resumeTo: "planning",
-    remainingActions: ["Continue Planning"],
+    resumeReason: "Continue Planning",
   });
   state = a.transition(state, "planning", {
     guardEvidence: [
@@ -66,7 +66,7 @@ test("history compaction retains deterministic summary and remains valid", async
     });
   expect(state.history.length).toBe(a.HISTORY_LIMIT);
   expect(state.historySummary.removedCount > 0).toBeTruthy();
-  expect(a.loadStateV3(state).taskId).toBe("compact");
+  expect(a.loadStateV4(state).taskId).toBe("compact");
 });
 
 test("guard evidence is bound to current Shape fingerprint", async () => {

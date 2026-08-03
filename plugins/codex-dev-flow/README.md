@@ -6,21 +6,23 @@ installs nothing and performs no network access by itself.
 
 ## Current contract
 
-Six phases always run:
+Successful task path uses five phases:
 
 ```text
-INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> HANDOFF
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished
 ```
 
 - **INTAKE** owns product objective, observable success, determining constraints, and
   risk.
 - **SHAPE** performs adaptive repository Discovery, asks Quick/Plan after sufficient
   evidence, then performs repository-blind Planning.
-- **GATE** authorizes canonical contract.
-- **BUILD**, **ASSURE**, and **HANDOFF** retain their current contracts pending later
-  dedicated passes.
+- **GATE** deterministically validates and explicitly approves canonical implementation
+  contract.
+- **BUILD** executes approved atomic tasks.
+- **ASSURE** reviews and verifies change, records compact verification receipt, then
+  reaches sole success terminal `finished`.
 
-State is strict V3. V1/V2 are intentionally incompatible and never migrated. Legacy
+State is strict V4. V1/V2/V3 are intentionally incompatible and never migrated. Legacy
 `quick|standard|critical` invocation modes are removed.
 
 ## Interfaces
@@ -41,7 +43,7 @@ flags or aliases. Preparation profile is chosen only after Discovery:
 - **Quick:** compact canonical contract in state; no Markdown required.
 - **Plan:** detailed canonical contract plus one deterministic Markdown projection.
 
-Both use same Discovery minimum and all six phases. Risk/policy—not profile—controls
+Both use same Discovery minimum and same five-phase success path. Risk/policy—not profile—controls
 worktree, security, rollback, approval, and assurance safeguards.
 
 ## SHAPE guarantees
@@ -69,6 +71,9 @@ critical risk, policy, explicit request, concurrency, or unsafe checkout.
 Metrics accept allowlisted numeric/enumerated fields only, including preparation profile
 and SHAPE counters. Objective, evidence prose, code, command output, and user answers are
 forbidden.
+
+Commit, push, pull request, registry, and release actions remain outside Dev Flow task
+state. Native Codex may perform them afterward under their own explicit authorization.
 
 Normative behavior: [lifecycle contract](docs/lifecycle-contract.md). Shape decisions:
 [ADR 0009](docs/adr/0009-separate-intake-decisions-from-shape-discovery.md),

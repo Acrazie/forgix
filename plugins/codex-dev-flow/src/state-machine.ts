@@ -1,11 +1,4 @@
-export const MACRO_PHASES = Object.freeze([
-  "INTAKE",
-  "SHAPE",
-  "GATE",
-  "BUILD",
-  "ASSURE",
-  "HANDOFF",
-] as const);
+export const MACRO_PHASES = Object.freeze(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE"] as const);
 export type MacroPhase = (typeof MACRO_PHASES)[number];
 
 export const GUARD_IDS = Object.freeze([
@@ -27,10 +20,7 @@ export const GUARD_IDS = Object.freeze([
   "resume_metadata_valid",
   "resume_reconciled",
   "terminal_source_recorded",
-  "gate_context_valid",
-  "handoff_intent_resolved",
-  "handoff_reconciled",
-  "completion_approved",
+  "gate_decision_valid",
 ] as const);
 export type GuardId = (typeof GUARD_IDS)[number];
 
@@ -86,32 +76,22 @@ const CAPSULE = {
       "shape.projection",
       "freshness.sources",
     ],
-    invalidates: ["shape.dependency-closure", "approvals", "build", "assurance", "handoff"],
+    invalidates: ["shape.dependency-closure", "approvals", "build", "assurance"],
   },
   GATE: {
-    consumes: ["shape.contract", "risk", "assurance.verificationEvidence"],
-    produces: ["approvals"],
+    consumes: ["shape.contract", "shape.evidence", "risk"],
+    produces: ["planApproval"],
     invalidates: ["approvals"],
   },
   BUILD: {
     consumes: ["shape.contract", "approvals", "shape.evidence", "workspace", "freshness"],
     produces: ["build", "issues.active", "freshness.git", "freshness.commands"],
-    invalidates: ["build.validationEvidence", "assurance", "handoff.receipts", "approvals"],
+    invalidates: ["build.validationEvidence", "assurance", "approvals"],
   },
   ASSURE: {
     consumes: ["shape.contract", "build", "issues.active", "freshness"],
     produces: ["assurance", "issues.active", "freshness.commands"],
-    invalidates: [
-      "assurance.findings",
-      "assurance.verificationEvidence",
-      "handoff.receipts",
-      "approvals",
-    ],
-  },
-  HANDOFF: {
-    consumes: ["shape.contract", "assurance.verificationEvidence", "workspace", "handoff"],
-    produces: ["handoff.identities", "handoff.receipts"],
-    invalidates: ["handoff.receipts"],
+    invalidates: ["assurance.findings", "assurance.verificationEvidence", "approvals"],
   },
 } as const satisfies Record<MacroPhase, CapsuleContract>;
 
@@ -152,13 +132,6 @@ const EVENTS = {
     "finding.observed",
     "finding.resolved",
     "verification.completed",
-    "state.transition",
-  ],
-  HANDOFF: [
-    "handoff.reconciled",
-    "handoff.attempted",
-    "handoff.receipt_recorded",
-    "task.finished",
     "state.transition",
   ],
 } as const satisfies Record<MacroPhase, readonly string[]>;
@@ -249,30 +222,12 @@ const STATE_MACHINE_DEFINITION = {
     capsule: CAPSULE.GATE,
     events: EVENTS.GATE,
     transitions: {
-      planning: G("gate_context_valid"),
-      resolving_assure: G("gate_context_valid", "correction_budget_available"),
-      verifying: G("gate_context_valid"),
-      executing: G("gate_context_valid", "approval_current", "task_authorized"),
-      handing_off: G(
-        "gate_context_valid",
-        "verification_complete",
-        "completion_approved",
-        "handoff_intent_resolved",
-      ),
-      ready_for_handoff: G(
-        "gate_context_valid",
-        "verification_complete",
-        "completion_approved",
-        "handoff_intent_resolved",
-      ),
-      finished_local: G(
-        "gate_context_valid",
-        "verification_complete",
-        "completion_approved",
-        "handoff_intent_resolved",
-      ),
+      planning: G("gate_decision_valid"),
+      executing: G("gate_decision_valid", "task_authorized"),
+      cancelled: G("gate_decision_valid", "terminal_source_recorded"),
       intaking: G("intake_reopened"),
-      ...TERMINALS,
+      blocked: TERMINALS.blocked,
+      failed: TERMINALS.failed,
     },
   },
   executing: {
@@ -356,36 +311,7 @@ const STATE_MACHINE_DEFINITION = {
       validating: G("correction_budget_available"),
       reviewing: G(),
       planning: G(),
-      awaiting_approval: G("verification_complete"),
-      handing_off: G("verification_complete", "handoff_intent_resolved"),
-      ready_for_handoff: G("verification_complete", "handoff_intent_resolved"),
-      finished_local: G("verification_complete", "handoff_intent_resolved"),
-      intaking: G("intake_reopened"),
-      ...TERMINALS,
-    },
-  },
-  handing_off: {
-    macroPhase: "HANDOFF",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.HANDOFF,
-    events: EVENTS.HANDOFF,
-    transitions: {
-      finished: G("handoff_intent_resolved", "handoff_reconciled"),
-      ready_for_handoff: G("handoff_intent_resolved", "handoff_reconciled"),
-      finished_local: G("handoff_intent_resolved"),
-      intaking: G("intake_reopened"),
-      ...TERMINALS,
-    },
-  },
-  ready_for_handoff: {
-    macroPhase: "HANDOFF",
-    stable: true,
-    terminal: false,
-    capsule: CAPSULE.HANDOFF,
-    events: EVENTS.HANDOFF,
-    transitions: {
-      handing_off: G("handoff_intent_resolved", "handoff_reconciled"),
+      finished: G("verification_complete"),
       intaking: G("intake_reopened"),
       ...TERMINALS,
     },
@@ -446,12 +372,6 @@ const STATE_MACHINE_DEFINITION = {
         "correction_budget_available",
       ),
       verifying: G("resume_metadata_valid", "resume_reconciled", "review_satisfied"),
-      handing_off: G(
-        "resume_metadata_valid",
-        "resume_reconciled",
-        "handoff_intent_resolved",
-        "handoff_reconciled",
-      ),
       cancelled: G("terminal_source_recorded"),
       failed: G("terminal_source_recorded"),
     },
@@ -480,20 +400,12 @@ const STATE_MACHINE_DEFINITION = {
     },
     events: ["task.failed"],
   },
-  finished_local: {
-    macroPhase: "HANDOFF",
-    stable: true,
-    terminal: true,
-    transitions: {},
-    capsule: CAPSULE.HANDOFF,
-    events: ["task.finished_local"],
-  },
   finished: {
-    macroPhase: "HANDOFF",
+    macroPhase: "ASSURE",
     stable: true,
     terminal: true,
     transitions: {},
-    capsule: CAPSULE.HANDOFF,
+    capsule: CAPSULE.ASSURE,
     events: ["task.finished"],
   },
 } as const satisfies Record<string, StateContractDefinition>;

@@ -1,8 +1,6 @@
 schemaVersion: 1
 worktree:
   mode: auto
-finish:
-  pullRequest: optional
 merge: never
 subscription:
   plan: plus

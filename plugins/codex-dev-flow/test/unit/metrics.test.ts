@@ -1,5 +1,6 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
 import * as sourceApi from "../../src/metrics.ts";
+import { readFile } from "node:fs/promises";
 import { expect, test } from "bun:test";
 const api = async () => sourceApi;
 const quickPath = [
@@ -12,7 +13,7 @@ const quickPath = [
   "executing",
   "validating",
   "verifying",
-  "finished_local",
+  "finished",
 ];
 const planPath = [
   "new",
@@ -25,7 +26,7 @@ const planPath = [
   "validating",
   "reviewing",
   "verifying",
-  "finished_local",
+  "finished",
 ];
 
 test("metric events use allowlisted profile/SHAPE facts and reject payloads", async () => {
@@ -81,6 +82,28 @@ test("model-call metrics retain strict allowlisted dimensions", async () => {
   ).toThrow(/allowlisted/);
 });
 
+test("GATE metrics allow only numeric outcomes without contract content", async () => {
+  const a = await api();
+  const event = a.createLifecycleMetricEvent({
+    runId: a.createMetricRunId(),
+    preparationProfile: "quick",
+    phase: "GATE",
+    metric: "gate_preflight_passes",
+    value: 1,
+    measurement: "measured",
+    source: "orchestrator_counter",
+  });
+  expect(event.metric).toBe("gate_preflight_passes");
+  expect(
+    a.tryCreateLifecycleMetricEvent({
+      ...event,
+      schemaVersion: undefined,
+      contractDigest: "secret-digest",
+      path: "src/private.ts",
+    }).accepted,
+  ).toBe(false);
+});
+
 test("trace summary validates profile-neutral canonical paths", async () => {
   const a = await api();
   const quick = a.summarizeLifecycleTrace({
@@ -99,7 +122,7 @@ test("trace summary validates profile-neutral canonical paths", async () => {
     falseSuccessDetections: 0,
     falseSuccessDetectionSource: "contract_tests",
   });
-  expect(quick.phases).toEqual(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE", "HANDOFF"]);
+  expect(quick.phases).toEqual(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE"]);
   expect(plan.reviewRuns).toBe(1);
   expect(() =>
     a.summarizeLifecycleTrace({
@@ -142,7 +165,7 @@ test("baseline covers Quick and Plan without content payloads", async () => {
     },
   ];
   const report = a.buildBaselineReport({
-    baselineId: "shape-v3",
+    baselineId: "shape-v4",
     capturedAt: "2026-07-29T00:00:00.000Z",
     contractVersion: "P0",
     source: "contract_fixture",
@@ -155,4 +178,12 @@ test("baseline covers Quick and Plan without content payloads", async () => {
   });
   expect(a.validateBaselineReport(report).valid).toBe(true);
   expect(JSON.stringify(report).includes("objective")).toBe(false);
+  const committed = JSON.parse(
+    await readFile(
+      new URL("../../docs/baselines/2026-07-18-p0-lifecycle.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  expect(a.validateBaselineReport(committed).valid).toBe(true);
+  expect(committed.baselineId).toBe("p0-taskstate-v4-contract-fixture");
 });

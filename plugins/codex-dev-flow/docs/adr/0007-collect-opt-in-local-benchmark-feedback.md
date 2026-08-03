@@ -20,14 +20,14 @@ conformance, perceived plugin value, and common deviations.
 New runs may opt into local benchmark feedback with the public invocation flag:
 
 ```text
-$dev-flow --benchmark [quick|standard|critical] <objective>
+$dev-flow --benchmark <objective>
 ```
 
 The flag is disabled by default, accepted only when creating a task, persisted with that
 task, retained automatically across resume, and exposed by status. It never triggers a
 second task, another model, an A/B comparison, or an upload.
 
-After `finished_local`, `finished`, or `failed`, Dev Flow offers three deterministic
+After `finished` or `failed`, Dev Flow offers three deterministic
 questions without a model call:
 
 1. satisfaction from 1 to 5;
@@ -36,8 +36,7 @@ questions without a model call:
 
 Each question permits an optional free-form clarification, followed by an optional
 general comment. The lifecycle result is already final: feedback cannot change task
-status, evidence, or handoff. No questionnaire is offered for `blocked`,
-`ready_for_handoff`, or `cancelled`.
+status or evidence. No questionnaire is offered for `blocked` or `cancelled`.
 
 A benchmark record is written atomically only after all three required answers exist.
 Closing the session before completion creates no benchmark record and contributes no
@@ -45,12 +44,11 @@ benchmark data.
 
 Deterministic deviation checks compare:
 
-- Quick against the canonical request, Intake Brief, guardrails, and bounded scope;
-- Standard and Critical against the current approved Change Artifact and Approvals.
+- Quick and Plan against current canonical Change Contract and Plan Approval Receipt.
 
 They record structured facts such as unexpected file additions/deletions, unplanned
-surfaces, uncovered criteria, skipped or failed checks, unapproved scope changes, and
-handoff mismatch. A new file is a deviation only when the authoritative contract did not
+surfaces, uncovered criteria, skipped or failed checks, and unapproved scope changes. A
+new file is a deviation only when the authoritative contract did not
 permit it.
 
 Completed records live under:
@@ -80,5 +78,5 @@ npx codex-dev-flow benchmark summary
   state, privacy, and migration tests.
 - User comments remain local but still require length bounds and deterministic secret
   redaction before persistence.
-- Benchmark collection stays outside the six lifecycle phases and cannot weaken truthful
+- Benchmark collection stays outside the five lifecycle phases and cannot weaken truthful
   terminality.

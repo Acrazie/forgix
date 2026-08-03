@@ -2,7 +2,7 @@
 
 ## Goal
 
-Portable six-phase workflow with high correctness and low token waste. Deterministic
+Portable five-phase workflow with high correctness and low token waste. Deterministic
 code owns state, validation, routing, fingerprints, dependency closure, projections, and
 guards. Skills own scoped reasoning. Parent workflow is sole writer.
 
@@ -15,13 +15,13 @@ $dev-flow resume <task-id>
 $dev-flow status [task-id]
 ```
 
-No invocation mode exists. Entire run text is objective. State V3 rejects V1/V2 without
+No invocation mode exists. Entire run text is objective. State V4 rejects V1/V2/V3 without
 migration.
 
 ## Lifecycle
 
 ```text
-INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> HANDOFF
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished
 ```
 
 Canonical Shape path:
@@ -53,6 +53,17 @@ After sufficient Discovery, user chooses:
 
 Planning is repository-blind. Missing evidence produces targeted Discovery Target.
 Quick and Plan share one contract schema and same correctness minimum.
+
+## GATE and completion
+
+GATE performs one pure deterministic preflight, renders one five-line card, and requires
+explicit user approve/change/reject intent. Approval covers complete local canonical
+contract and exact digest. Contract change invalidates receipt. It never authorizes an
+external action.
+
+BUILD consumes current approval. ASSURE records fresh criterion-linked verification and
+transitions directly to sole success terminal `finished`. Git, GitHub, registry, and
+release delivery remains outside lifecycle state.
 
 ## Selective invalidation
 

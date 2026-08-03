@@ -20,7 +20,7 @@ const quick = [
   "executing",
   "validating",
   "verifying",
-  "finished_local",
+  "finished",
 ];
 const plan = [
   "new",
@@ -33,11 +33,11 @@ const plan = [
   "validating",
   "reviewing",
   "verifying",
-  "finished_local",
+  "finished",
 ];
 const report = buildBaselineReport({
-  baselineId: "p0-shape-v3-contract-fixture",
-  capturedAt: "2026-07-29T00:00:00.000Z",
+  baselineId: "p0-taskstate-v4-contract-fixture",
+  capturedAt: "2026-08-02T00:00:00.000Z",
   contractVersion: "P0",
   source: "contract_fixture",
   limitations: [
@@ -65,7 +65,7 @@ const report = buildBaselineReport({
         "validating",
         "reviewing",
         "verifying",
-        "finished_local",
+        "finished",
       ],
     },
   ],

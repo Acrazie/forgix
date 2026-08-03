@@ -48,19 +48,17 @@ export {
   createGuardAttestation,
   createState,
   deriveMacroPhase,
-  evaluateCompletionApproval,
   evaluateDiscoveryGuard,
-  evaluateHandoffIntent,
-  evaluateHandoffReconciliation,
   evaluateVerification,
   evaluatePlanningGuard,
   guardStateFingerprint,
-  loadStateV3,
+  loadStateV4,
   recordHistoryEvent,
   updateShapeState,
   updateResumeContext,
   transition,
 } from "./state.js";
+export { parseGateIntent, preflightGate, renderGateCard, renderGateContract } from "./gate.js";
 export { GUARD_IDS, MACRO_PHASES, buildStateMachineProjection } from "./state-machine.js";
 export {
   LIFECYCLE_METRICS,

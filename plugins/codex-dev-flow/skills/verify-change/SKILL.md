@@ -11,8 +11,8 @@ checks; inspect current diff.
 Return concise acceptance-criterion-to-evidence map, command identity/result/fingerprint,
 skipped checks with reason, failures, invalidation, and material deviations. Never infer
 global success from narrow green checks or stale evidence. Parent alone persists detailed
-evidence references in logical artifact. Critical completion proceeds to content-bound
-completion GATE. Distinguish verification block from HANDOFF `ready_for_handoff`;
-external-permission absence cannot convert incomplete ASSURE into handoff readiness.
+evidence references in logical artifact. Successful verification produces compact
+Verification Receipt and reaches `finished`. External delivery remains outside Dev Flow;
+external-permission absence cannot convert incomplete ASSURE into success.
 
 Authority: [ASSURE phase contract](../../docs/lifecycle-contract.md#assure).
