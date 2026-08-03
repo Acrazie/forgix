@@ -80,3 +80,10 @@ Normative behavior: [lifecycle contract](docs/lifecycle-contract.md). Shape deci
 [ADR 0010](docs/adr/0010-choose-quick-or-plan-after-discovery.md). Artifact rules:
 [docs/artifacts.md](docs/artifacts.md). Maintainer publication procedure:
 [release runbook](docs/runbooks/maintainer-release.md).
+
+Accepted next target, not yet implemented or normative: dependency-directed technical
+interview and stable product baseline in
+[ADR 0026](docs/adr/0026-keep-intake-product-stable-and-interview-shape-by-dependency.md),
+agentic project INIT and engineering profiles in
+[ADR 0027](docs/adr/0027-add-agentic-project-init-and-versioned-engineering-profiles.md),
+and their [target contract](docs/target-intake-shape-contract.md).

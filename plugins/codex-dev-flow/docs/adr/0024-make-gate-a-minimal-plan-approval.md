@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted for TaskState V4; implementation pending.
+Accepted and implemented in TaskState V4.
 
 ## Context
 

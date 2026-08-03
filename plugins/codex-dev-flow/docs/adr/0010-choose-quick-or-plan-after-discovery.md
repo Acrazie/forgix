@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Accepted for current runtime. Target sequencing is refined by ADR 0026.
 
 ## Context
 
