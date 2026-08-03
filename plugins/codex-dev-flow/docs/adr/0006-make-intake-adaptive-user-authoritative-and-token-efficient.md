@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Accepted for current runtime. Target refinements are recorded by ADR 0026.
 
 ## Context
 
