@@ -68,7 +68,7 @@ use a configuration, policy, or CLI bypass.
   transition.
 - Approval semantics become exact and auditable without storing user prose.
 - `ApprovalGate`, `pendingGate`, and completion approval are removed in V4.
-- The earlier gate-type and materiality rules in ADR 0003 are superseded for V4 by one
-  full-digest plan approval.
+- TaskState V3 gate-type and materiality rules are replaced in V4 by one full-digest
+  plan approval.
 - Metrics may record only allowlisted preflight outcomes, decision kinds, approval
   reuse, and targeted returns; they contain no objective, instruction, digest, or path.

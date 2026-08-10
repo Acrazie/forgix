@@ -26,4 +26,4 @@ uncertainty returns to Discovery; material contract change invalidates affected
 Approval.
 
 Authority: [SHAPE phase contract](../../docs/lifecycle-contract.md#shape) and
-[Approval decision](../../docs/adr/0003-bind-approvals-to-canonical-contracts.md).
+[GATE approval decision](../../docs/adr/0024-make-gate-a-minimal-plan-approval.md).

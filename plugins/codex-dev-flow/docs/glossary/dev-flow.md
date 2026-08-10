@@ -378,6 +378,13 @@ derive its last active macro-phase without persisting that phase.
 Following terms are implemented for agentic `$dev-flow init` and deterministic Project
 Engineering Profile backend. Ordinary SHAPE consumption remains pending.
 
+### Configuration Wizard
+
+The optional deterministic terminal workflow invoked through
+`npx codex-dev-flow init`. It writes validated plugin operating configuration such as
+worktree, subscription/quota, and integration preferences. It performs no model-assisted
+repository Discovery and is distinct from Project INIT.
+
 ### Local Profile Overlay
 
 The gitignored `.codex/dev-flow.project.local.yaml` file containing non-contractual
@@ -402,6 +409,13 @@ Versioned `.codex/dev-flow.project.yaml` record containing durable shared archit
 project boundaries, stack, development conventions, logical topology, source
 fingerprints, revision, digest, and Profile Approval Receipt. Volatile task evidence
 and absolute local paths are forbidden.
+
+### Project INIT
+
+The agentic `$dev-flow init` workflow that discovers repository facts, interviews one
+material engineering decision at a time, validates a candidate Project Engineering
+Profile, and publishes it only after explicit digest-bound Profile Approval. It creates
+no product scaffold or TaskState.
 
 ### Project Topology
 

@@ -1,31 +1,29 @@
-# Target INTAKE, SHAPE, and Project INIT Contract
+# Target INTAKE and SHAPE Contract
 
 ## Contract status
 
-This document records accepted complete target. Agentic Project INIT and Project
-Engineering Profile transaction from ADR 0027 are implemented and governed by
-[profile contract](project-profile-contract.md). INTAKE and ordinary SHAPE integration
-from ADR 0026 remain pending and non-normative. Until that increment updates schema,
-state machine, skills, projections, and tests atomically,
+This document records the accepted INTAKE and ordinary SHAPE target from ADR 0026. It
+remains pending and non-normative. Agentic Project INIT and Project Engineering Profile
+transactions are already implemented and governed only by the
+[profile contract](project-profile-contract.md). Until the remaining target increment
+updates schema, state machine, skills, projections, and tests atomically, the
 [current lifecycle contract](lifecycle-contract.md) remains authoritative for tasks.
 
-The remaining target extends unreleased TaskState V4. Each delivery increment must
-update its runtime, schema, skills, normative contract, and tests together; this document
-never becomes a second source of runtime truth.
+The remaining target extends TaskState V4 without changing `schemaVersion`. Its delivery
+must update runtime, schema, skills, normative contract, and tests together; this
+document never becomes a second source of runtime truth.
 
 ## Purpose
 
-The target makes three boundaries explicit:
+The target makes two boundaries explicit:
 
 1. INTAKE obtains stable product decisions without forcing a fixed questionnaire.
 2. SHAPE discovers facts and interviews every material technical decision in dependency
    order, one question at a time.
-3. `$dev-flow init` discovers and validates durable project engineering conventions so
-   later tasks do not repeat them.
 
-The design does not add product implementation to INIT, duplicate final confirmation in
-SHAPE, move Git or GitHub operations into task state, or replace the deterministic
-`npx codex-dev-flow init` plugin-configuration wizard.
+The design does not duplicate final confirmation in SHAPE or move Git or GitHub
+operations into task state. Current Project INIT behavior is intentionally not redefined
+here.
 
 ## Target lifecycle
 
@@ -212,105 +210,25 @@ invalidates it and returns to targeted Discovery.
 
 ### Conceptual model
 
-| Record                      | Owns                                                                                          |
-| --------------------------- | --------------------------------------------------------------------------------------------- |
-| `ProductBaseline`           | Five product dimensions, provenance, completeness, targeted invalidations.                    |
-| `TechnicalDecision`         | Stable key, materiality reason, options, selected option, dependencies, provenance, revision. |
-| `ShapeDecisionQuestion`     | Exact active user question, evidence, recommendation, confidence, options, parent context.    |
-| `DecisionGraph`             | Acyclic product, technical, evidence, profile, and contract dependencies.                     |
-| `UserAssertion`             | Unverified statement, scope, source actor, timestamp, and affected decisions.                 |
-| `ProjectEngineeringProfile` | Durable shared project architecture and conventions.                                          |
-| `LocalProfileOverlay`       | Non-contractual local preferences and service-path mapping.                                   |
-| `ProfileApprovalReceipt`    | User approval bound to exact shared-profile content digest.                                   |
-| `VisualProjection`          | Generated Mermaid or temporary visual reference derived from canonical records.               |
+| Record                  | Owns                                                                                          |
+| ----------------------- | --------------------------------------------------------------------------------------------- |
+| `ProductBaseline`       | Five product dimensions, provenance, completeness, targeted invalidations.                    |
+| `TechnicalDecision`     | Stable key, materiality reason, options, selected option, dependencies, provenance, revision. |
+| `ShapeDecisionQuestion` | Exact active user question, evidence, recommendation, confidence, options, parent context.    |
+| `DecisionGraph`         | Acyclic product, technical, evidence, profile, and contract dependencies.                     |
+| `UserAssertion`         | Unverified statement, scope, source actor, timestamp, and affected decisions.                 |
+| `VisualProjection`      | Generated Mermaid or temporary visual reference derived from canonical records.               |
 
 TaskState remains V4 because target work extends an unreleased schema. Schema and
 runtime must reject partial records and impossible status/role combinations.
 
-## Agentic project INIT
-
-### Separate interface
-
-`$dev-flow init` performs model-assisted project Discovery and interview. Existing
-`npx codex-dev-flow init` remains deterministic plugin configuration. Neither command
-aliases the other.
-
-INIT core covers stack, structure, boundaries, dependency direction, naming, errors,
-tests, and quality. It activates frontend, API, data, security, concurrency,
-performance, compatibility, migration, observability, deployment, rollback, or
-operations modules only when evidence or user input makes them applicable. Greenfield
-INIT creates profile and optional diagrams only, never application scaffold.
-
-### Profile files and authority
-
-Shared canonical file:
-
-```text
-.codex/dev-flow.project.yaml
-```
-
-Local gitignored overlay:
-
-```text
-.codex/dev-flow.project.local.yaml
-```
-
-Authority order is:
-
-```text
-system instructions and repository policy
--> INTAKE product decisions
--> explicit task exception
--> shared engineering profile
--> non-contractual local preferences
--> agent defaults
-```
-
-Shared profile stores durable architecture and conventions only. ShapeState stores
-volatile observations and task evidence. Local overlay cannot weaken higher authority.
-No profile is required to run ordinary task; SHAPE can discover task-relevant
-conventions and offer durable findings once before GATE.
-
-### Multi-service topology
-
-Each repository owns its profile. Root profile stores logical topology, responsibilities,
-dependencies, contracts, and profile references. Local overlay maps logical service IDs
-to absolute paths. Shared files never contain absolute local paths.
-
-Discovery is progressive: inspect cheap topology, guidance, manifests, and contracts
-across accessible service roots; read implementation deeply only when active decision
-requires it. An external repository profile needs its own validation and atomic write.
-
-### Drift reconciliation and transaction
-
-INIT and SHAPE compare profile fingerprints with fresh evidence. Facts are rediscovered;
-user-owned conventions are re-interviewed. Only affected closure becomes stale.
-
-Profile changes accumulate in isolated proposed model. Final validation shows adaptive
-summary and offers exact canonical YAML through `view`. Approval creates
-`ProfileApprovalReceipt` containing actor, timestamp, profile identity, revision, and
-exact content digest. Receipt stays outside digest to prevent cycle. Profile and
-generated projections publish atomically.
-
-Rejected update leaves shared profile byte-for-byte unchanged and writes no shared
-stale marker. Explicit task-local exception may continue when policy permits; mismatch
-remains local and drift is rediscovered later.
-
-Profile validation is separate from task GATE because profile affects future tasks.
-
 ## Implementation increments
 
-Target lands through three independently reviewable pull requests:
-
-1. completed: target contract, ADRs, glossary, and conceptual model;
-2. completed: `$dev-flow init`, shared/local profile schemas, reconciliation,
-   digest/receipt, and multi-service privacy boundaries; and
-3. `awaiting_shape_decision`, decision graph, adaptive visuals, INTAKE reopening, and
-   SHAPE/GATE integration.
-
-Runtime increment must update state schema, lifecycle state machine, capsule/projection
-types, skills, lifecycle contract, glossary status labels, metrics allowlist where
-needed, distribution artifacts, and automated tests together.
+One remaining runtime increment adds `awaiting_shape_decision`, decision graph, adaptive
+visuals, INTAKE reopening, and ordinary SHAPE/profile integration. It must update state
+schema, lifecycle state machine, capsule/projection types, skills, lifecycle contract,
+glossary status labels, metrics allowlist where needed, distribution artifacts, and
+automated tests together.
 
 ## Target acceptance criteria
 
@@ -322,9 +240,8 @@ needed, distribution artifacts, and automated tests together.
 - Resume restores exact technical question and prior SHAPE role.
 - No question cap, periodic progress gate, or cost-estimation prompt blocks SHAPE.
 - Product contradiction reopens only affected INTAKE decision.
-- Profile writes require separate digest-bound approval and are atomic.
-- Shared profile contains no absolute local path or volatile task evidence.
-- Multi-repository writes respect repository ownership.
+- Existing approved profile conventions participate in the decision graph without
+  replacing fresh task evidence or higher-authority product decisions.
 - SHAPE synthesis and existing GATE card form one interaction with one final approval.
 - Current normative runtime behavior remains unchanged until full target increment lands.
 
