@@ -25,6 +25,7 @@ import {
   parseReleaseCommit,
   parseStableVersion,
   recommendBump,
+  replaceJsonVersion,
   ReleaseError,
   requireCommand,
   restoreFileSnapshots,
@@ -229,8 +230,8 @@ function generateNotes(tag: string): string {
   return result.stdout.trim() || `Release ${tag}`;
 }
 
-async function writeJson(path: string, value: unknown): Promise<void> {
-  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`);
+async function writeVersion(path: string, version: string): Promise<void> {
+  await writeFile(path, replaceJsonVersion(await readFile(path, "utf8"), version));
 }
 
 async function readJson(path: string): Promise<Record<string, unknown>> {
@@ -581,16 +582,12 @@ async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
   };
 
   try {
-    const packageJson = await readJson(packagePath);
-    const manifest = await readJson(manifestPath);
     if (plan.target !== "plugin") {
-      packageJson.version = plan.packageVersion;
-      await writeJson(packagePath, packageJson);
+      await writeVersion(packagePath, plan.packageVersion);
       runCheck("Update Bun lock", "bun", ["install"], pluginRoot);
     }
     if (plan.target !== "npm") {
-      manifest.version = plan.pluginVersion;
-      await writeJson(manifestPath, manifest);
+      await writeVersion(manifestPath, plan.pluginVersion);
     }
 
     await runPreparedValidations(plan);

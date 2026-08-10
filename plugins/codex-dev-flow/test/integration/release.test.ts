@@ -15,6 +15,7 @@ import {
   parseReleaseCommit,
   parseStableVersion,
   recommendBump,
+  replaceJsonVersion,
   ReleaseError,
   restoreFileSnapshots,
   runCommand,
@@ -113,6 +114,21 @@ describe("release plans", () => {
 });
 
 describe("release safety", () => {
+  test("updates only JSON version bytes and preserves formatter-owned layout", () => {
+    const manifest = `{
+  "name": "codex-dev-flow",
+  "version": "0.2.1+codex.20260731175436",
+  "keywords": ["codex", "workflow"]
+}
+`;
+    expect(replaceJsonVersion(manifest, "0.3.0+codex.20260810120000")).toBe(
+      manifest.replace("0.2.1+codex.20260731175436", "0.3.0+codex.20260810120000"),
+    );
+    expect(() => replaceJsonVersion('{"name":"missing"}\n', "0.3.0")).toThrow(
+      /missing JSON "version"/,
+    );
+  });
+
   test("preserves porcelain status columns while trimming command output", () => {
     const output = normalizeGitOutput(" M plugins/codex-dev-flow/.codex-plugin/plugin.json\n");
     expect(output).toBe(" M plugins/codex-dev-flow/.codex-plugin/plugin.json");
