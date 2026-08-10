@@ -48,7 +48,7 @@ plugins/codex-dev-flow/
   src/                                 Deterministic runtime behavior
   schemas/                             Configuration, policy, and state schemas
   test/                                Bun unit, integration, support, and fixtures
-  docs/                                Design, ADRs, glossary, and plans
+  docs/                                User guide, contracts, ADRs, glossary, and runbooks
 ```
 
 Skills own discovery, planning, execution guidance, debugging, review, and verification. TypeScript owns deterministic parsing, configuration resolution, policy enforcement, routing, state transitions, fingerprints, and artifact handling.
@@ -84,6 +84,12 @@ node plugins/codex-dev-flow/dist/dev-flow.mjs config validate --json
 - Keep state transitions resumable and schema-valid.
 
 Architecture changes should update [the design document](./plugins/codex-dev-flow/docs/design.md). Durable trade-offs should receive an ADR under `plugins/codex-dev-flow/docs/adr/`.
+
+Public documentation follows
+[ADR 0028](./plugins/codex-dev-flow/docs/adr/0028-make-public-documentation-user-first-and-current.md):
+README files teach current user behavior, the Getting Started guide owns the practical
+walkthrough, contracts own normative details, and clearly labeled target documents own
+unimplemented design. Keep the root and packaged README user journeys aligned.
 
 ## Tests
 

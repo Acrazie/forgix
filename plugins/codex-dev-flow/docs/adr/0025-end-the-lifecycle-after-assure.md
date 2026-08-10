@@ -50,7 +50,6 @@ handoff maps to the five-phase lifecycle.
 - Resume and metrics no longer model external delivery state.
 - Native Codex remains responsible for external-action authorization, retries, and
   conversational summaries.
-- ADR 0005 is superseded for V4; its idempotent delivery model remains historical V3
-  behavior only.
+- TaskState V3 HANDOFF delivery state is removed rather than migrated into V4.
 - The state schema, registry, projections, skills, configuration, benchmark protocol,
   documentation, generated bundle, and deterministic tests must change atomically.

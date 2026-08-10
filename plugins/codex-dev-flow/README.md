@@ -1,107 +1,172 @@
 # Codex Dev Flow
 
-Portable Codex plugin for evidence-based software changes. Runtime requires Node.js
-24+. Linux and macOS are supported; Windows is unsupported. Distributed ESM bundle
-installs nothing and performs no network access by itself.
+> Turn a software objective into an approved, implemented, and verified change.
 
-## Current contract
+Codex Dev Flow is a portable Codex plugin for evidence-backed software changes. It
+combines product clarification, repository discovery, explicit approval, implementation,
+and fresh verification without treating a plausible answer as completed work.
 
-Successful task path uses five phases:
+## Requirements
+
+For plugin use:
+
+- Codex with plugin support;
+- Node.js 24 or newer;
+- Git; and
+- Linux or macOS. Windows is unsupported.
+
+The distributed ESM runtime installs no dependencies and performs no network access by
+itself. Bun is required only for repository development.
+
+## Install
+
+Add the marketplace and install the plugin:
+
+```bash
+codex plugin marketplace add Acrazie/codex-dev-flow
+codex plugin add codex-dev-flow@acrazie
+```
+
+Alternatively, open `/plugins`, select **Acrazie**, and install **Codex Dev Flow**.
+Start a new Codex session after installation or upgrade.
+
+## Quick start
+
+Open Codex in the project repository. First, create or reconcile its durable engineering
+conventions:
+
+```text
+$dev-flow init
+```
+
+Project INIT inspects the repository before asking questions. It asks one material
+question at a time, recommends an answer, and publishes nothing until explicit Profile
+Approval.
+
+Then run a real objective:
+
+```text
+$dev-flow Add rate limiting to the public authentication endpoints
+```
+
+Dev Flow carries the objective through product decisions, technical shaping, one plan
+approval, implementation, and fresh assurance.
+
+The optional Configuration wizard customizes plugin operation such as worktree,
+subscription, quota, and integrations:
+
+```bash
+npx codex-dev-flow init
+```
+
+Project INIT and the Configuration wizard are separate interfaces; neither aliases the
+other. See the [Getting Started guide](docs/getting-started.md) for a complete
+walkthrough.
+
+## How Dev Flow works
 
 ```text
 INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished
 ```
 
-- **INTAKE** owns product objective, observable success, determining constraints, and
-  risk.
-- **SHAPE** performs adaptive repository Discovery, asks Quick/Plan after sufficient
-  evidence, then performs repository-blind Planning.
-- **GATE** deterministically validates and explicitly approves canonical implementation
-  contract.
-- **BUILD** executes approved atomic tasks.
-- **ASSURE** reviews and verifies change, records compact verification receipt, then
-  reaches sole success terminal `finished`.
+- **INTAKE** resolves the product objective, observable success, constraints, and risk.
+- **SHAPE** discovers repository facts, resolves technical uncertainty, and prepares a
+  Quick or Plan implementation contract.
+- **GATE** validates that exact contract and asks for one explicit approval.
+- **BUILD** implements approved atomic tasks with targeted checks.
+- **ASSURE** reviews and verifies the change with fresh command-backed evidence.
 
-State is strict V4. V1/V2/V3 are intentionally incompatible and never migrated. Legacy
-`quick|standard|critical` invocation modes are removed.
+Use Dev Flow when a change needs product or technical decisions, implementation, or
+proof. Plain questions, read-only exploration, and Git/GitHub delivery do not need a Dev
+Flow task.
 
-## Interfaces
+## Commands
+
+| Interface                              | Purpose                                                       |
+| -------------------------------------- | ------------------------------------------------------------- |
+| `$dev-flow <objective>`                | Start a software change.                                      |
+| `$dev-flow init`                       | Discover and approve durable project engineering conventions. |
+| `$dev-flow resume <task-id>`           | Resume an interrupted task.                                   |
+| `$dev-flow status [task-id]`           | Inspect task status.                                          |
+| `$dev-flow --benchmark <objective>`    | Run a task with local benchmark measurement enabled.          |
+| `$dev-flow config show [--explain]`    | Show effective configuration and optional provenance.         |
+| `$dev-flow config validate [--json]`   | Validate effective configuration.                             |
+| `npx codex-dev-flow init`              | Run the optional Configuration wizard.                        |
+| `npx codex-dev-flow benchmark summary` | Summarize allowlisted local benchmark data.                   |
+
+`quick`, `standard`, and `critical` at objective start are plain objective text, not
+modes or aliases. Quick or Plan is selected only after Discovery. Risk and policy—not
+that preparation profile—control safety safeguards.
+
+## Project INIT
+
+Project INIT separates portable team conventions from private machine details:
 
 ```text
-$dev-flow <objective>
-$dev-flow init
-$dev-flow --benchmark <objective>
-$dev-flow resume <task-id>
-$dev-flow status [task-id]
-$dev-flow config show [--explain]
-$dev-flow config validate [--json]
-npx codex-dev-flow benchmark summary
+repository evidence + user decisions
+                 |
+                 v
+       validation + Profile Approval
+                 |
+       +---------+----------+
+       |                    |
+       v                    v
+shared engineering     local overlay
+profile                and session state
 ```
 
-`$dev-flow init` is agentic project Discovery/interview. It validates and publishes
-versioned `.codex/dev-flow.project.yaml` engineering conventions plus gitignored local
-service-path overlay after separate digest-bound Profile Approval. It creates no product
-scaffold or TaskState. `npx codex-dev-flow init` remains separate interactive plugin
-configuration wizard. Deterministic profile backend:
+| File                                    | Role                                                        | Git policy                      |
+| --------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
+| `.codex/dev-flow.project.yaml`          | Shared architecture, topology, stack, and conventions.      | Review and commit when desired. |
+| `.codex/dev-flow.project.local.yaml`    | Absolute service paths and personal, non-contractual prefs. | Gitignored.                     |
+| `.codex/project-init/state.yaml`        | Compact resumable INIT session.                             | Gitignored and temporary.       |
+| `.codex/dev-flow/diagrams/*.mermaid.md` | Optional projection of approved profile architecture.       | Commit with shared profile.     |
 
-```text
-codex-dev-flow project-profile inspect
-codex-dev-flow project-profile validate [--local]
-codex-dev-flow project-profile publish [--local]
-codex-dev-flow project-profile view [--local]
-codex-dev-flow project-profile session-view|session-save|session-clear
-```
-
-`quick`, `standard`, and `critical` at objective start are ordinary objective text—not
-flags or aliases. Preparation profile is chosen only after Discovery:
-
-- **Quick:** compact canonical contract in state; no Markdown required.
-- **Plan:** detailed canonical contract plus one deterministic Markdown projection.
-
-Both use same Discovery minimum and same five-phase success path. Risk/policy—not profile—controls
-worktree, security, rollback, approval, and assurance safeguards.
-
-## SHAPE guarantees
-
-- Discovery alone reads repository; Planning consumes structured fresh evidence.
-- Product-impacting technical choices return rich persisted Decision Escalation to
-  INTAKE. Pure technical uncertainty stays in SHAPE.
-- Explicit acyclic dependency graph enables selective invalidation. No reset-all Shape
-  operation exists.
-- Quick/Plan choice is explicit, persisted, and crash-resumable unless explicit Plan
-  request or policy preselects Plan.
-- Soft budget checkpoints preserve work and offer continue, reduce scope, or cancel.
-- Plan projection drift cannot be silently overwritten or imported.
-- Parent workflow alone writes state and Plan projection.
-
-## State, routing, metrics
-
-State lives at `.codex/tasks/<task-id>/state.yaml`. Status reports risk, selected
-preparation profile or `unselected`, macro-phase, and benchmark opt-in.
-
-Routing uses risk, ambiguity, policy, subscription, quota, and model availability.
-Preparation profile never selects safety level. Worktree requirement derives from
-critical risk, policy, explicit request, concurrency, or unsafe checkout.
-
-Metrics accept allowlisted numeric/enumerated fields only, including preparation profile
-and SHAPE counters. Objective, evidence prose, code, command output, and user answers are
-forbidden.
-
-Commit, push, pull request, registry, and release actions remain outside Dev Flow task
-state. Native Codex may perform them afterward under their own explicit authorization.
-
-Normative behavior: [lifecycle contract](docs/lifecycle-contract.md). Shape decisions:
-[ADR 0009](docs/adr/0009-separate-intake-decisions-from-shape-discovery.md),
-[ADR 0010](docs/adr/0010-choose-quick-or-plan-after-discovery.md). Artifact rules:
-[docs/artifacts.md](docs/artifacts.md). Maintainer publication procedure:
-[release runbook](docs/runbooks/maintainer-release.md).
-
-Accepted next target, not yet implemented or normative: dependency-directed technical
-interview and stable product baseline in
-[ADR 0026](docs/adr/0026-keep-intake-product-stable-and-interview-shape-by-dependency.md),
-plus ordinary SHAPE profile consumption in their
-[target contract](docs/target-intake-shape-contract.md). Agentic project INIT and
-engineering profiles from
-[ADR 0027](docs/adr/0027-add-agentic-project-init-and-versioned-engineering-profiles.md)
-are implemented; normative behavior is the
+Shared profiles reject secret-like values and absolute local paths. Project INIT creates
+no product scaffold and no task state. Full schema, authority, reconciliation, and
+atomic publication rules live in the
 [Project Engineering Profile contract](docs/project-profile-contract.md).
+
+## Configuration
+
+Configuration resolves from broad defaults to invocation-specific values:
+
+```text
+internal defaults
+  < ~/.codex/dev-flow.yaml
+  < .codex/dev-flow.yaml
+  < .codex/dev-flow.local.yaml
+  < invocation flags
+```
+
+Repository policy applies afterward and cannot be weakened by local configuration or
+flags. Use the optional Configuration wizard for guided setup, or validate existing
+configuration directly:
+
+```text
+$dev-flow config show --explain
+$dev-flow config validate --json
+```
+
+## Safety guarantees
+
+- Implementation never starts before explicit GATE approval.
+- Success requires fresh verification evidence.
+- Task state is durable and resumable.
+- Local configuration cannot weaken repository policy.
+- Commit, push, pull request, registry, and release operations are never authorized
+  implicitly by Dev Flow approval.
+
+Normative details live in the [Lifecycle contract](docs/lifecycle-contract.md).
+
+## Documentation
+
+- [Getting Started](docs/getting-started.md)
+- [Lifecycle contract](docs/lifecycle-contract.md)
+- [Project Engineering Profile contract](docs/project-profile-contract.md)
+- [Design](docs/design.md)
+- [Artifact contract](docs/artifacts.md)
+- [Measurement protocol](docs/metrics-protocol.md)
+- [Maintainer release runbook](docs/runbooks/maintainer-release.md)
+- [ADR directory](docs/adr/)
+- [Glossary](docs/glossary/dev-flow.md)
