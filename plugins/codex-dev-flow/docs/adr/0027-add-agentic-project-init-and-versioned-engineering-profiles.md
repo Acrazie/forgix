@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted target design; implementation pending.
+Accepted and implemented for Project INIT and profile transactions. Ordinary SHAPE
+profile consumption remains pending ADR 0026.
 
 ## Context
 
@@ -41,6 +42,11 @@ asked.
 Greenfield repositories are supported. With no code to inspect, INIT interviews the
 applicable decisions and produces only profile and optional diagram artifacts. It never
 scaffolds product code.
+
+Long interviews persist gitignored `.codex/project-init/state.yaml` containing compact
+normalized decisions, stale keys, exact active question, status, and candidate digest.
+It contains no transcript or hidden reasoning. Resume restores same question unless
+dependency evidence changed.
 
 ### Persist shared and local profiles separately
 
@@ -133,8 +139,9 @@ reconciliation.
 - Local paths and preferences remain private and non-contractual.
 - Profile drift becomes selective, reviewable, and user-authoritative rather than a
   full reinitialization or silent overwrite.
-- `$dev-flow init` requires new profile schemas, deterministic digest/receipt logic,
-  safe multi-root discovery, atomic projection writes, and negative path/privacy tests.
+- `$dev-flow init` uses strict profile schemas, deterministic digest/receipt logic, safe
+  multi-root discovery, atomic authority publication, and negative path/privacy tests.
 - The existing `npx codex-dev-flow init` remains compatible and keeps its current purpose.
-- Current runtime behavior remains authoritative until implementation and normative
-  lifecycle changes land.
+- Project INIT/profile behavior is normative in the Project Engineering Profile contract.
+  Ordinary task SHAPE profile consumption remains governed by current lifecycle until
+  ADR 0026 implementation lands.

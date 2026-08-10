@@ -373,79 +373,83 @@ index content.
 The operational status recorded in a `cancelled` or `failed` terminal event and used to
 derive its last active macro-phase without persisting that phase.
 
-## Accepted target design terms
+## Project INIT and profile terms
 
-The following terms belong to the accepted INTAKE, SHAPE, and agentic INIT target. They
-are conceptual until the runtime, schema, skills, and normative lifecycle contract
-implement them atomically.
-
-### Decision Graph
-
-The target acyclic graph connecting Product Baseline decisions, Technical Decisions,
-evidence, profile conventions, and contract sections. It orders unblocked questions and
-computes selective transitive invalidation. It extends the current SHAPE Dependency
-graph rather than creating a second independent authority.
+Following terms are implemented for agentic `$dev-flow init` and deterministic Project
+Engineering Profile backend. Ordinary SHAPE consumption remains pending.
 
 ### Local Profile Overlay
 
-The target gitignored `.codex/dev-flow.project.local.yaml` file containing
-non-contractual personal preferences and mappings from logical service identities to
-absolute local paths. It cannot weaken repository policy or shared project conventions.
-
-### Product Baseline
-
-The target stable INTAKE record covering objective, affected users and product value,
-scope and boundaries, observable success and validator, and product risks and
-determining constraints. These are five mandatory completeness dimensions, not five
-mandatory prompts.
+The gitignored `.codex/dev-flow.project.local.yaml` file containing non-contractual
+personal preferences and mappings from logical service identities to absolute local
+paths. It cannot weaken repository policy or shared project conventions.
 
 ### Profile Approval Receipt
 
-The target immutable approval for a shared Project Engineering Profile update. It binds
-actor, timestamp, profile identity, revision, and exact content digest. Receipt remains
-outside content digest to avoid a digest cycle and does not approve a task implementation.
+Immutable approval for shared Project Engineering Profile update. It binds actor,
+timestamp, profile identity, revision, and exact content digest. Receipt remains outside
+content digest to avoid a digest cycle and does not approve task implementation.
 
 ### Profile Reconciliation
 
-The target process that compares durable profile fingerprints with fresh project
-evidence, rediscovers stale facts, re-interviews user-owned conventions, and proposes
-only affected updates. Rejection leaves shared profile byte-for-byte unchanged.
+Process comparing durable profile fingerprints with fresh project evidence,
+rediscovering stale facts, re-interviewing user-owned conventions, and proposing only
+affected updates. Rejection leaves shared profile byte-for-byte unchanged.
 
 ### Project Engineering Profile
 
-The target versioned `.codex/dev-flow.project.yaml` record containing durable shared
-architecture, project boundaries, stack, development conventions, logical topology,
-source fingerprints, revision, digest, and Profile Approval Receipt. Volatile task
-evidence and absolute local paths are forbidden.
+Versioned `.codex/dev-flow.project.yaml` record containing durable shared architecture,
+project boundaries, stack, development conventions, logical topology, source
+fingerprints, revision, digest, and Profile Approval Receipt. Volatile task evidence
+and absolute local paths are forbidden.
 
 ### Project Topology
 
-The target shared logical model of services, responsibilities, dependencies, contracts,
-and owned profile references. Filesystem paths resolving logical services belong only
-to Local Profile Overlay.
+Shared logical model of services, responsibilities, dependencies, contracts, and owned
+profile references. Filesystem paths resolving logical services belong only to Local
+Profile Overlay.
+
+### User Assertion
+
+Provenance type for information supplied by user but unavailable for independent
+verification. It may inform scoped profile decisions but never silently counts as
+verified technical evidence.
+
+### Visual Projection
+
+Generated Mermaid document derived from canonical Project Engineering Profile. It is
+published with profile transaction, uses immutable relative reference, and never becomes
+second architecture authority. Broader task-decision visuals remain target behavior.
+
+## Remaining accepted target design terms
+
+Following INTAKE and ordinary SHAPE terms remain conceptual until runtime, schema,
+skills, and normative lifecycle contract implement ADR 0026 atomically.
+
+### Decision Graph
+
+Target acyclic graph connecting Product Baseline decisions, Technical Decisions,
+evidence, profile conventions, and contract sections. It orders unblocked questions and
+computes selective transitive invalidation. It extends current SHAPE Dependency graph
+rather than creating second independent authority.
+
+### Product Baseline
+
+Target stable INTAKE record covering objective, affected users and product value, scope
+and boundaries, observable success and validator, and product risks and determining
+constraints. These are five mandatory completeness dimensions, not five mandatory
+prompts.
 
 ### Shape Decision Question
 
-The target single active, resumable SHAPE question for one material Technical Decision.
+Target single active, resumable SHAPE question for one material Technical Decision.
 It carries parent context, fresh evidence, recommendation and confidence, two or three
 viable options, direct consequences, and free-form input.
 
 ### Technical Decision
 
-The target user-owned SHAPE choice whose alternatives materially affect architecture,
+Target user-owned SHAPE choice whose alternatives materially affect architecture,
 runtime or major dependencies, data or migration, cross-service contracts, security,
 compatibility, concurrency, performance, cost, operations, rollback, or approved
 profile conventions. Reversible repository-conforming implementation details remain
 agent-owned.
-
-### User Assertion
-
-The target provenance type for information supplied by user but unavailable for
-independent verification. It may inform scoped decisions but never silently counts as
-verified technical evidence.
-
-### Visual Projection
-
-The target derived ASCII, Mermaid, isolated HTML/CSS, Excalidraw, or image representation
-used to resolve a design decision. Persisted Mermaid derives from canonical profile or
-task records and never becomes a second architecture authority.

@@ -72,3 +72,33 @@ test("public config has no approval bypass or external delivery contract", async
   const serialized = JSON.stringify(schema).toLowerCase();
   expect(serialized).not.toMatch(/approval|bypass|handoff|pullrequest/);
 });
+
+test("project profile schemas separate portable shared and absolute local data", async () => {
+  const a = await api();
+  const shared = JSON.parse(
+    await readFile(new URL("../../schemas/project-profile.schema.json", import.meta.url), "utf8"),
+  );
+  const local = JSON.parse(
+    await readFile(
+      new URL("../../schemas/project-profile-local.schema.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const session = JSON.parse(
+    await readFile(
+      new URL("../../schemas/project-init-state.schema.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  expect(shared.additionalProperties).toBe(false);
+  expect(shared.required).toContain("approval");
+  expect(shared.properties.content.properties.decisions.maxItems).toBe(512);
+  expect(shared.properties.approval.properties.actor.const).toBe("user");
+  expect(local.additionalProperties).toBe(false);
+  expect(local.properties.servicePaths.items.properties.path.type).toBe("string");
+  expect(session.properties.activeQuestion.properties.options.maxItems).toBe(3);
+  expect(session.properties).not.toHaveProperty("transcript");
+  expect(a.validateSchema("project-profile", {}).valid).toBe(false);
+  expect(a.validateSchema("project-profile-local", {}).valid).toBe(false);
+  expect(a.validateSchema("project-init-state", {}).valid).toBe(false);
+});

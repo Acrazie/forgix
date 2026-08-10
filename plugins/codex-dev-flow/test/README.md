@@ -19,10 +19,10 @@ is material. Unit tests do not require `dist/dev-flow.mjs`.
 All 121 existing cases were retained and rewritten from `node:test` plus
 `node:assert/strict` to native `bun:test` APIs. No case was removed.
 
-| Layer       | Rewritten files                                                                                                                                                                                                        |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit        | `bridge`, `config`, `discovery`, `fingerprint`, `intake`, `metrics`, `parse`, `resume-context`, `routing`, `shape-dependencies`, `shape-freshness`, `shape-planning`, `shape-projection`, `shape`, `state`, `worktree` |
-| Integration | `app-server`, `benchmark`, `cli-routing`, `config-loading`, `distribution`, `exit-codes`, `init`, `lifecycle-paths`, `release`, `schema`, `state-store`, `workflow-artifacts`                                          |
+| Layer       | Rewritten files                                                                                                                                                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit        | `bridge`, `config`, `discovery`, `fingerprint`, `intake`, `metrics`, `parse`, `project-profile`, `resume-context`, `routing`, `shape-dependencies`, `shape-freshness`, `shape-planning`, `shape-projection`, `shape`, `state`, `worktree` |
+| Integration | `app-server`, `benchmark`, `cli-routing`, `config-loading`, `distribution`, `exit-codes`, `init`, `lifecycle-paths`, `project-profile-cli`, `project-profile-store`, `release`, `schema`, `state-store`, `workflow-artifacts`             |
 
 Former JavaScript behavioral fixtures retain `@ts-nocheck` because several cases
 intentionally construct invalid or partial runtime values. The pre-existing TypeScript

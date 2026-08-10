@@ -154,6 +154,19 @@ SHAPE events: `discovery.target_recorded`, `discovery.evidence_recorded`,
 
 Parent alone persists events, Shape state, and projection.
 
+## Project INIT outside task lifecycle
+
+Exact `$dev-flow init` performs agentic repository Discovery and adaptive engineering
+convention interview, then validates and publishes digest-bound shared/local project
+profiles after explicit Profile Approval. It creates no TaskState, product scaffold, or
+task GATE approval. Deterministic `npx codex-dev-flow init` remains separate plugin
+configuration wizard.
+
+Normative profile schema, authority, reconciliation, privacy, and atomic publication:
+[Project Engineering Profile contract](project-profile-contract.md). Ordinary SHAPE does
+not yet consume or promote Project Engineering Profiles; that integration remains
+pending ADR 0026.
+
 ## Privacy and metrics
 
 Metrics allow only opaque run identity, preparation profile/unselected, macro-phase,

@@ -8,7 +8,18 @@ export type ParsedInvocation =
   | { command: "status"; taskId: string | undefined }
   | { command: "benchmark_summary" }
   | { command: "config_show"; explain: boolean }
-  | { command: "config_validate"; json: boolean };
+  | { command: "config_validate"; json: boolean }
+  | {
+      command:
+        | "project_profile_inspect"
+        | "project_profile_view"
+        | "project_profile_validate"
+        | "project_profile_publish";
+      local: boolean;
+    }
+  | { command: "project_profile_session_view" }
+  | { command: "project_profile_session_save" }
+  | { command: "project_profile_session_clear" };
 
 export class InvocationError extends Error {
   readonly exitCode = EXIT_CODES.INVALID_INVOCATION;
@@ -68,6 +79,28 @@ export function parseInvocation(argv: string[]): ParsedInvocation {
       return { command: "config_validate", json: flags[0] === "--json" };
     }
     invalid("Invalid config invocation.");
+  }
+
+  if (first === "project-profile") {
+    const [subcommand, ...flags] = rest;
+    const local = flags.length === 1 && flags[0] === "--local";
+    if (flags.length !== 0 && !local) invalid("Invalid project-profile invocation.");
+    if (subcommand === "inspect" && flags.length === 0) {
+      return { command: "project_profile_inspect", local: false };
+    }
+    if (subcommand === "view") return { command: "project_profile_view", local };
+    if (subcommand === "validate") return { command: "project_profile_validate", local };
+    if (subcommand === "publish") return { command: "project_profile_publish", local };
+    if (subcommand === "session-view" && flags.length === 0) {
+      return { command: "project_profile_session_view" };
+    }
+    if (subcommand === "session-save" && flags.length === 0) {
+      return { command: "project_profile_session_save" };
+    }
+    if (subcommand === "session-clear" && flags.length === 0) {
+      return { command: "project_profile_session_clear" };
+    }
+    invalid("Invalid project-profile invocation.");
   }
 
   const benchmark = first === "--benchmark";

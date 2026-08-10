@@ -40,6 +40,17 @@ test("treats legacy mode words as objective text and parses read-only subcommand
     command: "config_show",
     explain: true,
   });
+  expect(parseInvocation(["project-profile", "inspect"])).toEqual({
+    command: "project_profile_inspect",
+    local: false,
+  });
+  expect(parseInvocation(["project-profile", "validate", "--local"])).toEqual({
+    command: "project_profile_validate",
+    local: true,
+  });
+  expect(parseInvocation(["project-profile", "session-view"])).toEqual({
+    command: "project_profile_session_view",
+  });
 });
 
 test("rejects invalid invocations with a stable exit code", async () => {
@@ -47,5 +58,8 @@ test("rejects invalid invocations with a stable exit code", async () => {
   expectThrown(
     () => parseInvocation(["config", "validate", "--unknown"]),
     (error) => error instanceof InvocationError && error.exitCode === EXIT_CODES.INVALID_INVOCATION,
+  );
+  expect(() => parseInvocation(["project-profile", "inspect", "--local"])).toThrow(
+    /Invalid project-profile invocation/,
   );
 });

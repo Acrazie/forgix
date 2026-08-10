@@ -1,4 +1,4 @@
-import { Ajv2020 } from "ajv/dist/2020.js";
+import { Ajv2020, type ValidateFunction } from "ajv/dist/2020.js";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,22 +54,33 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
   subscription: DEFAULT_SUBSCRIPTION_CONFIG,
 };
 
-type SchemaName = "config" | "policy" | "state";
+export type SchemaName =
+  | "config"
+  | "policy"
+  | "state"
+  | "project-init-state"
+  | "project-profile"
+  | "project-profile-local";
 
 export interface SchemaValidationResult {
   valid: boolean;
   errors: unknown[];
 }
 
+const SCHEMA_VALIDATORS = new Map<SchemaName, ValidateFunction>();
+
 export function validateSchema(name: SchemaName, value: unknown): SchemaValidationResult {
-  const schema = JSON.parse(
-    readFileSync(
-      fileURLToPath(new URL("../schemas/" + name + ".schema.json", import.meta.url)),
-      "utf8",
-    ),
-  ) as object;
-  const ajv = new Ajv2020({ allErrors: true, strict: true });
-  const validate = ajv.compile(schema);
+  let validate = SCHEMA_VALIDATORS.get(name);
+  if (!validate) {
+    const schema = JSON.parse(
+      readFileSync(
+        fileURLToPath(new URL("../schemas/" + name + ".schema.json", import.meta.url)),
+        "utf8",
+      ),
+    ) as object;
+    validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
+    SCHEMA_VALIDATORS.set(name, validate);
+  }
   const valid = validate(value);
   return { valid, errors: validate.errors ? [...validate.errors] : [] };
 }

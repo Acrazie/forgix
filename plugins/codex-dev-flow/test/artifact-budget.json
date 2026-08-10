@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
+  "baselineRationale": "Agentic Project INIT adds strict shared/local/session schemas, dependency-free validation and reconciliation, digest-bound approval, safe atomic stores, and packaged normative guidance.",
   "baseline": {
-    "bundleBytes": 812575,
-    "packedBytes": 224899,
-    "unpackedBytes": 1018646
+    "bundleBytes": 859932,
+    "packedBytes": 251481,
+    "unpackedBytes": 1127847
   },
   "headroom": {
     "bundleBytes": 81920,
@@ -11,9 +12,9 @@
     "unpackedBytes": 102400
   },
   "maximum": {
-    "bundleBytes": 894495,
-    "packedBytes": 249475,
-    "unpackedBytes": 1121046
+    "bundleBytes": 941852,
+    "packedBytes": 276057,
+    "unpackedBytes": 1230247
   },
   "manifest": [
     ".codex-plugin/plugin.json",
@@ -55,11 +56,15 @@
     "docs/lifecycle-contract.projection.json",
     "docs/metrics-protocol.md",
     "docs/plans/2026-07-11-v1-implementation.md",
+    "docs/project-profile-contract.md",
     "docs/runbooks/maintainer-release.md",
     "docs/target-intake-shape-contract.md",
     "package.json",
     "schemas/config.schema.json",
     "schemas/policy.schema.json",
+    "schemas/project-init-state.schema.json",
+    "schemas/project-profile-local.schema.json",
+    "schemas/project-profile.schema.json",
     "schemas/state.schema.json",
     "skills/debug-root-cause/SKILL.md",
     "skills/dev-flow/SKILL.md",
