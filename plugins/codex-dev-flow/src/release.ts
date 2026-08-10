@@ -91,6 +91,35 @@ export function semanticBase(pluginVersion: string): string {
   return `${plugin[1]}.${plugin[2]}.${plugin[3]}`;
 }
 
+export function replaceJsonVersion(contents: string, nextVersion: string): string {
+  semanticBase(nextVersion);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(contents);
+  } catch {
+    throw new ReleaseError("Cannot update version in invalid JSON.");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new ReleaseError("Cannot update version outside a JSON object.");
+  }
+  const currentVersion = (parsed as Record<string, unknown>).version;
+  if (typeof currentVersion !== "string") {
+    throw new ReleaseError('Cannot update missing JSON "version" string.');
+  }
+
+  const matches = [...contents.matchAll(/^([ \t]*"version"[ \t]*:[ \t]*)("(?:\\.|[^"\\])*")/gm)];
+  if (matches.length !== 1) {
+    throw new ReleaseError('Cannot locate one top-level JSON "version" field.');
+  }
+  const match = matches[0]!;
+  if (JSON.parse(match[2]!) !== currentVersion) {
+    throw new ReleaseError('Located JSON "version" does not match parsed value.');
+  }
+  const valueStart = match.index + match[1]!.length;
+  const valueEnd = valueStart + match[2]!.length;
+  return `${contents.slice(0, valueStart)}${JSON.stringify(nextVersion)}${contents.slice(valueEnd)}`;
+}
+
 export function formatCachebuster(date: Date): string {
   if (Number.isNaN(date.getTime()))
     throw new ReleaseError("Cannot create cachebuster from invalid date.");
