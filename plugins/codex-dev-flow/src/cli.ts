@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { parse as parseYaml } from "yaml";
 import { captureRoutingSnapshot } from "./app-server.js";
 import { createBenchmarkStore } from "./benchmark.js";
 import {
@@ -9,8 +10,17 @@ import {
   type ResolvedConfig,
 } from "./config.js";
 import { EXIT_CODES } from "./exit-codes.js";
-import { InvocationError, parseInvocation } from "./parse.js";
+import { InvocationError, parseInvocation, type ParsedInvocation } from "./parse.js";
 import { runInit, type InitOptions } from "./init.js";
+import {
+  ProjectProfileError,
+  createProjectProfileStore,
+  diffProjectProfiles,
+  renderProjectProfile,
+  validateLocalProjectProfile,
+  validateProjectProfileProjections,
+  type ProjectProfileProjection,
+} from "./project-profile.js";
 import {
   applyFiveHourResetFallback,
   readFiveHourResetCache,
@@ -34,6 +44,28 @@ export {
 } from "./config.js";
 export { InvocationError, parseInvocation } from "./parse.js";
 export { buildRoutingPreview, runInit } from "./init.js";
+export {
+  CORE_PROFILE_CATEGORIES,
+  OPTIONAL_PROFILE_CATEGORIES,
+  LOCAL_PROJECT_PROFILE_IGNORE_ENTRY,
+  LOCAL_PROJECT_PROFILE_PATH,
+  PROJECT_DIAGRAM_ROOT,
+  PROJECT_INIT_STATE_PATH,
+  SHARED_PROJECT_PROFILE_PATH,
+  ProjectProfileError,
+  ProjectProfileStore,
+  approveProjectProfile,
+  createProjectProfileStore,
+  diffProjectProfiles,
+  prepareProjectProfile,
+  reconcileProjectProfile,
+  renderProjectProfile,
+  renderProjectInitState,
+  validateLocalProjectProfile,
+  validateProjectProfileProjections,
+  validateProjectProfile,
+  validateProjectInitState,
+} from "./project-profile.js";
 export { PolicyError, applyPolicy } from "./policy.js";
 export {
   STATE_MACHINE,
@@ -163,6 +195,11 @@ Commands:
   benchmark summary
   config show [--explain]
   config validate [--json]
+  project-profile inspect
+  project-profile view [--local]
+  project-profile validate [--local]
+  project-profile publish [--local]
+  project-profile session-view|session-save|session-clear
   --help
 
 Workflow:
@@ -180,6 +217,13 @@ export interface RunInvocationOptions {
   quotaCachePath?: string | false;
   nowEpochSeconds?: number;
   workspaceRoot?: string;
+  projectProfile?: ProjectProfileCommandOptions;
+}
+
+export interface ProjectProfileCommandOptions {
+  input?: string;
+  approvedAt?: string;
+  readInput?: () => Promise<string>;
 }
 
 export async function runInvocation(
@@ -191,6 +235,9 @@ export async function runInvocation(
     return { command: "help", status: "ok", data: { text: HELP_TEXT } };
   }
   if (invocation.command === "init") return runInit(options.init);
+  if (isProjectProfileInvocation(invocation)) {
+    return runProjectProfileInvocation(invocation, options);
+  }
   if (invocation.command === "config_show" || invocation.command === "config_validate") {
     const config = resolveRuntimeConfig(options.configSources);
     return invocation.command === "config_show"
@@ -314,6 +361,198 @@ export async function runInvocation(
       ...(snapshotResult.error ? { warning: snapshotResult.error } : {}),
     },
   };
+}
+
+async function runProjectProfileInvocation(
+  invocation: ProjectProfileInvocation,
+  options: RunInvocationOptions,
+): Promise<CliResult> {
+  const store = createProjectProfileStore(options.workspaceRoot ?? process.cwd());
+  if (invocation.command === "project_profile_session_view") {
+    return {
+      command: invocation.command,
+      status: "ok",
+      data: { state: (await store.loadInitState(true)) ?? null },
+    };
+  }
+  if (invocation.command === "project_profile_session_clear") {
+    return {
+      command: invocation.command,
+      status: "ok",
+      data: { cleared: await store.clearInitState() },
+    };
+  }
+  if (invocation.command === "project_profile_session_save") {
+    const raw = await readProjectProfileInput(options.projectProfile);
+    const state = await store.saveInitState(parseStructuredInput(raw));
+    return {
+      command: invocation.command,
+      status: "saved",
+      data: { state },
+    };
+  }
+  if (invocation.command === "project_profile_inspect") {
+    const shared = await store.loadShared(true);
+    const local = await store.loadLocal(true);
+    return {
+      command: invocation.command,
+      status: "ok",
+      data: {
+        shared: shared ?? null,
+        local: local ?? null,
+        localIgnored: await store.isLocalIgnored(),
+      },
+    };
+  }
+  if (invocation.command === "project_profile_view") {
+    const profile = invocation.local ? await store.loadLocal(false) : await store.loadShared(false);
+    return {
+      command: invocation.command,
+      status: "ok",
+      data: { local: invocation.local, yaml: renderProjectProfile(profile!) },
+    };
+  }
+  const raw = await readProjectProfileInput(options.projectProfile);
+  const parsed = parseProjectProfileInput(raw);
+  if (invocation.local) {
+    if (parsed.projections.length) {
+      throw new InvocationError("Local project profile cannot publish shared projections.");
+    }
+    const local = validateLocalProjectProfile(parsed.profile, await store.loadShared(true));
+    if (invocation.command === "project_profile_publish") await store.publishLocal(local);
+    return {
+      command: invocation.command,
+      status: invocation.command === "project_profile_publish" ? "published" : "valid",
+      data: {
+        local: true,
+        path: store.localPath,
+        yaml: renderProjectProfile(local),
+      },
+    };
+  }
+  const proposal = await store.prepareShared(parsed.profile);
+  const projections = validateProjectProfileProjections(proposal, parsed.projections);
+  const previous = await store.loadShared(true);
+  if (invocation.command === "project_profile_validate") {
+    return {
+      command: invocation.command,
+      status: "valid",
+      data: {
+        local: false,
+        path: store.sharedPath,
+        contentDigest: proposal.contentDigest,
+        revision: proposal.revision,
+        diff: diffProjectProfiles(previous, proposal),
+        yaml: renderProjectProfile(proposal),
+        projectionPaths: projections.map(({ path }) => path),
+      },
+    };
+  }
+  const initState = await store.loadInitState(true);
+  if (
+    initState &&
+    (initState.status !== "awaiting_approval" ||
+      initState.candidateContentDigest !== proposal.contentDigest)
+  ) {
+    throw new ProjectProfileError(
+      "profile_session_conflict",
+      "Project INIT session is not awaiting approval for this exact content digest.",
+    );
+  }
+  const published = await store.publishShared(proposal, {
+    projections,
+    ...(options.projectProfile?.approvedAt
+      ? { approvedAt: options.projectProfile.approvedAt }
+      : {}),
+  });
+  return {
+    command: invocation.command,
+    status: "published",
+    data: {
+      local: false,
+      path: store.sharedPath,
+      profileId: published.profileId,
+      revision: published.revision,
+      contentDigest: published.contentDigest,
+      approval: published.approval,
+    },
+  };
+}
+
+async function readProjectProfileInput(options: ProjectProfileCommandOptions | undefined) {
+  const maximumBytes = 2_000_000;
+  if (options?.input !== undefined) {
+    if (Buffer.byteLength(options.input) > maximumBytes) {
+      throw new InvocationError("Project profile input exceeds 2000000 bytes.");
+    }
+    return options.input;
+  }
+  if (options?.readInput) {
+    const input = await options.readInput();
+    if (Buffer.byteLength(input) > maximumBytes) {
+      throw new InvocationError("Project profile input exceeds 2000000 bytes.");
+    }
+    return input;
+  }
+  if (process.stdin.isTTY) {
+    throw new InvocationError("project-profile validate/publish requires YAML or JSON on stdin.");
+  }
+  let source = "";
+  for await (const chunk of process.stdin) {
+    source += String(chunk);
+    if (Buffer.byteLength(source) > maximumBytes) {
+      throw new InvocationError("Project profile input exceeds 2000000 bytes.");
+    }
+  }
+  if (!source.trim()) {
+    throw new InvocationError("project-profile validate/publish requires YAML or JSON on stdin.");
+  }
+  return source;
+}
+
+function parseProjectProfileInput(source: string): {
+  profile: unknown;
+  projections: ProjectProfileProjection[];
+} {
+  const parsed = parseStructuredInput(source);
+  if (isRecord(parsed) && "profile" in parsed) {
+    const allowed = new Set(["profile", "projections"]);
+    if (Object.keys(parsed).some((key) => !allowed.has(key))) {
+      throw new InvocationError("Project profile transaction contains unsupported fields.");
+    }
+    if (parsed.projections !== undefined && !Array.isArray(parsed.projections)) {
+      throw new InvocationError("Project profile projections are invalid.");
+    }
+    const projections = parsed.projections ?? [];
+    if (
+      projections.some(
+        (entry) =>
+          !isRecord(entry) || typeof entry.path !== "string" || typeof entry.content !== "string",
+      )
+    ) {
+      throw new InvocationError("Project profile projections are invalid.");
+    }
+    return { profile: parsed.profile, projections: projections as ProjectProfileProjection[] };
+  }
+  return { profile: parsed, projections: [] };
+}
+
+function parseStructuredInput(source: string): unknown {
+  try {
+    return JSON.parse(source);
+  } catch {
+    try {
+      return parseYaml(source);
+    } catch {
+      throw new InvocationError("Project profile input is not valid YAML or JSON.");
+    }
+  }
+}
+
+type ProjectProfileInvocation = Extract<ParsedInvocation, { command: `project_profile_${string}` }>;
+
+function isProjectProfileInvocation(value: ParsedInvocation): value is ProjectProfileInvocation {
+  return value.command.startsWith("project_profile_");
 }
 
 function appendRoutingWarning(

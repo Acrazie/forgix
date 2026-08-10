@@ -18,6 +18,7 @@ export interface ArtifactSizes {
 
 export interface ArtifactBudget {
   schemaVersion: 1;
+  baselineRationale: string;
   baseline: ArtifactSizes;
   headroom: ArtifactSizes;
   maximum: ArtifactSizes;
@@ -26,6 +27,7 @@ export interface ArtifactBudget {
 
 export function evaluateSizeBudget(observed: ArtifactSizes, budget: ArtifactBudget): string[] {
   const errors: string[] = [];
+  if (!budget.baselineRationale.trim()) errors.push("baselineRationale must explain size growth");
   for (const key of SIZE_KEYS) {
     const computedMaximum = budget.baseline[key] + budget.headroom[key];
     if (budget.maximum[key] !== computedMaximum) {

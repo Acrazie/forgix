@@ -12,7 +12,8 @@ INTAKE runtime, and local benchmark store are available primitives; full provide
 orchestration remains incomplete. Never claim a durable transition, Approval binding,
 or verification receipt without deterministic evidence.
 
-Parse invocation with bundled deterministic script before acting.
+Exact `$dev-flow init` follows Project INIT below. Parse every other invocation with
+bundled deterministic script before acting.
 
 ## Skill isolation and configured integrations
 
@@ -24,9 +25,79 @@ in `integrations.plugins` or fully qualified skill identifier in `integrations.s
 Allowlisting is not activation; selected skill must still be relevant. System,
 developer, repository, and effective policy instructions remain authoritative.
 
-Use terminal command `npx codex-dev-flow init` for interactive configuration. This is a
-standalone CLI command, not a `$dev-flow` subcommand. If requested in chat, tell user to
-run it in project terminal; do not emulate wizard.
+`npx codex-dev-flow init` remains standalone CLI command and interactive
+plugin-configuration wizard.
+It is separate from agentic `$dev-flow init`; never substitute one for other.
+
+## Project INIT
+
+Exact `$dev-flow init` is agentic project-engineering profile transaction, outside task
+lifecycle and task GATE. It creates no TaskState and no product scaffold. Use bundled
+dependency-free CLI `project-profile` commands as deterministic backend; never install
+or fetch another package.
+
+1. Run `codex-dev-flow project-profile session-view`, then `project-profile inspect`.
+   Resume exact persisted active question unless dependency evidence changed; otherwise
+   invalidate affected closure and return to Discovery. Before first session save, ensure
+   `/.codex/project-init/` is ignored; if repository does not already cover it, request
+   one scoped approval to add exact ignore rule. Read applicable repository guidance,
+   manifests, locks, architecture sources, tests, contracts, representative code, and
+   configured accessible service roots before asking. Existing profile is authoritative
+   default, not proof that fingerprints remain current.
+2. Core Discovery covers stack, source structure, architecture boundaries, dependency
+   direction, naming, error handling, testing, and quality. Activate frontend, API,
+   data, security, concurrency, performance, compatibility, migration, observability,
+   deployment, rollback, and operations only when evidence or user input makes them
+   applicable. Greenfield repository is valid; create profile only, never application
+   code.
+3. Ask only missing, contradictory, stale, or material decisions. Ask exactly one
+   question per interaction. Show 2–3 viable non-dominated options, recommended option
+   first, evidence/reason/confidence, direct consequences, and free-form path. Discover
+   facts instead of asking. No hard question cap, five-question checkpoint, progress
+   permission, or cost-estimation prompt. After each answer/Discovery boundary, pipe
+   compact normalized registry and exact active question to `project-profile session-save`.
+   Persist no transcript or hidden reasoning.
+4. Use cheapest useful visual: ASCII for simple structure, Mermaid for non-trivial
+   architecture/state/sequence, isolated temporary HTML/CSS for material UI decisions,
+   Excalidraw/image only when requested or necessary. YAML remains canonical; Mermaid
+   is generated projection. Temporary prototypes never enter product source.
+5. Keep shared `.codex/dev-flow.project.yaml` durable and portable. It may contain only
+   logical project/service identities, stack, topology/contracts, approved conventions,
+   provenance, source fingerprints, relative diagram refs, revision, digest, and
+   receipt. Keep volatile observations in temporary INIT registry. Never place absolute
+   paths in shared profile.
+6. Keep `.codex/dev-flow.project.local.yaml` gitignored. It contains only absolute local
+   service-path mappings and non-contractual preferences. Before local publication,
+   propose exact `/.codex/dev-flow.project.local.yaml` ignore rule if absent and obtain
+   approval with profile diff. Local preferences cannot override shared decisions.
+7. Multi-service Discovery is progressive. Root shared profile owns logical topology,
+   responsibilities, contracts, and external profile refs. Each repository owns own
+   profile. Absolute roots live only in local overlay. An inaccessible service statement
+   is `user_asserted`, never verified evidence. Modifying external repository profile
+   requires separate validation and publication transaction.
+8. Reconcile drift selectively. Rediscover stale facts. Re-interview user-owned stale
+   conventions. Invalidate only dependent decision closure. Accumulate all answers in
+   temporary proposal; never update shared file after each answer. Rejected update
+   leaves shared profile byte-for-byte unchanged and writes no shared stale marker.
+9. Authority is: system/repository policy -> INTAKE product decisions when task-scoped
+   -> explicit task exception -> shared engineering profile -> local non-contractual
+   preferences -> agent defaults. Lower authority never weakens higher authority.
+10. Build candidate transaction containing `profile` and optional exact `projections`.
+    Pipe it to `codex-dev-flow project-profile validate`. Render adaptive summary,
+    changed/stale decisions, topology, exceptions, sources, exact content digest, and
+    exact canonical YAML on `view`. Validation must be read-only. Save
+    `awaiting_approval` session bound to returned candidate content digest.
+11. Ask one explicit final Profile Approval over exact validated digest and projections.
+    Approval is separate from task GATE. Only after approval, pipe unchanged candidate
+    to `codex-dev-flow project-profile publish`; backend creates receipt and publishes
+    projections then shared profile atomically. Validate and publish local overlay with
+    `--local`. Any candidate change requires validation and approval again. After all
+    approved publications succeed, run `project-profile session-clear`.
+
+`codex-dev-flow project-profile view [--local]` renders published canonical YAML.
+Backend validation, digest, revision, privacy, receipt, symlink, and atomic-write errors
+are blocking; never bypass them with direct file write. Ordinary SHAPE consumption and
+promotion of these profiles remain pending until ADR 0026 runtime increment lands.
 
 ## INTAKE and routing
 

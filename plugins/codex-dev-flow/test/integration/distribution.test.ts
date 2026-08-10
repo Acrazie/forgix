@@ -5,7 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
+import { stringify } from "yaml";
 import { createDistributionBundle } from "../../scripts/build.mjs";
+import { projectProfileInput } from "../support/project-profile.ts";
 
 test("distribution bundle exists", () => {
   const bundle = new URL("../../dist/dev-flow.mjs", import.meta.url);
@@ -55,6 +57,25 @@ test("init rejects non-interactive invocation explicitly", () => {
   expect(result.stderr).toMatch(/init requires an interactive terminal/);
 });
 
+test("built CLI validates project profile stdin without writing", () => {
+  const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-profile-bundle-"));
+  const bundle = fileURLToPath(new URL("../../dist/dev-flow.mjs", import.meta.url));
+  try {
+    const result = spawnSync(process.execPath, [bundle, "project-profile", "validate"], {
+      cwd: directory,
+      encoding: "utf8",
+      input: stringify(projectProfileInput()),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const output = JSON.parse(result.stdout);
+    expect(output.status).toBe("valid");
+    expect(output.data.contentDigest).toMatch(/^[a-f0-9]{64}$/);
+    expect(existsSync(join(directory, ".codex", "dev-flow.project.yaml"))).toBe(false);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("public skill isolates external skills behind configured allowlists", () => {
   const skill = readFileSync(new URL("../../skills/dev-flow/SKILL.md", import.meta.url), "utf8");
   expect(skill).toMatch(/integrations\.plugins/);
@@ -62,6 +83,11 @@ test("public skill isolates external skills behind configured allowlists", () =>
   expect(skill).toMatch(/Do not invoke skills from other plugins/);
   expect(skill).toMatch(/standalone CLI command/);
   expect(skill).toMatch(/codex-dev-flow init/);
+  expect(skill).toMatch(/Exact `\$dev-flow init` is agentic/);
+  expect(skill).toMatch(/project-profile validate/);
+  expect(skill).toMatch(/project-profile session-save/);
+  expect(skill).toMatch(/No hard question cap/);
+  expect(skill).toMatch(/leaves shared profile byte-for-byte unchanged/);
   expect(skill).toMatch(/Do not refresh account, quota, or model data between skills/);
   expect(skill).toMatch(/Never substitute a fallback model or effort/);
   expect(skill).toMatch(/routing_permission_required/);
@@ -112,6 +138,9 @@ test("npm package contains runtime assets and excludes development files", () =>
       ".codex-plugin/plugin.json",
       "dist/dev-flow.mjs",
       "schemas/config.schema.json",
+      "schemas/project-profile.schema.json",
+      "schemas/project-profile-local.schema.json",
+      "schemas/project-init-state.schema.json",
       "skills/dev-flow/SKILL.md",
       "LICENSE",
       "README.md",

@@ -2,13 +2,16 @@
 
 ## Contract status
 
-This document records an accepted target design whose implementation is pending. It is
-not the normative runtime contract. Until schema, state machine, skills, projections,
-and tests implement this document atomically, [the current lifecycle contract](lifecycle-contract.md)
-remains authoritative.
+This document records accepted complete target. Agentic Project INIT and Project
+Engineering Profile transaction from ADR 0027 are implemented and governed by
+[profile contract](project-profile-contract.md). INTAKE and ordinary SHAPE integration
+from ADR 0026 remain pending and non-normative. Until that increment updates schema,
+state machine, skills, projections, and tests atomically,
+[current lifecycle contract](lifecycle-contract.md) remains authoritative for tasks.
 
-The target extends unreleased TaskState V4. It does not authorize a partial runtime
-implementation or a second source of lifecycle truth.
+The remaining target extends unreleased TaskState V4. Each delivery increment must
+update its runtime, schema, skills, normative contract, and tests together; this document
+never becomes a second source of runtime truth.
 
 ## Purpose
 
@@ -299,9 +302,9 @@ Profile validation is separate from task GATE because profile affects future tas
 
 Target lands through three independently reviewable pull requests:
 
-1. this target contract, ADRs, glossary, and conceptual validation fixtures;
-2. `$dev-flow init`, shared/local profile schemas, reconciliation, digest/receipt, and
-   multi-service privacy boundaries; and
+1. completed: target contract, ADRs, glossary, and conceptual model;
+2. completed: `$dev-flow init`, shared/local profile schemas, reconciliation,
+   digest/receipt, and multi-service privacy boundaries; and
 3. `awaiting_shape_decision`, decision graph, adaptive visuals, INTAKE reopening, and
    SHAPE/GATE integration.
 

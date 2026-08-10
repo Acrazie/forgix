@@ -8,6 +8,7 @@ import {
 
 const budget: ArtifactBudget = {
   schemaVersion: 1,
+  baselineRationale: "Test fixture baseline.",
   baseline: { bundleBytes: 100, packedBytes: 80, unpackedBytes: 200 },
   headroom: { bundleBytes: 10, packedBytes: 8, unpackedBytes: 20 },
   maximum: { bundleBytes: 110, packedBytes: 88, unpackedBytes: 220 },
@@ -35,6 +36,12 @@ describe("artifact size budgets", () => {
     };
     expect(evaluateSizeBudget(budget.maximum, inconsistent)).toContain(
       "packedBytes: maximum 89 must equal baseline 80 + headroom 8",
+    );
+  });
+
+  test("rejects unexplained baseline", () => {
+    expect(evaluateSizeBudget(budget.maximum, { ...budget, baselineRationale: "" })).toContain(
+      "baselineRationale must explain size growth",
     );
   });
 });

@@ -3,3 +3,5 @@ node_modules/
 .worktrees/
 .codex/tasks/
 .codex/benchmarks/
+.codex/dev-flow.project.local.yaml
+.codex/project-init/

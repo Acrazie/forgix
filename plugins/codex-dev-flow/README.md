@@ -29,12 +29,27 @@ State is strict V4. V1/V2/V3 are intentionally incompatible and never migrated. 
 
 ```text
 $dev-flow <objective>
+$dev-flow init
 $dev-flow --benchmark <objective>
 $dev-flow resume <task-id>
 $dev-flow status [task-id]
 $dev-flow config show [--explain]
 $dev-flow config validate [--json]
 npx codex-dev-flow benchmark summary
+```
+
+`$dev-flow init` is agentic project Discovery/interview. It validates and publishes
+versioned `.codex/dev-flow.project.yaml` engineering conventions plus gitignored local
+service-path overlay after separate digest-bound Profile Approval. It creates no product
+scaffold or TaskState. `npx codex-dev-flow init` remains separate interactive plugin
+configuration wizard. Deterministic profile backend:
+
+```text
+codex-dev-flow project-profile inspect
+codex-dev-flow project-profile validate [--local]
+codex-dev-flow project-profile publish [--local]
+codex-dev-flow project-profile view [--local]
+codex-dev-flow project-profile session-view|session-save|session-clear
 ```
 
 `quick`, `standard`, and `critical` at objective start are ordinary objective text—not
@@ -84,6 +99,9 @@ Normative behavior: [lifecycle contract](docs/lifecycle-contract.md). Shape deci
 Accepted next target, not yet implemented or normative: dependency-directed technical
 interview and stable product baseline in
 [ADR 0026](docs/adr/0026-keep-intake-product-stable-and-interview-shape-by-dependency.md),
-agentic project INIT and engineering profiles in
-[ADR 0027](docs/adr/0027-add-agentic-project-init-and-versioned-engineering-profiles.md),
-and their [target contract](docs/target-intake-shape-contract.md).
+plus ordinary SHAPE profile consumption in their
+[target contract](docs/target-intake-shape-contract.md). Agentic project INIT and
+engineering profiles from
+[ADR 0027](docs/adr/0027-add-agentic-project-init-and-versioned-engineering-profiles.md)
+are implemented; normative behavior is the
+[Project Engineering Profile contract](docs/project-profile-contract.md).
