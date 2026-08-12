@@ -104,8 +104,9 @@ system instructions and repository policy
 -> agent defaults
 ```
 
-Lower authority cannot weaken higher authority. Ordinary SHAPE consumption and task
-exception persistence remain pending ADR 0026 runtime increment.
+Lower authority cannot weaken higher authority. Ordinary SHAPE consumption, adaptive
+domain-documentation conventions, and task exception persistence remain pending ADR
+0030 runtime increment.
 
 ## Reconciliation
 

@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted target design; implementation pending.
+Superseded as target design by
+[ADR 0030](0030-unify-product-domain-and-technical-design-interviews.md). Current runtime
+behavior introduced before ADR 0030 remains documented by ADRs 0006, 0009, and 0010
+until the replacement target lands atomically.
 
 ## Context
 

@@ -3,7 +3,7 @@
 ## Status
 
 Accepted and implemented for Project INIT and profile transactions. Ordinary SHAPE
-profile consumption remains pending ADR 0026.
+profile consumption and domain-documentation integration remain pending ADR 0030.
 
 ## Context
 
@@ -29,7 +29,7 @@ The plugin adds `$dev-flow init`. It is distinct from the existing standalone
 `$dev-flow init` discovers before asking. It reads applicable guidance, manifests,
 configuration, architecture sources, tests, contracts, and representative code. It asks
 only missing, contradictory, or material decisions, exactly one at a time, using the
-same recommendation and dependency rules as ADR 0026. There is no hard question cap or
+recommendation and dependency rules now refined by ADR 0030. There is no hard question cap or
 periodic progress checkpoint.
 
 The command is adaptive. Every project uses a common core covering stack, source
@@ -144,4 +144,4 @@ reconciliation.
 - The existing `npx codex-dev-flow init` remains compatible and keeps its current purpose.
 - Project INIT/profile behavior is normative in the Project Engineering Profile contract.
   Ordinary task SHAPE profile consumption remains governed by current lifecycle until
-  ADR 0026 implementation lands.
+  ADR 0030 implementation lands.

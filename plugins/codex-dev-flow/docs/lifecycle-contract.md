@@ -169,7 +169,7 @@ configuration wizard.
 Normative profile schema, authority, reconciliation, privacy, and atomic publication:
 [Project Engineering Profile contract](project-profile-contract.md). Ordinary SHAPE does
 not yet consume or promote Project Engineering Profiles; that integration remains
-pending ADR 0026.
+pending ADR 0030.
 
 ## Privacy and metrics
 
