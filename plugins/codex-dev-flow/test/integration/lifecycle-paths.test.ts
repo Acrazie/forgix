@@ -1,7 +1,7 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
 import * as sourceApi from "../../src/cli.ts";
 import { expect, test } from "bun:test";
-import { attest, toGate } from "../support/helpers-v4.ts";
+import { attest, toGate } from "../support/helpers-v5.ts";
 const api = async () => sourceApi;
 
 function observation(state, id) {
@@ -26,11 +26,9 @@ async function finish(profile) {
     gateDecision: a.createGateDecision(state, {
       decision: "approved",
     }),
-    guardEvidence: attest(a, state, "task_authorized"),
   });
-  state = a.transition(state, "validating", { guardEvidence: attest(a, state, "task_authorized") });
   state = a.transition(state, "verifying", {
-    guardEvidence: attest(a, state, "validation_fresh", "review_satisfied"),
+    guardEvidence: attest(a, state, "review_satisfied"),
   });
   return a.transition(state, "finished", {
     guardEvidence: [verification(a, state)],
@@ -60,23 +58,17 @@ test("Quick and Plan both traverse all five phases", async () => {
   }
 });
 
-test("validation and assurance correction loops remain profile-neutral", async () => {
+test("BUILD is one native execution state and ASSURE owns correction loops", async () => {
   const a = await api();
-  let state = await toGate(a, "plan", "loops-v4");
+  let state = await toGate(a, "plan", "loops-v5");
   state = a.transition(state, "executing", {
     gateDecision: a.createGateDecision(state, {
       decision: "approved",
     }),
-    guardEvidence: attest(a, state, "task_authorized"),
   });
-  state = a.transition(state, "validating", { guardEvidence: attest(a, state, "task_authorized") });
-  state = a.transition(state, "resolving_build", {
-    guardEvidence: attest(a, state, "correction_budget_available"),
-  });
-  state = a.transition(state, "validating", {
-    guardEvidence: attest(a, state, "correction_budget_available"),
-  });
-  state = a.transition(state, "reviewing", { guardEvidence: attest(a, state, "validation_fresh") });
+  expect(a.deriveMacroPhase(state)).toBe("BUILD");
+  expect(a.STATE_MACHINE.executing.capsule.produces).toEqual([]);
+  state = a.transition(state, "reviewing");
   state = a.transition(state, "resolving_assure", {
     guardEvidence: attest(a, state, "correction_budget_available"),
   });
@@ -110,11 +102,9 @@ test("trusted terminal guards reject raw attestations and stale observations", a
     gateDecision: a.createGateDecision(state, {
       decision: "approved",
     }),
-    guardEvidence: attest(a, state, "task_authorized"),
   });
-  state = a.transition(state, "validating", { guardEvidence: attest(a, state, "task_authorized") });
   state = a.transition(state, "verifying", {
-    guardEvidence: attest(a, state, "validation_fresh", "review_satisfied"),
+    guardEvidence: attest(a, state, "review_satisfied"),
   });
   expect(() =>
     a.createGuardAttestation(state, "verification_complete", {

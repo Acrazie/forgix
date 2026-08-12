@@ -9,7 +9,7 @@ export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 export type SubscriptionPlan = "auto" | "plus" | "pro_5x" | "pro_20x";
 export type ResolvedSubscriptionPlan = Exclude<SubscriptionPlan, "auto"> | "unknown";
 export type QuotaPressure = "normal" | "warning" | "critical" | "unknown";
-export type RoutingStage = "discover" | "plan" | "execute" | "debug" | "review" | "verify";
+export type RoutingStage = "discover" | "plan" | "debug" | "review" | "verify";
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 export type { TaskStatus } from "./state-machine.js";
 import type { TaskStatus } from "./state-machine.js";
@@ -99,7 +99,7 @@ export interface Policy {
 }
 
 export interface TaskState {
-  schemaVersion: 4;
+  schemaVersion: 5;
   taskId: string;
   status: TaskStatus;
   revision: number;

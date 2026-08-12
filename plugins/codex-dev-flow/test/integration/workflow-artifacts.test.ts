@@ -40,7 +40,6 @@ test("logical change artifact has a stable minimum contract", () => {
 test("stage skills preserve and consume the artifact contract", () => {
   const discover = read("../../skills/discover-change/SKILL.md");
   const plan = read("../../skills/plan-change/SKILL.md");
-  const execute = read("../../skills/execute-change/SKILL.md");
   const review = read("../../skills/review-change/SKILL.md");
   const verify = read("../../skills/verify-change/SKILL.md");
 
@@ -48,8 +47,7 @@ test("stage skills preserve and consume the artifact contract", () => {
   expect(discover).toMatch(/source fingerprints/i);
   expect(plan).toMatch(/criterion/i);
   expect(plan).toMatch(/Do not embed complete implementations/i);
-  expect(execute).toMatch(/artifact identity\/digest/i);
-  expect(execute).toMatch(/matching Approval/i);
+  expect(read("../../skills/dev-flow/SKILL.md")).toMatch(/without BUILD-specific skill/i);
   expect(review).toMatch(/artifact\s+identity\/digest/i);
   expect(review).toMatch(/unapproved deviations/i);
   expect(verify).toMatch(/acceptance-criterion-to-evidence map/i);

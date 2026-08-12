@@ -7,7 +7,7 @@ description: Use when planning, implementing, debugging, reviewing, or verifying
 
 Follow [lifecycle contract](../../docs/lifecycle-contract.md): exactly INTAKE, SHAPE,
 GATE, BUILD, ASSURE, then `finished`. Macro-phase derives from internal status; never
-invent or persist another phase. Canonical registry, strict V4 state, durable state store, adaptive
+invent or persist another phase. Canonical registry, strict V5 state, durable state store, adaptive
 INTAKE runtime, and local benchmark store are available primitives; full provider
 orchestration remains incomplete. Never claim a durable transition, Approval binding,
 or verification receipt without deterministic evidence.
@@ -176,15 +176,15 @@ reuse cached usage percentage. Keep pressure `unknown`, route conservatively, re
 `quota_fallback_last_known`. Other windows stay informational. Normalize string and
 object `supportedReasoningEfforts` entries.
 
-Resolve six stage routes once from immutable snapshot using policy
-`2026-07-14.skill-first.v1`: `discover`, `plan`, `execute`, `debug`, `review`, `verify`.
+Resolve five reasoning-stage routes once from immutable snapshot using policy
+`2026-08-12.native-build.v2`: `discover`, `plan`, `debug`, `review`, `verify`.
 Unknown plan uses Plus baseline. Warning quota lowers one subscription tier; critical or
 unknown quota uses Plus. High risk/ambiguity raises reasoning one level, capped `xhigh`.
 
 Require exact assigned model/effort in initial catalog.
 Never substitute a fallback model or effort. Missing assignment blocks that skill.
-Do not refresh account, quota, or model data between skills. Parent owns execute,
-validate, and verification commands; route execute but never delegate mutations.
+Do not refresh account, quota, or model data between skills. Native Codex owns BUILD
+execution; parent owns ASSURE validation and verification commands.
 
 ## SHAPE
 
@@ -254,26 +254,25 @@ external action.
 
 ## BUILD
 
-Use `execute-change` for one approved atomic task at a time. Parent is sole writer. After
-each task, run targeted validation before next task. Fresh fingerprints and policy decide
-broader checks.
-
-Correctable local validation failure enters build resolution; use `debug-root-cause`
-after two failed code corrections. Material contract change stops writes and returns to
-SHAPE then GATE. Scope expansion never inherits old Approval.
+Announce `[DEV FLOW · GATE → BUILD]`. Before first write or resume, require current Plan
+Approval Receipt and exact contract digest. Then let native Codex implement the complete
+approved plan without BUILD-specific skill, orchestration, checkpoint, progress tracker,
+validation requirement, or persisted output. Local technical corrections remain native.
+Material scope, product behavior, approved architecture, or risk change stops writes and
+returns to SHAPE then GATE. When implementation is complete, transition automatically and
+announce `[DEV FLOW · BUILD → ASSURE]`.
 
 ## ASSURE
 
 Every profile verifies. Review lanes derive only from policy/risk: localized low-risk
-work may route `validating -> verifying`; broader applicable risk routes through one or
+work may route `executing -> verifying`; broader applicable risk routes through one or
 more read-only review lanes before verification. Omit lane only with structured
 evidence-backed N/A; ambiguity activates lane.
 
-Review consumes compact Diff Capsule: approved criteria/risks, changed surfaces,
-dependency impact, and fresh validation evidence. Known deterministic failure blocks
-expensive review. Findings keep stable identities. Code corrections return through
-validation; review-only corrections return through review; evidence-only corrections
-return through verification.
+Review consumes compact Diff Capsule derived from approved criteria/risks, current
+worktree diff, dependency impact, and fresh ASSURE evidence. Known deterministic failure
+blocks expensive review. Findings keep stable identities. Corrections remain inside
+ASSURE and re-enter only affected review or verification lane.
 
 Use `verify-change` to map every acceptance criterion to fresh evidence. Narrow green
 check proves only covered behavior. Successful verification persists compact
@@ -308,7 +307,7 @@ identity; never duplicate task artifact. Legacy paths such as
 `docs/dev-flow/YYYY-MM-DD-<slug>.md`, `spec.md`, `plan.md`,
 `risk-and-rollback.md`, and `verification.md` are repository choices only.
 
-Resume must validate strict V4 state, reconcile config/policy/routing/artifact/Git/evidence,
+Resume must validate strict V5 state, reconcile config/policy/routing/artifact/Git/evidence,
 selectively invalidate stale projections, then continue first unproved action. Current
 runtime cannot yet enforce full provider resume. Report that limitation instead of fabricating
 durability.

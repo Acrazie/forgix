@@ -14620,7 +14620,7 @@ var REASONING_EFFORTS = ["low", "medium", "high", "xhigh"];
 // src/routing.ts
 var MODEL_IDS = ALLOWED_MODEL_IDS;
 var APP_SERVER_PROTOCOL_VERSION = "v2";
-var ROUTING_POLICY_VERSION = "2026-07-14.skill-first.v1";
+var ROUTING_POLICY_VERSION = "2026-08-12.native-build.v2";
 var MODEL_COST_MULTIPLIERS = {
   "gpt-5.6-luna": 1,
   "gpt-5.6-terra": 2.5,
@@ -14654,7 +14654,6 @@ var STANDARD_ROUTES = {
   plus: {
     discover: { model: "gpt-5.6-terra", effort: "medium" },
     plan: { model: "gpt-5.6-sol", effort: "medium" },
-    execute: { model: "gpt-5.6-terra", effort: "high" },
     review: { model: "gpt-5.6-sol", effort: "medium" },
     verify: { model: "gpt-5.6-luna", effort: "medium" },
     debug: { model: "gpt-5.6-sol", effort: "high" }
@@ -14662,7 +14661,6 @@ var STANDARD_ROUTES = {
   pro_5x: {
     discover: { model: "gpt-5.6-terra", effort: "high" },
     plan: { model: "gpt-5.6-sol", effort: "high" },
-    execute: { model: "gpt-5.6-terra", effort: "xhigh" },
     review: { model: "gpt-5.6-sol", effort: "high" },
     verify: { model: "gpt-5.6-luna", effort: "medium" },
     debug: { model: "gpt-5.6-sol", effort: "xhigh" }
@@ -14670,7 +14668,6 @@ var STANDARD_ROUTES = {
   pro_20x: {
     discover: { model: "gpt-5.6-sol", effort: "medium" },
     plan: { model: "gpt-5.6-sol", effort: "xhigh" },
-    execute: { model: "gpt-5.6-sol", effort: "high" },
     review: { model: "gpt-5.6-sol", effort: "xhigh" },
     verify: { model: "gpt-5.6-terra", effort: "medium" },
     debug: { model: "gpt-5.6-sol", effort: "xhigh" }
@@ -16244,7 +16241,6 @@ var INTEGRATION_ID = /^[A-Za-z0-9][A-Za-z0-9._/-]*(?::[A-Za-z0-9][A-Za-z0-9._/-]
 var ROUTING_TASKS = [
   { stage: "discover", risk: "medium", ambiguity: "medium" },
   { stage: "plan", risk: "medium", ambiguity: "medium" },
-  { stage: "execute", risk: "medium", ambiguity: "medium" },
   { stage: "debug", risk: "medium", ambiguity: "medium" },
   { stage: "review", risk: "medium", ambiguity: "medium" },
   { stage: "verify", risk: "medium", ambiguity: "medium" }
@@ -16511,7 +16507,6 @@ function renderRoutingSummary(plan, pressure) {
   const labels = {
     discover: "Discover",
     plan: "Plan",
-    execute: "Execute",
     review: "Review",
     verify: "Verify",
     debug: "Debug root cause"
@@ -17618,8 +17613,6 @@ var GUARD_IDS = Object.freeze([
   "profile_selected",
   "contract_complete",
   "approval_current",
-  "task_authorized",
-  "validation_fresh",
   "review_satisfied",
   "verification_complete",
   "correction_budget_available",
@@ -17670,12 +17663,12 @@ var CAPSULE = {
     invalidates: ["approvals"]
   },
   BUILD: {
-    consumes: ["shape.contract", "approvals", "shape.evidence", "workspace", "freshness"],
-    produces: ["build", "issues.active", "freshness.git", "freshness.commands"],
-    invalidates: ["build.validationEvidence", "assurance", "approvals"]
+    consumes: ["shape.contract", "approvals", "workspace"],
+    produces: [],
+    invalidates: ["assurance"]
   },
   ASSURE: {
-    consumes: ["shape.contract", "build", "issues.active", "freshness"],
+    consumes: ["shape.contract", "workspace", "issues.active", "freshness"],
     produces: ["assurance", "issues.active", "freshness.commands"],
     invalidates: ["assurance.findings", "assurance.verificationEvidence", "approvals"]
   }
@@ -17705,13 +17698,7 @@ var EVENTS = {
     "state.transition"
   ],
   GATE: ["approval.requested", "approval.recorded", "approval.invalidated", "state.transition"],
-  BUILD: [
-    "task.started",
-    "checkpoint.recorded",
-    "validation.completed",
-    "finding.observed",
-    "state.transition"
-  ],
+  BUILD: ["state.transition"],
   ASSURE: [
     "review.completed",
     "finding.observed",
@@ -17806,7 +17793,7 @@ var STATE_MACHINE_DEFINITION = {
     events: EVENTS.GATE,
     transitions: {
       planning: G3("gate_decision_valid"),
-      executing: G3("gate_decision_valid", "task_authorized"),
+      executing: G3("gate_decision_valid"),
       cancelled: G3("gate_decision_valid", "terminal_source_recorded"),
       intaking: G3("intake_reopened"),
       blocked: TERMINALS.blocked,
@@ -17820,36 +17807,8 @@ var STATE_MACHINE_DEFINITION = {
     capsule: CAPSULE.BUILD,
     events: EVENTS.BUILD,
     transitions: {
-      validating: G3("task_authorized"),
-      planning: G3(),
-      intaking: G3("intake_reopened"),
-      ...TERMINALS
-    }
-  },
-  validating: {
-    macroPhase: "BUILD",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.BUILD,
-    events: EVENTS.BUILD,
-    transitions: {
-      executing: G3("validation_fresh", "task_authorized"),
-      resolving_build: G3("correction_budget_available"),
-      reviewing: G3("validation_fresh"),
-      verifying: G3("validation_fresh", "review_satisfied"),
-      planning: G3(),
-      intaking: G3("intake_reopened"),
-      ...TERMINALS
-    }
-  },
-  resolving_build: {
-    macroPhase: "BUILD",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.BUILD,
-    events: EVENTS.BUILD,
-    transitions: {
-      validating: G3("correction_budget_available"),
+      reviewing: G3(),
+      verifying: G3("review_satisfied"),
       planning: G3(),
       intaking: G3("intake_reopened"),
       ...TERMINALS
@@ -17864,7 +17823,6 @@ var STATE_MACHINE_DEFINITION = {
     transitions: {
       resolving_assure: G3("correction_budget_available"),
       verifying: G3("review_satisfied"),
-      validating: G3(),
       planning: G3(),
       intaking: G3("intake_reopened"),
       ...TERMINALS
@@ -17878,7 +17836,7 @@ var STATE_MACHINE_DEFINITION = {
     events: EVENTS.ASSURE,
     transitions: {
       reviewing: G3("correction_budget_available"),
-      validating: G3(),
+      verifying: G3("correction_budget_available"),
       planning: G3(),
       intaking: G3("intake_reopened"),
       ...TERMINALS
@@ -17891,7 +17849,7 @@ var STATE_MACHINE_DEFINITION = {
     capsule: CAPSULE.ASSURE,
     events: EVENTS.ASSURE,
     transitions: {
-      validating: G3("correction_budget_available"),
+      resolving_assure: G3("correction_budget_available"),
       reviewing: G3(),
       planning: G3(),
       finished: G3("verification_complete"),
@@ -17936,19 +17894,8 @@ var STATE_MACHINE_DEFINITION = {
       ),
       awaiting_intake_decision: G3("resume_metadata_valid", "resume_reconciled"),
       awaiting_approval: G3("resume_metadata_valid", "resume_reconciled", "contract_complete"),
-      executing: G3(
-        "resume_metadata_valid",
-        "resume_reconciled",
-        "approval_current",
-        "task_authorized"
-      ),
-      validating: G3("resume_metadata_valid", "resume_reconciled", "task_authorized"),
-      resolving_build: G3(
-        "resume_metadata_valid",
-        "resume_reconciled",
-        "correction_budget_available"
-      ),
-      reviewing: G3("resume_metadata_valid", "resume_reconciled", "validation_fresh"),
+      executing: G3("resume_metadata_valid", "resume_reconciled", "approval_current"),
+      reviewing: G3("resume_metadata_valid", "resume_reconciled"),
       resolving_assure: G3(
         "resume_metadata_valid",
         "resume_reconciled",
@@ -19194,7 +19141,7 @@ var import__2 = __toESM(require__(), 1);
 // schemas/state.schema.json
 var state_schema_default = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
-  title: "Codex Dev Flow task state V4",
+  title: "Codex Dev Flow task state V5",
   type: "object",
   additionalProperties: false,
   required: [
@@ -19211,7 +19158,7 @@ var state_schema_default = {
   ],
   properties: {
     schemaVersion: {
-      const: 4
+      const: 5
     },
     taskId: {
       $ref: "#/$defs/text"
@@ -19398,8 +19345,6 @@ var state_schema_default = {
               "awaiting_intake_decision",
               "awaiting_approval",
               "executing",
-              "validating",
-              "resolving_build",
               "reviewing",
               "resolving_assure",
               "verifying",
@@ -19441,8 +19386,6 @@ var state_schema_default = {
         "awaiting_intake_decision",
         "awaiting_approval",
         "executing",
-        "validating",
-        "resolving_build",
         "reviewing",
         "resolving_assure",
         "verifying",
@@ -19461,8 +19404,6 @@ var state_schema_default = {
         "awaiting_intake_decision",
         "awaiting_approval",
         "executing",
-        "validating",
-        "resolving_build",
         "reviewing",
         "resolving_assure",
         "verifying"
@@ -20147,7 +20088,7 @@ var state_schema_default = {
 // src/state-validator.ts
 var ajv = new import__2.Ajv2020({ allErrors: true, strict: true });
 var validate = ajv.compile(state_schema_default);
-function validateStateV4(value) {
+function validateStateV5(value) {
   const valid = validate(value);
   return { valid, errors: validate.errors ? [...validate.errors] : [] };
 }
@@ -20169,7 +20110,7 @@ function createState(input) {
     throw new Error("createState requires taskId and risk.");
   const contextCapsule = input.contextCapsule ?? defaultContextCapsule(input.configSnapshot, input.policySnapshot);
   const state = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     taskId: input.taskId,
     status: "new",
     revision: 0,
@@ -20201,30 +20142,30 @@ function createState(input) {
       )
     } : {}
   };
-  assertStateV4(state);
+  assertStateV5(state);
   return state;
 }
-function loadStateV4(value) {
-  if (!isRecord6(value) || value.schemaVersion !== 4) {
+function loadStateV5(value) {
+  if (!isRecord6(value) || value.schemaVersion !== 5) {
     const version = isRecord6(value) ? String(value.schemaVersion) : "missing";
     throw new StateValidationError(
       "state_schema_incompatible",
-      `Task state schema ${version} is incompatible; schemaVersion 4 required. No migration is available.`
+      `Task state schema ${version} is incompatible; schemaVersion 5 required. No migration is available.`
     );
   }
-  assertStateV4(value);
+  assertStateV5(value);
   return copy3(value);
 }
-function assertStateV4(value) {
-  const result = validateStateV4(value);
+function assertStateV5(value) {
+  const result = validateStateV5(value);
   if (!result.valid)
     throw new StateValidationError(
       "state_invalid",
-      `Task state V4 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`
+      `Task state V5 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`
     );
   const state = value;
   if (!isTaskStatus(state.status) || !isRisk(state.risk))
-    throw new StateValidationError("state_invalid", "Task state V4 status or risk is invalid.");
+    throw new StateValidationError("state_invalid", "Task state V5 status or risk is invalid.");
   validateHistory(state);
   if (state.intake && state.intake.brief.risk !== state.risk)
     throw new StateValidationError("state_invalid", "Task risk contradicts Intake Brief risk.");
@@ -20250,8 +20191,6 @@ function assertStateV4(value) {
     "awaiting_intake_decision",
     "awaiting_approval",
     "executing",
-    "validating",
-    "resolving_build",
     "reviewing",
     "resolving_assure",
     "verifying",
@@ -20273,15 +20212,9 @@ function assertStateV4(value) {
   if (state.status === "awaiting_approval" && !nonEmpty(state.contractDigest))
     throw new StateValidationError("state_invalid", "awaiting_approval requires contract digest.");
   if (state.planApproval) validatePlanApproval(state, state.planApproval);
-  if ([
-    "executing",
-    "validating",
-    "resolving_build",
-    "reviewing",
-    "resolving_assure",
-    "verifying",
-    "finished"
-  ].includes(state.status) && !state.planApproval)
+  if (["executing", "reviewing", "resolving_assure", "verifying", "finished"].includes(
+    state.status
+  ) && !state.planApproval)
     throw new StateValidationError(
       "state_invalid",
       `${state.status} requires current PlanApprovalReceipt.`
@@ -20313,7 +20246,7 @@ function guardStateFingerprint(state) {
   });
 }
 function createGuardAttestation(state, guard, input) {
-  assertStateV4(state);
+  assertStateV5(state);
   if (!GUARD_ID_SET.has(guard)) throw new Error(`Unknown transition guard ${guard}.`);
   if (guard === "intake_complete") {
     validateCompleteIntake(state);
@@ -20347,7 +20280,7 @@ function createGuardAttestation(state, guard, input) {
 }
 var trustedEvidence = /* @__PURE__ */ new WeakSet();
 function evaluateDiscoveryGuard(state, receipt) {
-  assertStateV4(state);
+  assertStateV5(state);
   if (!state.shape || !evaluateDiscoveryCompleteness(state.shape).complete)
     throw new Error("Discovery evaluator requires current complete Shape Discovery.");
   const current = state.shape.evaluatorReceipts.find(
@@ -20365,7 +20298,7 @@ function evaluateDiscoveryGuard(state, receipt) {
   });
 }
 function evaluatePlanningGuard(state, receipt) {
-  assertStateV4(state);
+  assertStateV5(state);
   if (!state.shape || !evaluateContractCompleteness(state.shape).complete || state.shape.contract?.digest !== state.contractDigest && state.status === "awaiting_approval")
     throw new Error("Planning evaluator requires current complete Shape contract.");
   const current = state.shape.evaluatorReceipts.find(
@@ -20383,7 +20316,7 @@ function evaluatePlanningGuard(state, receipt) {
   });
 }
 function evaluateVerification(state, input) {
-  assertStateV4(state);
+  assertStateV5(state);
   const requirements = state.verificationRequirements;
   if (!requirements) throw new Error("Verification requires state-bound verificationRequirements.");
   assertExactObservations(
@@ -20415,7 +20348,7 @@ function evaluateVerification(state, input) {
   });
 }
 function createGateDecision(state, input) {
-  assertStateV4(state);
+  assertStateV5(state);
   const unknown = Object.keys(input).filter(
     (key) => !["decision", "instructionRef", "at"].includes(key)
   );
@@ -20450,7 +20383,7 @@ function createGateDecision(state, input) {
   return { ...base, receiptDigest: digest3(base) };
 }
 function updateShapeState(state, shape, input) {
-  assertStateV4(state);
+  assertStateV5(state);
   if (deriveMacroPhase(state) !== "SHAPE" && state.status !== "awaiting_intake_decision") {
     throw new Error(
       "ShapeState may change only in SHAPE or while resolving linked Intake escalation."
@@ -20475,11 +20408,11 @@ function updateShapeState(state, shape, input) {
   );
 }
 function addRoutingDecision(state, decision) {
-  assertStateV4(state);
+  assertStateV5(state);
   return { ...state, routingDecisions: [...state.routingDecisions ?? [], copy3(decision)] };
 }
 function recordHistoryEvent(state, input) {
-  assertStateV4(state);
+  assertStateV5(state);
   if (STATE_MACHINE[state.status].terminal) throw new Error("Terminal state history is immutable.");
   validateHistoryReferences(input.refs, `Workflow event ${input.type}`);
   const event = {
@@ -20491,7 +20424,7 @@ function recordHistoryEvent(state, input) {
   return compactAndValidate({ ...state, history: [...state.history, event] });
 }
 function updateResumeContext(state, input) {
-  assertStateV4(state);
+  assertStateV5(state);
   const { activeArtifact: _a, activeWorktree: _w, ...base } = state;
   const updated = {
     ...base,
@@ -20508,7 +20441,7 @@ function updateResumeContext(state, input) {
   });
 }
 function transition(state, next, options = {}) {
-  assertStateV4(state);
+  assertStateV5(state);
   validateTransitionOptionKeys(options);
   if (!isTaskStatus(next))
     throw new Error(`Invalid state transition from ${state.status} to ${String(next)}.`);
@@ -20876,7 +20809,7 @@ function compactAndValidate(state) {
     history: state.history.slice(-HISTORY_LIMIT),
     historySummary: summarizeHistory(state)
   };
-  assertStateV4(output);
+  assertStateV5(output);
   return output;
 }
 function summarizeHistory(state) {
@@ -21119,7 +21052,7 @@ var TaskStateStore = class {
     }
     let state;
     try {
-      state = loadStateV4(parsed);
+      state = loadStateV5(parsed);
     } catch (error) {
       if (error instanceof StateValidationError)
         throw new StateStoreError(error.code, error.message);
@@ -21136,7 +21069,7 @@ var TaskStateStore = class {
     const paths = this.paths(taskId);
     let state;
     try {
-      state = loadStateV4(value);
+      state = loadStateV5(value);
     } catch (error) {
       if (error instanceof StateValidationError)
         throw new StateStoreError(error.code, error.message);
@@ -21149,9 +21082,9 @@ var TaskStateStore = class {
       );
     const serialized = (0, import_yaml4.stringify)(state);
     try {
-      loadStateV4((0, import_yaml4.parse)(serialized));
+      loadStateV5((0, import_yaml4.parse)(serialized));
     } catch {
-      throw new StateStoreError("state_invalid", "Serialized V4 state failed validation.");
+      throw new StateStoreError("state_invalid", "Serialized V5 state failed validation.");
     }
     await this.#ensureDirectory(paths.directory);
     await this.#assertRegularFile(paths.statePath, true);
@@ -21446,9 +21379,8 @@ function summarizeLifecycleTrace(input) {
     resumes: edges.filter(
       ({ from, to }) => from === "blocked" && to !== "cancelled" && to !== "failed"
     ).length,
-    validationRuns: edges.filter(({ to }) => to === "validating").length,
+    validationRuns: edges.filter(({ to }) => to === "verifying").length,
     reviewRuns: edges.filter(({ to }) => to === "reviewing").length,
-    buildResolutionCycles: edges.filter(({ to }) => to === "resolving_build").length,
     assureResolutionCycles: edges.filter(({ to }) => to === "resolving_assure").length,
     terminalStatus,
     falseSuccessDetections,
@@ -21532,7 +21464,6 @@ function validateSummary(value, index, profiles, errors) {
       "resumes",
       "validationRuns",
       "reviewRuns",
-      "buildResolutionCycles",
       "assureResolutionCycles",
       "terminalStatus",
       "falseSuccessDetections",
@@ -21569,7 +21500,6 @@ function validateSummary(value, index, profiles, errors) {
       "resumes",
       "validationRuns",
       "reviewRuns",
-      "buildResolutionCycles",
       "assureResolutionCycles",
       "terminalStatus"
     ]) {
@@ -22328,7 +22258,7 @@ function assertIntakeWritable(state) {
     throw new Error("Decision Questions may be changed only in INTAKE.");
 }
 function assertTaskState(state) {
-  const result = validateStateV4(state);
+  const result = validateStateV5(state);
   if (!result.valid)
     throw new Error(`Task state is invalid: ${JSON.stringify(result.errors.slice(0, 3))}`);
 }
@@ -22407,7 +22337,7 @@ function discoverVerificationCommands(root) {
 
 // src/bridge.ts
 var ROUTED_STAGES = ["discover", "plan", "debug", "review", "verify"];
-var MUTATING_STAGES = /* @__PURE__ */ new Set(["execute", "validate"]);
+var MUTATING_STAGES = /* @__PURE__ */ new Set(["validate"]);
 function isDelegableStage(stage) {
   return ROUTED_STAGES.includes(stage);
 }
@@ -22724,7 +22654,6 @@ function resolveQuotaCachePath(options) {
 var ROUTING_TASKS2 = [
   { stage: "discover", risk: "medium", ambiguity: "medium" },
   { stage: "plan", risk: "medium", ambiguity: "medium" },
-  { stage: "execute", risk: "medium", ambiguity: "medium" },
   { stage: "debug", risk: "medium", ambiguity: "medium" },
   { stage: "review", risk: "medium", ambiguity: "medium" },
   { stage: "verify", risk: "medium", ambiguity: "medium" }
@@ -22857,7 +22786,7 @@ export {
   isDelegableStage,
   isSourceFingerprintFresh,
   loadConfigSources,
-  loadStateV4,
+  loadStateV5,
   main,
   nextCorrectionAction,
   parseGateIntent,

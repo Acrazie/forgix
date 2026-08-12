@@ -4,7 +4,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
-import { taskInput } from "../support/helpers-v4.ts";
+import { taskInput } from "../support/helpers-v5.ts";
 const api = async () => sourceApi;
 const survey = { satisfaction: 5, conformance: "yes", pluginValue: "useful" };
 const actual = { createdFiles: ["src/a.ts"], validationComplete: true };
@@ -38,7 +38,7 @@ test("benchmark uses canonical Shape contract for Quick and Plan", async () => {
 
 test("benchmark records remain bounded, redacted, atomic, and summarizable", async () => {
   const a = await api();
-  const root = await mkdtemp(join(tmpdir(), "benchmark-v4-"));
+  const root = await mkdtemp(join(tmpdir(), "benchmark-v5-"));
   const store = a.createBenchmarkStore(root);
   const record = a.createBenchmarkRecord({
     taskId: "bench-safe",
@@ -54,7 +54,7 @@ test("benchmark records remain bounded, redacted, atomic, and summarizable", asy
   expect((await store.summary()).recordCount).toBe(1);
 });
 
-test("benchmark opt-in persists in V4 status without mode", async () => {
+test("benchmark opt-in persists in V5 status without mode", async () => {
   const a = await api();
   const root = await mkdtemp(join(tmpdir(), "benchmark-status-"));
   const state = a.createState({ ...taskInput("bench-status"), benchmarkEnabled: true });

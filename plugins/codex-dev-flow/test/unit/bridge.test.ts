@@ -3,7 +3,7 @@ import * as sourceApi from "../../src/bridge.ts";
 import { expect, test } from "bun:test";
 import { expectRejected } from "../support/expect-error.ts";
 
-test("only analysis and review stages are delegable; execute and validate stay with parent", async () => {
+test("only routed reasoning stages are delegable", async () => {
   const { ROUTED_STAGES, isDelegableStage } = sourceApi;
   expect(ROUTED_STAGES).toEqual(["discover", "plan", "debug", "review", "verify"]);
   for (const stage of ROUTED_STAGES) expect(isDelegableStage(stage)).toBe(true);
@@ -11,7 +11,7 @@ test("only analysis and review stages are delegable; execute and validate stay w
   expect(isDelegableStage("validate")).toBe(false);
 });
 
-test("bridge rejects mutation delegation", async () => {
+test("bridge rejects stages outside routed reasoning", async () => {
   const { delegateStage } = sourceApi;
   await expectRejected(
     () => delegateStage("execute", async () => "must not run"),

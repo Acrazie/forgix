@@ -11,7 +11,6 @@ const quickPath = [
   "planning",
   "awaiting_approval",
   "executing",
-  "validating",
   "verifying",
   "finished",
 ];
@@ -23,7 +22,6 @@ const planPath = [
   "planning",
   "awaiting_approval",
   "executing",
-  "validating",
   "reviewing",
   "verifying",
   "finished",
@@ -165,7 +163,7 @@ test("baseline covers Quick and Plan without content payloads", async () => {
     },
   ];
   const report = a.buildBaselineReport({
-    baselineId: "shape-v4",
+    baselineId: "shape-v5",
     capturedAt: "2026-07-29T00:00:00.000Z",
     contractVersion: "P0",
     source: "contract_fixture",
@@ -185,5 +183,5 @@ test("baseline covers Quick and Plan without content payloads", async () => {
     ),
   );
   expect(a.validateBaselineReport(committed).valid).toBe(true);
-  expect(committed.baselineId).toBe("p0-taskstate-v4-contract-fixture");
+  expect(committed.baselineId).toBe("p0-taskstate-v5-contract-fixture");
 });

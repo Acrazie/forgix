@@ -72,7 +72,6 @@ const INTEGRATION_ID = /^[A-Za-z0-9][A-Za-z0-9._/-]*(?::[A-Za-z0-9][A-Za-z0-9._/
 const ROUTING_TASKS: RouteTask[] = [
   { stage: "discover", risk: "medium", ambiguity: "medium" },
   { stage: "plan", risk: "medium", ambiguity: "medium" },
-  { stage: "execute", risk: "medium", ambiguity: "medium" },
   { stage: "debug", risk: "medium", ambiguity: "medium" },
   { stage: "review", risk: "medium", ambiguity: "medium" },
   { stage: "verify", risk: "medium", ambiguity: "medium" },
@@ -370,7 +369,6 @@ function renderRoutingSummary(plan: SubscriptionPlan, pressure: QuotaPressure): 
   const labels: Record<string, string> = {
     discover: "Discover",
     plan: "Plan",
-    execute: "Execute",
     review: "Review",
     verify: "Verify",
     debug: "Debug root cause",

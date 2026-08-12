@@ -1,7 +1,7 @@
 import type { RoutingDecision, RoutingStage } from "./types.js";
 
 export const ROUTED_STAGES: RoutingStage[] = ["discover", "plan", "debug", "review", "verify"];
-const MUTATING_STAGES = new Set(["execute", "validate"]);
+const MUTATING_STAGES = new Set(["validate"]);
 
 export function isDelegableStage(stage: string): stage is RoutingStage {
   return ROUTED_STAGES.includes(stage as RoutingStage);

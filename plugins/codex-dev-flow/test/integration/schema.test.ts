@@ -2,7 +2,7 @@
 import * as sourceApi from "../../src/cli.ts";
 import { readFile } from "node:fs/promises";
 import { expect, test } from "bun:test";
-import { taskInput } from "../support/helpers-v4.ts";
+import { taskInput } from "../support/helpers-v5.ts";
 import { expectThrown } from "../support/expect-error.ts";
 const stateSchemaUrl = new URL("../../schemas/state.schema.json", import.meta.url);
 const lifecycleProjectionUrl = new URL(
@@ -11,26 +11,32 @@ const lifecycleProjectionUrl = new URL(
 );
 const api = async () => sourceApi;
 
-test("state schema is strict V4 and contains no legacy mode contract", async () => {
+test("state schema is strict V5 and contains no legacy mode contract", async () => {
   const schema = JSON.parse(await readFile(stateSchemaUrl, "utf8"));
-  expect(schema.title).toBe("Codex Dev Flow task state V4");
-  expect(schema.properties.schemaVersion.const).toBe(4);
+  expect(schema.title).toBe("Codex Dev Flow task state V5");
+  expect(schema.properties.schemaVersion.const).toBe(5);
   expect(schema.additionalProperties).toBe(false);
   expect("mode" in schema.properties).toBe(false);
   expect("modeConfirmed" in schema.properties).toBe(false);
   for (const status of ["intaking", "awaiting_profile_choice", "awaiting_intake_decision"])
     expect(schema.$defs.status.enum.includes(status)).toBeTruthy();
-  for (const removed of ["handing_off", "ready_for_handoff", "finished_local"])
+  for (const removed of [
+    "validating",
+    "resolving_build",
+    "handing_off",
+    "ready_for_handoff",
+    "finished_local",
+  ])
     expect(schema.$defs.status.enum.includes(removed)).toBe(false);
 });
 
-test("runtime V4 validation rejects extras and old schemas", async () => {
+test("runtime V5 validation rejects extras and old schemas", async () => {
   const a = await api();
-  const state = a.createState(taskInput("schema-v4"));
-  expect(a.loadStateV4(state).schemaVersion).toBe(4);
-  expect(() => a.loadStateV4({ ...state, unexpected: true })).toThrow(/schema validation failed/);
+  const state = a.createState(taskInput("schema-v5"));
+  expect(a.loadStateV5(state).schemaVersion).toBe(5);
+  expect(() => a.loadStateV5({ ...state, unexpected: true })).toThrow(/schema validation failed/);
   expectThrown(
-    () => a.loadStateV4({ schemaVersion: 3 }),
+    () => a.loadStateV5({ schemaVersion: 4 }),
     (error) =>
       error instanceof Error && "code" in error && error.code === "state_schema_incompatible",
   );
@@ -63,6 +69,9 @@ test("Quick and Plan share one Planning state and generic GATE boundary", async 
   ]);
   expect("executing" in a.STATE_MACHINE.intaking.transitions).toBe(false);
   expect("awaiting_mode_confirmation" in a.STATE_MACHINE).toBe(false);
+  expect(a.STATE_MACHINE.executing.transitions.reviewing.guards).toEqual([]);
+  expect(a.STATE_MACHINE.executing.transitions.verifying.guards).toEqual(["review_satisfied"]);
+  expect(a.STATE_MACHINE.executing.capsule.produces).toEqual([]);
 });
 
 test("public config has no approval bypass or external delivery contract", async () => {

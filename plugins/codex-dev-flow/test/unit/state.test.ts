@@ -1,11 +1,11 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
 import * as sourceApi from "../../src/cli.ts";
 import { expect, test } from "bun:test";
-import { attest, taskInput, toDiscovering, toGate, toPlanning } from "../support/helpers-v4.ts";
+import { attest, taskInput, toDiscovering, toGate, toPlanning } from "../support/helpers-v5.ts";
 import { expectThrown } from "../support/expect-error.ts";
 const api = async () => sourceApi;
 
-test("V4 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE statuses", async () => {
+test("V5 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE statuses", async () => {
   const a = await api();
   expect(a.TASK_STATUSES).toEqual(Object.keys(a.STATE_MACHINE));
   for (const status of [
@@ -22,7 +22,7 @@ test("V4 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE status
   expect(a.GUARD_IDS.includes("profile_selected")).toBe(true);
   expect(JSON.stringify(a.buildStateMachineProjection()).includes("modes")).toBe(false);
   expect(Object.isFrozen(a.STATE_MACHINE)).toBe(true);
-  expect(a.createState(taskInput()).schemaVersion).toBe(4);
+  expect(a.createState(taskInput()).schemaVersion).toBe(5);
 });
 
 test("every Intake enters Discovery; direct BUILD bypass is impossible", async () => {
@@ -82,18 +82,18 @@ test("Decision Escalation enters INTAKE and resumes exact SHAPE role", async () 
   expect(() => a.transition(waiting, "executing")).toThrow(/Invalid state transition/);
 });
 
-test("V1/V2/V3 are rejected explicitly; no migration API remains", async () => {
+test("V1/V2/V3/V4 are rejected explicitly; no migration API remains", async () => {
   const a = await api();
-  for (const schemaVersion of [1, 2, 3])
+  for (const schemaVersion of [1, 2, 3, 4])
     expectThrown(
-      () => a.loadStateV4({ schemaVersion }),
+      () => a.loadStateV5({ schemaVersion }),
       (error) =>
         error instanceof a.StateValidationError &&
         error.code === "state_schema_incompatible" &&
         /No migration/.test(error.message),
     );
   expect(a.migrateStateToV2).toBe(undefined);
-  expect(() => a.loadStateV4({ ...a.createState(taskInput("strict")), mode: "quick" })).toThrow(
+  expect(() => a.loadStateV5({ ...a.createState(taskInput("strict")), mode: "quick" })).toThrow(
     /schema validation failed/,
   );
 });
@@ -106,7 +106,6 @@ test("GATE decision and blocked resume remain state-bound", async () => {
   });
   state = a.transition(state, "executing", {
     gateDecision: decision,
-    guardEvidence: attest(a, state, "task_authorized"),
   });
   expect(state.planApproval.contractDigest).toBe(state.contractDigest);
   state = a.transition(state, "blocked", {
@@ -115,7 +114,7 @@ test("GATE decision and blocked resume remain state-bound", async () => {
   });
   expect(() => a.transition(state, "planning")).toThrow(/exact resumeTo/);
   const resumed = a.transition(state, "executing", {
-    guardEvidence: attest(a, state, "resume_reconciled", "approval_current", "task_authorized"),
+    guardEvidence: attest(a, state, "resume_reconciled", "approval_current"),
   });
   expect(resumed.status).toBe("executing");
 });
@@ -129,5 +128,5 @@ test("durable trusted receipts reject post-persistence tampering", async () => {
     .flatMap((item) => item.guardEvidence ?? [])
     .find((item) => item.guard === "contract_complete");
   evidence.evaluatorReceipt.inputDigest = "tampered";
-  expect(() => a.loadStateV4(tampered)).toThrow(/evaluator receipt.*invalid/i);
+  expect(() => a.loadStateV5(tampered)).toThrow(/evaluator receipt.*invalid/i);
 });

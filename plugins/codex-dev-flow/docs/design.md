@@ -4,7 +4,8 @@
 
 Portable five-phase workflow with high correctness and low token waste. Deterministic
 code owns state, validation, routing, fingerprints, dependency closure, projections, and
-guards. Skills own scoped reasoning. Parent workflow is sole writer.
+guards. Skills own scoped reasoning. Each phase uses native Codex capabilities unless its
+contract requires a narrower read-only role.
 
 ## Public surface
 
@@ -15,7 +16,7 @@ $dev-flow resume <task-id>
 $dev-flow status [task-id]
 ```
 
-No invocation mode exists. Entire run text is objective. State V4 rejects V1/V2/V3 without
+No invocation mode exists. Entire run text is objective. State V5 rejects V1/V2/V3/V4 without
 migration.
 
 ## Lifecycle
@@ -61,9 +62,13 @@ explicit user approve/change/reject intent. Approval covers complete local canon
 contract and exact digest. Contract change invalidates receipt. It never authorizes an
 external action.
 
-BUILD consumes current approval. ASSURE records fresh criterion-linked verification and
-transitions directly to sole success terminal `finished`. Git, GitHub, registry, and
-release delivery remains outside lifecycle state.
+BUILD verifies only current approval and exact digest, then native Codex implements the
+complete approved plan without a Dev Flow execution skill, checkpoint, progress tracker,
+validation loop, or persisted BUILD output. Local technical corrections stay native;
+material contract changes return to SHAPE then GATE. ASSURE derives current worktree diff,
+records fresh criterion-linked verification, and transitions directly to sole success
+terminal `finished`. Git, GitHub, registry, and release delivery remains outside lifecycle
+state.
 
 ## Selective invalidation
 

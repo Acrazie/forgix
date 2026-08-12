@@ -4,7 +4,8 @@ description: Use when dev-flow reviews an approved change for actionable regress
 ---
 
 Operate only in ASSURE and remain read-only. Consume current Diff Capsule: approved
-criteria/risks, changed and impacted surfaces, dependency map, fresh validation evidence,
+criteria/risks, changed and impacted surfaces derived from current worktree, dependency
+map, fresh ASSURE evidence,
 and active/resolved Issue fingerprints. Compare implementation with current artifact
 identity/digest; report uncovered criteria and unapproved deviations.
 

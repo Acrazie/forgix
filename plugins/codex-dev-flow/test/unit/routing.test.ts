@@ -26,7 +26,6 @@ const standardMatrix = {
   plus: {
     discover: ["gpt-5.6-terra", "medium"],
     plan: ["gpt-5.6-sol", "medium"],
-    execute: ["gpt-5.6-terra", "high"],
     review: ["gpt-5.6-sol", "medium"],
     verify: ["gpt-5.6-luna", "medium"],
     debug: ["gpt-5.6-sol", "high"],
@@ -34,7 +33,6 @@ const standardMatrix = {
   pro_5x: {
     discover: ["gpt-5.6-terra", "high"],
     plan: ["gpt-5.6-sol", "high"],
-    execute: ["gpt-5.6-terra", "xhigh"],
     review: ["gpt-5.6-sol", "high"],
     verify: ["gpt-5.6-luna", "medium"],
     debug: ["gpt-5.6-sol", "xhigh"],
@@ -42,7 +40,6 @@ const standardMatrix = {
   pro_20x: {
     discover: ["gpt-5.6-sol", "medium"],
     plan: ["gpt-5.6-sol", "xhigh"],
-    execute: ["gpt-5.6-sol", "high"],
     review: ["gpt-5.6-sol", "xhigh"],
     verify: ["gpt-5.6-terra", "medium"],
     debug: ["gpt-5.6-sol", "xhigh"],
@@ -87,17 +84,17 @@ test("initial quota pressure deterministically lowers the effective subscription
     warnings: ["quota_unknown"],
   });
   expect([
-    chooseRoute(warning, { stage: "execute", risk: "medium", ambiguity: "medium" }).model,
-    chooseRoute(warning, { stage: "execute", risk: "medium", ambiguity: "medium" }).effort,
-  ]).toEqual(standardMatrix.pro_5x.execute);
+    chooseRoute(warning, { stage: "review", risk: "medium", ambiguity: "medium" }).model,
+    chooseRoute(warning, { stage: "review", risk: "medium", ambiguity: "medium" }).effort,
+  ]).toEqual(standardMatrix.pro_5x.review);
   expect([
-    chooseRoute(critical, { stage: "execute", risk: "medium", ambiguity: "medium" }).model,
-    chooseRoute(critical, { stage: "execute", risk: "medium", ambiguity: "medium" }).effort,
-  ]).toEqual(standardMatrix.plus.execute);
+    chooseRoute(critical, { stage: "review", risk: "medium", ambiguity: "medium" }).model,
+    chooseRoute(critical, { stage: "review", risk: "medium", ambiguity: "medium" }).effort,
+  ]).toEqual(standardMatrix.plus.review);
   expect([
-    chooseRoute(unknown, { stage: "execute", risk: "medium", ambiguity: "medium" }).model,
-    chooseRoute(unknown, { stage: "execute", risk: "medium", ambiguity: "medium" }).effort,
-  ]).toEqual(standardMatrix.plus.execute);
+    chooseRoute(unknown, { stage: "review", risk: "medium", ambiguity: "medium" }).model,
+    chooseRoute(unknown, { stage: "review", risk: "medium", ambiguity: "medium" }).effort,
+  ]).toEqual(standardMatrix.plus.review);
 });
 
 test("unknown plan uses Plus baseline with explicit provenance warning", async () => {
@@ -134,12 +131,12 @@ test("exact model and effort are required with no fallback", async () => {
   const missingEffort = chooseRoute(
     snapshot("pro_5x", {
       models: models.map((model) =>
-        model.id === "gpt-5.6-terra"
+        model.id === "gpt-5.6-sol"
           ? Object.assign({}, model, { supportedReasoningEfforts: ["low", "medium", "high"] })
           : model,
       ),
     }),
-    { stage: "execute", risk: "medium", ambiguity: "medium" },
+    { stage: "debug", risk: "medium", ambiguity: "medium" },
   );
   expect(missingEffort.model).toBe(null);
   expect(missingEffort.effort).toBe(null);

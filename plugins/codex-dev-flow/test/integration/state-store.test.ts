@@ -5,12 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stringify } from "yaml";
 import { expect, test } from "bun:test";
-import { taskInput } from "../support/helpers-v4.ts";
+import { taskInput } from "../support/helpers-v5.ts";
 import { expectRejected } from "../support/expect-error.ts";
 const api = async () => sourceApi;
-const workspace = () => mkdtemp(join(tmpdir(), "dev-flow-v4-"));
+const workspace = () => mkdtemp(join(tmpdir(), "dev-flow-v5-"));
 
-test("V4 state round-trips atomically through YAML", async () => {
+test("V5 state round-trips atomically through YAML", async () => {
   const a = await api();
   const root = await workspace();
   const store = a.createTaskStateStore(root);
@@ -18,13 +18,13 @@ test("V4 state round-trips atomically through YAML", async () => {
   await store.save("roundtrip", state);
   expect(await store.load("roundtrip")).toEqual(state);
   expect(
-    (await readFile(store.paths("roundtrip").statePath, "utf8")).includes("schemaVersion: 4"),
+    (await readFile(store.paths("roundtrip").statePath, "utf8")).includes("schemaVersion: 5"),
   ).toBe(true);
 });
 
-test("V1, V2, and V3 load fail with explicit incompatible-schema code; no migration exists", async () => {
+test("V1 through V4 load fail with explicit incompatible-schema code; no migration exists", async () => {
   const a = await api();
-  for (const schemaVersion of [1, 2, 3]) {
+  for (const schemaVersion of [1, 2, 3, 4]) {
     const root = await workspace();
     const store = a.createTaskStateStore(root);
     const paths = store.paths(`old-${schemaVersion}`);

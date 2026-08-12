@@ -2,7 +2,7 @@
 import * as api from "../../src/cli.ts";
 import { readFileSync } from "node:fs";
 import { expect, test } from "bun:test";
-import { attest, toGate } from "../support/helpers-v4.ts";
+import { attest, toGate } from "../support/helpers-v5.ts";
 
 test("GATE preflight and card are deterministic, bounded, and profile-neutral", async () => {
   const states = await Promise.all(
@@ -61,7 +61,6 @@ test("GATE decisions have exact distinct transitions and bounded history", async
   });
   approved = api.transition(approved, "executing", {
     gateDecision: approvedDecision,
-    guardEvidence: attest(api, approved, "task_authorized"),
   });
   expect(approved.planApproval).toEqual(approvedDecision);
   expect(approved.planApproval.actor).toBe("user");
@@ -92,10 +91,9 @@ test("approval reuse requires unchanged canonical digest", async () => {
   let state = await toGate(api, "quick", "gate-digest");
   state = api.transition(state, "executing", {
     gateDecision: api.createGateDecision(state, { decision: "approved" }),
-    guardEvidence: attest(api, state, "task_authorized"),
   });
   expect(attest(api, state, "approval_current")).toHaveLength(1);
-  expect(() => api.loadStateV4({ ...state, planApproval: undefined })).toThrow(
+  expect(() => api.loadStateV5({ ...state, planApproval: undefined })).toThrow(
     /PlanApprovalReceipt/,
   );
   const changed = { ...state, contractDigest: "different" };

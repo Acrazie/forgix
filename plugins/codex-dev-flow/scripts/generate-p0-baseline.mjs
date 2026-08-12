@@ -18,7 +18,6 @@ const quick = [
   "planning",
   "awaiting_approval",
   "executing",
-  "validating",
   "verifying",
   "finished",
 ];
@@ -30,13 +29,12 @@ const plan = [
   "planning",
   "awaiting_approval",
   "executing",
-  "validating",
   "reviewing",
   "verifying",
   "finished",
 ];
 const report = buildBaselineReport({
-  baselineId: "p0-taskstate-v4-contract-fixture",
+  baselineId: "p0-taskstate-v5-contract-fixture",
   capturedAt: "2026-08-02T00:00:00.000Z",
   contractVersion: "P0",
   source: "contract_fixture",
@@ -62,7 +60,6 @@ const report = buildBaselineReport({
         "executing",
         "blocked",
         "executing",
-        "validating",
         "reviewing",
         "verifying",
         "finished",

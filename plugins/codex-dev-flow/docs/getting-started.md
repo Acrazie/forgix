@@ -107,7 +107,8 @@ INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished
    Quick or Plan implementation contract.
 3. **GATE** displays a compact validation card and requires explicit approval of the
    exact contract.
-4. **BUILD** executes only approved tasks and runs targeted validation.
+4. **BUILD** lets native Codex implement the complete approved plan. Dev Flow only
+   checks the current approval/digest boundary and returns material changes to SHAPE.
 5. **ASSURE** reviews the result and runs fresh criterion-linked verification.
 
 GATE approval covers local implementation only. It never authorizes commit, push, pull

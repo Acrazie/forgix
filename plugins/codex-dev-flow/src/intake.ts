@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { createGuardAttestation, recordHistoryEvent } from "./state.js";
 import { deriveMacroPhase } from "./state-machine.js";
-import { validateStateV4 } from "./state-validator.js";
+import { validateStateV5 } from "./state-validator.js";
 import type {
   DecisionQuestion,
   IntakeBrief,
@@ -667,7 +667,7 @@ function assertIntakeWritable(state: TaskState): void {
 }
 
 function assertTaskState(state: TaskState): void {
-  const result = validateStateV4(state);
+  const result = validateStateV5(state);
   if (!result.valid)
     throw new Error(`Task state is invalid: ${JSON.stringify(result.errors.slice(0, 3))}`);
 }
