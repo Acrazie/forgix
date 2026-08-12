@@ -17,8 +17,6 @@
     "profile_selected",
     "contract_complete",
     "approval_current",
-    "task_authorized",
-    "validation_fresh",
     "review_satisfied",
     "verification_complete",
     "correction_budget_available",
@@ -495,8 +493,7 @@
         {
           "target": "executing",
           "guards": [
-            "gate_decision_valid",
-            "task_authorized"
+            "gate_decision_valid"
           ]
         },
         {
@@ -552,97 +549,12 @@
       "terminal": false,
       "transitions": [
         {
-          "target": "validating",
-          "guards": [
-            "task_authorized"
-          ]
-        },
-        {
-          "target": "planning",
-          "guards": []
-        },
-        {
-          "target": "intaking",
-          "guards": [
-            "intake_reopened"
-          ]
-        },
-        {
-          "target": "blocked",
-          "guards": [
-            "resume_metadata_valid"
-          ]
-        },
-        {
-          "target": "cancelled",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        },
-        {
-          "target": "failed",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        }
-      ],
-      "capsule": {
-        "consumes": [
-          "shape.contract",
-          "approvals",
-          "shape.evidence",
-          "workspace",
-          "freshness"
-        ],
-        "produces": [
-          "build",
-          "issues.active",
-          "freshness.git",
-          "freshness.commands"
-        ],
-        "invalidates": [
-          "build.validationEvidence",
-          "assurance",
-          "approvals"
-        ]
-      },
-      "events": [
-        "task.started",
-        "checkpoint.recorded",
-        "validation.completed",
-        "finding.observed",
-        "state.transition"
-      ]
-    },
-    {
-      "status": "validating",
-      "macroPhase": "BUILD",
-      "stable": false,
-      "terminal": false,
-      "transitions": [
-        {
-          "target": "executing",
-          "guards": [
-            "validation_fresh",
-            "task_authorized"
-          ]
-        },
-        {
-          "target": "resolving_build",
-          "guards": [
-            "correction_budget_available"
-          ]
-        },
-        {
           "target": "reviewing",
-          "guards": [
-            "validation_fresh"
-          ]
+          "guards": []
         },
         {
           "target": "verifying",
           "guards": [
-            "validation_fresh",
             "review_satisfied"
           ]
         },
@@ -679,96 +591,14 @@
         "consumes": [
           "shape.contract",
           "approvals",
-          "shape.evidence",
-          "workspace",
-          "freshness"
+          "workspace"
         ],
-        "produces": [
-          "build",
-          "issues.active",
-          "freshness.git",
-          "freshness.commands"
-        ],
+        "produces": [],
         "invalidates": [
-          "build.validationEvidence",
-          "assurance",
-          "approvals"
+          "assurance"
         ]
       },
       "events": [
-        "task.started",
-        "checkpoint.recorded",
-        "validation.completed",
-        "finding.observed",
-        "state.transition"
-      ]
-    },
-    {
-      "status": "resolving_build",
-      "macroPhase": "BUILD",
-      "stable": false,
-      "terminal": false,
-      "transitions": [
-        {
-          "target": "validating",
-          "guards": [
-            "correction_budget_available"
-          ]
-        },
-        {
-          "target": "planning",
-          "guards": []
-        },
-        {
-          "target": "intaking",
-          "guards": [
-            "intake_reopened"
-          ]
-        },
-        {
-          "target": "blocked",
-          "guards": [
-            "resume_metadata_valid"
-          ]
-        },
-        {
-          "target": "cancelled",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        },
-        {
-          "target": "failed",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        }
-      ],
-      "capsule": {
-        "consumes": [
-          "shape.contract",
-          "approvals",
-          "shape.evidence",
-          "workspace",
-          "freshness"
-        ],
-        "produces": [
-          "build",
-          "issues.active",
-          "freshness.git",
-          "freshness.commands"
-        ],
-        "invalidates": [
-          "build.validationEvidence",
-          "assurance",
-          "approvals"
-        ]
-      },
-      "events": [
-        "task.started",
-        "checkpoint.recorded",
-        "validation.completed",
-        "finding.observed",
         "state.transition"
       ]
     },
@@ -791,10 +621,6 @@
           ]
         },
         {
-          "target": "validating",
-          "guards": []
-        },
-        {
           "target": "planning",
           "guards": []
         },
@@ -826,7 +652,7 @@
       "capsule": {
         "consumes": [
           "shape.contract",
-          "build",
+          "workspace",
           "issues.active",
           "freshness"
         ],
@@ -862,8 +688,10 @@
           ]
         },
         {
-          "target": "validating",
-          "guards": []
+          "target": "verifying",
+          "guards": [
+            "correction_budget_available"
+          ]
         },
         {
           "target": "planning",
@@ -897,7 +725,7 @@
       "capsule": {
         "consumes": [
           "shape.contract",
-          "build",
+          "workspace",
           "issues.active",
           "freshness"
         ],
@@ -927,7 +755,7 @@
       "terminal": false,
       "transitions": [
         {
-          "target": "validating",
+          "target": "resolving_assure",
           "guards": [
             "correction_budget_available"
           ]
@@ -974,7 +802,7 @@
       "capsule": {
         "consumes": [
           "shape.contract",
-          "build",
+          "workspace",
           "issues.active",
           "freshness"
         ],
@@ -1059,32 +887,14 @@
           "guards": [
             "resume_metadata_valid",
             "resume_reconciled",
-            "approval_current",
-            "task_authorized"
-          ]
-        },
-        {
-          "target": "validating",
-          "guards": [
-            "resume_metadata_valid",
-            "resume_reconciled",
-            "task_authorized"
-          ]
-        },
-        {
-          "target": "resolving_build",
-          "guards": [
-            "resume_metadata_valid",
-            "resume_reconciled",
-            "correction_budget_available"
+            "approval_current"
           ]
         },
         {
           "target": "reviewing",
           "guards": [
             "resume_metadata_valid",
-            "resume_reconciled",
-            "validation_fresh"
+            "resume_reconciled"
           ]
         },
         {
@@ -1181,7 +991,7 @@
       "capsule": {
         "consumes": [
           "shape.contract",
-          "build",
+          "workspace",
           "issues.active",
           "freshness"
         ],

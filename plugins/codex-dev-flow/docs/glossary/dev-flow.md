@@ -9,7 +9,7 @@ policy-selected representation.
 ## Approval
 
 An immutable human authorization bound to complete local canonical contract digest. In
-TaskState V4 this is one Plan Approval Receipt.
+TaskState V5 this is one Plan Approval Receipt.
 
 ## Change artifact
 
@@ -35,6 +35,14 @@ repository choice, not a canonical Docs-profile convention.
 An opt-in, local, gitignored post-task record containing a completed satisfaction
 survey, allowlisted execution metrics, and deterministic deviation facts. It is outside
 the lifecycle, never changes task outcome, and is never uploaded automatically.
+
+## BUILD
+
+The thin lifecycle boundary in which native Codex implements the complete approved plan.
+Dev Flow verifies current Approval and exact digest before writes or resume, but adds no
+execution skill, checkpoint, progress tracker, validation loop, or persisted BUILD
+output. Material contract change returns to SHAPE then GATE; completion enters ASSURE
+automatically.
 
 ## Bun test suite
 
@@ -153,12 +161,12 @@ regardless of whether a local hook ran.
 ## Gate
 
 A control that authorizes a transition after checking required evidence. In the accepted
-V4 design, GATE is exactly one deterministic pre-BUILD validation and explicit user
+V5 design, GATE is exactly one deterministic pre-BUILD validation and explicit user
 approval of the canonical implementation contract.
 
 ## Gate preflight
 
-The accepted V4 pure deterministic check that validates current SHAPE completion,
+The accepted V5 pure deterministic check that validates current SHAPE completion,
 contract digest, criterion coverage, evidence freshness, and escalation closure before
 asking the user to approve the plan. It performs no model, network, discovery, or
 subprocess operation.
@@ -166,7 +174,7 @@ subprocess operation.
 ## External delivery
 
 Git, GitHub, registry, or release work performed after Dev Flow reaches `finished`. It is
-outside TaskState V4 and requires native Codex authorization.
+outside TaskState V5 and requires native Codex authorization.
 
 ## Intake Brief
 
@@ -204,7 +212,7 @@ and nursery categories disabled initially.
 ## Macro-phase
 
 One public lifecycle stage derived from internal task status and never persisted
-independently. V4 has INTAKE, SHAPE, GATE, BUILD, and ASSURE.
+independently. V5 has INTAKE, SHAPE, GATE, BUILD, and ASSURE.
 
 ## Issue ID
 
@@ -258,7 +266,7 @@ metrics.
 
 ## Plan Approval Receipt
 
-The accepted V4 immutable user authorization for the complete local canonical change
+The accepted V5 immutable user authorization for the complete local canonical change
 contract. It is bound to task/artifact identity, full contract digest, state revision,
 state fingerprint, actor, and timestamp. Any digest change invalidates it. It never
 authorizes an external Git, GitHub, registry, or release action.

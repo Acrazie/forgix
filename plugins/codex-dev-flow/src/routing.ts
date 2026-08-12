@@ -16,7 +16,7 @@ import {
 
 export const MODEL_IDS = ALLOWED_MODEL_IDS;
 export const APP_SERVER_PROTOCOL_VERSION = "v2";
-export const ROUTING_POLICY_VERSION = "2026-07-14.skill-first.v1";
+export const ROUTING_POLICY_VERSION = "2026-08-12.native-build.v2";
 export const MODEL_COST_MULTIPLIERS: Record<ModelId, number> = {
   "gpt-5.6-luna": 1,
   "gpt-5.6-terra": 2.5,
@@ -56,7 +56,6 @@ const STANDARD_ROUTES: Record<MatrixPlan, Record<RoutingStage, RouteTarget>> = {
   plus: {
     discover: { model: "gpt-5.6-terra", effort: "medium" },
     plan: { model: "gpt-5.6-sol", effort: "medium" },
-    execute: { model: "gpt-5.6-terra", effort: "high" },
     review: { model: "gpt-5.6-sol", effort: "medium" },
     verify: { model: "gpt-5.6-luna", effort: "medium" },
     debug: { model: "gpt-5.6-sol", effort: "high" },
@@ -64,7 +63,6 @@ const STANDARD_ROUTES: Record<MatrixPlan, Record<RoutingStage, RouteTarget>> = {
   pro_5x: {
     discover: { model: "gpt-5.6-terra", effort: "high" },
     plan: { model: "gpt-5.6-sol", effort: "high" },
-    execute: { model: "gpt-5.6-terra", effort: "xhigh" },
     review: { model: "gpt-5.6-sol", effort: "high" },
     verify: { model: "gpt-5.6-luna", effort: "medium" },
     debug: { model: "gpt-5.6-sol", effort: "xhigh" },
@@ -72,7 +70,6 @@ const STANDARD_ROUTES: Record<MatrixPlan, Record<RoutingStage, RouteTarget>> = {
   pro_20x: {
     discover: { model: "gpt-5.6-sol", effort: "medium" },
     plan: { model: "gpt-5.6-sol", effort: "xhigh" },
-    execute: { model: "gpt-5.6-sol", effort: "high" },
     review: { model: "gpt-5.6-sol", effort: "xhigh" },
     verify: { model: "gpt-5.6-terra", effort: "medium" },
     debug: { model: "gpt-5.6-sol", effort: "xhigh" },

@@ -55,7 +55,7 @@ test("init writes validated configuration and explains automatic skill routing",
     const output = prompts.output.join("\n");
     expect(output).toMatch(/No model choice is required/);
     expect(output).toMatch(/Plan: gpt-5\.6-sol · medium/);
-    expect(output).toMatch(/Execute: gpt-5\.6-terra · high/);
+    expect(output).not.toMatch(/Execute:/);
     expect(output).toMatch(/exact unavailable routes block instead of falling back/);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -129,7 +129,6 @@ test("routing preview applies Plus baseline for auto without model selection", a
   expect(preview.map(({ stage, model, effort }) => [stage, model, effort])).toEqual([
     ["discover", "gpt-5.6-terra", "medium"],
     ["plan", "gpt-5.6-sol", "medium"],
-    ["execute", "gpt-5.6-terra", "high"],
     ["debug", "gpt-5.6-sol", "high"],
     ["review", "gpt-5.6-sol", "medium"],
     ["verify", "gpt-5.6-luna", "medium"],

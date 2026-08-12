@@ -47,7 +47,7 @@ export function completeIntake(risk = "medium", objective = "Implement adaptive 
   };
 }
 
-export function taskInput(taskId = "task-v4", risk = "medium") {
+export function taskInput(taskId = "task-v5", risk = "medium") {
   return {
     taskId,
     risk,

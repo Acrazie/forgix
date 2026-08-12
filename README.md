@@ -81,7 +81,8 @@ INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished
 - **SHAPE** discovers repository facts, resolves technical uncertainty, and prepares a
   Quick or Plan implementation contract.
 - **GATE** validates that exact contract and asks for one explicit approval.
-- **BUILD** implements approved atomic tasks with targeted checks.
+- **BUILD** lets native Codex implement the complete approved plan. Dev Flow adds no
+  execution skill, checkpoint, progress tracker, or validation loop.
 - **ASSURE** reviews and verifies the change with fresh command-backed evidence.
 
 Use Dev Flow when a change needs product or technical decisions, implementation, or

@@ -47,16 +47,15 @@ test("run and resume capture one routing snapshot per invocation", async () => {
   const run = await runInvocation(["standard", "change", "thing"], { captureSnapshot });
   expect(calls).toBe(1);
   expect(run.status).toBe("routed");
-  expect(run.data.routingDecisions.length).toBe(6);
+  expect(run.data.routingDecisions.length).toBe(5);
   expect(run.data.routingDecisions.map((decision) => decision.stage)).toEqual([
     "discover",
     "plan",
-    "execute",
     "debug",
     "review",
     "verify",
   ]);
-  expect(run.data.routingPolicyVersion).toBe("2026-07-14.skill-first.v1");
+  expect(run.data.routingPolicyVersion).toBe("2026-08-12.native-build.v2");
   await runInvocation(["resume", "task-1"], { captureSnapshot });
   expect(calls).toBe(2);
 });

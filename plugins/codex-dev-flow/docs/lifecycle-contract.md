@@ -84,9 +84,13 @@ Git, GitHub, registry, or release actions.
 
 ## BUILD
 
-BUILD executes one approved atomic task at a time. Current Plan Approval Receipt and
-contract digest are mandatory before writes. Targeted validation follows every task.
-Material scope/behavior change stops writes and returns through SHAPE then GATE.
+BUILD is one thin `executing` boundary. Current Plan Approval Receipt and exact contract
+digest are mandatory before first write and resume. Native Codex implements the complete
+approved plan without a Dev Flow execution skill, checkpoint, progress tracker,
+validation requirement, or persisted BUILD output. Local technical corrections continue
+natively. Material scope, product behavior, approved architecture, or risk change stops
+writes and returns through SHAPE then GATE. Completion transitions automatically to the
+applicable ASSURE lane.
 
 ## ASSURE
 
@@ -107,8 +111,6 @@ planning
 awaiting_intake_decision
 awaiting_approval
 executing
-validating
-resolving_build
 reviewing
 resolving_assure
 verifying
@@ -132,8 +134,8 @@ planning -> awaiting_approval
 ```
 
 `blocked` retains exact `resumeTo` and `resumeReason`. Resume reconciles inputs and
-continues exact state with existing `ShapeState`. V1/V2/V3 state is incompatible and fails
-with `state_schema_incompatible`; no migration occurs.
+continues exact state with existing `ShapeState`. V1/V2/V3/V4 state is incompatible and
+fails with `state_schema_incompatible`; no migration occurs.
 
 ## Guards
 
@@ -144,6 +146,8 @@ state-bound evaluator receipts. Raw attestations cannot prove them.
 
 Downstream guards remain listed in generated projection. `gate_decision_valid` accepts
 only structurally valid decision receipt bound to current contract and target semantics.
+`approval_current` protects BUILD resume. BUILD completion adds no synthetic evidence;
+ASSURE owns review, correction, and verification guards.
 
 ## Events
 

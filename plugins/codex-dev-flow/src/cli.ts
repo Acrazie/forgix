@@ -84,7 +84,7 @@ export {
   evaluateVerification,
   evaluatePlanningGuard,
   guardStateFingerprint,
-  loadStateV4,
+  loadStateV5,
   recordHistoryEvent,
   updateShapeState,
   updateResumeContext,
@@ -574,7 +574,6 @@ function resolveQuotaCachePath(options: RunInvocationOptions): string | undefine
 const ROUTING_TASKS: RouteTask[] = [
   { stage: "discover", risk: "medium", ambiguity: "medium" },
   { stage: "plan", risk: "medium", ambiguity: "medium" },
-  { stage: "execute", risk: "medium", ambiguity: "medium" },
   { stage: "debug", risk: "medium", ambiguity: "medium" },
   { stage: "review", risk: "medium", ambiguity: "medium" },
   { stage: "verify", risk: "medium", ambiguity: "medium" },

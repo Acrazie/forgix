@@ -130,11 +130,12 @@ content. A manual projection edit triggers explicit Planning reconciliation; the
 workflow neither imports nor overwrites it silently.
 
 GATE always executes and binds explicit user approval to canonical logical digest for
-both profiles. Its V4 contract is defined by ADR 0024.
+both profiles. Its current contract is defined by ADR 0024.
 
 BUILD always consumes the exact current SHAPE contract and never performs hidden
-shaping. ASSURE scales by applicable risk rather than profile and reaches `finished`
-directly under ADR 0025.
+shaping. ADR 0029 reduces it to native Codex execution with no separate skill or
+validation loop. ASSURE scales by applicable risk rather than profile and reaches
+`finished` directly under ADR 0025.
 
 ## Consequences
 
@@ -146,7 +147,8 @@ directly under ADR 0025.
   every lifecycle phase.
 - Quick avoids hidden BUILD-time shaping; Plan spends extra Discovery tokens only on
   evidence genuinely required by its durable contract.
-- Quick and Plan share contract parsing, BUILD inputs, and completion guards.
+- Quick and Plan share contract parsing, BUILD approval/digest boundary, and ASSURE
+  completion guards.
 - Plan produces one predictable review artifact without splitting spec, plan, and
   guidance into drift-prone files.
 - The state machine needs a stable SHAPE state for the explicit profile choice.

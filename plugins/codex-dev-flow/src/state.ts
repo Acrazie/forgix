@@ -20,7 +20,7 @@ import {
   type PlanningReceipt,
   type ShapeState,
 } from "./shape.js";
-import { validateStateV4 } from "./state-validator.js";
+import { validateStateV5 } from "./state-validator.js";
 import type {
   ActiveArtifactReference,
   ActiveWorktreeReference,
@@ -140,7 +140,7 @@ export function createState(input: CreateTaskInput): TaskState {
   const contextCapsule =
     input.contextCapsule ?? defaultContextCapsule(input.configSnapshot, input.policySnapshot);
   const state: TaskState = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     taskId: input.taskId,
     status: "new",
     revision: 0,
@@ -174,32 +174,32 @@ export function createState(input: CreateTaskInput): TaskState {
         }
       : {}),
   };
-  assertStateV4(state);
+  assertStateV5(state);
   return state;
 }
 
-export function loadStateV4(value: unknown): TaskState {
-  if (!isRecord(value) || value.schemaVersion !== 4) {
+export function loadStateV5(value: unknown): TaskState {
+  if (!isRecord(value) || value.schemaVersion !== 5) {
     const version = isRecord(value) ? String(value.schemaVersion) : "missing";
     throw new StateValidationError(
       "state_schema_incompatible",
-      `Task state schema ${version} is incompatible; schemaVersion 4 required. No migration is available.`,
+      `Task state schema ${version} is incompatible; schemaVersion 5 required. No migration is available.`,
     );
   }
-  assertStateV4(value);
+  assertStateV5(value);
   return copy(value as TaskState);
 }
 
-export function assertStateV4(value: unknown): asserts value is TaskState {
-  const result = validateStateV4(value);
+export function assertStateV5(value: unknown): asserts value is TaskState {
+  const result = validateStateV5(value);
   if (!result.valid)
     throw new StateValidationError(
       "state_invalid",
-      `Task state V4 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`,
+      `Task state V5 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`,
     );
   const state = value as TaskState;
   if (!isTaskStatus(state.status) || !isRisk(state.risk))
-    throw new StateValidationError("state_invalid", "Task state V4 status or risk is invalid.");
+    throw new StateValidationError("state_invalid", "Task state V5 status or risk is invalid.");
   validateHistory(state);
   if (state.intake && state.intake.brief.risk !== state.risk)
     throw new StateValidationError("state_invalid", "Task risk contradicts Intake Brief risk.");
@@ -226,8 +226,6 @@ export function assertStateV4(value: unknown): asserts value is TaskState {
       "awaiting_intake_decision",
       "awaiting_approval",
       "executing",
-      "validating",
-      "resolving_build",
       "reviewing",
       "resolving_assure",
       "verifying",
@@ -256,15 +254,9 @@ export function assertStateV4(value: unknown): asserts value is TaskState {
     throw new StateValidationError("state_invalid", "awaiting_approval requires contract digest.");
   if (state.planApproval) validatePlanApproval(state, state.planApproval);
   if (
-    [
-      "executing",
-      "validating",
-      "resolving_build",
-      "reviewing",
-      "resolving_assure",
-      "verifying",
-      "finished",
-    ].includes(state.status) &&
+    ["executing", "reviewing", "resolving_assure", "verifying", "finished"].includes(
+      state.status,
+    ) &&
     !state.planApproval
   )
     throw new StateValidationError(
@@ -304,7 +296,7 @@ export function createGuardAttestation(
   guard: GuardId,
   input: CreateGuardAttestationInput,
 ): GuardEvidence {
-  assertStateV4(state);
+  assertStateV5(state);
   if (!GUARD_ID_SET.has(guard)) throw new Error(`Unknown transition guard ${guard}.`);
   if (guard === "intake_complete") {
     validateCompleteIntake(state);
@@ -340,7 +332,7 @@ export function createGuardAttestation(
 const trustedEvidence = new WeakSet<object>();
 
 export function evaluateDiscoveryGuard(state: TaskState, receipt: DiscoveryReceipt): GuardEvidence {
-  assertStateV4(state);
+  assertStateV5(state);
   if (!state.shape || !evaluateDiscoveryCompleteness(state.shape).complete)
     throw new Error("Discovery evaluator requires current complete Shape Discovery.");
   const current = state.shape.evaluatorReceipts.find(
@@ -360,7 +352,7 @@ export function evaluateDiscoveryGuard(state: TaskState, receipt: DiscoveryRecei
 }
 
 export function evaluatePlanningGuard(state: TaskState, receipt: PlanningReceipt): GuardEvidence {
-  assertStateV4(state);
+  assertStateV5(state);
   if (
     !state.shape ||
     !evaluateContractCompleteness(state.shape).complete ||
@@ -387,7 +379,7 @@ export function evaluateVerification(
   state: TaskState,
   input: VerificationEvaluatorInput,
 ): GuardEvidence {
-  assertStateV4(state);
+  assertStateV5(state);
   const requirements = state.verificationRequirements;
   if (!requirements) throw new Error("Verification requires state-bound verificationRequirements.");
   assertExactObservations(
@@ -420,7 +412,7 @@ export function evaluateVerification(
 }
 
 export function createGateDecision(state: TaskState, input: CreateGateDecisionInput): GateDecision {
-  assertStateV4(state);
+  assertStateV5(state);
   const unknown = Object.keys(input).filter(
     (key) => !["decision", "instructionRef", "at"].includes(key),
   );
@@ -476,7 +468,7 @@ export function updateShapeState(
     at?: string;
   },
 ): TaskState {
-  assertStateV4(state);
+  assertStateV5(state);
   if (deriveMacroPhase(state) !== "SHAPE" && state.status !== "awaiting_intake_decision") {
     throw new Error(
       "ShapeState may change only in SHAPE or while resolving linked Intake escalation.",
@@ -508,12 +500,12 @@ export function updateShapeState(
 }
 
 export function addRoutingDecision(state: TaskState, decision: RoutingDecision): TaskState {
-  assertStateV4(state);
+  assertStateV5(state);
   return { ...state, routingDecisions: [...(state.routingDecisions ?? []), copy(decision)] };
 }
 
 export function recordHistoryEvent(state: TaskState, input: RecordHistoryEventInput): TaskState {
-  assertStateV4(state);
+  assertStateV5(state);
   if (STATE_MACHINE[state.status].terminal) throw new Error("Terminal state history is immutable.");
   validateHistoryReferences(input.refs, `Workflow event ${input.type}`);
   const event: WorkflowHistoryEvent = {
@@ -526,7 +518,7 @@ export function recordHistoryEvent(state: TaskState, input: RecordHistoryEventIn
 }
 
 export function updateResumeContext(state: TaskState, input: ResumeContextInput): TaskState {
-  assertStateV4(state);
+  assertStateV5(state);
   const { activeArtifact: _a, activeWorktree: _w, ...base } = state;
   const updated: TaskState = {
     ...base,
@@ -562,7 +554,7 @@ export function transition(
   next: TaskStatus,
   options: TransitionOptions = {},
 ): TaskState {
-  assertStateV4(state);
+  assertStateV5(state);
   validateTransitionOptionKeys(options);
   if (!isTaskStatus(next))
     throw new Error(`Invalid state transition from ${state.status} to ${String(next)}.`);
@@ -1167,7 +1159,7 @@ function compactAndValidate(state: TaskState): TaskState {
           history: state.history.slice(-HISTORY_LIMIT),
           historySummary: summarizeHistory(state),
         };
-  assertStateV4(output);
+  assertStateV5(output);
   return output;
 }
 function summarizeHistory(state: TaskState): TaskState["historySummary"] {

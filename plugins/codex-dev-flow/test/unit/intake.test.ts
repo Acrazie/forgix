@@ -1,7 +1,7 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
 import * as sourceApi from "../../src/cli.ts";
 import { expect, test } from "bun:test";
-import { taskInput } from "../support/helpers-v4.ts";
+import { taskInput } from "../support/helpers-v5.ts";
 const api = async () => sourceApi;
 
 function brief(risk = "medium", objective = "Add export") {

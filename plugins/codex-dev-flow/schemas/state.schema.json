@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Codex Dev Flow task state V4",
+  "title": "Codex Dev Flow task state V5",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,7 +17,7 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": 4
+      "const": 5
     },
     "taskId": {
       "$ref": "#/$defs/text"
@@ -204,8 +204,6 @@
               "awaiting_intake_decision",
               "awaiting_approval",
               "executing",
-              "validating",
-              "resolving_build",
               "reviewing",
               "resolving_assure",
               "verifying",
@@ -247,8 +245,6 @@
         "awaiting_intake_decision",
         "awaiting_approval",
         "executing",
-        "validating",
-        "resolving_build",
         "reviewing",
         "resolving_assure",
         "verifying",
@@ -267,8 +263,6 @@
         "awaiting_intake_decision",
         "awaiting_approval",
         "executing",
-        "validating",
-        "resolving_build",
         "reviewing",
         "resolving_assure",
         "verifying"

@@ -136,7 +136,6 @@ export interface LifecycleTraceSummary {
   resumes: number;
   validationRuns: number;
   reviewRuns: number;
-  buildResolutionCycles: number;
   assureResolutionCycles: number;
   terminalStatus: TaskStatus;
   falseSuccessDetections: number;
@@ -300,9 +299,8 @@ export function summarizeLifecycleTrace(input: TraceSummaryInput): LifecycleTrac
     resumes: edges.filter(
       ({ from, to }) => from === "blocked" && to !== "cancelled" && to !== "failed",
     ).length,
-    validationRuns: edges.filter(({ to }) => to === "validating").length,
+    validationRuns: edges.filter(({ to }) => to === "verifying").length,
     reviewRuns: edges.filter(({ to }) => to === "reviewing").length,
-    buildResolutionCycles: edges.filter(({ to }) => to === "resolving_build").length,
     assureResolutionCycles: edges.filter(({ to }) => to === "resolving_assure").length,
     terminalStatus,
     falseSuccessDetections,
@@ -406,7 +404,6 @@ function validateSummary(
       "resumes",
       "validationRuns",
       "reviewRuns",
-      "buildResolutionCycles",
       "assureResolutionCycles",
       "terminalStatus",
       "falseSuccessDetections",
@@ -448,7 +445,6 @@ function validateSummary(
       "resumes",
       "validationRuns",
       "reviewRuns",
-      "buildResolutionCycles",
       "assureResolutionCycles",
       "terminalStatus",
     ] as const) {
