@@ -446,14 +446,14 @@ second architecture authority. Broader task-decision visuals remain target behav
 ## Remaining accepted target design terms
 
 Following INTAKE and ordinary SHAPE terms remain conceptual until runtime, schema,
-skills, and normative lifecycle contract implement ADR 0026 atomically.
+skills, and normative lifecycle contract implement ADR 0030 atomically.
 
 ### Decision Graph
 
-Target acyclic graph connecting Product Baseline decisions, Technical Decisions,
-evidence, profile conventions, and contract sections. It orders unblocked questions and
-computes selective transitive invalidation. It extends current SHAPE Dependency graph
-rather than creating second independent authority.
+Target task-level typed acyclic graph connecting Product Baseline dimensions, domain
+records, Technical Decisions, evidence, profile conventions, and contract sections. It
+orders unblocked questions and computes selective transitive invalidation without owning
+record payloads.
 
 ### Product Baseline
 
@@ -462,11 +462,39 @@ and boundaries, observable success and validator, and product risks and determin
 constraints. These are five mandatory completeness dimensions, not five mandatory
 prompts.
 
-### Shape Decision Question
+### Active Design Question
 
-Target single active, resumable SHAPE question for one material Technical Decision.
-It carries parent context, fresh evidence, recommendation and confidence, two or three
-viable options, direct consequences, and free-form input.
+Target single active, resumable task question for one product, terminology, domain-rule,
+or technical decision. It carries phase owner, prior role, prerequisites, parent context,
+direct consequences, priority reason, and either targeted elicitation or two or three
+viable options with recommendation and confidence.
+
+### Domain Glossary Delta
+
+Target task-local candidate change to contextual business vocabulary. It records
+canonical term, definition, accepted aliases, rejected or deprecated terms, related
+terms, provenance, dependencies, lifecycle status, and durable disposition. It contains
+no implementation detail.
+
+### Domain Rule
+
+Target structured business rule containing context, actors, conditions, invariant or
+outcome, exceptions and limits, evidence, dependencies, and linked Domain Scenarios.
+Material rules trace to acceptance criteria or an explicit durable disposition.
+
+### Domain Scenario
+
+Target child record that stress-tests a Domain Rule through initial situation,
+event/action, expected or forbidden result, and nominal, boundary, exception, or
+contradiction angle. It is reusable validation input but not automatically an executable
+test.
+
+### Decision Candidate
+
+Target durable-decision candidate containing context, forces, alternatives, evidence,
+selection, consequences, dependencies, and ADR qualification. ADR projection requires
+durability, material reversal cost, a real trade-off, and rationale that would otherwise
+be surprising.
 
 ### Technical Decision
 

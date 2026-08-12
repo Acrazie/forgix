@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted for current runtime. Target sequencing is refined by ADR 0026.
+Accepted for current runtime. Replacement target sequencing is defined by ADR 0030;
+ADR 0026 is superseded as target design.
 
 ## Context
 

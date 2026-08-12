@@ -2,250 +2,417 @@
 
 ## Contract status
 
-This document records the accepted INTAKE and ordinary SHAPE target from ADR 0026. It
-remains pending and non-normative. Agentic Project INIT and Project Engineering Profile
-transactions are already implemented and governed only by the
-[profile contract](project-profile-contract.md). Until the remaining target increment
-updates schema, state machine, skills, projections, and tests atomically, the
-[current lifecycle contract](lifecycle-contract.md) remains authoritative for tasks.
+This document specifies the accepted target from
+[ADR 0030](adr/0030-unify-product-domain-and-technical-design-interviews.md). It is
+pending and non-normative. Current runtime and the
+[lifecycle contract](lifecycle-contract.md) remain authoritative until runtime, state
+schema, skills, projections, tests, and distribution implement this target atomically.
 
-The remaining target extends TaskState V4 without changing `schemaVersion`. Its delivery
-must update runtime, schema, skills, normative contract, and tests together; this
-document never becomes a second source of runtime truth.
+The target completes unreleased TaskState V5. Earlier local V4 or partial V5 state is
+not migrated and must fail with a clear diagnostic.
 
-## Purpose
+## Purpose and ownership
 
-The target makes two boundaries explicit:
+The target establishes one dependency-directed design interview across product, domain,
+and technical uncertainty without erasing phase authority:
 
-1. INTAKE obtains stable product decisions without forcing a fixed questionnaire.
-2. SHAPE discovers facts and interviews every material technical decision in dependency
-   order, one question at a time.
+| Owner           | Owns                                                                                                                 |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- |
+| INTAKE          | Product Baseline, task-relevant terminology, business rules, scenarios, and business-context boundaries.             |
+| SHAPE Discovery | Repository and service facts, evidence, source fingerprints, profile applicability, and candidate technical choices. |
+| SHAPE Planning  | Canonical Change Contract derived only from structured current evidence and resolved decisions.                      |
+| GATE            | One final approval of exact contract digest, including durable domain dispositions.                                  |
+| BUILD           | Native implementation plus approved targeted documentation projections.                                              |
+| ASSURE          | Review and criterion-linked verification, including documentation fidelity.                                          |
 
-The design does not duplicate final confirmation in SHAPE or move Git or GitHub
-operations into task state. Current Project INIT behavior is intentionally not redefined
-here.
+Facts are discovered. Material choices are explicit. Reversible repository-conforming
+implementation details remain agent-owned.
 
 ## Target lifecycle
 
 ```text
-INTAKE: product baseline
+INTAKE: Product Baseline <-> product/domain design questions
    |
    v
-SHAPE: Discovery <-> technical decision interview -> Quick|Plan -> Planning
-   |                                                        |
-   +---- targeted product contradiction -> INTAKE ----------+
+SHAPE: Discovery <-> technical design questions -> Quick|Plan -> Planning
+   |                                                    |
+   +-- product/domain contradiction -> INTAKE ----------+
    |
    v
-GATE: deterministic preflight + one final approval
-   |
-   v
-BUILD -> ASSURE -> finished
+GATE -> BUILD -> ASSURE -> finished
 ```
 
-```mermaid
-flowchart LR
-  I[INTAKE product baseline] --> D[SHAPE Discovery]
-  D --> T{Material technical decision?}
-  T -- yes --> Q[One active decision question]
-  Q --> D
-  T -- no --> P{Quick or Plan}
-  P --> L[Planning]
-  L -->|missing fact| D
-  L -->|new material decision| Q
-  D -->|product contradiction| I
-  L -->|product contradiction| I
-  L --> S[Compact SHAPE synthesis]
-  S --> G[GATE]
-  G --> B[BUILD]
-  B --> A[ASSURE]
-  A --> F[finished]
+Question ownership produces these resumable states:
+
+```text
+intaking <-> product|terminology|domain_rule question
+discovering|planning -> awaiting_shape_decision -> discovering|planning
+discovering|planning -> awaiting_intake_decision -> discovering|planning
+discovering -> awaiting_profile_choice -> planning
+planning -> awaiting_approval
 ```
 
-## INTAKE contract
+Exactly one `ActiveDesignQuestion` exists across entire task.
 
-### Product baseline
+## Canonical task records
 
-INTAKE resolves five mandatory dimensions, not five mandatory prompts:
+### ProductBaseline
+
+`ProductBaseline` replaces `IntakeBrief`. It contains five dimensions:
 
 1. objective;
 2. affected users and product value;
 3. scope and boundaries;
-4. observable success and its validator; and
+4. observable success and validator;
 5. product risks and determining constraints.
 
-Explicit request content fills dimensions directly. INTAKE asks only for missing or
-contradictory product decisions, one question at a time. Each question contains two or
-three viable choices, one justified recommendation, and free-form input. One answer may
-close several dimensions when its meaning is explicit.
+Each dimension contains stable ID, status, value or justified `not_applicable`,
+provenance, and dependency node. Missing or unknown dimensions remain open. Baseline
+also references contradictions, task-relevant domain records, and technical unknowns
+owned by SHAPE.
 
-Product-visible behavior and UX belong to INTAKE. Repository facts, implementation
-architecture, data mechanics, and other technical choices belong to SHAPE.
+### DesignState
 
-### Stability and targeted reopening
+Task-level `design` state owns transversal orchestration:
 
-The completed Product Baseline is stable. SHAPE does not reinterpret or mutate it.
-Fresh technical evidence routes a contradiction by cause:
+```text
+DesignState
+├── activeQuestion?
+├── dependencyGraph
+├── glossaryDeltas[]
+├── domainRules[]
+├── decisionCandidates[]
+├── invalidations[]
+└── semanticRetryCount
+```
 
-| Cause                                                                     | Owner            | Result                                             |
-| ------------------------------------------------------------------------- | ---------------- | -------------------------------------------------- |
-| Discovery evidence is stale or incomplete                                 | Discovery        | Refresh affected evidence.                         |
-| Selected technical option conflicts, but another compatible option exists | SHAPE            | Invalidate technical decision and dependents.      |
-| Evidence proves infeasibility or materially changes product outcome       | INTAKE           | Reopen affected product decision and dependents.   |
-| Repository or system policy conflicts                                     | Higher authority | Reject lower decision or require compliant option. |
+The graph owns only typed IDs and `dependsOn` edges. Payload authority stays in
+`ProductBaseline`, design registries, SHAPE evidence/decisions, and Change Contract.
 
-Only transitive dependency closure is invalidated. Unrelated product decisions,
-evidence, and contract sections remain current.
+### DomainGlossaryDelta
 
-INTAKE adds a dedicated confirmation only when runtime materially interpreted or
-normalized free-form input, or resolved a contradiction. Otherwise explicit request and
-answers suffice. GATE remains sole final contract approval.
+Required fields:
+
+- stable ID, canonical term, concise business definition, and domain context;
+- accepted aliases and rejected/deprecated terms with reasons;
+- related term IDs;
+- optional examples and non-examples when needed for disambiguation;
+- provenance, dependencies, lifecycle status, and durable disposition;
+- proposed projection destination when disposition is `project`.
+
+Implementation details are invalid glossary content.
+
+### DomainRule and DomainScenario
+
+`DomainRule` contains stable ID, context, linked terms, actors, application conditions,
+outcome/invariant, exceptions/limits, evidence/provenance, dependencies, lifecycle
+status, durable disposition, and child scenario IDs. A non-applicable field requires a
+reason rather than silent omission.
+
+`DomainScenario` contains stable ID, initial situation, event/action, expected or
+forbidden result, angle (`nominal|boundary|exception|contradiction`), provenance, and
+evidence references. It may become acceptance or validation evidence but is not
+automatically an executable test.
+
+### DecisionCandidate
+
+A candidate for durable decision documentation contains stable ID, title, scope/context,
+problem, forces in tension, viable and excluded alternatives, evidence, recommendation,
+confidence, explicit user selection, consequences, dependencies, lifecycle status,
+destination, and ADR qualification:
+
+- durable beyond current task;
+- materially costly to reverse;
+- real trade-off among viable alternatives;
+- surprising without recorded rationale.
+
+All four gates are required for ADR projection.
+
+### TechnicalDecision
+
+SHAPE technical choice contains stable ID, question, materiality reason, prerequisite
+and dependent IDs, fresh evidence, viable and excluded options, recommendation,
+confidence, consequences, explicit selection, status, and prior SHAPE role. It replaces
+current `DecisionEscalation` rather than coexisting with a second technical-choice model.
+
+### ActiveDesignQuestion
+
+Common envelope contains:
+
+- stable question and decision IDs;
+- variant `product|terminology|domain_rule|technical`;
+- owner `intake|shape` and exact prior role;
+- prerequisite and affected dependency roots;
+- prompt, parent context, direct consequences, and priority explanation;
+- mode `choice|elicitation`;
+- for `choice`, two or three non-dominated options, recommendation, reason, confidence;
+- free-form capability and bounded clarification count.
+
+Question is persisted before display. UI is an adapter: native interactive choice when
+appropriate, text fallback with equivalent meaning, and targeted text for open
+elicitation.
+
+## INTAKE contract
+
+### Discovery boundary
+
+INTAKE may read only task-relevant guidance, effective policy/configuration, approved
+Project Engineering Profile, domain documents, ADRs, relevant contracts, primary
+manifests, and workspace identity. It does not scan implementation to avoid a question.
+Current code behavior needed to validate a term or rule becomes one typed SHAPE unknown.
+
+### Material domain triggers
+
+Domain modeling activates only when an answer can change observable behavior, actor,
+permission, responsibility, invariant, exception, domain-context boundary, data meaning,
+success, scope, risk, or compatibility. Editorial wording, obvious aliases, and
+reversible details remain model-owned. Every semantic classification carries a bounded
+`materialityReason`.
+
+An ambiguous term required to understand a baseline dimension becomes an elicitation
+prerequisite for that dimension. No inverse dependency is permitted. INTAKE is complete
+for current task only; it never attempts to model whole project.
+
+### Domain stress testing
+
+A material rule is tested adaptively through:
+
+1. positive expected behavior;
+2. a material boundary, exception, or counter-example;
+3. confrontation with current applicable documentation and available technical evidence.
+
+The model chooses useful scenarios rather than imposing fixed prompts. A trivial
+explicit rule may close from one decisive source. Any contradiction remains open.
+Existing approved domain docs describe desired baseline; code/tests describe current
+behavior. User can explicitly revise baseline, producing deltas and dependent technical
+work.
+
+### Question and answer rules
+
+Use a `choice` question when viable interpretations/options exist. Use targeted
+`elicitation` only when offering options would invent business meaning. Material
+normalization of free-form input requires exact targeted confirmation; faithful
+editorial normalization does not.
+
+One response may explicitly resolve multiple nodes. Model returns exact normalized
+records; runtime validates whole transaction, authority, prerequisites, and
+contradictions before applying it atomically. No partial success is persisted.
+
+Silence, deferral, “choose for me”, or advance request cannot resolve material choice.
+Available exits are answer, scope reduction that removes branch, or cancellation.
+
+### INTAKE completion
+
+`intake_complete` requires:
+
+- five baseline dimensions resolved or justifiably not applicable;
+- every task-material terminology/rule/context node resolved;
+- no active INTAKE question or contradiction;
+- valid graph and fresh documentary evidence;
+- typed ownership for all remaining technical unknowns;
+- semantic declaration that product/domain uncertainty is sufficient for SHAPE.
+
+No question cap or periodic progress gate exists. Runtime shows global synthesis only
+on request, at a real context/quota boundary, for material reinterpretation, or at SHAPE
+exit.
 
 ## SHAPE contract
 
-### Facts before questions
+### Discovery before choice
 
-SHAPE explores available environment before asking for facts. Discovery may inspect
-repository guidance, profiles, manifests, lockfiles, configuration, tests, contracts,
-representative code, safe command results, configured service roots, and official
-primary documentation when local sources cannot resolve a version-sensitive fact.
+Discovery inspects repository guidance, profiles, manifests/locks, configuration,
+contracts, tests, representative code, configured service roots, safe commands, and
+official primary documentation when local version-sensitive facts are insufficient.
+Every evidence record carries source, fingerprint/version, observation time, freshness
+rule, and dependency node. Unverifiable user information remains `user_asserted`.
 
-Evidence records source, version or fingerprint, observation time, and freshness rule.
-Unverifiable user information has `user_asserted` provenance and never silently becomes
-verified technical proof.
+Discovery and technical interview interleave. Explore only enough of a branch to decide
+viability and materiality. Product writes, installs, migrations, and external effects
+remain forbidden before GATE; isolated reversible task-space experiments are allowed.
 
-Discovery and interview interleave. Runtime explores only enough of a branch to decide
-whether it remains viable or creates a material decision. Safe, reversible experiments
-may run in temporary task space. Product writes, dependency installation, migrations,
-and external side effects remain forbidden before GATE.
+### Technical materiality
 
-### Material technical decisions
+Explicit user choice is required when alternatives materially affect architecture,
+major framework/runtime/dependency, schema/migration, cross-service contract,
+security/privacy, compatibility, concurrency, performance, cost, operations, rollback,
+or approved profile convention. Another category requires persisted material impact
+reason. Agent owns compatible reversible detail.
 
-A decision is material when alternatives can materially change architecture,
-framework/runtime or a major dependency, schema or migration, cross-service contract,
-security or privacy, compatibility, concurrency, performance, cost, operations,
-rollback, or an approved profile convention. Semantic classification may add another
-decision only with a persisted impact reason.
+More than three options are reduced to two or three viable non-dominated choices.
+Excluded alternatives remain recorded and available on request. Low-confidence
+recommendation names irreducible trade-off.
 
-Repository-conforming and reversible details remain agent-owned. Material choices
-remain user-owned. “Choose for me” cannot close a material decision; explicit acceptance
-of recommended option can.
+Evidence showing selected technical option incompatible while another compatible
+option exists invalidates technical branch. Evidence proving product infeasibility or
+materially different product outcome creates one linked INTAKE question. Product payload
+is not duplicated in `TechnicalDecision`.
 
-When more than three feasible options exist, SHAPE presents two or three viable,
-non-dominated choices. Excluded choices remain available on request, and free-form input
-remains valid. If evidence cannot distinguish a winner, recommendation carries explicit
-low confidence and the irreducible trade-off.
+### Frontier selection
 
-### Dependency-directed interview
+Frontier contains unresolved required nodes whose prerequisites are current and
+resolved. Model scores each candidate using:
 
-`DecisionGraph` is acyclic. Runtime asks highest-impact unblocked root first, then its
-dependents. Exactly one `ShapeDecisionQuestion` is active and visible. It contains:
+- whether it blocks objective or success;
+- authority;
+- number and importance of branches unlocked;
+- impact and irreversibility;
+- risk;
+- remaining uncertainty.
 
-- stable decision and parent keys;
-- concise parent context and direct consequences;
-- fresh evidence and provenance;
-- recommended option, reason, and confidence;
-- two or three viable options; and
-- free-form answer capability.
+Runtime validates eligibility and bounded scoring, then uses stable ID tie-breaking.
+Selected question and reason persist. Only answer, material invalidation, or new evidence
+recomputes frontier through model. Full graph is hidden by default and shown on request
+or when materially useful.
 
-Full graph remains internal unless user requests it. One answer may explicitly close
-several branches. Revisions invalidate only affected descendants, evidence, and
-contract sections. Long interviews persist normalized decisions and exact active
-question—not transcript or hidden reasoning.
+### Planning and profile choice
 
-No hard question cap exists. No periodic checkpoint asks permission merely because five
-questions passed, and no cost estimate blocks progress. State saves after each answer.
-Runtime warns only when a real context or quota boundary threatens resume.
+Quick/Plan choice occurs after main material technical decisions. Small local domain
+deltas do not force Plan. Multiple contexts, ADR projection, migration, broad dependency
+fan-out, or complex projection support Plan recommendation.
 
-### Visual decision evidence
+Planning reads structured state only. Missing facts return one Discovery Target; new
+material choices return one Technical Decision. Each material Domain Rule maps to at
+least one acceptance criterion or explicit durable disposition. Observable scenarios
+become validation candidates classified as automated, manual, or documentary with
+reason.
 
-Runtime uses cheapest representation capable of resolving decision:
+### SHAPE completion
 
-1. ASCII for simple flows, trees, or rough wireframes;
-2. Mermaid for non-trivial architecture, state, sequence, or dependency views;
-3. isolated HTML/CSS for material UI layout or interaction choices; and
-4. Excalidraw or generated images only when requested or necessary.
+Completion requires model declaration of no material uncertainty plus deterministic
+proof:
 
-Two or three variants may appear in one question when visual comparison is itself the
-decision. Temporary prototypes never enter product source before GATE. Persisted
-Mermaid is generated projection, never canonical architecture authority.
+- graph valid and acyclic;
+- no open/invalidated required branch or active question;
+- no active contradiction, stale evidence, or stale profile dependency;
+- criteria cover Product Baseline success and material Domain Rules;
+- tasks and validations cover criteria;
+- applicable risks, compatibility, migration, operations, and rollback resolved;
+- every durable domain delta has disposition and proof/reason;
+- contract digest includes domain records and projection work.
 
-### Preparation and completion
+SHAPE renders one compact synthesis then existing GATE card in same interaction. It asks
+no duplicate final approval.
 
-Quick/Plan choice occurs after main material technical decisions and before Planning.
-Planning can still emit targeted Discovery Targets or Technical Decisions when a new
-dependency appears.
-
-SHAPE completes only when semantic and deterministic checks agree:
-
-- no material uncertainty remains;
-- decision graph is valid and has no open required branch;
-- evidence and applicable profile are current;
-- acceptance criteria cover product success;
-- tasks and validations cover every criterion; and
-- risks, compatibility, migration, operations, and rollback are resolved when
-  applicable.
-
-User request cannot force an unresolved mandatory branch closed. Completion renders one
-compact decision, architecture, exception, risk, and validation synthesis. Existing
-five-line GATE card follows in same interaction; SHAPE asks no duplicate final approval.
-
-## Target state extension
-
-### Statuses and resume
-
-Current `awaiting_profile_choice` remains dedicated to Quick/Plan. Target adds
-`awaiting_shape_decision`:
+## Domain record lifecycle and projection
 
 ```text
-discovering|planning -> awaiting_shape_decision -> discovering|planning
-discovering -> awaiting_profile_choice -> planning
-planning -> discovering
-planning|discovering -> awaiting_intake_decision -> discovering|planning
-planning -> awaiting_approval
+proposed -> resolved -> approved -> projected
+               \-> invalidated
 ```
 
-`awaiting_shape_decision` stores exact active question and exact prior SHAPE role.
-Resume re-renders same question unless a dependency fingerprint changed; then runtime
-invalidates it and returns to targeted Discovery.
+Before GATE, domain records exist only in task state. Durable disposition is one of:
 
-### Conceptual model
+- `project`: contract contains targeted documentation task and validation;
+- `already_documented`: fresh source fingerprint proves durable coverage;
+- `task_local`: reason proves no durable knowledge should survive task;
+- `policy_forbidden`: higher authority forbids projection.
 
-| Record                  | Owns                                                                                          |
-| ----------------------- | --------------------------------------------------------------------------------------------- |
-| `ProductBaseline`       | Five product dimensions, provenance, completeness, targeted invalidations.                    |
-| `TechnicalDecision`     | Stable key, materiality reason, options, selected option, dependencies, provenance, revision. |
-| `ShapeDecisionQuestion` | Exact active user question, evidence, recommendation, confidence, options, parent context.    |
-| `DecisionGraph`         | Acyclic product, technical, evidence, profile, and contract dependencies.                     |
-| `UserAssertion`         | Unverified statement, scope, source actor, timestamp, and affected decisions.                 |
-| `VisualProjection`      | Generated Mermaid or temporary visual reference derived from canonical records.               |
+GATE approval changes digest-bound records from `resolved` to `approved`. BUILD patches
+only owned semantic entries/sections and preserves unrelated human content. Ambiguous
+merge returns to owning decision rather than overwriting or appending duplicates.
 
-TaskState remains V4 because target work extends an unreleased schema. Schema and
-runtime must reject partial records and impossible status/role combinations.
+ASSURE verifies path policy, changed file, fingerprint, expected IDs/links, semantic
+fidelity, and content-specific rules: glossary has no implementation details; rules
+retain conditions, results, and limits; ADR retains alternatives and consequences.
+Verification receipt binds projection evidence to contract digest. Repository docs
+become durable authority only after successful projection.
 
-## Implementation increments
+Destination resolver order:
 
-One remaining runtime increment adds `awaiting_shape_decision`, decision graph, adaptive
-visuals, INTAKE reopening, and ordinary SHAPE/profile integration. It must update state
-schema, lifecycle state machine, capsule/projection types, skills, lifecycle contract,
-glossary status labels, metrics allowlist where needed, distribution artifacts, and
-automated tests together.
+1. explicit policy/configuration;
+2. approved Project Engineering Profile;
+3. detected repository convention;
+4. portable defaults.
 
-## Target acceptance criteria
+Portable defaults:
 
-- Explicit product input satisfies INTAKE dimensions without redundant questions.
-- Missing product decisions are asked one at a time and become stable.
-- Repository facts are discovered rather than asked.
-- Every open material technical decision has exactly one user-owned resolution path.
-- Decision order follows acyclic dependencies and selective invalidation.
-- Resume restores exact technical question and prior SHAPE role.
-- No question cap, periodic progress gate, or cost-estimation prompt blocks SHAPE.
-- Product contradiction reopens only affected INTAKE decision.
-- Existing approved profile conventions participate in the decision graph without
-  replacing fresh task evidence or higher-authority product decisions.
-- SHAPE synthesis and existing GATE card form one interaction with one final approval.
-- Current normative runtime behavior remains unchanged until full target increment lands.
+```text
+docs/domain/glossary.md
+docs/domain/rules.md
+docs/adr/
+```
+
+Multiple contexts add `docs/domain/context-map.md` and
+`docs/domain/<context>/{glossary,rules}.md`. Existing `CONTEXT.md`, context-map, glossary,
+or ADR conventions remain respected when detected. Missing setup triggers one
+non-blocking `$dev-flow init` recommendation; policy or irreducibly conflicting
+destinations may block.
+
+## Project INIT integration
+
+Shared Project Engineering Profile gains optional `domain_documentation` facet:
+
+- mono/multi-context mode and logical context identities;
+- glossary, rule, context-map, and ADR paths/formats;
+- identity/link conventions and projection language;
+- provenance and source fingerprints.
+
+Facet activates when evidence shows domain docs/contexts or user requests capability.
+INIT discovers first and asks only contradictory or durable missing choices. Standalone
+`npx codex-dev-flow init` remains plugin configuration wizard and does not replace
+agentic `$dev-flow init`.
+
+## Privacy, language, and visuals
+
+Routing adds stage `design`. Resolve it once from same immutable account/quota/model
+snapshot as other routes. Fused INTAKE/domain and SHAPE technical-choice evaluations use
+this route; repository fact-finding retains `discover`. Risk, ambiguity, and graph depth
+raise effort within allowed bounds. Route, effort, and usage counters may persist;
+decision content may not enter routing telemetry.
+
+Persist normalized records, compact source refs, exact active question, and
+invalidations. Do not persist transcript, hidden reasoning, prompt, raw answer after
+normalization, large code/diff excerpts, credentials, or external payloads. Apply string
+bounds, secret/PII redaction, and allowlisted provenance.
+
+Stable IDs/enums remain English. Questions preserve dominant user language. Repository
+projections preserve detected language; a new repository gets language choice through
+setup. One answer never silently changes project documentation language.
+
+Use cheapest useful visual: ASCII, Mermaid, isolated HTML/CSS, then Excalidraw/generated
+image. Temporary prototypes never enter product source before GATE.
+
+## Failure and resume
+
+Invalid model output receives deterministic syntax repair only when meaning is intact,
+otherwise one targeted semantic retry. Second failure creates typed block and preserves
+prior state atomically.
+
+Resume validates schema, active-question/status/owner combination, graph, source
+fingerprints, profile, projection, config/policy, routing, and workspace. Fresh state
+reuses exact question without reasoning. Changed dependency selectively invalidates
+closure and returns to its owner.
+
+## Implementation and acceptance
+
+Public activation must update together:
+
+- TaskState V5 types, schema, validator, state machine, guards, events, and projections;
+- Product Baseline and design/technical/domain registries;
+- graph kinds, frontier ranking, invalidation, persistence, and resume;
+- `design-decisions`, `dev-flow`, `discover-change`, and `plan-change` skills;
+- Project Engineering Profile schema/runtime for `domain_documentation`;
+- lifecycle contract, glossary, public docs, metrics allowlist, and package artifacts;
+- deterministic tests, fixtures, model evals, integration tests, and runtime smoke tests.
+
+Acceptance requires:
+
+- explicit input satisfies baseline dimensions without redundant questions;
+- facts available from environment are discovered rather than asked;
+- ambiguous task-critical language becomes prerequisite instead of assumed meaning;
+- material domain and technical decisions have exactly one explicit resolution path;
+- one active question and exact resume are enforced across task;
+- frontier follows dependencies and selective invalidation;
+- domain rules are stress-tested adaptively and trace to criteria/dispositions;
+- no durable resolved delta disappears before GATE;
+- docs are written only after approval and verified semantically;
+- setup is recommended but non-blocking when safe defaults exist;
+- no compatibility machinery remains for obsolete local state;
+- current runtime remains unchanged until entire target increment lands.
 
 ## Decision records
 
-- [ADR 0026](adr/0026-keep-intake-product-stable-and-interview-shape-by-dependency.md)
+- [ADR 0030](adr/0030-unify-product-domain-and-technical-design-interviews.md)
+- [ADR 0029](adr/0029-make-build-a-native-execution-boundary.md)
 - [ADR 0027](adr/0027-add-agentic-project-init-and-versioned-engineering-profiles.md)
+- [ADR 0026 — superseded](adr/0026-keep-intake-product-stable-and-interview-shape-by-dependency.md)

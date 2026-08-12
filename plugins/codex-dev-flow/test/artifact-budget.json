@@ -47,6 +47,7 @@
     "docs/adr/0027-add-agentic-project-init-and-versioned-engineering-profiles.md",
     "docs/adr/0028-make-public-documentation-user-first-and-current.md",
     "docs/adr/0029-make-build-a-native-execution-boundary.md",
+    "docs/adr/0030-unify-product-domain-and-technical-design-interviews.md",
     "docs/artifacts.md",
     "docs/baselines/2026-07-18-p0-lifecycle.json",
     "docs/design.md",

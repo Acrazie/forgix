@@ -96,8 +96,9 @@ or fetch another package.
 
 `codex-dev-flow project-profile view [--local]` renders published canonical YAML.
 Backend validation, digest, revision, privacy, receipt, symlink, and atomic-write errors
-are blocking; never bypass them with direct file write. Ordinary SHAPE consumption and
-promotion of these profiles remain pending until ADR 0026 runtime increment lands.
+are blocking; never bypass them with direct file write. Ordinary SHAPE consumption,
+domain-documentation conventions, and promotion of these profiles remain pending until
+ADR 0030 runtime increment lands.
 
 ## INTAKE and routing
 

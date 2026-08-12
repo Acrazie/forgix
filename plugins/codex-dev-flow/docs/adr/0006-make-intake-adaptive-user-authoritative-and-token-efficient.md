@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted for current runtime. Target refinements are recorded by ADR 0026.
+Accepted for current runtime. Replacement target is recorded by ADR 0030; ADR 0026 is
+superseded as target design.
 
 ## Context
 
