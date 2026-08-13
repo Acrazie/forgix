@@ -91,6 +91,17 @@ export interface ProjectProfileContent {
     services: ProjectService[];
   };
   decisions: ProjectProfileDecision[];
+  domainDocumentation?: {
+    contextMode: "single" | "multiple";
+    glossaryPath: string;
+    rulesPath: string;
+    adrDirectory: string;
+    contextMapPath?: string;
+    language: string;
+    identityConvention: string;
+    linkConvention: string;
+    sourceFingerprints: ProfileSourceFingerprint[];
+  };
   diagramRefs: string[];
 }
 
@@ -168,6 +179,7 @@ export interface ProfileReconciliationResult {
   staleDecisionKeys: string[];
   invalidatedDecisionKeys: string[];
   missingSourceRefs: string[];
+  domainDocumentationStale?: boolean;
   current: boolean;
 }
 
@@ -177,6 +189,7 @@ export interface ProjectProfileDiff {
   removedDecisionKeys: string[];
   topologyChanged: boolean;
   stackChanged: boolean;
+  domainDocumentationChanged: boolean;
 }
 
 export type ProjectProfileErrorCode =
@@ -381,12 +394,19 @@ export function reconcileProjectProfile(
       else if (observed !== fingerprint.value) stale.add(decision.key);
     }
   }
+  let domainDocumentationStale = false;
+  for (const fingerprint of profile.content.domainDocumentation?.sourceFingerprints ?? []) {
+    const observed = observedFingerprints[fingerprint.sourceRef];
+    if (observed === undefined) missing.add(fingerprint.sourceRef);
+    else if (observed !== fingerprint.value) domainDocumentationStale = true;
+  }
   const invalidated = decisionDependencyClosure(profile.content.decisions, stale);
   return {
     staleDecisionKeys: [...stale].toSorted(),
     invalidatedDecisionKeys: [...invalidated].toSorted(),
     missingSourceRefs: [...missing].toSorted(),
-    current: stale.size === 0 && missing.size === 0,
+    ...(profile.content.domainDocumentation ? { domainDocumentationStale } : {}),
+    current: stale.size === 0 && missing.size === 0 && !domainDocumentationStale,
   };
 }
 
@@ -401,6 +421,7 @@ export function diffProjectProfiles(
       removedDecisionKeys: [],
       topologyChanged: true,
       stackChanged: true,
+      domainDocumentationChanged: Boolean(next.content.domainDocumentation),
     };
   }
   const before = new Map(previous.content.decisions.map((decision) => [decision.key, decision]));
@@ -416,6 +437,8 @@ export function diffProjectProfiles(
     removedDecisionKeys: removed,
     topologyChanged: stable(previous.content.topology) !== stable(next.content.topology),
     stackChanged: stable(previous.content.stack) !== stable(next.content.stack),
+    domainDocumentationChanged:
+      stable(previous.content.domainDocumentation) !== stable(next.content.domainDocumentation),
   };
 }
 
@@ -1055,6 +1078,42 @@ function validateProfileContent(content: ProjectProfileContent): void {
     }
   }
   assertAcyclicDecisions(content.decisions);
+  if (content.domainDocumentation) {
+    const domain = content.domainDocumentation;
+    for (const [label, path] of [
+      ["glossaryPath", domain.glossaryPath],
+      ["rulesPath", domain.rulesPath],
+      ["adrDirectory", domain.adrDirectory],
+      ...(domain.contextMapPath ? [["contextMapPath", domain.contextMapPath]] : []),
+    ] as Array<[string, string]>) {
+      assertNoLocalPath(path, `Domain documentation ${label}`);
+      if (path.includes("\\") || path.startsWith("/") || path.split("/").includes(".."))
+        throw new ProjectProfileError(
+          "profile_invalid",
+          `Domain documentation ${label} must be a portable repository path.`,
+        );
+    }
+    if (domain.contextMode === "multiple" && !domain.contextMapPath)
+      throw new ProjectProfileError(
+        "profile_invalid",
+        "Multiple domain contexts require contextMapPath.",
+      );
+    if (
+      ![domain.language, domain.identityConvention, domain.linkConvention].every(
+        (value) => typeof value === "string" && value.trim().length > 0,
+      )
+    )
+      throw new ProjectProfileError(
+        "profile_invalid",
+        "Domain documentation conventions are incomplete.",
+      );
+    assertUnique(
+      domain.sourceFingerprints.map(({ sourceRef }) => sourceRef),
+      "Domain documentation fingerprint sources",
+    );
+    for (const fingerprint of domain.sourceFingerprints)
+      assertSharedReference(fingerprint.sourceRef);
+  }
   for (const ref of content.diagramRefs) {
     if (ref.includes("\\")) {
       throw new ProjectProfileError(

@@ -17,9 +17,6 @@
     "profile_selected",
     "contract_complete",
     "approval_current",
-    "review_satisfied",
-    "verification_complete",
-    "correction_budget_available",
     "resume_metadata_valid",
     "resume_reconciled",
     "terminal_source_recorded",
@@ -62,12 +59,13 @@
         "consumes": [
           "request",
           "constraints",
-          "shape.decision-escalation"
+          "design.product-reopen"
         ],
         "produces": [
-          "intake.brief",
-          "intake.decisions",
-          "intake.question",
+          "design.product-baseline",
+          "design.glossary-deltas",
+          "design.domain-rules",
+          "design.question",
           "risk",
           "routing",
           "workspace",
@@ -82,11 +80,12 @@
       },
       "events": [
         "task.initialized",
-        "intake.question_recorded",
-        "intake.answer_recorded",
         "intake.checkpoint",
         "advance.rejected",
         "intake.reopened",
+        "design.question_recorded",
+        "design.answer_recorded",
+        "design.invalidated",
         "routing.captured",
         "state.transition"
       ]
@@ -97,6 +96,10 @@
       "stable": false,
       "terminal": false,
       "transitions": [
+        {
+          "target": "awaiting_intake_decision",
+          "guards": []
+        },
         {
           "target": "discovering",
           "guards": [
@@ -128,12 +131,13 @@
         "consumes": [
           "request",
           "constraints",
-          "shape.decision-escalation"
+          "design.product-reopen"
         ],
         "produces": [
-          "intake.brief",
-          "intake.decisions",
-          "intake.question",
+          "design.product-baseline",
+          "design.glossary-deltas",
+          "design.domain-rules",
+          "design.question",
           "risk",
           "routing",
           "workspace",
@@ -148,11 +152,12 @@
       },
       "events": [
         "task.initialized",
-        "intake.question_recorded",
-        "intake.answer_recorded",
         "intake.checkpoint",
         "advance.rejected",
         "intake.reopened",
+        "design.question_recorded",
+        "design.answer_recorded",
+        "design.invalidated",
         "routing.captured",
         "state.transition"
       ]
@@ -167,6 +172,100 @@
           "target": "awaiting_profile_choice",
           "guards": [
             "discovery_sufficient"
+          ]
+        },
+        {
+          "target": "awaiting_shape_decision",
+          "guards": []
+        },
+        {
+          "target": "awaiting_intake_decision",
+          "guards": []
+        },
+        {
+          "target": "intaking",
+          "guards": [
+            "intake_reopened"
+          ]
+        },
+        {
+          "target": "blocked",
+          "guards": [
+            "resume_metadata_valid"
+          ]
+        },
+        {
+          "target": "cancelled",
+          "guards": [
+            "terminal_source_recorded"
+          ]
+        },
+        {
+          "target": "failed",
+          "guards": [
+            "terminal_source_recorded"
+          ]
+        }
+      ],
+      "capsule": {
+        "consumes": [
+          "design.product-baseline",
+          "design.glossary-deltas",
+          "design.domain-rules",
+          "risk",
+          "constraints",
+          "routing",
+          "workspace",
+          "shape.state"
+        ],
+        "produces": [
+          "shape.targets",
+          "shape.evidence",
+          "shape.profile-choice",
+          "design.technical-decisions",
+          "design.question",
+          "shape.contract",
+          "shape.projection",
+          "freshness.sources"
+        ],
+        "invalidates": [
+          "shape.dependency-closure",
+          "approvals",
+          "build",
+          "assurance"
+        ]
+      },
+      "events": [
+        "discovery.target_recorded",
+        "discovery.evidence_recorded",
+        "discovery.completed",
+        "profile.choice_requested",
+        "profile.choice_recorded",
+        "design.question_recorded",
+        "design.answer_recorded",
+        "design.invalidated",
+        "contract.projected",
+        "projection.reconciliation_requested",
+        "evidence.invalidated",
+        "shape.checkpoint",
+        "state.transition"
+      ]
+    },
+    {
+      "status": "awaiting_shape_decision",
+      "macroPhase": "SHAPE",
+      "stable": false,
+      "terminal": false,
+      "transitions": [
+        {
+          "target": "discovering",
+          "guards": []
+        },
+        {
+          "target": "planning",
+          "guards": [
+            "discovery_sufficient",
+            "profile_selected"
           ]
         },
         {
@@ -200,9 +299,9 @@
       ],
       "capsule": {
         "consumes": [
-          "intake.brief",
-          "intake.decisions",
-          "intake.technical-unknowns",
+          "design.product-baseline",
+          "design.glossary-deltas",
+          "design.domain-rules",
           "risk",
           "constraints",
           "routing",
@@ -213,6 +312,8 @@
           "shape.targets",
           "shape.evidence",
           "shape.profile-choice",
+          "design.technical-decisions",
+          "design.question",
           "shape.contract",
           "shape.projection",
           "freshness.sources"
@@ -230,7 +331,9 @@
         "discovery.completed",
         "profile.choice_requested",
         "profile.choice_recorded",
-        "decision.escalated",
+        "design.question_recorded",
+        "design.answer_recorded",
+        "design.invalidated",
         "contract.projected",
         "projection.reconciliation_requested",
         "evidence.invalidated",
@@ -281,9 +384,9 @@
       ],
       "capsule": {
         "consumes": [
-          "intake.brief",
-          "intake.decisions",
-          "intake.technical-unknowns",
+          "design.product-baseline",
+          "design.glossary-deltas",
+          "design.domain-rules",
           "risk",
           "constraints",
           "routing",
@@ -294,6 +397,8 @@
           "shape.targets",
           "shape.evidence",
           "shape.profile-choice",
+          "design.technical-decisions",
+          "design.question",
           "shape.contract",
           "shape.projection",
           "freshness.sources"
@@ -311,7 +416,9 @@
         "discovery.completed",
         "profile.choice_requested",
         "profile.choice_recorded",
-        "decision.escalated",
+        "design.question_recorded",
+        "design.answer_recorded",
+        "design.invalidated",
         "contract.projected",
         "projection.reconciliation_requested",
         "evidence.invalidated",
@@ -368,9 +475,9 @@
       ],
       "capsule": {
         "consumes": [
-          "intake.brief",
-          "intake.decisions",
-          "intake.technical-unknowns",
+          "design.product-baseline",
+          "design.glossary-deltas",
+          "design.domain-rules",
           "risk",
           "constraints",
           "routing",
@@ -381,6 +488,8 @@
           "shape.targets",
           "shape.evidence",
           "shape.profile-choice",
+          "design.technical-decisions",
+          "design.question",
           "shape.contract",
           "shape.projection",
           "freshness.sources"
@@ -398,7 +507,9 @@
         "discovery.completed",
         "profile.choice_requested",
         "profile.choice_recorded",
-        "decision.escalated",
+        "design.question_recorded",
+        "design.answer_recorded",
+        "design.invalidated",
         "contract.projected",
         "projection.reconciliation_requested",
         "evidence.invalidated",
@@ -412,6 +523,12 @@
       "stable": false,
       "terminal": false,
       "transitions": [
+        {
+          "target": "intaking",
+          "guards": [
+            "intake_reopened"
+          ]
+        },
         {
           "target": "discovering",
           "guards": [
@@ -449,12 +566,13 @@
         "consumes": [
           "request",
           "constraints",
-          "shape.decision-escalation"
+          "design.product-reopen"
         ],
         "produces": [
-          "intake.brief",
-          "intake.decisions",
-          "intake.question",
+          "design.product-baseline",
+          "design.glossary-deltas",
+          "design.domain-rules",
+          "design.question",
           "risk",
           "routing",
           "workspace",
@@ -469,11 +587,12 @@
       },
       "events": [
         "task.initialized",
-        "intake.question_recorded",
-        "intake.answer_recorded",
         "intake.checkpoint",
         "advance.rejected",
         "intake.reopened",
+        "design.question_recorded",
+        "design.answer_recorded",
+        "design.invalidated",
         "routing.captured",
         "state.transition"
       ]
@@ -549,14 +668,8 @@
       "terminal": false,
       "transitions": [
         {
-          "target": "reviewing",
+          "target": "assuring",
           "guards": []
-        },
-        {
-          "target": "verifying",
-          "guards": [
-            "review_satisfied"
-          ]
         },
         {
           "target": "planning",
@@ -603,23 +716,11 @@
       ]
     },
     {
-      "status": "reviewing",
+      "status": "assuring",
       "macroPhase": "ASSURE",
       "stable": false,
       "terminal": false,
       "transitions": [
-        {
-          "target": "resolving_assure",
-          "guards": [
-            "correction_budget_available"
-          ]
-        },
-        {
-          "target": "verifying",
-          "guards": [
-            "review_satisfied"
-          ]
-        },
         {
           "target": "planning",
           "guards": []
@@ -663,165 +764,18 @@
         ],
         "invalidates": [
           "assurance.findings",
-          "assurance.verificationEvidence",
+          "assurance.evidence",
           "approvals"
         ]
       },
       "events": [
-        "review.completed",
-        "finding.observed",
-        "finding.resolved",
-        "verification.completed",
-        "state.transition"
-      ]
-    },
-    {
-      "status": "resolving_assure",
-      "macroPhase": "ASSURE",
-      "stable": false,
-      "terminal": false,
-      "transitions": [
-        {
-          "target": "reviewing",
-          "guards": [
-            "correction_budget_available"
-          ]
-        },
-        {
-          "target": "verifying",
-          "guards": [
-            "correction_budget_available"
-          ]
-        },
-        {
-          "target": "planning",
-          "guards": []
-        },
-        {
-          "target": "intaking",
-          "guards": [
-            "intake_reopened"
-          ]
-        },
-        {
-          "target": "blocked",
-          "guards": [
-            "resume_metadata_valid"
-          ]
-        },
-        {
-          "target": "cancelled",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        },
-        {
-          "target": "failed",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        }
-      ],
-      "capsule": {
-        "consumes": [
-          "shape.contract",
-          "workspace",
-          "issues.active",
-          "freshness"
-        ],
-        "produces": [
-          "assurance",
-          "issues.active",
-          "freshness.commands"
-        ],
-        "invalidates": [
-          "assurance.findings",
-          "assurance.verificationEvidence",
-          "approvals"
-        ]
-      },
-      "events": [
-        "review.completed",
-        "finding.observed",
-        "finding.resolved",
-        "verification.completed",
-        "state.transition"
-      ]
-    },
-    {
-      "status": "verifying",
-      "macroPhase": "ASSURE",
-      "stable": false,
-      "terminal": false,
-      "transitions": [
-        {
-          "target": "resolving_assure",
-          "guards": [
-            "correction_budget_available"
-          ]
-        },
-        {
-          "target": "reviewing",
-          "guards": []
-        },
-        {
-          "target": "planning",
-          "guards": []
-        },
-        {
-          "target": "finished",
-          "guards": [
-            "verification_complete"
-          ]
-        },
-        {
-          "target": "intaking",
-          "guards": [
-            "intake_reopened"
-          ]
-        },
-        {
-          "target": "blocked",
-          "guards": [
-            "resume_metadata_valid"
-          ]
-        },
-        {
-          "target": "cancelled",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        },
-        {
-          "target": "failed",
-          "guards": [
-            "terminal_source_recorded"
-          ]
-        }
-      ],
-      "capsule": {
-        "consumes": [
-          "shape.contract",
-          "workspace",
-          "issues.active",
-          "freshness"
-        ],
-        "produces": [
-          "assurance",
-          "issues.active",
-          "freshness.commands"
-        ],
-        "invalidates": [
-          "assurance.findings",
-          "assurance.verificationEvidence",
-          "approvals"
-        ]
-      },
-      "events": [
-        "review.completed",
-        "finding.observed",
-        "finding.resolved",
-        "verification.completed",
+        "issue.recorded",
+        "correction.recorded",
+        "assurance.issue_resolved",
+        "assurance.evidence_recorded",
+        "assurance.evidence_invalidated",
+        "assurance.human_observation_requested",
+        "assure.completed",
         "state.transition"
       ]
     },
@@ -848,6 +802,13 @@
             "intake_complete",
             "routing_ready",
             "workspace_ready"
+          ]
+        },
+        {
+          "target": "awaiting_shape_decision",
+          "guards": [
+            "resume_metadata_valid",
+            "resume_reconciled"
           ]
         },
         {
@@ -891,26 +852,10 @@
           ]
         },
         {
-          "target": "reviewing",
+          "target": "assuring",
           "guards": [
             "resume_metadata_valid",
             "resume_reconciled"
-          ]
-        },
-        {
-          "target": "resolving_assure",
-          "guards": [
-            "resume_metadata_valid",
-            "resume_reconciled",
-            "correction_budget_available"
-          ]
-        },
-        {
-          "target": "verifying",
-          "guards": [
-            "resume_metadata_valid",
-            "resume_reconciled",
-            "review_satisfied"
           ]
         },
         {
@@ -980,34 +925,6 @@
       },
       "events": [
         "task.failed"
-      ]
-    },
-    {
-      "status": "finished",
-      "macroPhase": "ASSURE",
-      "stable": true,
-      "terminal": true,
-      "transitions": [],
-      "capsule": {
-        "consumes": [
-          "shape.contract",
-          "workspace",
-          "issues.active",
-          "freshness"
-        ],
-        "produces": [
-          "assurance",
-          "issues.active",
-          "freshness.commands"
-        ],
-        "invalidates": [
-          "assurance.findings",
-          "assurance.verificationEvidence",
-          "approvals"
-        ]
-      },
-      "events": [
-        "task.finished"
       ]
     }
   ]

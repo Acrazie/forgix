@@ -1,28 +1,35 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
 import * as sourceApi from "../../src/cli.ts";
 import { expect, test } from "bun:test";
-import { attest, taskInput, toDiscovering, toGate, toPlanning } from "../support/helpers-v5.ts";
+import { attest, taskInput, toDiscovering, toGate, toPlanning } from "../support/helpers-v6.ts";
 import { expectThrown } from "../support/expect-error.ts";
 const api = async () => sourceApi;
 
-test("V5 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE statuses", async () => {
+test("V6 registry is frozen, mode-free, and covers canonical INTAKE/SHAPE statuses", async () => {
   const a = await api();
   expect(a.TASK_STATUSES).toEqual(Object.keys(a.STATE_MACHINE));
   for (const status of [
     "intaking",
     "discovering",
+    "awaiting_shape_decision",
     "awaiting_profile_choice",
     "planning",
     "awaiting_intake_decision",
   ])
     expect(a.TASK_STATUSES.includes(status)).toBeTruthy();
-  for (const removed of ["awaiting_mode_confirmation"])
+  for (const removed of [
+    "awaiting_mode_confirmation",
+    "reviewing",
+    "resolving_assure",
+    "verifying",
+    "finished",
+  ])
     expect(a.TASK_STATUSES.includes(removed)).toBe(false);
   expect(a.GUARD_IDS.includes("mode_confirmed")).toBe(false);
   expect(a.GUARD_IDS.includes("profile_selected")).toBe(true);
   expect(JSON.stringify(a.buildStateMachineProjection()).includes("modes")).toBe(false);
   expect(Object.isFrozen(a.STATE_MACHINE)).toBe(true);
-  expect(a.createState(taskInput()).schemaVersion).toBe(5);
+  expect(a.createState(taskInput()).schemaVersion).toBe(6);
 });
 
 test("every Intake enters Discovery; direct BUILD bypass is impossible", async () => {
@@ -74,26 +81,28 @@ test("trusted Discovery and Planning guards cannot be forged", async () => {
   ).toThrow(/trusted evaluator/);
 });
 
-test("Decision Escalation enters INTAKE and resumes exact SHAPE role", async () => {
+test("linked product decisions enter INTAKE while technical decisions remain SHAPE", async () => {
   const a = await api();
   const discovering = await toDiscovering(a, "escalation-state");
   const waiting = a.transition(discovering, "awaiting_intake_decision");
   expect(a.deriveMacroPhase(waiting)).toBe("INTAKE");
   expect(() => a.transition(waiting, "executing")).toThrow(/Invalid state transition/);
+  const technical = a.transition(discovering, "awaiting_shape_decision");
+  expect(a.deriveMacroPhase(technical)).toBe("SHAPE");
 });
 
-test("V1/V2/V3/V4 are rejected explicitly; no migration API remains", async () => {
+test("V1 through V5 are rejected explicitly; no migration API remains", async () => {
   const a = await api();
-  for (const schemaVersion of [1, 2, 3, 4])
+  for (const schemaVersion of [1, 2, 3, 4, 5])
     expectThrown(
-      () => a.loadStateV5({ schemaVersion }),
+      () => a.loadStateV6({ schemaVersion }),
       (error) =>
         error instanceof a.StateValidationError &&
         error.code === "state_schema_incompatible" &&
         /No migration/.test(error.message),
     );
   expect(a.migrateStateToV2).toBe(undefined);
-  expect(() => a.loadStateV5({ ...a.createState(taskInput("strict")), mode: "quick" })).toThrow(
+  expect(() => a.loadStateV6({ ...a.createState(taskInput("strict")), mode: "quick" })).toThrow(
     /schema validation failed/,
   );
 });
@@ -128,5 +137,5 @@ test("durable trusted receipts reject post-persistence tampering", async () => {
     .flatMap((item) => item.guardEvidence ?? [])
     .find((item) => item.guard === "contract_complete");
   evidence.evaluatorReceipt.inputDigest = "tampered";
-  expect(() => a.loadStateV5(tampered)).toThrow(/evaluator receipt.*invalid/i);
+  expect(() => a.loadStateV6(tampered)).toThrow(/evaluator receipt.*invalid/i);
 });

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "baselineRationale": "Agentic Project INIT adds strict shared/local/session schemas, dependency-free validation and reconciliation, digest-bound approval, safe atomic stores, and packaged normative guidance.",
+  "baselineRationale": "Existing Project INIT baseline retained; bounded headroom covers TaskState V6 design/assurance runtime, one design skill, and ADR 0031 while verify-change is removed.",
   "baseline": {
     "bundleBytes": 859932,
     "packedBytes": 251481,
@@ -48,6 +48,7 @@
     "docs/adr/0028-make-public-documentation-user-first-and-current.md",
     "docs/adr/0029-make-build-a-native-execution-boundary.md",
     "docs/adr/0030-unify-product-domain-and-technical-design-interviews.md",
+    "docs/adr/0031-make-assure-the-success-boundary.md",
     "docs/artifacts.md",
     "docs/baselines/2026-07-18-p0-lifecycle.json",
     "docs/design.md",
@@ -67,11 +68,11 @@
     "schemas/project-profile.schema.json",
     "schemas/state.schema.json",
     "skills/debug-root-cause/SKILL.md",
+    "skills/design-decisions/SKILL.md",
     "skills/dev-flow/SKILL.md",
     "skills/dev-flow/agents/openai.yaml",
     "skills/discover-change/SKILL.md",
     "skills/plan-change/SKILL.md",
-    "skills/review-change/SKILL.md",
-    "skills/verify-change/SKILL.md"
+    "skills/review-change/SKILL.md"
   ]
 }

@@ -1,4 +1,5 @@
 import type { PreparationProfile, ShapeState } from "./shape.js";
+import type { DesignState } from "./design.js";
 
 export const ALLOWED_MODEL_IDS = ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] as const;
 export type ModelId = (typeof ALLOWED_MODEL_IDS)[number];
@@ -9,7 +10,7 @@ export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 export type SubscriptionPlan = "auto" | "plus" | "pro_5x" | "pro_20x";
 export type ResolvedSubscriptionPlan = Exclude<SubscriptionPlan, "auto"> | "unknown";
 export type QuotaPressure = "normal" | "warning" | "critical" | "unknown";
-export type RoutingStage = "discover" | "plan" | "debug" | "review" | "verify";
+export type RoutingStage = "design" | "discover" | "plan" | "debug" | "review";
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 export type { TaskStatus } from "./state-machine.js";
 import type { TaskStatus } from "./state-machine.js";
@@ -99,7 +100,7 @@ export interface Policy {
 }
 
 export interface TaskState {
-  schemaVersion: 5;
+  schemaVersion: 6;
   taskId: string;
   status: TaskStatus;
   revision: number;
@@ -107,14 +108,12 @@ export interface TaskState {
   shape?: ShapeState;
   contractDigest?: string;
   planApproval?: PlanApprovalReceipt;
-  verificationReceipt?: VerificationReceipt;
-  verificationRequirements?: VerificationRequirements;
+  assurance?: AssuranceState;
   resumeTo?: TaskStatus;
   resumeReason?: string;
   configSnapshot: Record<string, unknown>;
   policySnapshot: Policy;
   issues: unknown[];
-  reviewCycle: number;
   history: DurableHistoryEvent[];
   historySummary?: HistorySummary;
   activeArtifact?: ActiveArtifactReference;
@@ -124,12 +123,13 @@ export interface TaskState {
   routingPolicyVersion?: string;
   routingDecisions?: RoutingDecision[];
   intake?: IntakeState;
+  design: DesignState;
   benchmarkEnabled?: boolean;
 }
 
 export type IntakeDecisionSource = "user" | "repository";
 export type RecommendationDisposition = "accepted" | "modified" | "not_applicable";
-export type DecisionQuestionConfidence = "high" | "medium" | "low";
+export type IntakeQuestionConfidence = "high" | "medium" | "low";
 export type TechnicalUnknownKind =
   | "code"
   | "dependency"
@@ -150,7 +150,7 @@ export interface IntakeProvenance {
   freshnessRefs: string[];
 }
 
-export interface IntakeBrief {
+export interface ProductIntakeInput {
   schemaVersion: 1;
   objective?: string;
   successSignal?: IntakeSuccessSignal;
@@ -173,13 +173,13 @@ export interface TechnicalUnknown {
   owner: "shape";
 }
 
-export interface DecisionQuestionOption {
+export interface IntakeQuestionOption {
   id: string;
   label: string;
   impact: string;
 }
 
-export interface DecisionQuestion {
+export interface IntakeQuestionProjection {
   schemaVersion: 1;
   id: string;
   decisionKey: string;
@@ -187,11 +187,11 @@ export interface DecisionQuestion {
   determiningImpact: string;
   prompt: string;
   options:
-    | [DecisionQuestionOption, DecisionQuestionOption]
-    | [DecisionQuestionOption, DecisionQuestionOption, DecisionQuestionOption];
+    | [IntakeQuestionOption, IntakeQuestionOption]
+    | [IntakeQuestionOption, IntakeQuestionOption, IntakeQuestionOption];
   recommendedOptionId: string;
   recommendationBasis: string;
-  recommendationConfidence: DecisionQuestionConfidence;
+  recommendationConfidence: IntakeQuestionConfidence;
   freeFormAllowed: true;
   clarificationCount: number;
 }
@@ -227,8 +227,10 @@ export interface IntakeMetrics {
 
 export interface IntakeState {
   schemaVersion: 1;
-  brief: IntakeBrief;
-  activeQuestion?: DecisionQuestion;
+  risk: RiskLevel;
+  provenance: IntakeProvenance;
+  technicalUnknowns: TechnicalUnknown[];
+  activeQuestionId?: string;
   decisions: NormalizedIntakeDecision[];
   answeredDecisionKeys: string[];
   invalidations: IntakeInvalidation[];
@@ -258,7 +260,7 @@ export interface BenchmarkRecord {
   taskId: string;
   recordedAt: string;
   preparationProfile: PreparationProfile | "unselected";
-  outcome: "finished" | "failed";
+  outcome: "success" | "failed";
   authority: "canonical_change_contract";
   survey: BenchmarkSurveyAnswers;
   deviations: BenchmarkDeviationFact[];
@@ -324,8 +326,6 @@ export type WorkflowHistoryEventType =
   | "issue.recorded"
   | "correction.recorded"
   | "context.updated"
-  | "intake.question_recorded"
-  | "intake.answer_recorded"
   | "intake.checkpoint"
   | "advance.rejected"
   | "intake.reopened"
@@ -334,11 +334,18 @@ export type WorkflowHistoryEventType =
   | "discovery.completed"
   | "profile.choice_requested"
   | "profile.choice_recorded"
-  | "decision.escalated"
+  | "design.question_recorded"
+  | "design.answer_recorded"
+  | "design.invalidated"
   | "contract.projected"
   | "projection.reconciliation_requested"
   | "evidence.invalidated"
-  | "shape.checkpoint";
+  | "shape.checkpoint"
+  | "assurance.evidence_recorded"
+  | "assurance.evidence_invalidated"
+  | "assurance.issue_resolved"
+  | "assurance.human_observation_requested"
+  | "assure.completed";
 
 export interface WorkflowHistoryEvent {
   sequence: number;
@@ -388,12 +395,122 @@ export interface ContextCapsule {
   fingerprints: ContextCapsuleFingerprint[];
 }
 
-export interface VerificationRequirements {
+export type AssuranceSubjectKind = "criterion" | "risk" | "mandatory_check";
+export type AssuranceOperationKind = "command" | "model-inspection" | "user-observation";
+
+export interface AssuranceSubject {
+  id: string;
+  kind: AssuranceSubjectKind;
+}
+
+export interface AssuranceCheckIdentity {
+  executable: string;
+  argv: readonly string[];
+  logicalCwd: string;
+  environment: Readonly<Record<string, string>>;
+  toolFingerprintRefs: readonly string[];
+}
+
+export interface AssuranceSuccessPredicate {
+  exitCodes?: readonly number[];
+  requiredOutputRefs?: readonly string[];
+  requiredArtifactRefs?: readonly string[];
+  thresholdRef?: string;
+}
+
+export interface AssuranceOperation {
+  id: string;
+  kind: AssuranceOperationKind;
+  dependsOn: readonly string[];
+  covers: readonly string[];
+  cost: "low" | "medium" | "high";
+  scopeRefs: readonly string[];
+  fingerprintMode: "global" | "scoped";
+  readOnly: boolean;
+  concurrencySafe: boolean;
+  conditional: boolean;
+  activationPredicateRef?: string;
+  checkIdentity?: AssuranceCheckIdentity;
+  successPredicate?: AssuranceSuccessPredicate;
+}
+
+export interface AssuranceReviewBudget {
+  maxInputTokens: number;
+  maxOutputTokens: number;
+  maxCalls: 0 | 1 | 2;
+  maxConcurrency: number;
+}
+
+export interface AssuranceContract {
   schemaVersion: 1;
   sourceDigest: string;
-  requirementsDigest: string;
-  criterionIds: readonly string[];
-  mandatoryCheckIds: readonly string[];
+  subjects: readonly AssuranceSubject[];
+  operations: readonly AssuranceOperation[];
+  evidencePreference: readonly string[];
+  reviewBudget: AssuranceReviewBudget;
+  policyDigest: string;
+  digest: string;
+}
+
+export interface AssuranceEvidenceRecord {
+  schemaVersion: 1;
+  evidenceId: string;
+  operationId: string;
+  subjectIds: readonly string[];
+  verifierKind: AssuranceOperationKind;
+  result: "passed" | "not_applicable" | "failed";
+  verifierDigest: string;
+  observedFingerprint: string;
+  detailRef: string;
+  recordedAt: string;
+  digest: string;
+}
+
+export interface PendingHumanObservation {
+  requestId: string;
+  operationIds: readonly string[];
+  promptRef: string;
+  requestedAt: string;
+}
+
+export interface AssuranceIssue {
+  issueId: string;
+  operationId: string;
+  status: "active" | "resolved";
+  correctionAttempts: number;
+  rootCauseRequired: boolean;
+  evidenceRef: string;
+}
+
+export interface AssuranceState {
+  schemaVersion: 1;
+  evidenceIndex: readonly AssuranceEvidenceRecord[];
+  issues?: readonly AssuranceIssue[];
+  pendingHumanObservation?: PendingHumanObservation;
+  completionIndex?: readonly string[];
+  receipt?: AssuranceReceipt;
+}
+
+export type ReviewFindingSeverity = "blocking" | "major" | "minor" | "style";
+export type ReviewConfidence = "low" | "medium" | "high";
+
+export interface ReviewFinding {
+  issueId: string;
+  subjectId: string;
+  severity: ReviewFindingSeverity;
+  locationRef: string;
+  evidence: string;
+  requiredCorrection: string;
+  confidence: ReviewConfidence;
+}
+
+export interface ConsolidatedReviewResult {
+  schemaVersion: 1;
+  subjectVerdicts: readonly {
+    subjectId: string;
+    verdict: "passed" | "finding";
+  }[];
+  findings: readonly ReviewFinding[];
 }
 
 export interface StateHistoryEvent {
@@ -425,12 +542,12 @@ export interface GuardEvidenceRecord {
   evaluatorReceipt?: EvaluatorReceiptRecord;
 }
 
-export type TrustedEvaluator = "intake" | "discovery" | "planning" | "verification";
+export type TrustedEvaluator = "intake" | "discovery" | "planning";
 
 export interface EvaluatorReceiptRecord {
   schemaVersion: 1;
   evaluator: TrustedEvaluator;
-  outcome: "intake_complete" | "discovery_sufficient" | "contract_complete" | "complete";
+  outcome: "intake_complete" | "discovery_sufficient" | "contract_complete";
   stateRevision: number;
   stateFingerprint: string;
   inputDigest: string;
@@ -458,17 +575,13 @@ export interface PlanApprovalReceipt extends GateDecisionRecord {
   decision: "approved";
 }
 
-export interface VerificationReceipt {
+export interface AssuranceReceipt {
   schemaVersion: 1;
-  verifiedAt: string;
   taskId: string;
   contractDigest: string;
-  stateRevision: number;
-  stateFingerprint: string;
-  requirementsDigest: string;
-  criterionIds: readonly string[];
-  validationIds: readonly string[];
-  evidenceRefs: readonly string[];
+  verifiedSnapshotFingerprint: string;
+  evidenceIndexDigest: string;
+  completedAt: string;
   receiptDigest: string;
 }
 

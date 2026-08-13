@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Codex Dev Flow task state V5",
+  "title": "Codex Dev Flow task state V6",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -9,15 +9,15 @@
     "status",
     "revision",
     "risk",
+    "design",
     "configSnapshot",
     "policySnapshot",
     "issues",
-    "reviewCycle",
     "history"
   ],
   "properties": {
     "schemaVersion": {
-      "const": 5
+      "const": 6
     },
     "taskId": {
       "$ref": "#/$defs/text"
@@ -38,8 +38,11 @@
     "contractDigest": {
       "$ref": "#/$defs/text"
     },
-    "verificationRequirements": {
-      "$ref": "#/$defs/verificationRequirements"
+    "assurance": {
+      "type": "object"
+    },
+    "design": {
+      "type": "object"
     },
     "resumeTo": {
       "$ref": "#/$defs/resumeTarget"
@@ -52,10 +55,6 @@
     },
     "issues": {
       "type": "array"
-    },
-    "reviewCycle": {
-      "type": "integer",
-      "minimum": 0
     },
     "history": {
       "type": "array",
@@ -106,9 +105,6 @@
     },
     "planApproval": {
       "$ref": "#/$defs/planApprovalReceipt"
-    },
-    "verificationReceipt": {
-      "$ref": "#/$defs/verificationReceipt"
     }
   },
   "allOf": [
@@ -179,35 +175,15 @@
       "if": {
         "properties": {
           "status": {
-            "const": "finished"
-          }
-        },
-        "required": ["status"]
-      },
-      "then": {
-        "required": ["verificationReceipt"],
-        "properties": {
-          "verificationReceipt": {
-            "$ref": "#/$defs/verificationReceipt"
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "status": {
             "enum": [
               "discovering",
+              "awaiting_shape_decision",
               "awaiting_profile_choice",
               "planning",
               "awaiting_intake_decision",
               "awaiting_approval",
               "executing",
-              "reviewing",
-              "resolving_assure",
-              "verifying",
-              "finished"
+              "assuring"
             ]
           }
         },
@@ -240,32 +216,29 @@
         "new",
         "intaking",
         "discovering",
+        "awaiting_shape_decision",
         "awaiting_profile_choice",
         "planning",
         "awaiting_intake_decision",
         "awaiting_approval",
         "executing",
-        "reviewing",
-        "resolving_assure",
-        "verifying",
+        "assuring",
         "blocked",
         "cancelled",
-        "failed",
-        "finished"
+        "failed"
       ]
     },
     "resumeTarget": {
       "enum": [
         "intaking",
         "discovering",
+        "awaiting_shape_decision",
         "awaiting_profile_choice",
         "planning",
         "awaiting_intake_decision",
         "awaiting_approval",
         "executing",
-        "reviewing",
-        "resolving_assure",
-        "verifying"
+        "assuring"
       ]
     },
     "historyReference": {
@@ -327,8 +300,6 @@
             "issue.recorded",
             "correction.recorded",
             "context.updated",
-            "intake.question_recorded",
-            "intake.answer_recorded",
             "intake.checkpoint",
             "advance.rejected",
             "intake.reopened",
@@ -337,11 +308,18 @@
             "discovery.completed",
             "profile.choice_requested",
             "profile.choice_recorded",
-            "decision.escalated",
+            "design.question_recorded",
+            "design.answer_recorded",
+            "design.invalidated",
             "contract.projected",
             "projection.reconciliation_requested",
             "evidence.invalidated",
-            "shape.checkpoint"
+            "shape.checkpoint",
+            "assurance.evidence_recorded",
+            "assurance.evidence_invalidated",
+            "assurance.issue_resolved",
+            "assurance.human_observation_requested",
+            "assure.completed"
           ]
         },
         "refs": {
@@ -474,49 +452,14 @@
         }
       }
     },
-    "verificationRequirements": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "schemaVersion",
-        "sourceDigest",
-        "requirementsDigest",
-        "criterionIds",
-        "mandatoryCheckIds"
-      ],
-      "properties": {
-        "schemaVersion": {
-          "const": 1
-        },
-        "sourceDigest": {
-          "$ref": "#/$defs/text"
-        },
-        "requirementsDigest": {
-          "$ref": "#/$defs/text"
-        },
-        "criterionIds": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/text"
-          },
-          "uniqueItems": true
-        },
-        "mandatoryCheckIds": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/text"
-          },
-          "uniqueItems": true
-        }
-      }
-    },
     "intakeState": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "schemaVersion",
-        "brief",
+        "risk",
+        "provenance",
+        "technicalUnknowns",
         "decisions",
         "answeredDecisionKeys",
         "invalidations",
@@ -530,12 +473,6 @@
       "properties": {
         "schemaVersion": {
           "const": 1
-        },
-        "brief": {
-          "$ref": "#/$defs/intakeBrief"
-        },
-        "activeQuestion": {
-          "type": "object"
         },
         "decisions": {
           "type": "array"
@@ -573,52 +510,63 @@
         },
         "metrics": {
           "$ref": "#/$defs/intakeMetrics"
-        }
-      }
-    },
-    "intakeBrief": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["schemaVersion", "risk", "provenance", "technicalUnknowns"],
-      "properties": {
-        "schemaVersion": {
-          "const": 1
-        },
-        "objective": {
-          "type": "string"
-        },
-        "successSignal": {
-          "type": "object"
         },
         "risk": {
           "enum": ["low", "medium", "high", "critical"]
         },
         "provenance": {
-          "type": "object"
-        },
-        "successValidator": {
-          "type": "string"
-        },
-        "successGuardrails": {
-          "type": "array"
-        },
-        "determiningConstraints": {
-          "type": "array"
-        },
-        "affectedUsers": {
-          "type": "array"
-        },
-        "motivation": {
-          "type": "string"
-        },
-        "urgency": {
-          "type": "string"
-        },
-        "scopeBoundaries": {
-          "type": "array"
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceRefs", "capturedAt", "freshnessRefs"],
+          "properties": {
+            "sourceRefs": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "string"
+              }
+            },
+            "capturedAt": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "freshnessRefs": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
         },
         "technicalUnknowns": {
-          "type": "array"
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "kind", "description", "owner"],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": ["code", "dependency", "architecture", "validation", "operations"]
+              },
+              "description": {
+                "type": "string"
+              },
+              "owner": {
+                "const": "shape"
+              }
+            }
+          }
+        },
+        "activeQuestionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
         }
       }
     },
@@ -628,11 +576,11 @@
       "required": [
         "schemaVersion",
         "risk",
-        "intakeBriefRef",
+        "productBaselineRef",
         "discoveryTargets",
         "evidence",
         "sourceFingerprints",
-        "decisionEscalations",
+        "technicalDecisions",
         "dependencyGraph",
         "invalidations",
         "budget",
@@ -646,7 +594,7 @@
         "risk": {
           "enum": ["low", "medium", "high", "critical"]
         },
-        "intakeBriefRef": {
+        "productBaselineRef": {
           "$ref": "#/$defs/text"
         },
         "discoveryTargets": {
@@ -670,14 +618,14 @@
             "type": "object"
           }
         },
-        "decisionEscalations": {
+        "technicalDecisions": {
           "type": "array",
           "maxItems": 4096,
           "items": {
             "type": "object"
           }
         },
-        "activeEscalationId": {
+        "activeTechnicalDecisionId": {
           "$ref": "#/$defs/text"
         },
         "preparationProfileChoice": {
@@ -868,73 +816,6 @@
         },
         "contractDigest": {
           "$ref": "#/$defs/text"
-        },
-        "receiptDigest": {
-          "$ref": "#/$defs/text"
-        }
-      }
-    },
-    "verificationReceipt": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "schemaVersion",
-        "verifiedAt",
-        "taskId",
-        "contractDigest",
-        "stateRevision",
-        "stateFingerprint",
-        "requirementsDigest",
-        "criterionIds",
-        "validationIds",
-        "evidenceRefs",
-        "receiptDigest"
-      ],
-      "properties": {
-        "schemaVersion": {
-          "const": 1
-        },
-        "verifiedAt": {
-          "type": "string"
-        },
-        "taskId": {
-          "$ref": "#/$defs/text"
-        },
-        "contractDigest": {
-          "$ref": "#/$defs/text"
-        },
-        "stateRevision": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "stateFingerprint": {
-          "$ref": "#/$defs/text"
-        },
-        "requirementsDigest": {
-          "$ref": "#/$defs/text"
-        },
-        "criterionIds": {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": {
-            "$ref": "#/$defs/text"
-          }
-        },
-        "validationIds": {
-          "type": "array",
-          "uniqueItems": true,
-          "items": {
-            "$ref": "#/$defs/text"
-          }
-        },
-        "evidenceRefs": {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": {
-            "$ref": "#/$defs/text"
-          }
         },
         "receiptDigest": {
           "$ref": "#/$defs/text"

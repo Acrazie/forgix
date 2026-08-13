@@ -16,7 +16,7 @@ const sharedJourneyMarkers = [
   "$dev-flow init",
   "$dev-flow Add rate limiting to the public authentication endpoints",
   "npx codex-dev-flow init",
-  "INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished",
+  "INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓",
   "Project INIT",
   "Configuration wizard",
   ".codex/dev-flow.project.yaml",

@@ -11,8 +11,7 @@ const quickPath = [
   "planning",
   "awaiting_approval",
   "executing",
-  "verifying",
-  "finished",
+  "assuring",
 ];
 const planPath = [
   "new",
@@ -22,9 +21,7 @@ const planPath = [
   "planning",
   "awaiting_approval",
   "executing",
-  "reviewing",
-  "verifying",
-  "finished",
+  "assuring",
 ];
 
 test("metric events use allowlisted profile/SHAPE facts and reject payloads", async () => {
@@ -109,6 +106,14 @@ test("trace summary validates profile-neutral canonical paths", async () => {
     preparationProfile: "quick",
     source: "contract_fixture",
     statuses: quickPath,
+    outcome: "success",
+    assurance: {
+      checksRun: 1,
+      evidenceReused: 0,
+      reviewCalls: 0,
+      reviewEscalations: 0,
+      correctionCycles: 0,
+    },
     falseSuccessDetections: 0,
     falseSuccessDetectionSource: "contract_tests",
   });
@@ -117,17 +122,26 @@ test("trace summary validates profile-neutral canonical paths", async () => {
     preparationProfile: "plan",
     source: "contract_fixture",
     statuses: planPath,
+    outcome: "success",
+    assurance: {
+      checksRun: 1,
+      evidenceReused: 0,
+      reviewCalls: 1,
+      reviewEscalations: 0,
+      correctionCycles: 0,
+    },
     falseSuccessDetections: 0,
     falseSuccessDetectionSource: "contract_tests",
   });
   expect(quick.phases).toEqual(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE"]);
-  expect(plan.reviewRuns).toBe(1);
+  expect(plan.reviewCalls).toBe(1);
   expect(() =>
     a.summarizeLifecycleTrace({
       runId: "bad",
       preparationProfile: "quick",
       source: "contract_fixture",
       statuses: ["new", "executing"],
+      outcome: "incomplete",
       falseSuccessDetections: 0,
       falseSuccessDetectionSource: "contract_tests",
     }),
@@ -142,6 +156,7 @@ test("baseline covers Quick and Plan without content payloads", async () => {
       preparationProfile: "quick",
       source: "contract_fixture",
       statuses: quickPath,
+      outcome: "success",
       falseSuccessDetections: 0,
       falseSuccessDetectionSource: "contract_tests",
     },
@@ -150,6 +165,14 @@ test("baseline covers Quick and Plan without content payloads", async () => {
       preparationProfile: "plan",
       source: "contract_fixture",
       statuses: planPath,
+      outcome: "success",
+      assurance: {
+        checksRun: 1,
+        evidenceReused: 0,
+        reviewCalls: 1,
+        reviewEscalations: 0,
+        correctionCycles: 0,
+      },
       falseSuccessDetections: 0,
       falseSuccessDetectionSource: "contract_tests",
     },
@@ -158,12 +181,20 @@ test("baseline covers Quick and Plan without content payloads", async () => {
       preparationProfile: "plan",
       source: "contract_fixture",
       statuses: planPath,
+      outcome: "success",
+      assurance: {
+        checksRun: 1,
+        evidenceReused: 1,
+        reviewCalls: 1,
+        reviewEscalations: 0,
+        correctionCycles: 0,
+      },
       falseSuccessDetections: 0,
       falseSuccessDetectionSource: "contract_tests",
     },
   ];
   const report = a.buildBaselineReport({
-    baselineId: "shape-v5",
+    baselineId: "taskstate-v6",
     capturedAt: "2026-07-29T00:00:00.000Z",
     contractVersion: "P0",
     source: "contract_fixture",
@@ -183,5 +214,5 @@ test("baseline covers Quick and Plan without content payloads", async () => {
     ),
   );
   expect(a.validateBaselineReport(committed).valid).toBe(true);
-  expect(committed.baselineId).toBe("p0-taskstate-v5-contract-fixture");
+  expect(committed.baselineId).toBe("p0-taskstate-v6-contract-fixture");
 });

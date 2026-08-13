@@ -10,7 +10,7 @@ test("Plan renderer is deterministic, path-safe, and detects manual drift", asyn
     revision: 1,
     profile: "plan",
     risk: "medium",
-    intakeBriefRef: "intake:brief:1",
+    productBaselineRef: "design:product-baseline:1",
     discoveryReceiptDigest: "receipt:discovery:1",
     scope: ["Add pagination."],
     nonGoals: ["Do not change authentication."],

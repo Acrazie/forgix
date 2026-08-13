@@ -10,6 +10,7 @@ export type GatePreflightRoute =
   | "discovering"
   | "planning"
   | "awaiting_intake_decision"
+  | "awaiting_shape_decision"
   | "blocked";
 
 export type GatePreflightResult =
@@ -29,11 +30,11 @@ export function preflightGate(state: TaskState): GatePreflightResult {
   if (state.status !== "awaiting_approval" || !state.shape || !state.shape.contract) {
     return { ready: false, route: "blocked", reason: "gate_state_invalid" };
   }
-  if (state.shape.activeEscalationId) {
+  if (state.shape.activeTechnicalDecisionId) {
     return {
       ready: false,
-      route: "awaiting_intake_decision",
-      reason: "product_decision_open",
+      route: "awaiting_shape_decision",
+      reason: "technical_decision_open",
     };
   }
   try {
@@ -80,7 +81,11 @@ export function renderGateCard(state: TaskState): string {
   const preflight = preflightGate(state);
   if (!preflight.ready) throw new Error(`GATE preflight failed: ${preflight.reason}.`);
   const contract = state.shape!.contract!;
-  const objective = oneLine(state.intake?.brief.objective ?? "Objectif non disponible", 512);
+  const objective = oneLine(
+    state.design.productBaseline.dimensions.find((item) => item.key === "objective")?.value ??
+      "Objectif non disponible",
+    512,
+  );
   const lines: GateCard = [
     `Objectif : ${objective}`,
     `Plan : ${contract.tasks.length} tâches · ${contract.acceptanceCriteria.length} critères · ${contract.validations.length} validations`,

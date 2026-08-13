@@ -6,7 +6,7 @@ This document is normative. `src/state-machine.ts` and generated
 ## Macro-phases
 
 ```text
-INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
 ```
 
 Successful tasks traverse all five phases. Cancelled or failed tasks stop truthfully at
@@ -87,18 +87,27 @@ Git, GitHub, registry, or release actions.
 BUILD is one thin `executing` boundary. Current Plan Approval Receipt and exact contract
 digest are mandatory before first write and resume. Native Codex implements the complete
 approved plan without a Dev Flow execution skill, checkpoint, progress tracker,
-validation requirement, or persisted BUILD output. Local technical corrections continue
+validation requirement, or persisted BUILD output. Current command evidence may be
+checkpointed for later reuse. Local technical corrections continue
 natively. Material scope, product behavior, approved architecture, or risk change stops
-writes and returns through SHAPE then GATE. Completion transitions automatically to the
-applicable ASSURE lane.
+writes and returns through SHAPE then GATE. Completion transitions automatically to
+`assuring`.
 
 ## ASSURE
 
-ASSURE validates applicable risk and every acceptance criterion with fresh evidence.
-Risk/policy—not preparation profile—selects review lanes. Successful verification
-persists compact Verification Receipt bound to current contract and evidence, then
-transitions directly to `finished`, sole success terminal. External delivery is outside
-Dev Flow task state and uses native Codex authorization afterward.
+ASSURE is final phase and has one internal status, `assuring`. Canonical
+`assuranceContract`—approved before BUILD—defines subjects, operations, coverage,
+dependencies, predicates, scopes, budgets, and policy snapshot.
+
+Reuse fresh BUILD evidence, then run only missing/invalidated deterministic operations.
+Known failures block dependent checks and model work. Policy may activate one bounded
+independent consolidated review. Non-automatable human observations are batched once;
+missing response blocks with exact `resumeTo: assuring`.
+
+Exact coverage atomically freezes completion index, creates minimal Assurance Receipt,
+and appends `assure.completed`. Valid paired proof makes `assuring` immutable and derives
+public `ASSURE ✓` / `success`; no separate success status exists. External delivery is
+outside Dev Flow task state and uses native Codex authorization afterward.
 
 ## Canonical statuses
 
@@ -106,18 +115,16 @@ Dev Flow task state and uses native Codex authorization afterward.
 new
 intaking
 discovering
+awaiting_shape_decision
 awaiting_profile_choice
 planning
 awaiting_intake_decision
 awaiting_approval
 executing
-reviewing
-resolving_assure
-verifying
+assuring
 blocked
 cancelled
 failed
-finished
 ```
 
 Primary Shape edges:
@@ -126,6 +133,7 @@ Primary Shape edges:
 new -> intaking
 intaking -> discovering
 discovering -> awaiting_profile_choice
+discovering -> awaiting_shape_decision
 awaiting_profile_choice -> planning
 planning -> discovering
 planning|discovering -> awaiting_intake_decision
@@ -134,7 +142,7 @@ planning -> awaiting_approval
 ```
 
 `blocked` retains exact `resumeTo` and `resumeReason`. Resume reconciles inputs and
-continues exact state with existing `ShapeState`. V1/V2/V3/V4 state is incompatible and
+continues exact state with existing design/Shape/ASSURE state. V1 through V5 state is incompatible and
 fails with `state_schema_incompatible`; no migration occurs.
 
 ## Guards
@@ -146,17 +154,20 @@ state-bound evaluator receipts. Raw attestations cannot prove them.
 
 Downstream guards remain listed in generated projection. `gate_decision_valid` accepts
 only structurally valid decision receipt bound to current contract and target semantics.
-`approval_current` protects BUILD resume. BUILD completion adds no synthetic evidence;
-ASSURE owns review, correction, and verification guards.
+`approval_current` protects BUILD resume. ASSURE completion is not a transition guard;
+runtime validates exact evidence coverage in one atomic receipt/event transaction.
 
 ## Events
 
 SHAPE events: `discovery.target_recorded`, `discovery.evidence_recorded`,
 `discovery.completed`, `profile.choice_requested`, `profile.choice_recorded`,
-`decision.escalated`, `contract.projected`, `projection.reconciliation_requested`,
+`design.question_recorded`, `design.answer_recorded`, `design.invalidated`,
+`contract.projected`, `projection.reconciliation_requested`,
 `evidence.invalidated`, `shape.checkpoint`, `state.transition`.
 
-Parent alone persists events, Shape state, and projection.
+ASSURE events: `assurance.evidence_recorded`, `assurance.evidence_invalidated`,
+`assurance.human_observation_requested`, and `assure.completed`. Parent alone persists
+events, canonical state, and projections.
 
 ## Project INIT outside task lifecycle
 
@@ -167,9 +178,8 @@ task GATE approval. Deterministic `npx codex-dev-flow init` remains separate plu
 configuration wizard.
 
 Normative profile schema, authority, reconciliation, privacy, and atomic publication:
-[Project Engineering Profile contract](project-profile-contract.md). Ordinary SHAPE does
-not yet consume or promote Project Engineering Profiles; that integration remains
-pending ADR 0030.
+[Project Engineering Profile contract](project-profile-contract.md). Ordinary SHAPE may
+consume approved profile and domain-documentation conventions by digest-bound reference.
 
 ## Privacy and metrics
 

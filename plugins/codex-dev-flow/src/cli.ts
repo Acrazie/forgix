@@ -68,6 +68,34 @@ export {
 } from "./project-profile.js";
 export { PolicyError, applyPolicy } from "./policy.js";
 export {
+  assuranceSucceeded,
+  compileAssuranceContract,
+  createAssuranceState,
+  planAssuranceExecution,
+  recordAssuranceIssue,
+  recordCorrectionAttempt,
+  resolveAssuranceIssue,
+  reviewRequiresEscalation,
+  validateConsolidatedReviewResult,
+  validateAssuranceContract,
+  validateAssuranceState,
+} from "./assurance.js";
+export {
+  applyOwnedMarkdownPatch,
+  compileDomainSemanticPatches,
+  resolveDomainDestinations,
+} from "./domain-projection.js";
+export {
+  compileDesignState,
+  createDesignState,
+  designComplete,
+  invalidateDesign,
+  resolveProductBaseline,
+  selectDesignFrontier,
+  setActiveDesignQuestion,
+  validateDesignState,
+} from "./design.js";
+export {
   STATE_MACHINE,
   TASK_STATUSES,
   StateValidationError,
@@ -81,10 +109,18 @@ export {
   createState,
   deriveMacroPhase,
   evaluateDiscoveryGuard,
-  evaluateVerification,
   evaluatePlanningGuard,
   guardStateFingerprint,
-  loadStateV5,
+  loadStateV6,
+  completeAssurance,
+  invalidateAssurance,
+  isTaskTerminal,
+  recordAssuranceObservation,
+  recordTaskAssuranceIssue,
+  recordTaskCorrectionAttempt,
+  requestHumanObservation,
+  resolveTaskAssuranceIssue,
+  updateDesignState,
   recordHistoryEvent,
   updateShapeState,
   updateResumeContext,
@@ -113,14 +149,14 @@ export {
   applyPlanningEvaluation,
   attestContractComplete,
   attestDiscoverySufficient,
-  createDecisionEscalation,
+  createTechnicalDecision,
   createShapeState,
   evaluateDiscoveryCompleteness,
   evaluateContractCompleteness,
   recordShapeUsage,
   reconcileShapeResume,
   requestPreparationProfileChoice,
-  resolveDecisionEscalation,
+  resolveTechnicalDecision,
   resolveShapeBudgetCheckpoint,
   resolveShapeBudgetCheckpointWithRouting,
   selectPreparationProfile,
@@ -143,7 +179,7 @@ export {
   recordInvalidIntakeModelOutput,
   rejectPrematureAdvance,
   routeLateUnknown,
-  setDecisionQuestion,
+  setIntakeQuestionProjection,
 } from "./intake.js";
 export {
   BENCHMARK_DIRECTORY,
@@ -156,7 +192,7 @@ export {
   tryWriteBenchmarkRecord,
 } from "./benchmark.js";
 export { decideWorktree } from "./worktree.js";
-export { discoverVerificationCommands } from "./commands.js";
+export { discoverAssuranceCommands } from "./commands.js";
 export {
   MODEL_COST_MULTIPLIERS,
   MODEL_COST_PROFILES,
@@ -572,11 +608,11 @@ function resolveQuotaCachePath(options: RunInvocationOptions): string | undefine
 }
 
 const ROUTING_TASKS: RouteTask[] = [
+  { stage: "design", risk: "medium", ambiguity: "medium" },
   { stage: "discover", risk: "medium", ambiguity: "medium" },
   { stage: "plan", risk: "medium", ambiguity: "medium" },
   { stage: "debug", risk: "medium", ambiguity: "medium" },
   { stage: "review", risk: "medium", ambiguity: "medium" },
-  { stage: "verify", risk: "medium", ambiguity: "medium" },
 ];
 
 function resolveRuntimeConfig(sources: ConfigSource[] | undefined): ResolvedConfig {

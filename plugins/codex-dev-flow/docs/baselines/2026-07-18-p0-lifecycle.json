@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "baselineId": "p0-taskstate-v5-contract-fixture",
-  "capturedAt": "2026-08-02T00:00:00.000Z",
+  "baselineId": "p0-taskstate-v6-contract-fixture",
+  "capturedAt": "2026-08-13T00:00:00.000Z",
   "contractVersion": "P0",
   "source": "contract_fixture",
   "limitations": [
@@ -23,8 +23,7 @@
         "planning",
         "awaiting_approval",
         "executing",
-        "verifying",
-        "finished"
+        "assuring"
       ],
       "phases": [
         "INTAKE",
@@ -33,14 +32,17 @@
         "BUILD",
         "ASSURE"
       ],
-      "transitions": 8,
+      "transitions": 7,
       "gates": 1,
       "blocks": 0,
       "resumes": 0,
-      "validationRuns": 1,
-      "reviewRuns": 0,
-      "assureResolutionCycles": 0,
-      "terminalStatus": "finished",
+      "checksRun": 1,
+      "evidenceReused": 0,
+      "reviewCalls": 0,
+      "reviewEscalations": 0,
+      "correctionCycles": 0,
+      "outcome": "success",
+      "terminalStatus": "assuring",
       "falseSuccessDetections": 0,
       "falseSuccessDetectionSource": "contract_tests",
       "tokenUsage": {
@@ -63,9 +65,7 @@
         "planning",
         "awaiting_approval",
         "executing",
-        "reviewing",
-        "verifying",
-        "finished"
+        "assuring"
       ],
       "phases": [
         "INTAKE",
@@ -74,14 +74,17 @@
         "BUILD",
         "ASSURE"
       ],
-      "transitions": 9,
+      "transitions": 7,
       "gates": 1,
       "blocks": 0,
       "resumes": 0,
-      "validationRuns": 1,
-      "reviewRuns": 1,
-      "assureResolutionCycles": 0,
-      "terminalStatus": "finished",
+      "checksRun": 1,
+      "evidenceReused": 0,
+      "reviewCalls": 1,
+      "reviewEscalations": 0,
+      "correctionCycles": 0,
+      "outcome": "success",
+      "terminalStatus": "assuring",
       "falseSuccessDetections": 0,
       "falseSuccessDetectionSource": "contract_tests",
       "tokenUsage": {
@@ -106,9 +109,7 @@
         "executing",
         "blocked",
         "executing",
-        "reviewing",
-        "verifying",
-        "finished"
+        "assuring"
       ],
       "phases": [
         "INTAKE",
@@ -117,14 +118,17 @@
         "BUILD",
         "ASSURE"
       ],
-      "transitions": 11,
+      "transitions": 9,
       "gates": 1,
       "blocks": 1,
       "resumes": 1,
-      "validationRuns": 1,
-      "reviewRuns": 1,
-      "assureResolutionCycles": 0,
-      "terminalStatus": "finished",
+      "checksRun": 1,
+      "evidenceReused": 1,
+      "reviewCalls": 1,
+      "reviewEscalations": 0,
+      "correctionCycles": 0,
+      "outcome": "success",
+      "terminalStatus": "assuring",
       "falseSuccessDetections": 0,
       "falseSuccessDetectionSource": "contract_tests",
       "tokenUsage": {

@@ -3,8 +3,8 @@ name: discover-change
 description: Use when dev-flow needs read-only repository discovery before planning a non-trivial change.
 ---
 
-Operate only as SHAPE Discovery and remain read-only. Consume compact Intake Brief,
-structured product decisions, risk, routing/workspace identity, current Discovery
+Operate only as SHAPE Discovery and remain read-only. Consume compact Product Baseline,
+task-local domain records, risk, routing/workspace identity, current Discovery
 Targets, fresh reusable evidence, source fingerprints, and dependency graph. Never
 consume interview transcript or preparation profile: profile is chosen only after
 Discovery is sufficient.
@@ -16,10 +16,11 @@ reasoning session. Every result is bounded structured evidence with exact proven
 source fingerprints, and dependency node. New target requires explicit material
 widening reason.
 
-If technical alternatives change product outcome, return one rich Decision Escalation:
-stable decision key, evidence, product impact, 2–3 feasible options, evidence-backed
-recommendation, affected dependency roots, and prior SHAPE role. Pure technical
-uncertainty stays in Discovery.
+For material architecture, dependency, data/migration, security/privacy, compatibility,
+concurrency/performance, or profile-exception choices, return one Technical Decision:
+stable ID, fresh evidence, materiality, viable/excluded options, recommendation,
+confidence, consequences, affected dependency roots, and prior SHAPE role. Product
+infeasibility returns a linked INTAKE-owned design question; payload is never copied.
 
 Return semantic sufficiency plus resolved/escalated/blocked targets, evidence,
 fingerprints, graph additions, compact Quick/Plan recommendation facts, and usage

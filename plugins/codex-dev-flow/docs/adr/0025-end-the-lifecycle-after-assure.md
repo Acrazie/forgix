@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted and implemented in TaskState V4.
+Superseded by ADR 0031. Historical TaskState V4 decision retained for context.
 
 ## Context
 

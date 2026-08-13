@@ -41,17 +41,17 @@ test("stage skills preserve and consume the artifact contract", () => {
   const discover = read("../../skills/discover-change/SKILL.md");
   const plan = read("../../skills/plan-change/SKILL.md");
   const review = read("../../skills/review-change/SKILL.md");
-  const verify = read("../../skills/verify-change/SKILL.md");
+  const design = read("../../skills/design-decisions/SKILL.md");
 
   expect(discover).toMatch(/bounded structured evidence/i);
   expect(discover).toMatch(/source fingerprints/i);
   expect(plan).toMatch(/criterion/i);
   expect(plan).toMatch(/Do not embed complete implementations/i);
   expect(read("../../skills/dev-flow/SKILL.md")).toMatch(/without BUILD-specific skill/i);
-  expect(review).toMatch(/artifact\s+identity\/digest/i);
-  expect(review).toMatch(/unapproved deviations/i);
-  expect(verify).toMatch(/acceptance-criterion-to-evidence map/i);
-  expect(verify).toMatch(/logical artifact/i);
+  expect(design).toMatch(/at most one authority-valid question/i);
+  expect(review).toMatch(/bounded Diff Capsule/i);
+  expect(review).toMatch(/stable `issue_id`/i);
+  expect(read("../../skills/dev-flow/SKILL.md")).not.toMatch(/Use `verify-change`/i);
 });
 
 test("artifact documentation keeps legacy layouts non-canonical", () => {

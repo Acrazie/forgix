@@ -16,13 +16,13 @@ $dev-flow resume <task-id>
 $dev-flow status [task-id]
 ```
 
-No invocation mode exists. Entire run text is objective. State V5 rejects V1/V2/V3/V4 without
+No invocation mode exists. Entire run text is objective. State V6 rejects V1–V5 without
 migration.
 
 ## Lifecycle
 
 ```text
-INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
 ```
 
 Canonical Shape path:
@@ -66,8 +66,8 @@ BUILD verifies only current approval and exact digest, then native Codex impleme
 complete approved plan without a Dev Flow execution skill, checkpoint, progress tracker,
 validation loop, or persisted BUILD output. Local technical corrections stay native;
 material contract changes return to SHAPE then GATE. ASSURE derives current worktree diff,
-records fresh criterion-linked verification, and transitions directly to sole success
-terminal `finished`. Git, GitHub, registry, and release delivery remains outside lifecycle
+records fresh criterion-linked evidence, and atomically derives `success` inside final
+ASSURE phase. Git, GitHub, registry, and release delivery remains outside lifecycle
 state.
 
 ## Selective invalidation

@@ -2,7 +2,7 @@
 import * as api from "../../src/cli.ts";
 import { readFileSync } from "node:fs";
 import { expect, test } from "bun:test";
-import { attest, toGate } from "../support/helpers-v5.ts";
+import { attest, toGate } from "../support/helpers-v6.ts";
 
 test("GATE preflight and card are deterministic, bounded, and profile-neutral", async () => {
   const states = await Promise.all(
@@ -93,7 +93,7 @@ test("approval reuse requires unchanged canonical digest", async () => {
     gateDecision: api.createGateDecision(state, { decision: "approved" }),
   });
   expect(attest(api, state, "approval_current")).toHaveLength(1);
-  expect(() => api.loadStateV5({ ...state, planApproval: undefined })).toThrow(
+  expect(() => api.loadStateV6({ ...state, planApproval: undefined })).toThrow(
     /PlanApprovalReceipt/,
   );
   const changed = { ...state, contractDigest: "different" };
@@ -108,11 +108,11 @@ test("GATE preflight returns targeted owner without mutating state", async () =>
     reason: "contract_digest_mismatch",
   });
   expect(
-    api.preflightGate({ ...state, shape: { ...state.shape, activeEscalationId: "open" } }),
+    api.preflightGate({ ...state, shape: { ...state.shape, activeTechnicalDecisionId: "open" } }),
   ).toEqual({
     ready: false,
-    route: "awaiting_intake_decision",
-    reason: "product_decision_open",
+    route: "awaiting_shape_decision",
+    reason: "technical_decision_open",
   });
   expect(api.preflightGate({ ...state, shape: undefined })).toEqual({
     ready: false,

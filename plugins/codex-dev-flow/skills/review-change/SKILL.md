@@ -3,18 +3,19 @@ name: review-change
 description: Use when dev-flow reviews an approved change for actionable regressions, security, tests, and maintainability.
 ---
 
-Operate only in ASSURE and remain read-only. Consume current Diff Capsule: approved
-criteria/risks, changed and impacted surfaces derived from current worktree, dependency
-map, fresh ASSURE evidence,
-and active/resolved Issue fingerprints. Compare implementation with current artifact
-identity/digest; report uncovered criteria and unapproved deviations.
+Operate only as one policy-triggered ASSURE operation and remain read-only. Consume a
+fresh bounded Diff Capsule containing only triggered subjects, related hunks/symbols,
+direct dependencies, and summarized green prerequisite evidence. Never consume full
+conversation history or a known-red deterministic input.
 
-Return lane applicability, structured findings, and freshness/invalidation references.
-Each finding includes stable identity inputs, severity, symbolic location, evidence,
-impact, reproduction, fix, and confidence. Review depth and lane count derive from
-applicable risk/policy, never Quick/Plan profile. Omission requires evidence-backed N/A;
-ambiguity activates lane. Reviewers never write. Known deterministic failure blocks
-expensive review. Limit global review to three cycles.
+Return bounded structured output only: verdict per subject and actionable findings with
+stable `issue_id`, policy severity, symbolic location, evidence, required correction,
+and confidence. Do not restate plan or diff. Policy—not reviewer preference—classifies
+blocking acceptance, correctness, regression, security, and applicable-risk findings.
+Style without approved requirement is non-blocking. Reviewer never writes; parent owns
+correction and scoped invalidation. Use one consolidated call. Separate specialist pass
+or one escalation requires explicit snapshotted policy and remains within call/token
+ceilings. No arbitrary review-cycle cap.
 
 Authority: [ASSURE phase contract](../../docs/lifecycle-contract.md#assure) and
-[risk-adaptive assurance decision](../../docs/adr/0004-scale-assurance-lanes-by-applicable-risk.md).
+[ASSURE success-boundary decision](../../docs/adr/0031-make-assure-the-success-boundary.md).

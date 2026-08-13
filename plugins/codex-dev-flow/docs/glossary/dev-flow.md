@@ -9,7 +9,14 @@ policy-selected representation.
 ## Approval
 
 An immutable human authorization bound to complete local canonical contract digest. In
-TaskState V5 this is one Plan Approval Receipt.
+TaskState V6 this is one Plan Approval Receipt.
+
+## ASSURE completion
+
+Success boundary where every required acceptance criterion and applicable risk
+has current evidence. It is derived from a valid Assurance Receipt, not represented
+by a separate `finished` status. Completion appends `assure.completed`; a valid receipt
+makes `assuring` terminal and immutable.
 
 ## Change artifact
 
@@ -72,19 +79,18 @@ A compact, structured, and invalidable projection of task context shared across
 lifecycle phases. It contains provenance and freshness fingerprints, but does not own
 detailed evidence or approved scope.
 
-## Decision Question
+## Active Design Question
 
-One active, resumable INTAKE question bound to a stable decision key and a determining
-lifecycle impact. It offers mutually exclusive choices, one sourced recommendation, and
-free-form input. A recommendation is never a user decision until explicitly answered.
+One task-wide resumable product, terminology, domain-rule, or technical question. It
+persists owner, prerequisites, prior role, consequences, selection reason, and optional
+bounded choices. Resume reuses exact question until dependency invalidation.
 
-## Decision Escalation
+## Technical Decision
 
-A structured SHAPE request for an explicit INTAKE decision when repository discovery
-reveals feasible technical alternatives with different product effects. It carries a
-stable decision key, technical evidence and provenance, product impact, mutually
-exclusive options, an evidence-backed recommendation, and the SHAPE sections that may
-depend on the answer. It transfers evidence, not decision authority.
+A material SHAPE-owned choice backed by fresh repository evidence. It records viable
+and excluded options, recommendation, confidence, consequences, explicit selection,
+affected dependencies, and exact prior SHAPE role. Product infeasibility creates a
+linked INTAKE-owned question instead.
 
 ## Dependency closure
 
@@ -128,6 +134,25 @@ Targets into provenance-bound evidence. It does not author the canonical plan.
 The ASSURE projection of approved criteria, applicable risks, changed surfaces,
 dependency impact, and fresh validation evidence.
 
+## Evidence requirement
+
+The SHAPE-owned proof contract for one acceptance criterion: expected outcome, verifier
+kind (`command`, `model-inspection`, or `user-observation`), and evidence needed for
+ASSURE completion. It lets ASSURE resolve missing coverage instead of redesigning the
+verification strategy after implementation.
+
+## Evidence index
+
+Compact TaskState registry of evidence identity, covered subjects, verifier
+identity and kind, result, observed fingerprint, detail reference, and digest. Detailed
+command output and prose remain in the logical artifact or logs.
+
+## Assurance Receipt
+
+Minimal, digest-bound proof of successful ASSURE completion. It binds task,
+approved contract, complete verified snapshot, canonical completion index, and completion
+time without duplicating criteria, checks, or evidence prose.
+
 ## Failure
 
 A failed validation, review, or verification check tracked by a stable `issue_id`.
@@ -160,28 +185,26 @@ regardless of whether a local hook ran.
 
 ## Gate
 
-A control that authorizes a transition after checking required evidence. In the accepted
-V5 design, GATE is exactly one deterministic pre-BUILD validation and explicit user
+A control that authorizes a transition after checking required evidence. In V6, GATE is exactly one deterministic pre-BUILD validation and explicit user
 approval of the canonical implementation contract.
 
 ## Gate preflight
 
-The accepted V5 pure deterministic check that validates current SHAPE completion,
+The V6 pure deterministic check that validates current SHAPE completion,
 contract digest, criterion coverage, evidence freshness, and escalation closure before
 asking the user to approve the plan. It performs no model, network, discovery, or
 subprocess operation.
 
 ## External delivery
 
-Git, GitHub, registry, or release work performed after Dev Flow reaches `finished`. It is
-outside TaskState V5 and requires native Codex authorization.
+Git, GitHub, registry, or release work performed after successful ASSURE. It is
+outside TaskState V6 and requires native Codex authorization.
 
-## Intake Brief
+## Product Baseline
 
-The compact, structured output of INTAKE. It owns the canonical objective, observable
-success signal, risk, provenance, completeness state, and only the conditional
-context that determines workflow behavior. It is not an interview transcript or a
-Change Artifact.
+Canonical five-dimension INTAKE record: objective, affected users/value, scope,
+observable success, and risks/constraints. Every dimension is resolved or carries
+justified `not_applicable`, provenance, and dependency identity. It stores no transcript.
 
 ## Implementation Guide
 
@@ -212,7 +235,7 @@ and nursery categories disabled initially.
 ## Macro-phase
 
 One public lifecycle stage derived from internal task status and never persisted
-independently. V5 has INTAKE, SHAPE, GATE, BUILD, and ASSURE.
+independently. V6 has INTAKE, SHAPE, GATE, BUILD, and ASSURE.
 
 ## Issue ID
 
@@ -266,7 +289,7 @@ metrics.
 
 ## Plan Approval Receipt
 
-The accepted V5 immutable user authorization for the complete local canonical change
+V6 immutable user authorization for the complete local canonical change
 contract. It is bound to task/artifact identity, full contract digest, state revision,
 state fingerprint, actor, and timestamp. Any digest change invalidates it. It never
 authorizes an external Git, GitHub, registry, or release action.
@@ -357,8 +380,7 @@ dependencies declared by the plugin workspace.
 
 ## Shape State
 
-The aggregate owning SHAPE discovery targets, evidence, source fingerprints, decision
-escalations, preparation profile, canonical contract, dependency graph, and semantic
+The aggregate owning SHAPE discovery targets, evidence, source fingerprints, technical decisions, preparation profile, canonical contract, dependency graph, and semantic
 evaluator receipts. It is the resumable boundary shared by Discovery and Planning.
 
 ## State snapshot
@@ -383,8 +405,8 @@ derive its last active macro-phase without persisting that phase.
 
 ## Project INIT and profile terms
 
-Following terms are implemented for agentic `$dev-flow init` and deterministic Project
-Engineering Profile backend. Ordinary SHAPE consumption remains pending.
+Following terms apply to agentic `$dev-flow init`, deterministic Project Engineering
+Profile backend, and ordinary SHAPE profile consumption.
 
 ### Configuration Wizard
 

@@ -5,7 +5,7 @@ import { expectRejected } from "../support/expect-error.ts";
 
 test("only routed reasoning stages are delegable", async () => {
   const { ROUTED_STAGES, isDelegableStage } = sourceApi;
-  expect(ROUTED_STAGES).toEqual(["discover", "plan", "debug", "review", "verify"]);
+  expect(ROUTED_STAGES).toEqual(["design", "discover", "plan", "debug", "review"]);
   for (const stage of ROUTED_STAGES) expect(isDelegableStage(stage)).toBe(true);
   expect(isDelegableStage("execute")).toBe(false);
   expect(isDelegableStage("validate")).toBe(false);

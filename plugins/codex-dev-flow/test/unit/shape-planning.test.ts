@@ -14,7 +14,10 @@ async function shaped(profile = "quick") {
     requestPreparationProfileChoice,
     selectPreparationProfile,
   } = await api();
-  let state = createShapeState({ risk: "medium", intakeBriefRef: "intake:brief:planning" });
+  let state = createShapeState({
+    risk: "medium",
+    productBaselineRef: "design:product-baseline:planning",
+  });
   state = applyDiscoveryEvaluation(state, {
     targets: [
       {

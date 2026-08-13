@@ -18,8 +18,7 @@ const quick = [
   "planning",
   "awaiting_approval",
   "executing",
-  "verifying",
-  "finished",
+  "assuring",
 ];
 const plan = [
   "new",
@@ -29,13 +28,11 @@ const plan = [
   "planning",
   "awaiting_approval",
   "executing",
-  "reviewing",
-  "verifying",
-  "finished",
+  "assuring",
 ];
 const report = buildBaselineReport({
-  baselineId: "p0-taskstate-v5-contract-fixture",
-  capturedAt: "2026-08-02T00:00:00.000Z",
+  baselineId: "p0-taskstate-v6-contract-fixture",
+  capturedAt: "2026-08-13T00:00:00.000Z",
   contractVersion: "P0",
   source: "contract_fixture",
   limitations: [
@@ -44,12 +41,46 @@ const report = buildBaselineReport({
     "latency_telemetry_unavailable",
   ],
   traces: [
-    { ...common, runId: "fixture-quick", preparationProfile: "quick", statuses: quick },
-    { ...common, runId: "fixture-plan", preparationProfile: "plan", statuses: plan },
+    {
+      ...common,
+      runId: "fixture-quick",
+      preparationProfile: "quick",
+      statuses: quick,
+      outcome: "success",
+      assurance: {
+        checksRun: 1,
+        evidenceReused: 0,
+        reviewCalls: 0,
+        reviewEscalations: 0,
+        correctionCycles: 0,
+      },
+    },
+    {
+      ...common,
+      runId: "fixture-plan",
+      preparationProfile: "plan",
+      statuses: plan,
+      outcome: "success",
+      assurance: {
+        checksRun: 1,
+        evidenceReused: 0,
+        reviewCalls: 1,
+        reviewEscalations: 0,
+        correctionCycles: 0,
+      },
+    },
     {
       ...common,
       runId: "fixture-plan-block-resume",
       preparationProfile: "plan",
+      outcome: "success",
+      assurance: {
+        checksRun: 1,
+        evidenceReused: 1,
+        reviewCalls: 1,
+        reviewEscalations: 0,
+        correctionCycles: 0,
+      },
       statuses: [
         "new",
         "intaking",
@@ -60,9 +91,7 @@ const report = buildBaselineReport({
         "executing",
         "blocked",
         "executing",
-        "reviewing",
-        "verifying",
-        "finished",
+        "assuring",
       ],
     },
   ],

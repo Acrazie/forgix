@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-export function discoverVerificationCommands(root: URL) {
+export function discoverAssuranceCommands(root: URL) {
   const path = fileURLToPath(root);
   const agents = path + "/AGENTS.md";
   const guided = existsSync(agents)

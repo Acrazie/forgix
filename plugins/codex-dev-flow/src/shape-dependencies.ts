@@ -1,5 +1,10 @@
 export const DEPENDENCY_NODE_KINDS = Object.freeze([
   "decision",
+  "product",
+  "terminology",
+  "domain_rule",
+  "domain_scenario",
+  "technical_decision",
   "source",
   "evidence",
   "criterion",
@@ -8,6 +13,8 @@ export const DEPENDENCY_NODE_KINDS = Object.freeze([
   "validation",
   "guide",
   "projection",
+  "assurance_subject",
+  "assurance_operation",
 ] as const);
 
 export type DependencyNodeKind = (typeof DEPENDENCY_NODE_KINDS)[number];

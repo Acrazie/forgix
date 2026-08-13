@@ -117,6 +117,14 @@ export interface TraceSummaryInput {
   preparationProfile: "quick" | "plan" | "unselected";
   source: "contract_fixture" | "runtime";
   statuses: readonly TaskStatus[];
+  outcome: "success" | "failed" | "incomplete";
+  assurance?: {
+    checksRun: number;
+    evidenceReused: number;
+    reviewCalls: number;
+    reviewEscalations: number;
+    correctionCycles: number;
+  };
   tokenUsage?: TokenUsageObservation;
   latency?: LatencyObservationInput;
   falseSuccessDetections: number;
@@ -134,9 +142,12 @@ export interface LifecycleTraceSummary {
   gates: number;
   blocks: number;
   resumes: number;
-  validationRuns: number;
-  reviewRuns: number;
-  assureResolutionCycles: number;
+  checksRun: number;
+  evidenceReused: number;
+  reviewCalls: number;
+  reviewEscalations: number;
+  correctionCycles: number;
+  outcome: "success" | "failed" | "incomplete";
   terminalStatus: TaskStatus;
   falseSuccessDetections: number;
   falseSuccessDetectionSource: "contract_tests" | "operator_audit";
@@ -261,7 +272,11 @@ export function summarizeLifecycleTrace(input: TraceSummaryInput): LifecycleTrac
     if (!contract) throw new Error(`Lifecycle trace edge ${from} -> ${status} is illegal.`);
   }
   const terminalStatus = statuses.at(-1) as TaskStatus;
-  if (!STATE_MACHINE[terminalStatus].stable && !STATE_MACHINE[terminalStatus].terminal) {
+  if (
+    !STATE_MACHINE[terminalStatus].stable &&
+    !STATE_MACHINE[terminalStatus].terminal &&
+    !(terminalStatus === "assuring" && input.outcome === "success")
+  ) {
     throw new Error(
       `Lifecycle trace must end at stable or terminal status; received ${terminalStatus}.`,
     );
@@ -286,6 +301,22 @@ export function summarizeLifecycleTrace(input: TraceSummaryInput): LifecycleTrac
     input.latency === undefined
       ? { availability: "unavailable" as const }
       : validateLatency(input.latency);
+  if (!["success", "failed", "incomplete"].includes(input.outcome))
+    throw new Error("Trace outcome is invalid.");
+  if (input.outcome === "success" && terminalStatus !== "assuring")
+    throw new Error("Success trace must end in assuring.");
+  if (input.outcome === "failed" && terminalStatus !== "failed")
+    throw new Error("Failed trace must end in failed.");
+  const assurance = input.assurance ?? {
+    checksRun: 0,
+    evidenceReused: 0,
+    reviewCalls: 0,
+    reviewEscalations: 0,
+    correctionCycles: 0,
+  };
+  for (const [key, value] of Object.entries(assurance))
+    if (!Number.isInteger(value) || value < 0)
+      throw new Error(`Assurance counter ${key} is invalid.`);
   return {
     schemaVersion: 1,
     sampleIdHash: sha256(input.runId),
@@ -299,9 +330,8 @@ export function summarizeLifecycleTrace(input: TraceSummaryInput): LifecycleTrac
     resumes: edges.filter(
       ({ from, to }) => from === "blocked" && to !== "cancelled" && to !== "failed",
     ).length,
-    validationRuns: edges.filter(({ to }) => to === "verifying").length,
-    reviewRuns: edges.filter(({ to }) => to === "reviewing").length,
-    assureResolutionCycles: edges.filter(({ to }) => to === "resolving_assure").length,
+    ...assurance,
+    outcome: input.outcome,
     terminalStatus,
     falseSuccessDetections,
     falseSuccessDetectionSource: input.falseSuccessDetectionSource,
@@ -402,9 +432,12 @@ function validateSummary(
       "gates",
       "blocks",
       "resumes",
-      "validationRuns",
-      "reviewRuns",
-      "assureResolutionCycles",
+      "checksRun",
+      "evidenceReused",
+      "reviewCalls",
+      "reviewEscalations",
+      "correctionCycles",
+      "outcome",
       "terminalStatus",
       "falseSuccessDetections",
       "falseSuccessDetectionSource",
@@ -434,6 +467,14 @@ function validateSummary(
       preparationProfile: value.preparationProfile,
       source: value.source,
       statuses: value.statuses as TaskStatus[],
+      outcome: value.outcome as "success" | "failed" | "incomplete",
+      assurance: {
+        checksRun: value.checksRun as number,
+        evidenceReused: value.evidenceReused as number,
+        reviewCalls: value.reviewCalls as number,
+        reviewEscalations: value.reviewEscalations as number,
+        correctionCycles: value.correctionCycles as number,
+      },
       falseSuccessDetections: value.falseSuccessDetections as number,
       falseSuccessDetectionSource: value.falseSuccessDetectionSource as "contract_tests",
     });
@@ -443,9 +484,12 @@ function validateSummary(
       "gates",
       "blocks",
       "resumes",
-      "validationRuns",
-      "reviewRuns",
-      "assureResolutionCycles",
+      "checksRun",
+      "evidenceReused",
+      "reviewCalls",
+      "reviewEscalations",
+      "correctionCycles",
+      "outcome",
       "terminalStatus",
     ] as const) {
       if (JSON.stringify(value[field]) !== JSON.stringify(rebuilt[field]))
