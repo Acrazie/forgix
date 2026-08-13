@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Dev Flow detailed symbol in black</title>
+  <desc id="desc">An ASCII checkpoint and path with three controlled echo outlines.</desc>
+  <g fill="none" stroke="#000000" stroke-linejoin="miter" stroke-width="5">
+    <g transform="translate(18 18)"><path d="M72 88h120v56h-56v224h56v56H72V88Zm368 0H320v56h56v224h-56v56h120V88Z"/><path d="M275 72h82L237 440h-82L275 72Z"/></g>
+    <g transform="translate(12 12)"><path d="M72 88h120v56h-56v224h56v56H72V88Zm368 0H320v56h56v224h-56v56h120V88Z"/><path d="M275 72h82L237 440h-82L275 72Z"/></g>
+    <g transform="translate(6 6)"><path d="M72 88h120v56h-56v224h56v56H72V88Zm368 0H320v56h56v224h-56v56h120V88Z"/><path d="M275 72h82L237 440h-82L275 72Z"/></g>
+  </g>
+  <path fill="#000000" d="M72 88h120v56h-56v224h56v56H72V88Zm368 0H320v56h56v224h-56v56h120V88Z"/>
+  <path fill="#000000" d="M275 72h82L237 440h-82L275 72Z"/>
+</svg>
