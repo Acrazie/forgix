@@ -1,10 +1,30 @@
 import { createHash } from "node:crypto";
+import {
+  assuranceSucceeded,
+  completeAssurance as completeAssuranceIndex,
+  invalidateAssuranceEvidence,
+  recordAssuranceIssue as recordAssuranceIssueIndex,
+  recordCorrectionAttempt as recordCorrectionAttemptIndex,
+  recordAssuranceEvidence,
+  resolveAssuranceIssue as resolveAssuranceIssueIndex,
+  setPendingHumanObservation,
+  validateAssuranceState,
+  type AssuranceCompletionInput,
+  type EvidenceObservation,
+} from "./assurance.js";
+import {
+  createDesignState,
+  designComplete,
+  validateDesignState,
+  type DesignState,
+} from "./design.js";
 import { preflightGate } from "./gate.js";
 import {
   GUARD_IDS,
   STATE_MACHINE,
   deriveMacroPhase,
   isOperationalResumeTarget,
+  isTerminalStatus,
   isTaskStatus,
   type GuardId,
   type TaskStatus,
@@ -20,7 +40,7 @@ import {
   type PlanningReceipt,
   type ShapeState,
 } from "./shape.js";
-import { validateStateV5 } from "./state-validator.js";
+import { validateStateV6 } from "./state-validator.js";
 import type {
   ActiveArtifactReference,
   ActiveWorktreeReference,
@@ -37,8 +57,8 @@ import type {
   RoutingSnapshot,
   StateHistoryEvent,
   TaskState,
-  VerificationRequirements,
-  VerificationReceipt,
+  PendingHumanObservation,
+  AssuranceIssue,
   WorkflowHistoryEvent,
   WorkflowHistoryEventType,
 } from "./types.js";
@@ -57,12 +77,12 @@ export interface CreateTaskInput {
   configSnapshot: Record<string, unknown>;
   policySnapshot: Policy;
   routingSnapshot?: RoutingSnapshot;
-  verificationRequirements?: Omit<VerificationRequirements, "requirementsDigest">;
   activeArtifact?: ActiveArtifactReference;
   activeWorktree?: ActiveWorktreeReference;
   contextCapsule?: ContextCapsule;
   intake?: IntakeState;
   shape?: ShapeState;
+  design?: DesignState;
   benchmarkEnabled?: boolean;
   at?: string;
 }
@@ -113,17 +133,6 @@ export interface CreateGateDecisionInput {
   instructionRef?: string;
   at?: string;
 }
-export interface EvaluatorObservation {
-  id: string;
-  stateRevision: number;
-  observedFingerprint: string;
-  evidenceRef: string;
-  exitCode: number;
-}
-export interface VerificationEvaluatorInput {
-  criteria: readonly EvaluatorObservation[];
-  mandatoryChecks: readonly EvaluatorObservation[];
-}
 export class StateValidationError extends Error {
   constructor(
     readonly code: "state_schema_incompatible" | "state_invalid",
@@ -140,7 +149,7 @@ export function createState(input: CreateTaskInput): TaskState {
   const contextCapsule =
     input.contextCapsule ?? defaultContextCapsule(input.configSnapshot, input.policySnapshot);
   const state: TaskState = {
-    schemaVersion: 5,
+    schemaVersion: 6,
     taskId: input.taskId,
     status: "new",
     revision: 0,
@@ -148,7 +157,6 @@ export function createState(input: CreateTaskInput): TaskState {
     configSnapshot: copy(input.configSnapshot),
     policySnapshot: copy(input.policySnapshot),
     issues: [],
-    reviewCycle: 0,
     history: [
       {
         sequence: 1,
@@ -162,47 +170,59 @@ export function createState(input: CreateTaskInput): TaskState {
     contextCapsule: copy(contextCapsule),
     ...(input.intake ? { intake: copy(input.intake) } : {}),
     ...(input.shape ? { shape: copy(input.shape) } : {}),
+    design: copy(input.design ?? createDesignState()),
     benchmarkEnabled: input.benchmarkEnabled ?? false,
     ...(input.routingSnapshot ? { routingSnapshot: copy(input.routingSnapshot) } : {}),
     routingPolicyVersion: ROUTING_POLICY_VERSION,
     routingDecisions: [],
-    ...(input.verificationRequirements
-      ? {
-          verificationRequirements: normalizeVerificationRequirements(
-            input.verificationRequirements,
-          ),
-        }
-      : {}),
   };
-  assertStateV5(state);
+  assertStateV6(state);
   return state;
 }
 
-export function loadStateV5(value: unknown): TaskState {
-  if (!isRecord(value) || value.schemaVersion !== 5) {
+export function loadStateV6(value: unknown): TaskState {
+  if (!isRecord(value) || value.schemaVersion !== 6) {
     const version = isRecord(value) ? String(value.schemaVersion) : "missing";
     throw new StateValidationError(
       "state_schema_incompatible",
-      `Task state schema ${version} is incompatible; schemaVersion 5 required. No migration is available.`,
+      `Task state schema ${version} is incompatible; schemaVersion 6 required. No migration is available.`,
     );
   }
-  assertStateV5(value);
+  assertStateV6(value);
   return copy(value as TaskState);
 }
 
-export function assertStateV5(value: unknown): asserts value is TaskState {
-  const result = validateStateV5(value);
+export function assertStateV6(value: unknown): asserts value is TaskState {
+  const result = validateStateV6(value);
   if (!result.valid)
     throw new StateValidationError(
       "state_invalid",
-      `Task state V5 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`,
+      `Task state V6 schema validation failed: ${JSON.stringify(result.errors.slice(0, 3))}`,
     );
   const state = value as TaskState;
   if (!isTaskStatus(state.status) || !isRisk(state.risk))
-    throw new StateValidationError("state_invalid", "Task state V5 status or risk is invalid.");
+    throw new StateValidationError("state_invalid", "Task state V6 status or risk is invalid.");
+  try {
+    validateDesignState(state.design);
+  } catch (error) {
+    throw new StateValidationError(
+      "state_invalid",
+      `Persisted DesignState is invalid: ${error instanceof Error ? error.message : "unknown error"}.`,
+    );
+  }
   validateHistory(state);
-  if (state.intake && state.intake.brief.risk !== state.risk)
-    throw new StateValidationError("state_invalid", "Task risk contradicts Intake Brief risk.");
+  const intakeQuestionId =
+    state.design.activeQuestion?.owner === "intake" ? state.design.activeQuestion.id : undefined;
+  if (state.intake?.activeQuestionId !== intakeQuestionId)
+    throw new StateValidationError(
+      "state_invalid",
+      "INTAKE active-question reference must match DesignState authority.",
+    );
+  if (state.intake && state.intake.risk !== state.risk)
+    throw new StateValidationError(
+      "state_invalid",
+      "Task risk contradicts INTAKE assessment risk.",
+    );
   if (state.shape) {
     try {
       validateShapeState(state.shape);
@@ -212,24 +232,25 @@ export function assertStateV5(value: unknown): asserts value is TaskState {
         `Persisted ShapeState is invalid: ${error instanceof Error ? error.message : "unknown error"}.`,
       );
     }
-    if (state.shape.risk !== state.risk || state.shape.intakeBriefRef !== "state:intake.brief")
+    if (
+      state.shape.risk !== state.risk ||
+      state.shape.productBaselineRef !== "state:design.productBaseline"
+    )
       throw new StateValidationError(
         "state_invalid",
-        "Shape state is not bound to current Intake Brief and risk.",
+        "Shape state is not bound to current Product Baseline and risk.",
       );
   }
   if (
     [
       "discovering",
+      "awaiting_shape_decision",
       "awaiting_profile_choice",
       "planning",
       "awaiting_intake_decision",
       "awaiting_approval",
       "executing",
-      "reviewing",
-      "resolving_assure",
-      "verifying",
-      "finished",
+      "assuring",
     ].includes(state.status) &&
     !state.shape
   ) {
@@ -253,19 +274,46 @@ export function assertStateV5(value: unknown): asserts value is TaskState {
   if (state.status === "awaiting_approval" && !nonEmpty(state.contractDigest))
     throw new StateValidationError("state_invalid", "awaiting_approval requires contract digest.");
   if (state.planApproval) validatePlanApproval(state, state.planApproval);
-  if (
-    ["executing", "reviewing", "resolving_assure", "verifying", "finished"].includes(
-      state.status,
-    ) &&
-    !state.planApproval
-  )
+  if (["executing", "assuring"].includes(state.status) && !state.planApproval)
     throw new StateValidationError(
       "state_invalid",
       `${state.status} requires current PlanApprovalReceipt.`,
     );
-  if (state.verificationReceipt) validateVerificationReceipt(state, state.verificationReceipt);
-  if (state.status === "finished" && !state.verificationReceipt)
-    throw new StateValidationError("state_invalid", "finished requires VerificationReceipt.");
+  if (state.assurance) {
+    const contract = state.shape?.contract?.assuranceContract;
+    if (!contract)
+      throw new StateValidationError(
+        "state_invalid",
+        "AssuranceState requires canonical assuranceContract.",
+      );
+    try {
+      validateAssuranceState(contract, state.assurance);
+    } catch (error) {
+      throw new StateValidationError(
+        "state_invalid",
+        `Persisted AssuranceState is invalid: ${error instanceof Error ? error.message : "unknown error"}.`,
+      );
+    }
+  }
+  const succeeded = assuranceSucceeded(state.assurance);
+  const completedEvent = state.history.at(-1)?.type === "assure.completed";
+  if (succeeded !== completedEvent)
+    throw new StateValidationError(
+      "state_invalid",
+      "AssuranceReceipt and assure.completed must be paired.",
+    );
+  if (succeeded) {
+    const receipt = state.assurance?.receipt;
+    if (
+      state.status !== "assuring" ||
+      receipt?.taskId !== state.taskId ||
+      receipt.contractDigest !== state.shape?.contract?.digest
+    )
+      throw new StateValidationError(
+        "state_invalid",
+        "Completed ASSURE is bound to another task or contract.",
+      );
+  }
 }
 
 export function guardStateFingerprint(state: TaskState): string {
@@ -279,16 +327,21 @@ export function guardStateFingerprint(state: TaskState): string {
     resumeReason: state.resumeReason,
     contractDigest: state.contractDigest,
     planApproval: state.planApproval,
-    verificationReceipt: state.verificationReceipt,
+    assurance: state.assurance,
     configSnapshot: state.configSnapshot,
     policySnapshot: state.policySnapshot,
     routingSnapshot: state.routingSnapshot,
     routingDecisions: state.routingDecisions,
     intake: state.intake,
     shape: state.shape,
+    design: state.design,
     issues: state.issues,
-    reviewCycle: state.reviewCycle,
   });
+}
+
+export function isTaskTerminal(state: TaskState): boolean {
+  assertStateV6(state);
+  return isTerminalStatus(state.status, assuranceSucceeded(state.assurance));
 }
 
 export function createGuardAttestation(
@@ -296,7 +349,7 @@ export function createGuardAttestation(
   guard: GuardId,
   input: CreateGuardAttestationInput,
 ): GuardEvidence {
-  assertStateV5(state);
+  assertStateV6(state);
   if (!GUARD_ID_SET.has(guard)) throw new Error(`Unknown transition guard ${guard}.`);
   if (guard === "intake_complete") {
     validateCompleteIntake(state);
@@ -332,7 +385,7 @@ export function createGuardAttestation(
 const trustedEvidence = new WeakSet<object>();
 
 export function evaluateDiscoveryGuard(state: TaskState, receipt: DiscoveryReceipt): GuardEvidence {
-  assertStateV5(state);
+  assertStateV6(state);
   if (!state.shape || !evaluateDiscoveryCompleteness(state.shape).complete)
     throw new Error("Discovery evaluator requires current complete Shape Discovery.");
   const current = state.shape.evaluatorReceipts.find(
@@ -352,7 +405,7 @@ export function evaluateDiscoveryGuard(state: TaskState, receipt: DiscoveryRecei
 }
 
 export function evaluatePlanningGuard(state: TaskState, receipt: PlanningReceipt): GuardEvidence {
-  assertStateV5(state);
+  assertStateV6(state);
   if (
     !state.shape ||
     !evaluateContractCompleteness(state.shape).complete ||
@@ -375,44 +428,8 @@ export function evaluatePlanningGuard(state: TaskState, receipt: PlanningReceipt
   });
 }
 
-export function evaluateVerification(
-  state: TaskState,
-  input: VerificationEvaluatorInput,
-): GuardEvidence {
-  assertStateV5(state);
-  const requirements = state.verificationRequirements;
-  if (!requirements) throw new Error("Verification requires state-bound verificationRequirements.");
-  assertExactObservations(
-    state,
-    requirements.criterionIds,
-    input.criteria,
-    "acceptance criteria",
-    true,
-  );
-  assertExactObservations(
-    state,
-    requirements.mandatoryCheckIds,
-    input.mandatoryChecks,
-    "mandatory checks",
-    false,
-  );
-  const observations = [...input.criteria, ...input.mandatoryChecks];
-  const ids = [
-    ...requirements.criterionIds.map((id) => `criterion:${id}`),
-    ...requirements.mandatoryCheckIds.map((id) => `check:${id}`),
-  ];
-  return createEvaluatorEvidence(state, "verification_complete", "deterministic-check", {
-    evaluator: "verification",
-    outcome: "complete",
-    inputDigest: digest({ requirements, input }),
-    evidenceRefs: observations.map((item) => item.evidenceRef),
-    subjectIds: ids,
-    completedIds: ids,
-  });
-}
-
 export function createGateDecision(state: TaskState, input: CreateGateDecisionInput): GateDecision {
-  assertStateV5(state);
+  assertStateV6(state);
   const unknown = Object.keys(input).filter(
     (key) => !["decision", "instructionRef", "at"].includes(key),
   );
@@ -458,7 +475,6 @@ export function updateShapeState(
       | "discovery.completed"
       | "profile.choice_requested"
       | "profile.choice_recorded"
-      | "decision.escalated"
       | "contract.projected"
       | "projection.reconciliation_requested"
       | "evidence.invalidated"
@@ -468,7 +484,8 @@ export function updateShapeState(
     at?: string;
   },
 ): TaskState {
-  assertStateV5(state);
+  assertStateV6(state);
+  if (assuranceSucceeded(state.assurance)) throw new Error("Completed ASSURE is immutable.");
   if (deriveMacroPhase(state) !== "SHAPE" && state.status !== "awaiting_intake_decision") {
     throw new Error(
       "ShapeState may change only in SHAPE or while resolving linked Intake escalation.",
@@ -477,13 +494,13 @@ export function updateShapeState(
   if (
     !isRisk(shape.risk) ||
     shape.risk !== state.risk ||
-    shape.intakeBriefRef !== "state:intake.brief"
+    shape.productBaselineRef !== "state:design.productBaseline"
   )
-    throw new Error("Shape update must remain bound to current Intake Brief and risk.");
+    throw new Error("Shape update must remain bound to current Product Baseline and risk.");
   const contractChanged = state.shape?.contract?.digest !== shape.contract?.digest;
   const {
     planApproval: _approval,
-    verificationReceipt: _verification,
+    assurance: _assurance,
     contractDigest: _contractDigest,
     ...withoutReceipts
   } = state;
@@ -499,14 +516,218 @@ export function updateShapeState(
   );
 }
 
+export function updateDesignState(
+  state: TaskState,
+  design: DesignState,
+  input: {
+    type: Extract<
+      WorkflowHistoryEventType,
+      "design.question_recorded" | "design.answer_recorded" | "design.invalidated"
+    >;
+    refs: WorkflowHistoryEvent["refs"];
+    at?: string;
+  },
+): TaskState {
+  assertStateV6(state);
+  validateDesignState(design);
+  if (!["INTAKE", "SHAPE"].includes(deriveMacroPhase(state)))
+    throw new Error("DesignState may change only in INTAKE or SHAPE.");
+  const intake = alignIntakeQuestionReference(state.intake, design);
+  const { planApproval: _approval, assurance: _assurance, ...base } = state;
+  return recordHistoryEvent(
+    { ...base, design: copy(design), ...(intake ? { intake } : {}) },
+    input,
+  );
+}
+
+function alignIntakeQuestionReference(
+  intake: IntakeState | undefined,
+  design: DesignState,
+): IntakeState | undefined {
+  const questionId =
+    design.activeQuestion?.owner === "intake" ? design.activeQuestion.id : undefined;
+  if (!intake) {
+    if (questionId) throw new Error("INTAKE design question requires IntakeState.");
+    return undefined;
+  }
+  const { activeQuestionId: _activeQuestionId, ...base } = intake;
+  return { ...base, ...(questionId ? { activeQuestionId: questionId } : {}) };
+}
+
+export function recordAssuranceObservation(
+  state: TaskState,
+  observation: EvidenceObservation,
+): TaskState {
+  assertStateV6(state);
+  if (!["executing", "assuring"].includes(state.status))
+    throw new Error("Assurance evidence may be recorded only in BUILD or ASSURE.");
+  const contract = requireAssuranceContract(state);
+  const assurance = recordAssuranceEvidence(contract, state.assurance, observation);
+  return recordHistoryEvent(
+    { ...state, assurance },
+    {
+      type: "assurance.evidence_recorded",
+      refs: [
+        { kind: "evidence", ref: observation.evidenceId },
+        { kind: "command", ref: observation.operationId },
+      ],
+      ...(observation.recordedAt ? { at: observation.recordedAt } : {}),
+    },
+  );
+}
+
+export function invalidateAssurance(
+  state: TaskState,
+  changedScopeRefs: readonly string[],
+  at?: string,
+): TaskState {
+  assertStateV6(state);
+  if (!state.assurance) return state;
+  const assurance = invalidateAssuranceEvidence(
+    requireAssuranceContract(state),
+    state.assurance,
+    changedScopeRefs,
+  );
+  return recordHistoryEvent(
+    { ...state, assurance },
+    {
+      type: "assurance.evidence_invalidated",
+      refs: changedScopeRefs.slice(0, HISTORY_REFERENCE_LIMIT).map((ref) => ({
+        kind: "scope" as const,
+        ref,
+      })),
+      ...(at ? { at } : {}),
+    },
+  );
+}
+
+export function requestHumanObservation(
+  state: TaskState,
+  pending: PendingHumanObservation,
+): TaskState {
+  assertStateV6(state);
+  if (state.status !== "assuring") throw new Error("Human observation belongs to ASSURE.");
+  const assurance = setPendingHumanObservation(
+    requireAssuranceContract(state),
+    state.assurance,
+    pending,
+  );
+  return recordHistoryEvent(
+    { ...state, assurance },
+    {
+      type: "assurance.human_observation_requested",
+      refs: [{ kind: "evidence", ref: pending.requestId }],
+      at: pending.requestedAt,
+    },
+  );
+}
+
+export function recordTaskAssuranceIssue(
+  state: TaskState,
+  issue: Omit<AssuranceIssue, "status" | "correctionAttempts" | "rootCauseRequired">,
+  at?: string,
+): TaskState {
+  assertStateV6(state);
+  if (state.status !== "assuring") throw new Error("Assurance issues belong to ASSURE.");
+  const assurance = recordAssuranceIssueIndex(
+    requireAssuranceContract(state),
+    state.assurance ?? { schemaVersion: 1, evidenceIndex: [], issues: [] },
+    issue,
+  );
+  return recordHistoryEvent(
+    { ...state, assurance },
+    {
+      type: "issue.recorded",
+      refs: [
+        { kind: "issue", ref: issue.issueId },
+        { kind: "evidence", ref: issue.evidenceRef },
+      ],
+      ...(at ? { at } : {}),
+    },
+  );
+}
+
+export function recordTaskCorrectionAttempt(
+  state: TaskState,
+  issueId: string,
+  at?: string,
+): TaskState {
+  assertStateV6(state);
+  if (state.status !== "assuring" || !state.assurance)
+    throw new Error("Assurance correction requires active ASSURE issue state.");
+  const assurance = recordCorrectionAttemptIndex(
+    requireAssuranceContract(state),
+    state.assurance,
+    issueId,
+  );
+  return recordHistoryEvent(
+    { ...state, assurance },
+    {
+      type: "correction.recorded",
+      refs: [{ kind: "issue", ref: issueId }],
+      ...(at ? { at } : {}),
+    },
+  );
+}
+
+export function resolveTaskAssuranceIssue(
+  state: TaskState,
+  issueId: string,
+  at?: string,
+): TaskState {
+  assertStateV6(state);
+  if (state.status !== "assuring" || !state.assurance)
+    throw new Error("Assurance issue resolution requires active ASSURE issue state.");
+  const assurance = resolveAssuranceIssueIndex(
+    requireAssuranceContract(state),
+    state.assurance,
+    issueId,
+  );
+  return recordHistoryEvent(
+    { ...state, assurance },
+    {
+      type: "assurance.issue_resolved",
+      refs: [{ kind: "issue", ref: issueId }],
+      ...(at ? { at } : {}),
+    },
+  );
+}
+
+export function completeAssurance(
+  state: TaskState,
+  input: Omit<AssuranceCompletionInput, "taskId" | "contractDigest">,
+): TaskState {
+  assertStateV6(state);
+  if (state.status !== "assuring" || !state.assurance)
+    throw new Error("ASSURE completion requires active assuring state and evidence.");
+  const completedAt = input.completedAt ?? new Date().toISOString();
+  const assurance = completeAssuranceIndex(requireAssuranceContract(state), state.assurance, {
+    ...input,
+    taskId: state.taskId,
+    contractDigest: state.shape?.contract?.digest ?? "",
+    completedAt,
+  });
+  const event: WorkflowHistoryEvent = {
+    sequence: nextSequence(state),
+    at: completedAt,
+    type: "assure.completed",
+    refs: [
+      { kind: "receipt", ref: assurance.receipt?.receiptDigest ?? "receipt:missing" },
+      { kind: "evidence", ref: assurance.receipt?.evidenceIndexDigest ?? "evidence:missing" },
+    ],
+  };
+  return compactAndValidate({ ...state, assurance, history: [...state.history, event] });
+}
+
 export function addRoutingDecision(state: TaskState, decision: RoutingDecision): TaskState {
-  assertStateV5(state);
+  assertStateV6(state);
   return { ...state, routingDecisions: [...(state.routingDecisions ?? []), copy(decision)] };
 }
 
 export function recordHistoryEvent(state: TaskState, input: RecordHistoryEventInput): TaskState {
-  assertStateV5(state);
-  if (STATE_MACHINE[state.status].terminal) throw new Error("Terminal state history is immutable.");
+  assertStateV6(state);
+  if (STATE_MACHINE[state.status].terminal || assuranceSucceeded(state.assurance))
+    throw new Error("Terminal state history is immutable.");
   validateHistoryReferences(input.refs, `Workflow event ${input.type}`);
   const event: WorkflowHistoryEvent = {
     sequence: nextSequence(state),
@@ -518,7 +739,7 @@ export function recordHistoryEvent(state: TaskState, input: RecordHistoryEventIn
 }
 
 export function updateResumeContext(state: TaskState, input: ResumeContextInput): TaskState {
-  assertStateV5(state);
+  assertStateV6(state);
   const { activeArtifact: _a, activeWorktree: _w, ...base } = state;
   const updated: TaskState = {
     ...base,
@@ -554,7 +775,8 @@ export function transition(
   next: TaskStatus,
   options: TransitionOptions = {},
 ): TaskState {
-  assertStateV5(state);
+  assertStateV6(state);
+  if (assuranceSucceeded(state.assurance)) throw new Error("Completed ASSURE is immutable.");
   validateTransitionOptionKeys(options);
   if (!isTaskStatus(next))
     throw new Error(`Invalid state transition from ${state.status} to ${String(next)}.`);
@@ -599,12 +821,15 @@ export function transition(
   };
   let shape = state.shape;
   if (next === "discovering" && !shape)
-    shape = createShapeState({ risk: state.risk, intakeBriefRef: "state:intake.brief" });
+    shape = createShapeState({
+      risk: state.risk,
+      productBaselineRef: "state:design.productBaseline",
+    });
   const {
     resumeTo: _resume,
     resumeReason: _resumeReason,
     planApproval: _approval,
-    verificationReceipt: _verification,
+    assurance: _assurance,
     ...base
   } = state;
   const approvedDecision =
@@ -616,10 +841,11 @@ export function transition(
     : next === "planning" || next === "intaking" || next === "discovering"
       ? undefined
       : state.planApproval;
-  const verificationReceipt =
-    next === "finished"
-      ? createVerificationReceipt(state, evidence.get("verification_complete"), eventAt)
-      : state.verificationReceipt;
+  const assurance = ["planning", "intaking", "discovering", "awaiting_shape_decision"].includes(
+    next,
+  )
+    ? undefined
+    : state.assurance;
   const output: TaskState = {
     ...base,
     status: next,
@@ -627,7 +853,7 @@ export function transition(
     ...metadata,
     ...(shape ? { shape } : {}),
     ...(planApproval ? { planApproval: copy(planApproval) } : {}),
-    ...(verificationReceipt ? { verificationReceipt } : {}),
+    ...(assurance ? { assurance: copy(assurance) } : {}),
     history: [...state.history, event],
   };
   return compactAndValidate(output);
@@ -671,6 +897,12 @@ function transitionMetadata(
     return { contractDigest };
   }
   return state.contractDigest ? { contractDigest: state.contractDigest } : {};
+}
+
+function requireAssuranceContract(state: TaskState) {
+  const contract = state.shape?.contract?.assuranceContract;
+  if (!contract) throw new Error("Canonical assuranceContract is missing.");
+  return contract;
 }
 
 function validateStructuralGuards(
@@ -770,10 +1002,7 @@ function validateGuardEvidence(state: TaskState, evidence: GuardEvidence): void 
 
 function createEvaluatorEvidence(
   state: TaskState,
-  guard: Extract<
-    GuardId,
-    "intake_complete" | "discovery_sufficient" | "contract_complete" | "verification_complete"
-  >,
+  guard: Extract<GuardId, "intake_complete" | "discovery_sufficient" | "contract_complete">,
   provenance: GuardEvidenceProvenance,
   input: Omit<
     EvaluatorReceiptRecord,
@@ -811,7 +1040,6 @@ function validateEvaluatorReceipt(evidence: GuardEvidence, state: TaskState): vo
     intake_complete: "intake",
     discovery_sufficient: "discovery",
     contract_complete: "planning",
-    verification_complete: "verification",
   };
   if (
     !receipt ||
@@ -863,59 +1091,6 @@ function validatePlanApproval(state: TaskState, receipt: TaskState["planApproval
     );
 }
 
-function createVerificationReceipt(
-  state: TaskState,
-  evidence: GuardEvidence | undefined,
-  verifiedAt: string,
-): VerificationReceipt {
-  const evaluator = evidence?.evaluatorReceipt;
-  const requirements = state.verificationRequirements;
-  const contractDigest = state.shape?.contract?.digest;
-  if (
-    !evidence ||
-    !trustedEvidence.has(evidence) ||
-    evaluator?.evaluator !== "verification" ||
-    evaluator.outcome !== "complete" ||
-    !requirements ||
-    !contractDigest
-  )
-    throw new Error("finished requires trusted current verification evidence.");
-  const base = {
-    schemaVersion: 1 as const,
-    verifiedAt,
-    taskId: state.taskId,
-    contractDigest,
-    stateRevision: state.revision,
-    stateFingerprint: guardStateFingerprint(state),
-    requirementsDigest: requirements.requirementsDigest,
-    criterionIds: [...requirements.criterionIds],
-    validationIds: [...requirements.mandatoryCheckIds],
-    evidenceRefs: [...evaluator.evidenceRefs],
-  };
-  return { ...base, receiptDigest: digest(base) };
-}
-
-function validateVerificationReceipt(state: TaskState, receipt: VerificationReceipt): void {
-  if (
-    receipt.schemaVersion !== 1 ||
-    receipt.taskId !== state.taskId ||
-    receipt.contractDigest !== state.shape?.contract?.digest ||
-    receipt.requirementsDigest !== state.verificationRequirements?.requirementsDigest ||
-    receipt.receiptDigest !== digest({ ...receipt, receiptDigest: undefined }) ||
-    !validAt(receipt.verifiedAt) ||
-    receipt.stateRevision !== state.revision - 1 ||
-    receipt.stateFingerprint !==
-      state.history.toReversed().find((event) => event.type === "state.transition")
-        ?.sourceFingerprint ||
-    !sameIds(receipt.criterionIds, state.verificationRequirements?.criterionIds ?? []) ||
-    !sameIds(receipt.validationIds, state.verificationRequirements?.mandatoryCheckIds ?? []) ||
-    !receipt.criterionIds.length ||
-    !receipt.evidenceRefs.length ||
-    !receipt.evidenceRefs.every(nonEmpty) ||
-    new Set(receipt.evidenceRefs).size !== receipt.evidenceRefs.length
-  )
-    throw new StateValidationError("state_invalid", "VerificationReceipt is invalid.");
-}
 function gateDecisionAllows(decision: GateDecision, target: TaskStatus): boolean {
   return decision.decision === "approved"
     ? target === "executing"
@@ -929,21 +1104,17 @@ function transitionContract(from: TaskStatus, to: TaskStatus): TransitionContrac
 
 function validateCompleteIntake(state: TaskState): void {
   const intake = state.intake;
-  const signal = intake?.brief.successSignal;
   if (
     !intake ||
+    !designComplete(state.design) ||
     !intake.semanticComplete ||
     !intake.deterministicComplete ||
-    intake.activeQuestion ||
+    intake.activeQuestionId ||
     intake.contradictions.length ||
     intake.blockedReason ||
-    !nonEmpty(intake.brief.objective) ||
-    !signal ||
-    !nonEmpty(signal.description) ||
-    !nonEmpty(signal.observationMethod) ||
-    intake.brief.risk !== state.risk
+    intake.risk !== state.risk
   )
-    throw new Error("intake_complete requires complete current Intake Brief.");
+    throw new Error("intake_complete requires complete current INTAKE assessment.");
 }
 function validateSelectedProfile(state: TaskState): void {
   const choice = state.shape?.preparationProfileChoice;
@@ -954,42 +1125,6 @@ function validateSelectedProfile(state: TaskState): void {
     !nonEmpty(choice.selectionEvidenceRef)
   )
     throw new Error("profile_selected requires explicit persisted Quick/Plan answer.");
-}
-
-function assertExactObservations(
-  state: TaskState,
-  required: readonly string[],
-  observed: readonly EvaluatorObservation[],
-  label: string,
-  nonEmptyRequired: boolean,
-): void {
-  assertUnique(required, `${label} required IDs`, !nonEmptyRequired);
-  assertSameIds(
-    required,
-    observed.map((item) => item.id),
-    label,
-  );
-  for (const item of observed)
-    if (
-      item.stateRevision !== state.revision ||
-      item.exitCode !== 0 ||
-      !nonEmpty(item.observedFingerprint) ||
-      !nonEmpty(item.evidenceRef)
-    )
-      throw new Error(`${label} observation ${item.id} did not pass or is stale.`);
-}
-function normalizeVerificationRequirements(
-  input: Omit<VerificationRequirements, "requirementsDigest">,
-): VerificationRequirements {
-  assertUnique(input.criterionIds, "criterion IDs");
-  assertUnique(input.mandatoryCheckIds, "check IDs", true);
-  return {
-    ...copy(input),
-    requirementsDigest: digest({
-      criterionIds: input.criterionIds,
-      mandatoryCheckIds: input.mandatoryCheckIds,
-    }),
-  };
 }
 
 function validateHistory(state: TaskState): void {
@@ -1067,8 +1202,7 @@ function validatePersistedTransitionEvent(
       !nonEmpty(item.observedFingerprint) ||
       !item.evidenceRefs.length ||
       !item.evidenceRefs.every(nonEmpty) ||
-      !["passed", "not_applicable"].includes(item.result) ||
-      (item.result === "not_applicable" && item.guard !== "review_satisfied")
+      !["passed", "not_applicable"].includes(item.result)
     )
       throw new StateValidationError(
         "state_invalid",
@@ -1118,7 +1252,6 @@ function validatePersistedEvaluatorReceipt(evidence: GuardEvidenceRecord): void 
     intake_complete: "intake",
     discovery_sufficient: "discovery",
     contract_complete: "planning",
-    verification_complete: "verification",
   };
   if (
     !receipt ||
@@ -1159,7 +1292,7 @@ function compactAndValidate(state: TaskState): TaskState {
           history: state.history.slice(-HISTORY_LIMIT),
           historySummary: summarizeHistory(state),
         };
-  assertStateV5(output);
+  assertStateV6(output);
   return output;
 }
 function summarizeHistory(state: TaskState): TaskState["historySummary"] {
@@ -1242,23 +1375,6 @@ function validateTransitionOptionKeys(options: TransitionOptions): void {
   ]);
   const unknown = Object.keys(options).filter((key) => !allowed.has(key));
   if (unknown.length) throw new Error(`Unknown transition options: ${unknown.join(", ")}.`);
-}
-function assertSameIds(
-  expected: readonly string[],
-  actual: readonly string[],
-  label: string,
-): void {
-  assertUnique(actual, `${label} observed IDs`, expected.length === 0);
-  if (!sameIds(expected, actual)) throw new Error(`${label} do not exactly cover required IDs.`);
-}
-function assertUnique(values: readonly string[], label: string, allowEmpty = false): void {
-  if (
-    !Array.isArray(values) ||
-    (!allowEmpty && !values.length) ||
-    !values.every(nonEmpty) ||
-    new Set(values).size !== values.length
-  )
-    throw new Error(`${label} must contain unique non-empty values.`);
 }
 function sameIds(left: readonly string[], right: readonly string[]): boolean {
   return (
@@ -1345,5 +1461,4 @@ const TRUSTED_GUARDS = new Set<GuardId>([
   "intake_complete",
   "discovery_sufficient",
   "contract_complete",
-  "verification_complete",
 ]);

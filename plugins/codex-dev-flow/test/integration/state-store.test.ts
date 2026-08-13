@@ -5,12 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stringify } from "yaml";
 import { expect, test } from "bun:test";
-import { taskInput } from "../support/helpers-v5.ts";
+import { taskInput } from "../support/helpers-v6.ts";
 import { expectRejected } from "../support/expect-error.ts";
 const api = async () => sourceApi;
 const workspace = () => mkdtemp(join(tmpdir(), "dev-flow-v5-"));
 
-test("V5 state round-trips atomically through YAML", async () => {
+test("V6 state round-trips atomically through YAML", async () => {
   const a = await api();
   const root = await workspace();
   const store = a.createTaskStateStore(root);
@@ -18,7 +18,7 @@ test("V5 state round-trips atomically through YAML", async () => {
   await store.save("roundtrip", state);
   expect(await store.load("roundtrip")).toEqual(state);
   expect(
-    (await readFile(store.paths("roundtrip").statePath, "utf8")).includes("schemaVersion: 5"),
+    (await readFile(store.paths("roundtrip").statePath, "utf8")).includes("schemaVersion: 6"),
   ).toBe(true);
 });
 

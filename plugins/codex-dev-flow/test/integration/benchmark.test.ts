@@ -4,7 +4,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
-import { taskInput } from "../support/helpers-v5.ts";
+import { taskInput } from "../support/helpers-v6.ts";
 const api = async () => sourceApi;
 const survey = { satisfaction: 5, conformance: "yes", pluginValue: "useful" };
 const actual = { createdFiles: ["src/a.ts"], validationComplete: true };
@@ -24,7 +24,7 @@ test("benchmark uses canonical Shape contract for Quick and Plan", async () => {
     const record = a.createBenchmarkRecord({
       taskId: `bench-${preparationProfile}`,
       preparationProfile,
-      outcome: "finished",
+      outcome: "success",
       survey,
       actual,
       canonicalChangeContract: authority,
@@ -43,7 +43,7 @@ test("benchmark records remain bounded, redacted, atomic, and summarizable", asy
   const record = a.createBenchmarkRecord({
     taskId: "bench-safe",
     preparationProfile: "quick",
-    outcome: "finished",
+    outcome: "success",
     survey: { ...survey, comment: "token=secret-value user@example.com" },
     actual,
     canonicalChangeContract: authority,
@@ -54,7 +54,7 @@ test("benchmark records remain bounded, redacted, atomic, and summarizable", asy
   expect((await store.summary()).recordCount).toBe(1);
 });
 
-test("benchmark opt-in persists in V5 status without mode", async () => {
+test("benchmark opt-in persists in V6 status without mode", async () => {
   const a = await api();
   const root = await mkdtemp(join(tmpdir(), "benchmark-status-"));
   const state = a.createState({ ...taskInput("bench-status"), benchmarkEnabled: true });
@@ -63,4 +63,22 @@ test("benchmark opt-in persists in V5 status without mode", async () => {
   expect(result.data.benchmarkEnabled).toBe(true);
   expect(result.data.risk).toBe("medium");
   expect("mode" in result.data).toBe(false);
+});
+
+test("benchmark eligibility derives success from ASSURE receipt, never status name", async () => {
+  const a = await api();
+  expect(
+    a.shouldOfferBenchmarkSurvey({
+      benchmarkEnabled: true,
+      status: "assuring",
+      assurance: {
+        schemaVersion: 1,
+        evidenceIndex: [],
+        completionIndex: ["evidence:1"],
+        receipt: {},
+      },
+    }),
+  ).toBe(true);
+  expect(a.shouldOfferBenchmarkSurvey({ benchmarkEnabled: true, status: "assuring" })).toBe(false);
+  expect(a.shouldOfferBenchmarkSurvey({ benchmarkEnabled: true, status: "failed" })).toBe(true);
 });

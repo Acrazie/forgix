@@ -99,7 +99,7 @@ $dev-flow Add rate limiting to the public authentication endpoints
 The normal task path is:
 
 ```text
-INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
 ```
 
 1. **INTAKE** establishes product objective, observable success, constraints, and risk.

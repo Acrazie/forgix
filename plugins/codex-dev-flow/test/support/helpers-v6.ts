@@ -1,4 +1,5 @@
 // @ts-nocheck -- shared behavioral fixtures intentionally model invalid and partial states.
+import { compileDesignState } from "../../src/design.ts";
 export const config = { schemaVersion: 1 };
 export const policy = {
   schemaVersion: 1,
@@ -8,24 +9,16 @@ export const policy = {
   locks: [],
 };
 
-export function completeIntake(risk = "medium", objective = "Implement adaptive SHAPE") {
+export function completeIntake(risk = "medium") {
   return {
     schemaVersion: 1,
-    brief: {
-      schemaVersion: 1,
-      objective,
-      successSignal: {
-        description: "Expected behavior observed",
-        observationMethod: "Automated tests",
-      },
-      risk,
-      provenance: {
-        sourceRefs: ["request"],
-        capturedAt: "2026-07-29T00:00:00.000Z",
-        freshnessRefs: ["test"],
-      },
-      technicalUnknowns: [],
+    risk,
+    provenance: {
+      sourceRefs: ["request"],
+      capturedAt: "2026-07-29T00:00:00.000Z",
+      freshnessRefs: ["test"],
     },
+    technicalUnknowns: [],
     decisions: [],
     answeredDecisionKeys: [],
     invalidations: [],
@@ -47,20 +40,41 @@ export function completeIntake(risk = "medium", objective = "Implement adaptive 
   };
 }
 
-export function taskInput(taskId = "task-v5", risk = "medium") {
+export function taskInput(taskId = "task-v6", risk = "medium") {
   return {
     taskId,
     risk,
     configSnapshot: config,
     policySnapshot: policy,
     intake: completeIntake(risk),
-    verificationRequirements: {
-      schemaVersion: 1,
-      sourceDigest: "shape:canonical-contract",
-      criterionIds: ["criterion:1"],
-      mandatoryCheckIds: ["test"],
-    },
+    design: completeDesign(),
   };
+}
+
+export function completeDesign(objective = "Implement adaptive SHAPE") {
+  const keys = ["objective", "users_value", "scope", "success", "risks_constraints"];
+  return compileDesignState({
+    schemaVersion: 1,
+    graph: {
+      schemaVersion: 1,
+      nodes: keys.map((key) => ({ id: `product:${key}`, kind: "product", dependsOn: [] })),
+    },
+    productBaseline: {
+      schemaVersion: 1,
+      dimensions: keys.map((key) => ({
+        key,
+        status: "resolved",
+        value: key === "objective" ? objective : `Resolved ${key}`,
+        provenance: { sourceRefs: ["request"], freshnessRefs: ["request:v1"] },
+        dependencyNodeId: `product:${key}`,
+      })),
+    },
+    glossaryDeltas: [],
+    domainRules: [],
+    decisions: [],
+    invalidations: [],
+    semanticComplete: true,
+  });
 }
 
 export function attest(api, state, ...guards) {
@@ -69,7 +83,6 @@ export function attest(api, state, ...guards) {
       observedFingerprint: `observed:${guard}:${state.revision}`,
       evidenceRefs: [`evidence:${guard}:${state.revision}`],
       provenance: guard.includes("approval") ? "human-approval" : "deterministic-check",
-      ...(guard === "review_satisfied" ? { result: "not_applicable" } : {}),
     }),
   );
 }

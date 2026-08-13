@@ -16,7 +16,7 @@ import {
 
 export const MODEL_IDS = ALLOWED_MODEL_IDS;
 export const APP_SERVER_PROTOCOL_VERSION = "v2";
-export const ROUTING_POLICY_VERSION = "2026-08-12.native-build.v2";
+export const ROUTING_POLICY_VERSION = "2026-08-13.taskstate-v6.v1";
 export const MODEL_COST_MULTIPLIERS: Record<ModelId, number> = {
   "gpt-5.6-luna": 1,
   "gpt-5.6-terra": 2.5,
@@ -54,24 +54,24 @@ type RouteTarget = { model: ModelId; effort: ReasoningEffort };
 
 const STANDARD_ROUTES: Record<MatrixPlan, Record<RoutingStage, RouteTarget>> = {
   plus: {
+    design: { model: "gpt-5.6-terra", effort: "medium" },
     discover: { model: "gpt-5.6-terra", effort: "medium" },
     plan: { model: "gpt-5.6-sol", effort: "medium" },
-    review: { model: "gpt-5.6-sol", effort: "medium" },
-    verify: { model: "gpt-5.6-luna", effort: "medium" },
+    review: { model: "gpt-5.6-luna", effort: "medium" },
     debug: { model: "gpt-5.6-sol", effort: "high" },
   },
   pro_5x: {
+    design: { model: "gpt-5.6-sol", effort: "high" },
     discover: { model: "gpt-5.6-terra", effort: "high" },
     plan: { model: "gpt-5.6-sol", effort: "high" },
-    review: { model: "gpt-5.6-sol", effort: "high" },
-    verify: { model: "gpt-5.6-luna", effort: "medium" },
+    review: { model: "gpt-5.6-luna", effort: "medium" },
     debug: { model: "gpt-5.6-sol", effort: "xhigh" },
   },
   pro_20x: {
+    design: { model: "gpt-5.6-sol", effort: "xhigh" },
     discover: { model: "gpt-5.6-sol", effort: "medium" },
     plan: { model: "gpt-5.6-sol", effort: "xhigh" },
-    review: { model: "gpt-5.6-sol", effort: "xhigh" },
-    verify: { model: "gpt-5.6-terra", effort: "medium" },
+    review: { model: "gpt-5.6-luna", effort: "medium" },
     debug: { model: "gpt-5.6-sol", effort: "xhigh" },
   },
 };
@@ -214,17 +214,23 @@ export function chooseRoute(snapshot: RoutingSnapshot, task: RouteTask): Routing
   if (pressure === "unknown" && !warnings.includes("quota_unknown")) warnings.push("quota_unknown");
   if (unknownPlan && !warnings.includes("plan_unknown")) warnings.push("plan_unknown");
   const effectivePlan = effectiveMatrixPlan(snapshot.plan, pressure);
-  const base = STANDARD_ROUTES[effectivePlan][task.stage];
+  const base =
+    task.stage === "review"
+      ? leastCostReviewTarget(task.risk, task.ambiguity)
+      : STANDARD_ROUTES[effectivePlan][task.stage];
   const elevated =
     task.risk === "high" ||
     task.risk === "critical" ||
     task.ambiguity === "high" ||
     task.ambiguity === "critical";
-  const delta = elevated ? 1 : 0;
+  const delta = elevated && task.stage !== "review" ? 1 : 0;
   const effort = shiftEffort(base.effort, delta);
   const capability = snapshot.models.find((candidate) => candidate.id === base.model);
   const exactAvailable = capability?.supportedReasoningEfforts.includes(effort) === true;
-  const reason = `${task.stage} route for ${effectivePlan} plan under ${pressure} quota`;
+  const reason =
+    task.stage === "review"
+      ? `least-cost qualified review route for ${highestRisk(task.risk, task.ambiguity)} risk`
+      : `${task.stage} route for ${effectivePlan} plan under ${pressure} quota`;
   if (!exactAvailable) {
     if (!warnings.includes("required_route_unavailable"))
       warnings.push("required_route_unavailable");
@@ -245,6 +251,18 @@ export function chooseRoute(snapshot: RoutingSnapshot, task: RouteTask): Routing
     reason,
     warnings,
   };
+}
+
+function leastCostReviewTarget(risk: RiskLevel, ambiguity: RiskLevel): RouteTarget {
+  const level = highestRisk(risk, ambiguity);
+  if (level === "critical") return { model: "gpt-5.6-sol", effort: "high" };
+  if (level === "high") return { model: "gpt-5.6-terra", effort: "high" };
+  return { model: "gpt-5.6-luna", effort: "medium" };
+}
+
+function highestRisk(left: RiskLevel, right: RiskLevel): RiskLevel {
+  const order: RiskLevel[] = ["low", "medium", "high", "critical"];
+  return order[Math.max(order.indexOf(left), order.indexOf(right))] ?? "critical";
 }
 
 function effectiveMatrixPlan(plan: ResolvedSubscriptionPlan, pressure: QuotaPressure): MatrixPlan {

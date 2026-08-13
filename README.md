@@ -74,7 +74,7 @@ for a complete walkthrough.
 ## How Dev Flow works
 
 ```text
-INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE -> finished
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
 ```
 
 - **INTAKE** resolves the product objective, observable success, constraints, and risk.

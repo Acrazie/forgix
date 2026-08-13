@@ -24,24 +24,24 @@ function snapshot(plan = "pro_20x", overrides = {}) {
 
 const standardMatrix = {
   plus: {
+    design: ["gpt-5.6-terra", "medium"],
     discover: ["gpt-5.6-terra", "medium"],
     plan: ["gpt-5.6-sol", "medium"],
-    review: ["gpt-5.6-sol", "medium"],
-    verify: ["gpt-5.6-luna", "medium"],
+    review: ["gpt-5.6-luna", "medium"],
     debug: ["gpt-5.6-sol", "high"],
   },
   pro_5x: {
+    design: ["gpt-5.6-sol", "high"],
     discover: ["gpt-5.6-terra", "high"],
     plan: ["gpt-5.6-sol", "high"],
-    review: ["gpt-5.6-sol", "high"],
-    verify: ["gpt-5.6-luna", "medium"],
+    review: ["gpt-5.6-luna", "medium"],
     debug: ["gpt-5.6-sol", "xhigh"],
   },
   pro_20x: {
+    design: ["gpt-5.6-sol", "xhigh"],
     discover: ["gpt-5.6-sol", "medium"],
     plan: ["gpt-5.6-sol", "xhigh"],
-    review: ["gpt-5.6-sol", "xhigh"],
-    verify: ["gpt-5.6-terra", "medium"],
+    review: ["gpt-5.6-luna", "medium"],
     debug: ["gpt-5.6-sol", "xhigh"],
   },
 };
@@ -69,6 +69,19 @@ test("risk or ambiguity raises effort; preparation profile never affects routing
     chooseRoute(snapshot("pro_20x"), { stage: "plan", risk: "critical", ambiguity: "medium" })
       .effort,
   ).toBe("xhigh");
+});
+
+test("review selects smallest qualified model by risk, independent of subscription", () => {
+  const { chooseRoute } = sourceApi;
+  expect(
+    chooseRoute(snapshot("pro_20x"), { stage: "review", risk: "low", ambiguity: "low" }),
+  ).toMatchObject({ model: "gpt-5.6-luna", effort: "medium" });
+  expect(
+    chooseRoute(snapshot("plus"), { stage: "review", risk: "high", ambiguity: "medium" }),
+  ).toMatchObject({ model: "gpt-5.6-terra", effort: "high" });
+  expect(
+    chooseRoute(snapshot("plus"), { stage: "review", risk: "medium", ambiguity: "critical" }),
+  ).toMatchObject({ model: "gpt-5.6-sol", effort: "high" });
 });
 
 test("initial quota pressure deterministically lowers the effective subscription row", async () => {

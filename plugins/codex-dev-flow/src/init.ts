@@ -70,11 +70,11 @@ interface InitDraft {
 
 const INTEGRATION_ID = /^[A-Za-z0-9][A-Za-z0-9._/-]*(?::[A-Za-z0-9][A-Za-z0-9._/-]*)?$/;
 const ROUTING_TASKS: RouteTask[] = [
+  { stage: "design", risk: "medium", ambiguity: "medium" },
   { stage: "discover", risk: "medium", ambiguity: "medium" },
   { stage: "plan", risk: "medium", ambiguity: "medium" },
   { stage: "debug", risk: "medium", ambiguity: "medium" },
   { stage: "review", risk: "medium", ambiguity: "medium" },
-  { stage: "verify", risk: "medium", ambiguity: "medium" },
 ];
 
 export async function runInit(options: InitOptions = {}): Promise<CliResult> {
@@ -367,10 +367,10 @@ function renderConfigurationSummary(path: string, draft: InitDraft): string {
 
 function renderRoutingSummary(plan: SubscriptionPlan, pressure: QuotaPressure): string {
   const labels: Record<string, string> = {
+    design: "Design",
     discover: "Discover",
     plan: "Plan",
     review: "Review",
-    verify: "Verify",
     debug: "Debug root cause",
   };
   const routes = buildRoutingPreview(plan, pressure).map(

@@ -65,6 +65,9 @@ Required content:
 - logical service topology and contracts;
 - all eight core convention categories plus applicable optional categories;
 - decision rationale, provenance, durable fingerprints, and dependency edges;
+- optional `domainDocumentation` conventions: single/multiple context mode, portable
+  glossary/rules/ADR/context-map paths, language, stable identity/link conventions, and
+  source fingerprints;
 - optional relative Markdown diagram refs below `.codex/dev-flow/diagrams/`; and
 - monotonic revision, canonical content digest, and Profile Approval Receipt.
 
@@ -104,13 +107,13 @@ system instructions and repository policy
 -> agent defaults
 ```
 
-Lower authority cannot weaken higher authority. Ordinary SHAPE consumption, adaptive
-domain-documentation conventions, and task exception persistence remain pending ADR
-0030 runtime increment.
+Lower authority cannot weaken higher authority. Domain destination resolution uses
+repository policy, approved profile, unambiguous detected convention, then portable
+defaults. Task exceptions remain task-local and cannot silently rewrite shared profile.
 
 ## Reconciliation
 
-Every fingerprint source is rediscovered when accessible. Missing observations remain
+Every decision and domain-documentation fingerprint source is rediscovered when accessible. Missing observations remain
 unknown, never current proof. Changed fingerprint marks owning decision stale and
 invalidates only transitive dependent closure. Repository facts are rediscovered;
 user-owned conventions are re-interviewed. Proposed update accumulates outside shared

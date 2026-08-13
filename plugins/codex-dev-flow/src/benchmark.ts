@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { constants, lstatSync, realpathSync } from "node:fs";
 import * as fs from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
+import { assuranceSucceeded } from "./assurance.js";
 import type {
   BenchmarkDeviationFact,
   BenchmarkRecord,
@@ -10,7 +11,7 @@ import type {
 } from "./types.js";
 
 export const BENCHMARK_DIRECTORY = join(".codex", "benchmarks");
-const ELIGIBLE_OUTCOMES = new Set(["finished", "failed"]);
+const ELIGIBLE_OUTCOMES = new Set(["success", "failed"]);
 const MAX_COMMENT = 2_000;
 const MAX_FILES = 256;
 const SECRET = /\b(?:sk-[A-Za-z0-9_-]{8,}|(?:api[_-]?key|token|password|secret)\s*[:=]\s*\S+)\b/gi;
@@ -48,15 +49,19 @@ export interface BenchmarkSummary {
 }
 
 export function shouldOfferBenchmarkSurvey(
-  state: Pick<TaskState, "benchmarkEnabled" | "status">,
+  state: Pick<TaskState, "benchmarkEnabled" | "status" | "assurance">,
 ): boolean {
-  return state.benchmarkEnabled === true && ELIGIBLE_OUTCOMES.has(state.status);
+  return (
+    state.benchmarkEnabled === true &&
+    (state.status === "failed" ||
+      (state.status === "assuring" && assuranceSucceeded(state.assurance)))
+  );
 }
 
 export function createBenchmarkRecord(input: CreateBenchmarkRecordInput): BenchmarkRecord {
   assertSafeTaskId(input.taskId);
   if (!ELIGIBLE_OUTCOMES.has(input.outcome))
-    throw new Error("Benchmark survey is available only after finished or failed.");
+    throw new Error("Benchmark survey is available only after success or failed.");
   const survey = validateSurvey(input.survey);
   const authority = input.canonicalChangeContract;
   if (!authority) throw new Error("Benchmark requires canonical Shape contract authority.");
@@ -228,7 +233,7 @@ function emptySummary(): BenchmarkSummary {
       forbidden_new_file: 0,
       missing_validation: 0,
     },
-    outcomes: { finished: 0, failed: 0 },
+    outcomes: { success: 0, failed: 0 },
   };
 }
 

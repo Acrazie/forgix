@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted target design; implementation pending in unreleased TaskState V5.
+Implemented in TaskState V6 with ADR 0031.
 
 ## Context
 
@@ -19,9 +19,10 @@ workflow would be wrong for Dev Flow: its lifecycle requires one active resumabl
 question, strict phase authority, deterministic state validation, read-only shaping,
 digest-bound approval, and selective invalidation.
 
-TaskState V5 already exists on `main` for the native BUILD boundary but has not been
-released after v0.3.0. This target may therefore replace obsolete V5 structures without
-supporting or migrating earlier local state.
+TaskState V5 shipped in v0.3.1 with the native BUILD boundary. ADR 0031 now requires a
+V6 schema break for ASSURE. This target lands in the same coherent V6 transition so
+SHAPE and the canonical Change Contract are rewritten once. Earlier local task state
+fails explicitly; runtime provides no migration or dual-schema compatibility.
 
 ## Decision
 
@@ -216,14 +217,14 @@ typed block. Testing combines deterministic schema/DAG/frontier/transition/inval
 tests, contractual fixtures, and versioned model evals for materiality, question quality,
 scenario quality, recommendation quality, and non-invention.
 
-### Deliver as one coherent V5 contract
+### Deliver as one coherent V6 contract
 
 Implementation may proceed in verified internal layers, but public activation is
 atomic across runtime, state schema, skills, normative contracts, projections, tests,
-and distribution. TaskState remains V5 because the existing V5 change is unreleased.
-No compatibility path or migration is provided for earlier local V4/V5 task state;
-legacy state fails with a clear diagnostic. Obsolete structures and branches are
-removed rather than retained behind compatibility code.
+and distribution. TaskState advances to V6 jointly with ADR 0031. No compatibility path
+or migration is provided for earlier local task state; legacy state fails with a clear
+diagnostic. Obsolete structures and branches are removed rather than retained behind
+compatibility code.
 
 ## Consequences
 

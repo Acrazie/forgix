@@ -1,16 +1,15 @@
 ---
 name: dev-flow
-description: Use when planning, implementing, debugging, reviewing, or verifying a repository change through the Codex Dev Flow lifecycle.
+description: Use when shaping, implementing, debugging, reviewing, or assuring a repository change through the Codex Dev Flow lifecycle.
 ---
 
 # Dev Flow
 
 Follow [lifecycle contract](../../docs/lifecycle-contract.md): exactly INTAKE, SHAPE,
-GATE, BUILD, ASSURE, then `finished`. Macro-phase derives from internal status; never
-invent or persist another phase. Canonical registry, strict V5 state, durable state store, adaptive
-INTAKE runtime, and local benchmark store are available primitives; full provider
-orchestration remains incomplete. Never claim a durable transition, Approval binding,
-or verification receipt without deterministic evidence.
+GATE, BUILD, ASSURE. ASSURE is final phase; never invent or persist another phase or
+success status. Canonical registry, strict V6 state, durable state store, unified design protocol,
+and local benchmark store are available primitives. Never claim a durable transition,
+Approval binding, or Assurance Receipt without deterministic evidence.
 
 Exact `$dev-flow init` follows Project INIT below. Parse every other invocation with
 bundled deterministic script before acting.
@@ -96,64 +95,48 @@ or fetch another package.
 
 `codex-dev-flow project-profile view [--local]` renders published canonical YAML.
 Backend validation, digest, revision, privacy, receipt, symlink, and atomic-write errors
-are blocking; never bypass them with direct file write. Ordinary SHAPE consumption,
-domain-documentation conventions, and promotion of these profiles remain pending until
-ADR 0030 runtime increment lands.
+are blocking; never bypass them with direct file write. Ordinary SHAPE consumes approved profile and domain-documentation conventions through
+portable digest-bound references. Task-local exceptions never mutate shared authority.
 
 ## INTAKE and routing
 
-INTAKE owns product intent; SHAPE owns deep technical discovery. Optimize tokens without
-weakening user authority, privacy, or truthful completion.
+INTAKE owns Product Baseline, terminology, business rules, domain scenarios, and
+business-context boundaries. SHAPE owns repository evidence and material technical
+decisions. Optimize tokens without weakening user authority, privacy, or truthful
+completion.
 
-1. Parse invocation. For new runs, persist whether leading `--benchmark` is enabled.
-2. Read only cheap entry sources: applicable guidance, effective Dev Flow
-   config/policy, primary manifests, Git/workspace identity, and documents explicitly
-   cited by user. Do not scan implementation code merely to avoid an INTAKE question.
-3. In same model processing of initial request, emit structured Intake Brief,
-   completeness result, and at most one Decision Question. Complete explicit requests
-   may emit zero questions; never add a separate sufficiency model call.
-4. Ask only information with declared `decisionKey`, missing information, and possible
-   output impact. Question has 2–3 mutually exclusive options, recommended option first,
-   one-line impact per option, recommendation basis/confidence, and free-form answer.
-   Persist exact active question before display.
-   Use interactive question UI when available; text fallback must preserve same options,
-   recommendation, impacts, and free-form path. Preserve user's dominant language;
-   internal IDs remain English.
-5. User must answer or cancel. Silence, “decide for me”, and requests to advance never
-   choose a default. Free-form response remains authoritative; normalize it without
-   inventing meaning. One response may resolve multiple explicit decisions.
-6. Process each answer once: update compact brief and normalized decisions, evaluate
-   semantic sufficiency, then emit at most one next question. No transcript,
-   re-summarization, or second routine model call.
-   Off-topic/insufficient answer keeps same decision active and rephrases it. After two
-   insufficient answers, explain exact block and offer answer or cancellation.
-7. Do not repeat answered/duplicate questions unless a persisted dependency invalidation
-   explains why. After five distinct answered questions, display one compact checkpoint;
-   no hard question cap.
-8. Invalid structured output: deterministic syntax repair when possible, otherwise one
-   targeted semantic retry. Second semantic failure creates typed
-   `semantic_output_invalid` block.
-
-User may revise an earlier answer. Persist selective invalidation and recompute only
-dependent decisions. Do not recap after each answer. Show compact checkpoint only at
-five-question boundaries, contradiction/interpretation confirmation when necessary, and
-Intake Brief once at exit.
-
-Every persisted string passes bounds and secret redaction. Never request or store
-credentials, raw prompts, code, diffs, or external payloads. A repository fact may
-populate a decision with repository provenance; reversible model hypothesis may not.
-
-`intake_complete` requires semantic sufficiency plus deterministic presence of canonical
-objective, observable success signal/method, coherent risk, no contradiction or active
-question, and typed SHAPE ownership for remaining technical unknowns. Every task enters
-SHAPE when guard passes. User request to advance cannot bypass missing context; record
-`advance.rejected` and re-ask exact missing decision. INTAKE answer is never GATE
-Approval.
-
-Later missing product intent, success, or determining constraint context persists
-selective invalidation and returns with `intake_reopened`. Pure technical uncertainty
-stays in SHAPE. SHAPE receives only Intake Brief, normalized decisions,
-provenance/freshness refs, and typed technical unknowns—not interview transcript.
+1. Parse invocation; persist leading `--benchmark` only for new runs. Read cheap entry
+   sources, approved Project Profile/domain conventions, and user-cited documents. Do
+   not inspect implementation generally.
+2. In same initial model processing, return Product Baseline progress, domain deltas,
+   frontier scores, and at most one `ActiveDesignQuestion`. Explicit request content may
+   resolve several dimensions and yield zero questions. No second sufficiency call.
+3. Product Baseline requires objective, affected users/value, scope/boundaries,
+   observable success/validator, and risks/determining constraints. Every dimension is
+   resolved or has justified `not_applicable`, provenance, freshness, and dependency ID.
+   Missing/unknown is incomplete.
+4. Model terminology as contextual glossary deltas. Model rules separately with actors,
+   conditions, invariant/outcome, exceptions, and nominal/boundary/exception/
+   contradiction scenarios. Code/tests prove current behavior, never desired meaning.
+5. Rank only eligible unblocked frontier. Runtime validates 0–5 impact, irreversibility,
+   risk, uncertainty, and branches-unlocked scores, then uses stable deterministic
+   tie-break. Persist exactly one question before display. Resume reuses it unless a
+   dependency changed.
+6. Choice questions offer 2–3 non-dominated options, recommendation, basis, confidence,
+   consequences, and free-form path. Open elicitation is required when options would
+   invent business meaning. Silence, “choose for me”, deferral, or advance never resolves
+   material decision. One answer may atomically resolve several explicit nodes.
+7. Material normalization requires targeted confirmation; editorial normalization does
+   not. Contradiction never closes silently. User may answer, reduce scope, or cancel.
+   No transcript, raw prompt/model output, credentials, arbitrary question cap, or
+   periodic checkpoint is persisted.
+8. Validate all typed identities, ownership edges, bounds, redaction, acyclic graph, and
+   selective dependency closure. Use deterministic syntax repair, then one targeted
+   semantic retry; second invalid output blocks with `semantic_output_invalid`.
+9. INTAKE completes only when semantic no-material-uncertainty declaration agrees with
+   deterministic proof: five dimensions closed, no question/contradiction/stale node,
+   and every durable domain delta has explicit disposition. Late product changes reopen
+   only affected INTAKE branch; technical uncertainty stays SHAPE.
 
 After complete INTAKE, resolve routing and workspace. Risk/policy-required worktree must
 be ready before any repository write.
@@ -178,14 +161,14 @@ reuse cached usage percentage. Keep pressure `unknown`, route conservatively, re
 object `supportedReasoningEfforts` entries.
 
 Resolve five reasoning-stage routes once from immutable snapshot using policy
-`2026-08-12.native-build.v2`: `discover`, `plan`, `debug`, `review`, `verify`.
+`2026-08-13.taskstate-v6.v1`: `design`, `discover`, `plan`, `debug`, `review`.
 Unknown plan uses Plus baseline. Warning quota lowers one subscription tier; critical or
 unknown quota uses Plus. High risk/ambiguity raises reasoning one level, capped `xhigh`.
 
 Require exact assigned model/effort in initial catalog.
 Never substitute a fallback model or effort. Missing assignment blocks that skill.
 Do not refresh account, quota, or model data between skills. Native Codex owns BUILD
-execution; parent owns ASSURE validation and verification commands.
+execution; parent owns ASSURE deterministic commands and evidence persistence.
 
 ## SHAPE
 
@@ -195,20 +178,22 @@ Every task uses adaptive SHAPE:
 Discovery -> Quick|Plan choice -> Planning
 ```
 
-Discovery alone reads repository. It consumes compact Intake output plus current
+Discovery alone reads repository. It consumes Product Baseline/domain registries plus current
 Discovery Targets and resolves related targets in one session. Evidence carries exact
 provenance, source-granular fingerprints, and explicit dependency nodes. Widen only for
 uncertainty capable of changing scope, risk, acceptance, plan, validation, or profile
 recommendation.
 
-A product-impacting technical alternative creates one rich Decision Escalation and
-enters `awaiting_intake_decision`. Intake presents explicit choice without repeating
-technical discovery. Answer selectively invalidates dependency closure and resumes
-Discovery or Planning. Pure technical uncertainty never reopens Intake. SHAPE has no
-reset-all operation.
+Material architecture, dependency, data/migration, security/privacy, compatibility,
+concurrency/performance, operations, or profile-exception choices create one evidence-first
+Technical Decision and enter `awaiting_shape_decision`. Product infeasibility creates a
+linked INTAKE-owned question without copying payload. Answer selectively invalidates
+dependency closure and resumes exact prior Discovery or Planning role. Reversible
+repository-conforming implementation detail remains agent-owned. SHAPE has no reset-all
+operation.
 
 `discovery_sufficient` combines model semantic judgment with deterministic checks:
-targets resolved, no active escalation/block/stale evidence, fingerprints fresh,
+targets resolved, no active technical decision/block/stale evidence, fingerprints fresh,
 dependency graph valid. No routine second model call.
 
 After sufficiency, present compact evidence-backed Quick/Plan checkpoint. Quick is
@@ -235,7 +220,7 @@ material change.
 
 Quick and Plan both enter one minimal GATE with canonical contract. Before display, run
 pure deterministic preflight only: current SHAPE receipt, exact digest, contract
-completeness/coverage, risk controls, fresh evidence, no open escalation, and current
+completeness/coverage, risk controls, fresh evidence, no open design question, and current
 approval reuse. No model call, network, Discovery, or subprocess.
 
 Render exactly five concise lines: objective; task/criterion/validation counts; risks and
@@ -265,20 +250,22 @@ announce `[DEV FLOW · BUILD → ASSURE]`.
 
 ## ASSURE
 
-Every profile verifies. Review lanes derive only from policy/risk: localized low-risk
-work may route `executing -> verifying`; broader applicable risk routes through one or
-more read-only review lanes before verification. Omit lane only with structured
-evidence-backed N/A; ambiguity activates lane.
+Enter sole internal status `assuring`. Reuse current BUILD evidence first, then execute
+only missing/invalidated deterministic operations in assurance-contract DAG order.
+Known-red prerequisites block dependants and model work. Check identity, success
+predicate, scope, freshness, concurrency, and budgets come from approved canonical
+contract; ASSURE invents none.
 
-Review consumes compact Diff Capsule derived from approved criteria/risks, current
-worktree diff, dependency impact, and fresh ASSURE evidence. Known deterministic failure
-blocks expensive review. Findings keep stable identities. Corrections remain inside
-ASSURE and re-enter only affected review or verification lane.
+Run `review-change` only when precompiled policy predicate activates it. Use one bounded,
+independent, read-only consolidated review. Corrections remain native ASSURE operations
+and invalidate only overlapping declared evidence. Same stable issue after two failed
+corrections invokes `debug-root-cause`; no arbitrary global cycle cap.
 
-Use `verify-change` to map every acceptance criterion to fresh evidence. Narrow green
-check proves only covered behavior. Successful verification persists compact
-Verification Receipt bound to current contract/evidence and transitions directly to
-sole success terminal `finished`.
+Batch required non-automatable user observations once. Missing response/external
+dependency blocks with exact `resumeTo: assuring`; model never substitutes human proof.
+Runtime computes exact coverage without final model synthesis. Atomic completion freezes
+completion index, creates minimal Assurance Receipt, appends `assure.completed`, and
+renders `[DEV FLOW · ASSURE ✓]` with derived `success`.
 
 Commit, push, pull request, registry, release, and other delivery work is outside Dev
 Flow lifecycle/state. Native Codex may perform it afterward under its own explicit
@@ -288,7 +275,7 @@ authorization. GATE approval grants no authority for those actions.
 
 Benchmark is out-of-band and never changes lifecycle outcome.
 
-- Offer only when persisted `benchmarkEnabled=true` and truthful outcome is `finished`
+- Offer only when persisted `benchmarkEnabled=true` and truthful outcome is `success`
   or `failed`. Never offer for blocked or cancelled.
 - Ask exactly three deterministic, no-model questions: satisfaction 1–5; conformance
   yes/partial/no; plugin value useful/neutral/counterproductive. Optional comment follows.
@@ -308,16 +295,12 @@ identity; never duplicate task artifact. Legacy paths such as
 `docs/dev-flow/YYYY-MM-DD-<slug>.md`, `spec.md`, `plan.md`,
 `risk-and-rollback.md`, and `verification.md` are repository choices only.
 
-Resume must validate strict V5 state, reconcile config/policy/routing/artifact/Git/evidence,
-selectively invalidate stale projections, then continue first unproved action. Current
-runtime cannot yet enforce full provider resume. Report that limitation instead of fabricating
-durability.
-
-Never claim success without fresh evidence. Record commands, results, skipped checks,
+Resume must validate strict V6 state, reconcile config/policy/routing/artifact/Git/evidence,
+selectively invalidate stale projections, then continue first unproved action. Never claim success without fresh evidence. Record commands, results, skipped checks,
 material deviations, issue identities, and unresolved work. Detailed contract/evidence
 has one owner; compact state stores references. Definitions:
 [glossary](../../docs/glossary/dev-flow.md). Decisions:
 [Context Capsule](../../docs/adr/0002-share-an-invalidable-context-capsule.md),
 [assurance](../../docs/adr/0004-scale-assurance-lanes-by-applicable-risk.md),
 [minimal GATE](../../docs/adr/0024-make-gate-a-minimal-plan-approval.md), and
-[five-phase completion](../../docs/adr/0025-end-the-lifecycle-after-assure.md).
+[ASSURE success boundary](../../docs/adr/0031-make-assure-the-success-boundary.md).

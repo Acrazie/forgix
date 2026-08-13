@@ -12,9 +12,6 @@ export const GUARD_IDS = Object.freeze([
   "profile_selected",
   "contract_complete",
   "approval_current",
-  "review_satisfied",
-  "verification_complete",
-  "correction_budget_available",
   "resume_metadata_valid",
   "resume_reconciled",
   "terminal_source_recorded",
@@ -42,11 +39,12 @@ interface StateContractDefinition {
 
 const CAPSULE = {
   INTAKE: {
-    consumes: ["request", "constraints", "shape.decision-escalation"],
+    consumes: ["request", "constraints", "design.product-reopen"],
     produces: [
-      "intake.brief",
-      "intake.decisions",
-      "intake.question",
+      "design.product-baseline",
+      "design.glossary-deltas",
+      "design.domain-rules",
+      "design.question",
       "risk",
       "routing",
       "workspace",
@@ -57,9 +55,9 @@ const CAPSULE = {
   },
   SHAPE: {
     consumes: [
-      "intake.brief",
-      "intake.decisions",
-      "intake.technical-unknowns",
+      "design.product-baseline",
+      "design.glossary-deltas",
+      "design.domain-rules",
       "risk",
       "constraints",
       "routing",
@@ -70,6 +68,8 @@ const CAPSULE = {
       "shape.targets",
       "shape.evidence",
       "shape.profile-choice",
+      "design.technical-decisions",
+      "design.question",
       "shape.contract",
       "shape.projection",
       "freshness.sources",
@@ -89,18 +89,19 @@ const CAPSULE = {
   ASSURE: {
     consumes: ["shape.contract", "workspace", "issues.active", "freshness"],
     produces: ["assurance", "issues.active", "freshness.commands"],
-    invalidates: ["assurance.findings", "assurance.verificationEvidence", "approvals"],
+    invalidates: ["assurance.findings", "assurance.evidence", "approvals"],
   },
 } as const satisfies Record<MacroPhase, CapsuleContract>;
 
 const EVENTS = {
   INTAKE: [
     "task.initialized",
-    "intake.question_recorded",
-    "intake.answer_recorded",
     "intake.checkpoint",
     "advance.rejected",
     "intake.reopened",
+    "design.question_recorded",
+    "design.answer_recorded",
+    "design.invalidated",
     "routing.captured",
     "state.transition",
   ],
@@ -110,7 +111,9 @@ const EVENTS = {
     "discovery.completed",
     "profile.choice_requested",
     "profile.choice_recorded",
-    "decision.escalated",
+    "design.question_recorded",
+    "design.answer_recorded",
+    "design.invalidated",
     "contract.projected",
     "projection.reconciliation_requested",
     "evidence.invalidated",
@@ -120,10 +123,13 @@ const EVENTS = {
   GATE: ["approval.requested", "approval.recorded", "approval.invalidated", "state.transition"],
   BUILD: ["state.transition"],
   ASSURE: [
-    "review.completed",
-    "finding.observed",
-    "finding.resolved",
-    "verification.completed",
+    "issue.recorded",
+    "correction.recorded",
+    "assurance.issue_resolved",
+    "assurance.evidence_recorded",
+    "assurance.evidence_invalidated",
+    "assurance.human_observation_requested",
+    "assure.completed",
     "state.transition",
   ],
 } as const satisfies Record<MacroPhase, readonly string[]>;
@@ -151,6 +157,7 @@ const STATE_MACHINE_DEFINITION = {
     capsule: CAPSULE.INTAKE,
     events: EVENTS.INTAKE,
     transitions: {
+      awaiting_intake_decision: G(),
       discovering: G("intake_complete", "routing_ready", "workspace_ready"),
       ...TERMINALS,
     },
@@ -163,6 +170,21 @@ const STATE_MACHINE_DEFINITION = {
     events: EVENTS.SHAPE,
     transitions: {
       awaiting_profile_choice: G("discovery_sufficient"),
+      awaiting_shape_decision: G(),
+      awaiting_intake_decision: G(),
+      intaking: G("intake_reopened"),
+      ...TERMINALS,
+    },
+  },
+  awaiting_shape_decision: {
+    macroPhase: "SHAPE",
+    stable: false,
+    terminal: false,
+    capsule: CAPSULE.SHAPE,
+    events: EVENTS.SHAPE,
+    transitions: {
+      discovering: G(),
+      planning: G("discovery_sufficient", "profile_selected"),
       awaiting_intake_decision: G(),
       intaking: G("intake_reopened"),
       ...TERMINALS,
@@ -202,6 +224,7 @@ const STATE_MACHINE_DEFINITION = {
     capsule: CAPSULE.INTAKE,
     events: EVENTS.INTAKE,
     transitions: {
+      intaking: G("intake_reopened"),
       discovering: G("intake_complete"),
       planning: G("intake_complete", "discovery_sufficient", "profile_selected"),
       ...TERMINALS,
@@ -229,52 +252,20 @@ const STATE_MACHINE_DEFINITION = {
     capsule: CAPSULE.BUILD,
     events: EVENTS.BUILD,
     transitions: {
-      reviewing: G(),
-      verifying: G("review_satisfied"),
+      assuring: G(),
       planning: G(),
       intaking: G("intake_reopened"),
       ...TERMINALS,
     },
   },
-  reviewing: {
+  assuring: {
     macroPhase: "ASSURE",
     stable: false,
     terminal: false,
     capsule: CAPSULE.ASSURE,
     events: EVENTS.ASSURE,
     transitions: {
-      resolving_assure: G("correction_budget_available"),
-      verifying: G("review_satisfied"),
       planning: G(),
-      intaking: G("intake_reopened"),
-      ...TERMINALS,
-    },
-  },
-  resolving_assure: {
-    macroPhase: "ASSURE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.ASSURE,
-    events: EVENTS.ASSURE,
-    transitions: {
-      reviewing: G("correction_budget_available"),
-      verifying: G("correction_budget_available"),
-      planning: G(),
-      intaking: G("intake_reopened"),
-      ...TERMINALS,
-    },
-  },
-  verifying: {
-    macroPhase: "ASSURE",
-    stable: false,
-    terminal: false,
-    capsule: CAPSULE.ASSURE,
-    events: EVENTS.ASSURE,
-    transitions: {
-      resolving_assure: G("correction_budget_available"),
-      reviewing: G(),
-      planning: G(),
-      finished: G("verification_complete"),
       intaking: G("intake_reopened"),
       ...TERMINALS,
     },
@@ -303,6 +294,7 @@ const STATE_MACHINE_DEFINITION = {
         "routing_ready",
         "workspace_ready",
       ),
+      awaiting_shape_decision: G("resume_metadata_valid", "resume_reconciled"),
       awaiting_profile_choice: G(
         "resume_metadata_valid",
         "resume_reconciled",
@@ -317,13 +309,7 @@ const STATE_MACHINE_DEFINITION = {
       awaiting_intake_decision: G("resume_metadata_valid", "resume_reconciled"),
       awaiting_approval: G("resume_metadata_valid", "resume_reconciled", "contract_complete"),
       executing: G("resume_metadata_valid", "resume_reconciled", "approval_current"),
-      reviewing: G("resume_metadata_valid", "resume_reconciled"),
-      resolving_assure: G(
-        "resume_metadata_valid",
-        "resume_reconciled",
-        "correction_budget_available",
-      ),
-      verifying: G("resume_metadata_valid", "resume_reconciled", "review_satisfied"),
+      assuring: G("resume_metadata_valid", "resume_reconciled"),
       cancelled: G("terminal_source_recorded"),
       failed: G("terminal_source_recorded"),
     },
@@ -352,19 +338,17 @@ const STATE_MACHINE_DEFINITION = {
     },
     events: ["task.failed"],
   },
-  finished: {
-    macroPhase: "ASSURE",
-    stable: true,
-    terminal: true,
-    transitions: {},
-    capsule: CAPSULE.ASSURE,
-    events: ["task.finished"],
-  },
 } as const satisfies Record<string, StateContractDefinition>;
 
 export type TaskStatus = keyof typeof STATE_MACHINE_DEFINITION;
 export const STATE_MACHINE = deepFreeze(STATE_MACHINE_DEFINITION);
 export const TASK_STATUSES = Object.freeze(Object.keys(STATE_MACHINE) as TaskStatus[]);
+
+export function isTerminalStatus(status: TaskStatus, assuranceCompleted: boolean): boolean {
+  return (
+    status === "cancelled" || status === "failed" || (status === "assuring" && assuranceCompleted)
+  );
+}
 
 export function buildStateMachineProjection(): unknown {
   return {

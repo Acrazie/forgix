@@ -1,24 +1,9 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
 import * as sourceApi from "../../src/cli.ts";
 import { expect, test } from "bun:test";
-import { attest, toGate } from "../support/helpers-v5.ts";
+import { toGate } from "../support/helpers-v6.ts";
 const api = async () => sourceApi;
 
-function observation(state, id) {
-  return {
-    id,
-    stateRevision: state.revision,
-    observedFingerprint: `observed:${id}:${state.revision}`,
-    evidenceRef: `evidence:${id}:${state.revision}`,
-    exitCode: 0,
-  };
-}
-function verification(a, state) {
-  return a.evaluateVerification(state, {
-    criteria: [observation(state, "criterion:1")],
-    mandatoryChecks: [observation(state, "test")],
-  });
-}
 async function finish(profile) {
   const a = await api();
   let state = await toGate(a, profile, `lifecycle-${profile}`);
@@ -27,11 +12,19 @@ async function finish(profile) {
       decision: "approved",
     }),
   });
-  state = a.transition(state, "verifying", {
-    guardEvidence: attest(a, state, "review_satisfied"),
+  state = a.transition(state, "assuring");
+  const operation = state.shape.contract.assuranceContract.operations[0];
+  state = a.recordAssuranceObservation(state, {
+    evidenceId: `evidence:${operation.id}`,
+    operationId: operation.id,
+    result: "passed",
+    verifierDigest: "verifier:bun-test",
+    observedFingerprint: "workspace:verified",
+    detailRef: "log:bun-test",
   });
-  return a.transition(state, "finished", {
-    guardEvidence: [verification(a, state)],
+  return a.completeAssurance(state, {
+    verifiedSnapshotFingerprint: "workspace:verified",
+    currentFingerprints: { [operation.id]: "workspace:verified" },
   });
 }
 
@@ -53,12 +46,13 @@ test("Quick and Plan both traverse all five phases", async () => {
     );
     for (const phase of ["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE"])
       expect(phases.has(phase), `${profile} lacks ${phase}`).toBeTruthy();
-    expect(state.status).toBe("finished");
-    expect(state.verificationReceipt).toBeTruthy();
+    expect(state.status).toBe("assuring");
+    expect(state.assurance.receipt).toBeTruthy();
+    expect(state.history.at(-1).type).toBe("assure.completed");
   }
 });
 
-test("BUILD is one native execution state and ASSURE owns correction loops", async () => {
+test("BUILD is one native execution state and ASSURE owns operations, not status loops", async () => {
   const a = await api();
   let state = await toGate(a, "plan", "loops-v5");
   state = a.transition(state, "executing", {
@@ -68,15 +62,22 @@ test("BUILD is one native execution state and ASSURE owns correction loops", asy
   });
   expect(a.deriveMacroPhase(state)).toBe("BUILD");
   expect(a.STATE_MACHINE.executing.capsule.produces).toEqual([]);
-  state = a.transition(state, "reviewing");
-  state = a.transition(state, "resolving_assure", {
-    guardEvidence: attest(a, state, "correction_budget_available"),
+  state = a.transition(state, "assuring");
+  expect(state.status).toBe("assuring");
+  const operationId = state.shape.contract.assuranceContract.operations[0].id;
+  state = a.recordTaskAssuranceIssue(state, {
+    issueId: "issue:stable",
+    operationId,
+    evidenceRef: "evidence:finding",
   });
-  state = a.transition(state, "reviewing", {
-    guardEvidence: attest(a, state, "correction_budget_available"),
-  });
-  state = a.transition(state, "verifying", { guardEvidence: attest(a, state, "review_satisfied") });
-  expect(state.status).toBe("verifying");
+  state = a.recordTaskCorrectionAttempt(state, "issue:stable");
+  state = a.recordTaskCorrectionAttempt(state, "issue:stable");
+  expect(state.assurance.issues[0].rootCauseRequired).toBe(true);
+  state = a.resolveTaskAssuranceIssue(state, "issue:stable");
+  expect(state.assurance.issues[0].status).toBe("resolved");
+  expect(a.TASK_STATUSES).not.toContain("reviewing");
+  expect(a.TASK_STATUSES).not.toContain("verifying");
+  expect(a.TASK_STATUSES).not.toContain("finished");
 });
 
 test("risk—not preparation profile—drives critical workspace safeguard", async () => {
@@ -95,7 +96,7 @@ test("risk—not preparation profile—drives critical workspace safeguard", asy
   ).toEqual({ required: true, reason: "policy" });
 });
 
-test("trusted terminal guards reject raw attestations and stale observations", async () => {
+test("ASSURE rejects stale observations and incomplete coverage", async () => {
   const a = await api();
   let state = await toGate(a, "quick", "trusted-terminal");
   state = a.transition(state, "executing", {
@@ -103,20 +104,11 @@ test("trusted terminal guards reject raw attestations and stale observations", a
       decision: "approved",
     }),
   });
-  state = a.transition(state, "verifying", {
-    guardEvidence: attest(a, state, "review_satisfied"),
-  });
+  state = a.transition(state, "assuring");
   expect(() =>
-    a.createGuardAttestation(state, "verification_complete", {
-      observedFingerprint: "fake",
-      evidenceRefs: ["fake"],
-      provenance: "deterministic-check",
+    a.completeAssurance(state, {
+      verifiedSnapshotFingerprint: "workspace:current",
+      currentFingerprints: {},
     }),
-  ).toThrow(/trusted evaluator/);
-  expect(() =>
-    a.evaluateVerification(state, {
-      criteria: [{ ...observation(state, "criterion:1"), stateRevision: state.revision - 1 }],
-      mandatoryChecks: [observation(state, "test")],
-    }),
-  ).toThrow(/stale/);
+  ).toThrow(/evidence|coverage/i);
 });

@@ -9,7 +9,7 @@ async function api() {
 function initialShape(createShapeState) {
   return createShapeState({
     risk: "medium",
-    intakeBriefRef: "intake:brief:1",
+    productBaselineRef: "design:product-baseline:1",
     budget: { maxReasoningCalls: 4, maxContextBytes: 10000 },
   });
 }
@@ -85,12 +85,12 @@ test("Discovery refuses semantic sufficiency with open targets or stale evidence
   );
 });
 
-test("product-impacting discovery creates rich escalation and targeted resume", async () => {
+test("product-impacting discovery creates rich technicalDecision and targeted resume", async () => {
   const {
     applyDiscoveryEvaluation,
-    createDecisionEscalation,
+    createTechnicalDecision,
     createShapeState,
-    resolveDecisionEscalation,
+    resolveTechnicalDecision,
     validateShapeState,
   } = await api();
   const evaluation = completeDiscoveryEvaluation();
@@ -98,11 +98,11 @@ test("product-impacting discovery creates rich escalation and targeted resume", 
   evaluation.targets[0].status = "open";
   evaluation.targets[0].evidenceIds = [];
   let state = applyDiscoveryEvaluation(initialShape(createShapeState), evaluation);
-  state = createDecisionEscalation(state, {
-    id: "escalation.auth-ux",
+  state = createTechnicalDecision(state, {
+    id: "technical-decision.auth-ux",
     decisionKey: "auth.user-experience",
     targetId: "target.auth",
-    productImpact: "Choice changes login experience.",
+    materialityReason: "Choice changes login experience.",
     evidenceIds: ["evidence.auth"],
     options: [
       { id: "keep", label: "Keep current login", impact: "No user migration." },
@@ -110,19 +110,22 @@ test("product-impacting discovery creates rich escalation and targeted resume", 
     ],
     recommendedOptionId: "keep",
     recommendationBasis: "Existing clients depend on current login.",
+    confidence: "high",
+    adrQualified: true,
+    proposedDestination: "docs/adr/auth-login.md",
     affectedDependencyRootIds: ["evidence.auth"],
     priorRole: "discovering",
   });
   expect(state.discoveryTargets[0].status).toBe("escalated");
-  expect(state.activeEscalationId).toBe("escalation.auth-ux");
+  expect(state.activeTechnicalDecisionId).toBe("technical-decision.auth-ux");
 
-  const resolved = resolveDecisionEscalation(state, {
-    escalationId: "escalation.auth-ux",
+  const resolved = resolveTechnicalDecision(state, {
+    technicalDecisionId: "technical-decision.auth-ux",
     selectedOptionId: "keep",
     evidenceRef: "user:answer:1",
   });
   expect(resolved.resumeRole).toBe("discovering");
-  expect(resolved.state.activeEscalationId).toBe(undefined);
+  expect(resolved.state.activeTechnicalDecisionId).toBe(undefined);
   expect(resolved.invalidatedNodeIds.includes("evidence.auth")).toBeTruthy();
   expect(() => validateShapeState(resolved.state)).not.toThrow();
 });
@@ -205,7 +208,7 @@ test("soft budget checkpoint preserves Shape work and routes scope reduction to 
   const state = applyDiscoveryEvaluation(
     createShapeState({
       risk: "low",
-      intakeBriefRef: "intake:brief:budget",
+      productBaselineRef: "design:product-baseline:budget",
       budget: { maxReasoningCalls: 1 },
     }),
     completeDiscoveryEvaluation(),
@@ -253,7 +256,7 @@ test("resume reuses fresh evidence without reasoning and targets only stale bran
     { id: "evidence.other", kind: "evidence", dependsOn: ["source.other"] },
   );
   const state = applyDiscoveryEvaluation(
-    createShapeState({ risk: "medium", intakeBriefRef: "intake:brief" }),
+    createShapeState({ risk: "medium", productBaselineRef: "design:product-baseline" }),
     evaluation,
   );
   const fresh = reconcileShapeResume(state, {

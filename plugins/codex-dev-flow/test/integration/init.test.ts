@@ -127,10 +127,10 @@ test("routing preview applies Plus baseline for auto without model selection", a
   const { buildRoutingPreview } = sourceApi;
   const preview = buildRoutingPreview("auto");
   expect(preview.map(({ stage, model, effort }) => [stage, model, effort])).toEqual([
+    ["design", "gpt-5.6-terra", "medium"],
     ["discover", "gpt-5.6-terra", "medium"],
     ["plan", "gpt-5.6-sol", "medium"],
     ["debug", "gpt-5.6-sol", "high"],
-    ["review", "gpt-5.6-sol", "medium"],
-    ["verify", "gpt-5.6-luna", "medium"],
+    ["review", "gpt-5.6-luna", "medium"],
   ]);
 });

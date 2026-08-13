@@ -2,13 +2,11 @@
 
 ## Contract status
 
-This document specifies the accepted target from
+This document specifies implemented V6 behavior from
 [ADR 0030](adr/0030-unify-product-domain-and-technical-design-interviews.md). It is
-pending and non-normative. Current runtime and the
-[lifecycle contract](lifecycle-contract.md) remain authoritative until runtime, state
-schema, skills, projections, tests, and distribution implement this target atomically.
+normative together with [lifecycle contract](lifecycle-contract.md).
 
-The target completes unreleased TaskState V5. Earlier local V4 or partial V5 state is
+V6 replaces published TaskState V5. V5 and earlier state is
 not migrated and must fail with a clear diagnostic.
 
 ## Purpose and ownership
@@ -23,7 +21,7 @@ and technical uncertainty without erasing phase authority:
 | SHAPE Planning  | Canonical Change Contract derived only from structured current evidence and resolved decisions.                      |
 | GATE            | One final approval of exact contract digest, including durable domain dispositions.                                  |
 | BUILD           | Native implementation plus approved targeted documentation projections.                                              |
-| ASSURE          | Review and criterion-linked verification, including documentation fidelity.                                          |
+| ASSURE          | Criterion-linked assurance and conditional review, including documentation fidelity.                                 |
 
 Facts are discovered. Material choices are explicit. Reversible repository-conforming
 implementation details remain agent-owned.
@@ -39,7 +37,7 @@ SHAPE: Discovery <-> technical design questions -> Quick|Plan -> Planning
    +-- product/domain contradiction -> INTAKE ----------+
    |
    v
-GATE -> BUILD -> ASSURE -> finished
+GATE -> BUILD -> ASSURE ✓
 ```
 
 Question ownership produces these resumable states:
@@ -58,7 +56,7 @@ Exactly one `ActiveDesignQuestion` exists across entire task.
 
 ### ProductBaseline
 
-`ProductBaseline` replaces `IntakeBrief`. It contains five dimensions:
+`ProductBaseline` is canonical INTAKE record. It contains five dimensions:
 
 1. objective;
 2. affected users and product value;
@@ -132,8 +130,8 @@ All four gates are required for ADR projection.
 
 SHAPE technical choice contains stable ID, question, materiality reason, prerequisite
 and dependent IDs, fresh evidence, viable and excluded options, recommendation,
-confidence, consequences, explicit selection, status, and prior SHAPE role. It replaces
-current `DecisionEscalation` rather than coexisting with a second technical-choice model.
+confidence, consequences, explicit selection, status, and prior SHAPE role. No separate
+escalation record exists.
 
 ### ActiveDesignQuestion
 
@@ -314,7 +312,7 @@ merge returns to owning decision rather than overwriting or appending duplicates
 ASSURE verifies path policy, changed file, fingerprint, expected IDs/links, semantic
 fidelity, and content-specific rules: glossary has no implementation details; rules
 retain conditions, results, and limits; ADR retains alternatives and consequences.
-Verification receipt binds projection evidence to contract digest. Repository docs
+Assurance Receipt binds projection evidence to contract digest. Repository docs
 become durable authority only after successful projection.
 
 Destination resolver order:
@@ -387,7 +385,7 @@ closure and returns to its owner.
 
 Public activation must update together:
 
-- TaskState V5 types, schema, validator, state machine, guards, events, and projections;
+- TaskState V6 types, schema, validator, state machine, guards, events, and projections;
 - Product Baseline and design/technical/domain registries;
 - graph kinds, frontier ranking, invalidation, persistence, and resume;
 - `design-decisions`, `dev-flow`, `discover-change`, and `plan-change` skills;

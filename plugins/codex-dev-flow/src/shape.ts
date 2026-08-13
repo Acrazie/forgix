@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { compileAssuranceContract, validateAssuranceContract } from "./assurance.js";
 import {
   dependencyClosure,
   validateDependencyGraph,
@@ -11,7 +12,7 @@ import {
   type ShapeEvidenceItem,
   type ShapeSourceFingerprint,
 } from "./shape-freshness.js";
-import type { RiskLevel } from "./types.js";
+import type { AssuranceContract, RiskLevel } from "./types.js";
 
 export type PreparationProfile = "quick" | "plan";
 export type ShapeRole = "discovering" | "planning";
@@ -36,24 +37,28 @@ export interface DiscoveryTarget {
   dependencyNodeId: string;
 }
 
-export interface DecisionEscalationOption {
+export interface TechnicalDecisionOption {
   id: string;
   label: string;
   impact: string;
+  excludedReason?: string;
 }
 
-export interface DecisionEscalation {
+export interface TechnicalDecision {
   schemaVersion: 1;
   id: string;
   decisionKey: string;
   targetId: string;
-  productImpact: string;
+  materialityReason: string;
   evidenceIds: string[];
   options:
-    | [DecisionEscalationOption, DecisionEscalationOption]
-    | [DecisionEscalationOption, DecisionEscalationOption, DecisionEscalationOption];
+    | [TechnicalDecisionOption, TechnicalDecisionOption]
+    | [TechnicalDecisionOption, TechnicalDecisionOption, TechnicalDecisionOption];
   recommendedOptionId: string;
   recommendationBasis: string;
+  confidence: "low" | "medium" | "high";
+  adrQualified: boolean;
+  proposedDestination?: string;
   affectedDependencyRootIds: string[];
   priorRole: ShapeRole;
   status: "active" | "resolved";
@@ -126,7 +131,7 @@ export interface CanonicalChangeContract {
   revision: number;
   profile: PreparationProfile;
   risk: RiskLevel;
-  intakeBriefRef: string;
+  productBaselineRef: string;
   discoveryReceiptDigest: string;
   scope: string[];
   nonGoals: string[];
@@ -134,6 +139,7 @@ export interface CanonicalChangeContract {
   tasks: ContractTask[];
   validations: ContractValidation[];
   risks: ContractRisk[];
+  assuranceContract?: AssuranceContract;
   guide?: ImplementationGuide;
   digest: string;
 }
@@ -209,12 +215,12 @@ export interface ShapeInvalidation {
 export interface ShapeState {
   schemaVersion: 1;
   risk: RiskLevel;
-  intakeBriefRef: string;
+  productBaselineRef: string;
   discoveryTargets: DiscoveryTarget[];
   evidence: ShapeEvidenceItem[];
   sourceFingerprints: ShapeSourceFingerprint[];
-  decisionEscalations: DecisionEscalation[];
-  activeEscalationId?: string;
+  technicalDecisions: TechnicalDecision[];
+  activeTechnicalDecisionId?: string;
   preparationProfileChoice?: PreparationProfileChoice;
   contract?: CanonicalChangeContract;
   projection?: PlanProjectionRecord;
@@ -227,7 +233,7 @@ export interface ShapeState {
 
 export interface CreateShapeStateInput {
   risk: RiskLevel;
-  intakeBriefRef: string;
+  productBaselineRef: string;
   budget?: ShapeBudgetLimits;
 }
 
@@ -250,7 +256,7 @@ export interface PlanningEvaluation {
   dependencyNodes: DependencyNode[];
   contract?: Omit<
     CanonicalChangeContract,
-    "risk" | "intakeBriefRef" | "discoveryReceiptDigest" | "digest"
+    "risk" | "productBaselineRef" | "discoveryReceiptDigest" | "digest"
   >;
   missingEvidenceTarget?: DiscoveryTarget;
   usage?: Partial<ShapeUsage>;
@@ -298,18 +304,18 @@ const GUIDE_REASONS: ReadonlySet<GuideReasonKind> = new Set([
 const MAX_ITEMS = 4096;
 
 export function createShapeState(input: CreateShapeStateInput): ShapeState {
-  if (!RISKS.has(input.risk) || !TOKEN.test(input.intakeBriefRef)) {
-    throw new Error("Shape state requires risk and Intake Brief reference.");
+  if (!RISKS.has(input.risk) || !TOKEN.test(input.productBaselineRef)) {
+    throw new Error("Shape state requires risk and INTAKE assessment reference.");
   }
   validateBudgetLimits(input.budget ?? {});
   return {
     schemaVersion: 1,
     risk: input.risk,
-    intakeBriefRef: input.intakeBriefRef,
+    productBaselineRef: input.productBaselineRef,
     discoveryTargets: [],
     evidence: [],
     sourceFingerprints: [],
-    decisionEscalations: [],
+    technicalDecisions: [],
     dependencyGraph: { schemaVersion: 1, nodes: [] },
     invalidations: [],
     budget: {
@@ -393,7 +399,7 @@ export function evaluateDiscoveryCompleteness(state: ShapeState): DiscoveryCompl
     }
   }
   if (!state.discoveryTargets.length) reasons.push("no_discovery_target");
-  if (state.activeEscalationId) reasons.push("active_escalation");
+  if (state.activeTechnicalDecisionId) reasons.push("active_technical_decision");
   if (state.budget.checkpoint) reasons.push("budget_checkpoint");
   try {
     validateShapeEvidence(state);
@@ -426,7 +432,7 @@ export function attestDiscoverySufficient(state: ShapeState): DiscoveryReceipt {
   const completedIds = state.discoveryTargets.map((target) => target.id).toSorted();
   const evidenceRefs = state.evidence.map((item) => item.id).toSorted();
   const inputDigest = digest({
-    intakeBriefRef: state.intakeBriefRef,
+    productBaselineRef: state.productBaselineRef,
     risk: state.risk,
     discoveryTargets: state.discoveryTargets,
     evidence: state.evidence,
@@ -447,55 +453,62 @@ export function attestDiscoverySufficient(state: ShapeState): DiscoveryReceipt {
   return receipt;
 }
 
-export function createDecisionEscalation(
+export function createTechnicalDecision(
   state: ShapeState,
-  input: Omit<DecisionEscalation, "schemaVersion" | "status">,
+  input: Omit<TechnicalDecision, "schemaVersion" | "status">,
 ): ShapeState {
   assertShapeStateEnvelope(state);
-  if (state.activeEscalationId) throw new Error("Only one Decision Escalation may be active.");
+  if (state.activeTechnicalDecisionId)
+    throw new Error("Only one Technical Decision may be active.");
   const target = state.discoveryTargets.find((item) => item.id === input.targetId);
   if (!target || !["open", "blocked", "stale"].includes(target.status)) {
-    throw new Error("Decision Escalation requires an unresolved Discovery Target.");
+    throw new Error("Technical Decision requires an unresolved Discovery Target.");
   }
   if (
     !ID.test(input.id) ||
     !ID.test(input.decisionKey) ||
-    !TOKEN.test(input.productImpact) ||
+    !TOKEN.test(input.materialityReason) ||
     !TOKEN.test(input.recommendationBasis) ||
+    !["low", "medium", "high"].includes(input.confidence) ||
     !["discovering", "planning"].includes(input.priorRole)
   ) {
-    throw new Error("Decision Escalation identity or impact is invalid.");
+    throw new Error("Technical Decision identity or impact is invalid.");
   }
   if (
-    state.decisionEscalations.some(
+    state.technicalDecisions.some(
       (item) => item.id === input.id || item.decisionKey === input.decisionKey,
     )
   ) {
-    throw new Error("Decision Escalation identity already exists.");
+    throw new Error("Technical Decision identity already exists.");
   }
   if (
     input.options.length < 2 ||
     input.options.length > 3 ||
     new Set(input.options.map((option) => option.id)).size !== input.options.length
   ) {
-    throw new Error("Decision Escalation requires two or three distinct options.");
+    throw new Error("Technical Decision requires two or three distinct options.");
   }
   for (const option of input.options) {
-    if (!ID.test(option.id) || !TOKEN.test(option.label) || !TOKEN.test(option.impact)) {
-      throw new Error("Decision Escalation option is invalid.");
+    if (
+      !ID.test(option.id) ||
+      !TOKEN.test(option.label) ||
+      !TOKEN.test(option.impact) ||
+      (option.excludedReason !== undefined && !TOKEN.test(option.excludedReason))
+    ) {
+      throw new Error("Technical Decision option is invalid.");
     }
   }
   if (!input.options.some((option) => option.id === input.recommendedOptionId)) {
-    throw new Error("Decision Escalation recommendation must reference an option.");
+    throw new Error("Technical Decision recommendation must reference an option.");
   }
   if (
     !input.evidenceIds.length ||
     input.evidenceIds.some((id) => !state.evidence.some((item) => item.id === id))
   ) {
-    throw new Error("Decision Escalation requires known technical evidence.");
+    throw new Error("Technical Decision requires known technical evidence.");
   }
   dependencyClosure(state.dependencyGraph, input.affectedDependencyRootIds);
-  const escalation: DecisionEscalation = {
+  const technicalDecision: TechnicalDecision = {
     schemaVersion: 1,
     ...copy(input),
     status: "active",
@@ -505,39 +518,46 @@ export function createDecisionEscalation(
     discoveryTargets: state.discoveryTargets.map((item) =>
       item.id === target.id ? { ...item, status: "escalated" } : item,
     ),
-    decisionEscalations: [...state.decisionEscalations, escalation],
-    activeEscalationId: escalation.id,
+    technicalDecisions: [...state.technicalDecisions, technicalDecision],
+    activeTechnicalDecisionId: technicalDecision.id,
   };
 }
 
-export function resolveDecisionEscalation(
+export function resolveTechnicalDecision(
   state: ShapeState,
-  input: { escalationId: string; selectedOptionId: string; evidenceRef: string },
+  input: { technicalDecisionId: string; selectedOptionId: string; evidenceRef: string },
 ): { state: ShapeState; resumeRole: ShapeRole; invalidatedNodeIds: string[] } {
   assertShapeStateEnvelope(state);
-  const escalation = state.decisionEscalations.find((item) => item.id === input.escalationId);
-  if (!escalation || escalation.status !== "active" || state.activeEscalationId !== escalation.id) {
-    throw new Error("Active Decision Escalation does not exist.");
+  const technicalDecision = state.technicalDecisions.find(
+    (item) => item.id === input.technicalDecisionId,
+  );
+  if (
+    !technicalDecision ||
+    technicalDecision.status !== "active" ||
+    state.activeTechnicalDecisionId !== technicalDecision.id
+  ) {
+    throw new Error("Active Technical Decision does not exist.");
   }
   if (
-    !escalation.options.some((option) => option.id === input.selectedOptionId) ||
+    !technicalDecision.options.some((option) => option.id === input.selectedOptionId) ||
     !TOKEN.test(input.evidenceRef)
   ) {
-    throw new Error("Decision Escalation requires explicit selected option and evidence.");
+    throw new Error("Technical Decision requires explicit selected option and evidence.");
   }
   const invalidatedNodeIds = dependencyClosure(
     state.dependencyGraph,
-    escalation.affectedDependencyRootIds,
+    technicalDecision.affectedDependencyRootIds,
   );
   const invalidatedSet = new Set(invalidatedNodeIds);
-  const { activeEscalationId: _activeEscalationId, ...base } = withoutDiscoveryReceipts(state);
+  const { activeTechnicalDecisionId: _activeTechnicalDecisionId, ...base } =
+    withoutDiscoveryReceipts(state);
   const nextState: ShapeState = {
     ...base,
     discoveryTargets: state.discoveryTargets.map((target) =>
-      target.id === escalation.targetId ? { ...target, status: "stale" } : target,
+      target.id === technicalDecision.targetId ? { ...target, status: "stale" } : target,
     ),
-    decisionEscalations: state.decisionEscalations.map((item) =>
-      item.id === escalation.id
+    technicalDecisions: state.technicalDecisions.map((item) =>
+      item.id === technicalDecision.id
         ? {
             ...item,
             status: "resolved",
@@ -549,9 +569,9 @@ export function resolveDecisionEscalation(
     invalidations: [
       ...state.invalidations,
       {
-        rootIds: [...escalation.affectedDependencyRootIds],
+        rootIds: [...technicalDecision.affectedDependencyRootIds],
         invalidatedNodeIds,
-        reason: `decision:${escalation.decisionKey}`,
+        reason: `decision:${technicalDecision.decisionKey}`,
       },
     ],
     evidence: state.evidence.filter((item) => !invalidatedSet.has(item.dependencyNodeId)),
@@ -561,7 +581,7 @@ export function resolveDecisionEscalation(
   );
   return {
     state: nextState,
-    resumeRole: needsDiscovery ? "discovering" : escalation.priorRole,
+    resumeRole: needsDiscovery ? "discovering" : technicalDecision.priorRole,
     invalidatedNodeIds,
   };
 }
@@ -688,10 +708,11 @@ export function applyPlanningEvaluation(
   const contract: CanonicalChangeContract = {
     ...copy(evaluation.contract),
     risk: state.risk,
-    intakeBriefRef: state.intakeBriefRef,
+    productBaselineRef: state.productBaselineRef,
     discoveryReceiptDigest: discoveryReceipt.receiptDigest,
     digest: "",
   };
+  contract.assuranceContract ??= deriveAssuranceContract(contract);
   contract.digest = digest(contractProjectionForDigest(contract));
   candidate = { ...withoutPlanningReceipts(candidate), contract };
   const completeness = evaluateContractCompleteness(candidate);
@@ -731,7 +752,7 @@ export function evaluateContractCompleteness(state: ShapeState): ContractComplet
     reasons.push("contract_identity");
   }
   if (contract.profile !== choice?.selectedProfile) reasons.push("profile_mismatch");
-  if (contract.risk !== state.risk || contract.intakeBriefRef !== state.intakeBriefRef)
+  if (contract.risk !== state.risk || contract.productBaselineRef !== state.productBaselineRef)
     reasons.push("intake_binding");
   const discoveryReceipt = state.evaluatorReceipts.find(
     (receipt) => receipt.evaluator === "discovery",
@@ -752,6 +773,14 @@ export function evaluateContractCompleteness(state: ShapeState): ContractComplet
   if (!contract.acceptanceCriteria.length) reasons.push("acceptance_criteria");
   if (!contract.tasks.length) reasons.push("tasks");
   if (!contract.validations.length) reasons.push("validations");
+  if (!contract.assuranceContract) reasons.push("assurance_contract");
+  else {
+    try {
+      validateAssuranceContract(contract.assuranceContract);
+    } catch (error) {
+      reasons.push(`assurance_contract:${error instanceof Error ? error.message : "invalid"}`);
+    }
+  }
 
   const criterionIds = uniqueIds(contract.acceptanceCriteria, "criterion", reasons);
   const taskIds = uniqueIds(contract.tasks, "task", reasons);
@@ -1012,23 +1041,26 @@ export function validateShapeState(value: unknown): asserts value is ShapeState 
   validateDependencyGraph(state.dependencyGraph);
   for (const target of state.discoveryTargets) validateDiscoveryTarget(target);
   validateShapeEvidence(state);
-  const escalationIds = new Set<string>();
+  const technicalDecisionIds = new Set<string>();
   const decisionKeys = new Set<string>();
-  for (const escalation of state.decisionEscalations) {
-    validateDecisionEscalationRecord(state, escalation);
-    if (escalationIds.has(escalation.id) || decisionKeys.has(escalation.decisionKey)) {
-      throw new Error("Decision Escalation identity is duplicated.");
+  for (const technicalDecision of state.technicalDecisions) {
+    validateTechnicalDecisionRecord(state, technicalDecision);
+    if (
+      technicalDecisionIds.has(technicalDecision.id) ||
+      decisionKeys.has(technicalDecision.decisionKey)
+    ) {
+      throw new Error("Technical Decision identity is duplicated.");
     }
-    escalationIds.add(escalation.id);
-    decisionKeys.add(escalation.decisionKey);
+    technicalDecisionIds.add(technicalDecision.id);
+    decisionKeys.add(technicalDecision.decisionKey);
   }
   if (
-    state.activeEscalationId &&
-    !state.decisionEscalations.some(
-      (item) => item.id === state.activeEscalationId && item.status === "active",
+    state.activeTechnicalDecisionId &&
+    !state.technicalDecisions.some(
+      (item) => item.id === state.activeTechnicalDecisionId && item.status === "active",
     )
   )
-    throw new Error("Active Decision Escalation reference is invalid.");
+    throw new Error("Active Technical Decision reference is invalid.");
   if (state.preparationProfileChoice) {
     validateCheckpoint(state.preparationProfileChoice.checkpoint);
     if (
@@ -1047,55 +1079,76 @@ export function validateShapeState(value: unknown): asserts value is ShapeState 
   }
 }
 
-function validateDecisionEscalationRecord(state: ShapeState, escalation: DecisionEscalation): void {
+function validateTechnicalDecisionRecord(
+  state: ShapeState,
+  technicalDecision: TechnicalDecision,
+): void {
   if (
-    escalation.schemaVersion !== 1 ||
-    !ID.test(escalation.id) ||
-    !ID.test(escalation.decisionKey) ||
-    !ID.test(escalation.targetId) ||
-    !TOKEN.test(escalation.productImpact) ||
-    !TOKEN.test(escalation.recommendationBasis) ||
-    !["discovering", "planning"].includes(escalation.priorRole) ||
-    !["active", "resolved"].includes(escalation.status) ||
-    !state.discoveryTargets.some((target) => target.id === escalation.targetId)
+    technicalDecision.schemaVersion !== 1 ||
+    !ID.test(technicalDecision.id) ||
+    !ID.test(technicalDecision.decisionKey) ||
+    !ID.test(technicalDecision.targetId) ||
+    !TOKEN.test(technicalDecision.materialityReason) ||
+    !TOKEN.test(technicalDecision.recommendationBasis) ||
+    !["low", "medium", "high"].includes(technicalDecision.confidence) ||
+    typeof technicalDecision.adrQualified !== "boolean" ||
+    (technicalDecision.proposedDestination !== undefined &&
+      (!TOKEN.test(technicalDecision.proposedDestination) ||
+        technicalDecision.proposedDestination.startsWith("/") ||
+        technicalDecision.proposedDestination.includes(".."))) ||
+    !["discovering", "planning"].includes(technicalDecision.priorRole) ||
+    !["active", "resolved"].includes(technicalDecision.status) ||
+    !state.discoveryTargets.some((target) => target.id === technicalDecision.targetId)
   )
-    throw new Error("Decision Escalation record is malformed.");
+    throw new Error("Technical Decision record is malformed.");
   if (
-    escalation.options.length < 2 ||
-    escalation.options.length > 3 ||
-    new Set(escalation.options.map((option) => option.id)).size !== escalation.options.length
+    technicalDecision.options.length < 2 ||
+    technicalDecision.options.length > 3 ||
+    new Set(technicalDecision.options.map((option) => option.id)).size !==
+      technicalDecision.options.length
   ) {
-    throw new Error(`Decision Escalation ${escalation.id} options are invalid.`);
+    throw new Error(`Technical Decision ${technicalDecision.id} options are invalid.`);
   }
-  for (const option of escalation.options) {
-    if (!ID.test(option.id) || !TOKEN.test(option.label) || !TOKEN.test(option.impact)) {
-      throw new Error(`Decision Escalation ${escalation.id} option is malformed.`);
+  for (const option of technicalDecision.options) {
+    if (
+      !ID.test(option.id) ||
+      !TOKEN.test(option.label) ||
+      !TOKEN.test(option.impact) ||
+      (option.excludedReason !== undefined && !TOKEN.test(option.excludedReason))
+    ) {
+      throw new Error(`Technical Decision ${technicalDecision.id} option is malformed.`);
     }
   }
   if (
-    !escalation.options.some((option) => option.id === escalation.recommendedOptionId) ||
-    !escalation.evidenceIds.length ||
-    (escalation.status === "active" &&
-      escalation.evidenceIds.some((id) => !state.evidence.some((item) => item.id === id)))
+    !technicalDecision.options.some(
+      (option) => option.id === technicalDecision.recommendedOptionId,
+    ) ||
+    !technicalDecision.evidenceIds.length ||
+    (technicalDecision.status === "active" &&
+      technicalDecision.evidenceIds.some((id) => !state.evidence.some((item) => item.id === id)))
   ) {
-    throw new Error(`Decision Escalation ${escalation.id} recommendation or evidence is invalid.`);
+    throw new Error(
+      `Technical Decision ${technicalDecision.id} recommendation or evidence is invalid.`,
+    );
   }
-  dependencyClosure(state.dependencyGraph, escalation.affectedDependencyRootIds);
-  if (escalation.status === "resolved") {
+  dependencyClosure(state.dependencyGraph, technicalDecision.affectedDependencyRootIds);
+  if (technicalDecision.status === "resolved") {
     if (
-      !escalation.selectedOptionId ||
-      !escalation.options.some((option) => option.id === escalation.selectedOptionId) ||
-      !TOKEN.test(escalation.answerEvidenceRef ?? "")
+      !technicalDecision.selectedOptionId ||
+      !technicalDecision.options.some(
+        (option) => option.id === technicalDecision.selectedOptionId,
+      ) ||
+      !TOKEN.test(technicalDecision.answerEvidenceRef ?? "")
     ) {
       throw new Error(
-        `Resolved Decision Escalation ${escalation.id} lacks explicit answer evidence.`,
+        `Resolved Technical Decision ${technicalDecision.id} lacks explicit answer evidence.`,
       );
     }
   } else if (
-    escalation.selectedOptionId !== undefined ||
-    escalation.answerEvidenceRef !== undefined
+    technicalDecision.selectedOptionId !== undefined ||
+    technicalDecision.answerEvidenceRef !== undefined
   ) {
-    throw new Error(`Active Decision Escalation ${escalation.id} cannot contain answer.`);
+    throw new Error(`Active Technical Decision ${technicalDecision.id} cannot contain answer.`);
   }
 }
 
@@ -1219,11 +1272,11 @@ function assertShapeStateEnvelope(state: ShapeState): void {
     !state ||
     state.schemaVersion !== 1 ||
     !RISKS.has(state.risk) ||
-    !TOKEN.test(state.intakeBriefRef) ||
+    !TOKEN.test(state.productBaselineRef) ||
     !Array.isArray(state.discoveryTargets) ||
     !Array.isArray(state.evidence) ||
     !Array.isArray(state.sourceFingerprints) ||
-    !Array.isArray(state.decisionEscalations) ||
+    !Array.isArray(state.technicalDecisions) ||
     !state.budget ||
     !state.semanticRetryCounts ||
     !Array.isArray(state.evaluatorReceipts)
@@ -1321,6 +1374,103 @@ function uniqueIds(
 function contractProjectionForDigest(contract: CanonicalChangeContract): unknown {
   const { digest: _digest, ...projection } = contract;
   return projection;
+}
+
+function deriveAssuranceContract(contract: CanonicalChangeContract) {
+  const subjects = [
+    ...contract.acceptanceCriteria.map((item) => ({
+      id: item.id,
+      kind: "criterion" as const,
+    })),
+    ...contract.risks.map((item) => ({ id: item.id, kind: "risk" as const })),
+    ...contract.validations.map((item) => ({
+      id: `mandatory:${item.id}`,
+      kind: "mandatory_check" as const,
+    })),
+  ];
+  const commandByIdentity = new Map<string, ReturnType<typeof commandOperation>>();
+  for (const item of contract.validations.filter((candidate) => candidate.command)) {
+    const [executable, ...argv] = splitCommand(item.command as string);
+    const identityKey = JSON.stringify([executable, argv, ".", {}, ["toolchain:current"]]);
+    const existing = commandByIdentity.get(identityKey);
+    const covers = [
+      ...new Set([...(existing?.covers ?? []), ...item.criterionIds, `mandatory:${item.id}`]),
+    ].toSorted();
+    commandByIdentity.set(identityKey, commandOperation(executable, argv, covers));
+  }
+  const commandOperations = [...commandByIdentity.values()].toSorted((left, right) =>
+    left.id.localeCompare(right.id),
+  );
+  const commandCovered = new Set(commandOperations.flatMap((item) => item.covers));
+  const reviewSubjects = subjects.map((item) => item.id).filter((id) => !commandCovered.has(id));
+  const reviewIsRiskOnly = reviewSubjects.every((id) =>
+    subjects.some((subject) => subject.id === id && subject.kind === "risk"),
+  );
+  const reviewOperations = reviewSubjects.length
+    ? [
+        {
+          id: "review:consolidated",
+          kind: "model-inspection" as const,
+          dependsOn: commandOperations.map((item) => item.id),
+          covers: [...new Set(reviewSubjects)].toSorted(),
+          cost: "high" as const,
+          scopeRefs: ["scope:approved"],
+          fingerprintMode: "global" as const,
+          readOnly: true,
+          concurrencySafe: false,
+          conditional: reviewIsRiskOnly,
+          ...(reviewIsRiskOnly ? { activationPredicateRef: "policy:applicable-review" } : {}),
+        },
+      ]
+    : [];
+  const operations = [...commandOperations, ...reviewOperations];
+  return compileAssuranceContract({
+    schemaVersion: 1,
+    sourceDigest: `sha256:${contract.discoveryReceiptDigest.replace(/^sha256:/, "")}`,
+    subjects,
+    operations,
+    evidencePreference: operations.map((item) => item.id),
+    reviewBudget: {
+      maxInputTokens: 8_000,
+      maxOutputTokens: 1_500,
+      maxCalls: reviewOperations.length ? 2 : 0,
+      maxConcurrency: 4,
+    },
+    policyDigest: "policy:gate-snapshot",
+  });
+}
+
+function commandOperation(executable: string, argv: string[], covers: string[]) {
+  const identity = {
+    executable,
+    argv,
+    logicalCwd: ".",
+    environment: {},
+    toolFingerprintRefs: ["toolchain:current"],
+  };
+  return {
+    id: `check:${digest(identity).slice(0, 16)}`,
+    kind: "command" as const,
+    dependsOn: [] as string[],
+    covers,
+    cost: "low" as const,
+    scopeRefs: [] as string[],
+    fingerprintMode: "global" as const,
+    readOnly: true,
+    concurrencySafe: false,
+    conditional: false,
+    checkIdentity: identity,
+    successPredicate: { exitCodes: [0] },
+  };
+}
+
+function splitCommand(command: string): [string, ...string[]] {
+  const parts = command.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length || /[|;&<>`]/.test(command))
+    throw new Error(
+      "Assurance command must use canonical executable and argv without shell control operators.",
+    );
+  return parts as [string, ...string[]];
 }
 
 function mergeById<T extends { id: string }>(left: readonly T[], right: readonly T[]): T[] {

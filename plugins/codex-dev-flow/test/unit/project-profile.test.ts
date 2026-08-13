@@ -148,6 +148,35 @@ test("profile diff and generated projections describe exact proposed transaction
   ).toThrow(/match profile diagramRefs/);
 });
 
+test("optional domain documentation facet is portable, digest-bound, and reconciled", () => {
+  const input = projectProfileInput();
+  input.content.domainDocumentation = {
+    contextMode: "multiple",
+    glossaryPath: "docs/domain/glossary.md",
+    rulesPath: "docs/domain/rules.md",
+    adrDirectory: "docs/adr",
+    contextMapPath: "docs/domain/contexts.md",
+    language: "fr",
+    identityConvention: "Stable context-prefixed IDs.",
+    linkConvention: "Relative Markdown links.",
+    sourceFingerprints: [
+      { sourceRef: "docs/domain/glossary.md", value: `sha256:${"a".repeat(64)}` },
+    ],
+  };
+  const proposal = prepareProjectProfile(input);
+  expect(
+    reconcileProjectProfile(proposal, {
+      "docs/domain/glossary.md": `sha256:${"b".repeat(64)}`,
+      "AGENTS.md": `sha256:${"a".repeat(64)}`,
+    }),
+  ).toMatchObject({ domainDocumentationStale: true, current: false });
+  expect(diffProjectProfiles(undefined, proposal).domainDocumentationChanged).toBe(true);
+  const invalid = projectProfileInput();
+  invalid.content.domainDocumentation = { ...input.content.domainDocumentation };
+  delete invalid.content.domainDocumentation.contextMapPath;
+  expect(() => prepareProjectProfile(invalid)).toThrow(/contextMapPath/);
+});
+
 test("Project INIT state persists normalized decisions and exactly one valid active question", () => {
   const state = projectInitState({
     status: "awaiting_decision",

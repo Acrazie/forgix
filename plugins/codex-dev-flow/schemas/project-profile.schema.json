@@ -161,6 +161,55 @@
             }
           }
         },
+        "domainDocumentation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contextMode",
+            "glossaryPath",
+            "rulesPath",
+            "adrDirectory",
+            "language",
+            "identityConvention",
+            "linkConvention",
+            "sourceFingerprints"
+          ],
+          "properties": {
+            "contextMode": { "enum": ["single", "multiple"] },
+            "glossaryPath": { "$ref": "#/$defs/repositoryPath" },
+            "rulesPath": { "$ref": "#/$defs/repositoryPath" },
+            "adrDirectory": { "$ref": "#/$defs/repositoryPath" },
+            "contextMapPath": { "$ref": "#/$defs/repositoryPath" },
+            "language": { "$ref": "#/$defs/shortText" },
+            "identityConvention": { "$ref": "#/$defs/text" },
+            "linkConvention": { "$ref": "#/$defs/text" },
+            "sourceFingerprints": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["sourceRef", "value"],
+                "properties": {
+                  "sourceRef": { "$ref": "#/$defs/sourceRef" },
+                  "value": { "$ref": "#/$defs/fingerprint" }
+                }
+              }
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "contextMode": { "const": "multiple" } },
+                "required": ["contextMode"]
+              },
+              "then": {
+                "properties": { "contextMapPath": {} },
+                "required": ["contextMapPath"]
+              }
+            }
+          ]
+        },
         "diagramRefs": {
           "type": "array",
           "uniqueItems": true,
