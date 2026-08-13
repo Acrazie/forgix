@@ -12,4 +12,5 @@ integrations:
   plugins:
     - impeccable
     - context-mode
-  skills: []
+  skills:
+    - impeccable:frontend-design
