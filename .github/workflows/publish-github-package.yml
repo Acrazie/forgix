@@ -1,0 +1,42 @@
+name: Publish GitHub package mirror
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: Stable npm version, release tag, or all stable versions
+        required: true
+        default: all
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    name: Mirror npm package
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.release.tag_name, 'v') ||
+      startsWith(github.event.release.tag_name, 'npm-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: "@acrazie"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - name: Mirror canonical npm package
+        env:
+          MIRROR_SELECTOR: ${{ github.event.inputs.versions || github.event.release.tag_name }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun scripts/mirror-npm-to-github.ts "$MIRROR_SELECTOR"

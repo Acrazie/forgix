@@ -3,9 +3,10 @@
 ## Purpose and ownership
 
 This runbook is the canonical production-release procedure for Codex Dev Flow. A
-maintainer runs it from a trusted local workstation. The repository currently has no
-publishing workflow; CI validates releases but does not publish the npm package or the
-Codex plugin.
+maintainer runs it from a trusted local workstation. CI validates releases but does not
+publish the canonical npm package or the Codex plugin. After an npm-bearing GitHub
+Release is published, a separate GitHub Actions workflow mirrors its canonical npmjs
+tarball to GitHub Packages as `@acrazie/codex-dev-flow`.
 
 Use the repository release program rather than invoking `npm publish`, creating tags,
 or editing release versions manually:
@@ -114,6 +115,11 @@ publication in this order:
 3. create GitHub Release from generated notes;
 4. optionally refresh locally installed Codex plugin.
 
+Publishing the GitHub Release asynchronously starts `Publish GitHub package mirror`
+for combined `v<version>` and npm-only `npm-v<version>` tags. Plugin-only tags have no
+npm artifact and do not start the mirror. The release program does not wait for or
+include this asynchronous mirror in its partial-release state.
+
 Start a new Codex thread after local plugin refresh so new plugin version loads.
 
 ## Verification
@@ -131,16 +137,60 @@ For npm or combined target, use npm version printed by release program:
 npm view codex-dev-flow@<version> version
 ```
 
+After the mirror workflow succeeds, an authenticated GitHub Packages client can verify
+the scoped alias:
+
+```bash
+npm view @acrazie/codex-dev-flow@<version> version \
+  --registry=https://npm.pkg.github.com
+```
+
 Expected final state:
 
 - local and remote `main` point to release commit;
 - annotated tag points to same commit;
 - GitHub Release exists for tag;
 - selected npm version exists when applicable;
+- matching `@acrazie/codex-dev-flow` version exists after the asynchronous mirror;
 - worktree is clean.
 
 The release commit, tag, npm registry entry, and GitHub Release are durable audit
 records. No separate local release-state file exists.
+
+## Initial GitHub Packages publication and historical backfill
+
+The canonical package remains the public, unscoped `codex-dev-flow` package on npmjs.
+GitHub Packages contains a scoped mirror because its npm registry accepts only scoped
+names. Mirror input always comes from the already-published npmjs tarball; the workflow
+validates source name, version, and repository, then changes only the package name.
+
+Because this repository is private, the first linked GitHub package initially inherits
+private visibility. To create the approved public mirror without racing the complete
+backfill:
+
+1. Merge the mirror workflow to the default branch.
+2. Obtain separate authorization for package publication, then publish only the oldest
+   version:
+
+   ```bash
+   gh workflow run publish-github-package.yml -f versions=0.1.0
+   ```
+
+3. Wait for success. Open the new `@acrazie/codex-dev-flow` package settings and change
+   visibility to **Public**. This UI operation is deliberately manual.
+4. Obtain confirmation immediately before the visibility change: making a GitHub
+   package public cannot be reversed.
+5. Backfill every stable npmjs version:
+
+   ```bash
+   gh workflow run publish-github-package.yml -f versions=all
+   ```
+
+The `all` selector discovers stable npmjs versions, skips exact versions already present
+in GitHub Packages, and publishes missing versions oldest first. A precise stable
+version, `v<version>`, or `npm-v<version>` may also be dispatched for targeted recovery.
+Publishing the public package exposes only content already present in the public npmjs
+tarball; it does not make the private source repository readable.
 
 ## Cancellation and failure recovery
 
@@ -183,6 +233,12 @@ codex plugin add codex-dev-flow@acrazie
 
 Then start a new Codex thread.
 
+If the asynchronous GitHub Packages mirror fails, do not create another npm or GitHub
+Release. Rerun the failed Actions job or dispatch its exact stable version. Existing
+destination versions are verified and skipped, so recovery is idempotent. Authentication,
+network, malformed metadata, and unexpected registry responses block instead of being
+treated as a missing version.
+
 ### Bad release discovered after completion
 
 Prefer forward correction: fix defect and publish a new patch or plugin-cachebuster
@@ -193,7 +249,9 @@ reused.
 
 - No validation bypass or force-publish path.
 - No manual version edits followed by direct publish.
-- No direct `npm publish` or `bun publish` outside release program.
+- No direct `npm publish` or `bun publish` of the canonical npmjs package outside the
+  release program. The repository-owned GitHub Packages mirror workflow is the only
+  scoped-alias exception.
 - No manual tag or GitHub Release for a new release.
 - No automatic or manual merge/rebase/reset inside release procedure.
 - Never commit npm tokens, GitHub tokens, OTP values, or generated credential files.
