@@ -1,11 +1,17 @@
 # Codex Dev Flow
 
 <p align="center">
-  <img
-    src="./docs/assets/codex-dev-flow-hero.png"
-    alt="Underwater view toward the light, representing a guided path through complex software changes"
-    width="100%"
-  />
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="./docs/assets/brand/svg/lockup-white.svg"
+    />
+    <img
+      src="./docs/assets/brand/svg/lockup-color.svg"
+      alt="Codex Dev Flow"
+      width="620"
+    />
+  </picture>
 </p>
 
 > Turn a software objective into an approved, implemented, and verified change.
