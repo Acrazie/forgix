@@ -1,17 +1,11 @@
 # Codex Dev Flow
 
 <p align="center">
-  <picture>
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="./docs/assets/brand/svg/lockup-white.svg"
-    />
-    <img
-      src="./docs/assets/brand/svg/lockup-color.svg"
-      alt="Codex Dev Flow"
-      width="620"
-    />
-  </picture>
+  <img
+    src="./docs/assets/brand/svg/lockup-color.svg"
+    alt="Codex Dev Flow"
+    width="620"
+  />
 </p>
 
 > Turn a software objective into an approved, implemented, and verified change.
