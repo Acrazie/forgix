@@ -6,6 +6,20 @@ on:
     branches: [main]
 
 jobs:
+  website:
+    name: Website (Node 26)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: site/.node-version
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - run: bun run site:build
+
   quality-gate:
     name: Full Gate (Ubuntu)
     runs-on: ubuntu-latest
@@ -68,7 +82,7 @@ jobs:
   full-gate:
     name: Full Gate
     if: always()
-    needs: [quality-gate, runtime-smoke, maintainer-release-macos]
+    needs: [quality-gate, runtime-smoke, maintainer-release-macos, website]
     runs-on: ubuntu-latest
     steps:
       - name: Require every supported lane
@@ -76,7 +90,9 @@ jobs:
           QUALITY_RESULT: ${{ needs.quality-gate.result }}
           RELEASE_RESULT: ${{ needs.maintainer-release-macos.result }}
           RUNTIME_RESULT: ${{ needs.runtime-smoke.result }}
+          WEBSITE_RESULT: ${{ needs.website.result }}
         run: |
           test "$QUALITY_RESULT" = success
           test "$RELEASE_RESULT" = success
           test "$RUNTIME_RESULT" = success
+          test "$WEBSITE_RESULT" = success
