@@ -1,6 +1,26 @@
+# Dependencies
 node_modules/
-.artifacts/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Worktrees for parallel development
 .worktrees/
+
+# Build artifacts & caches
+.artifacts/
+dist/
+coverage/
+
+# Codex local files
 .codex/tasks/
 .codex/benchmarks/
 .codex/dev-flow.project.local.yaml
