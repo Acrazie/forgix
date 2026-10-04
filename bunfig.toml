@@ -1,3 +1,7 @@
 [test]
 randomize = true
 retry = 0
+
+[install]
+# Keep the site's TypeScript 6 checker separate from repository/plugin TypeScript 7.
+linker = "isolated"

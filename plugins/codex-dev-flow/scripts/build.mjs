@@ -12,6 +12,8 @@ export async function createDistributionBundle() {
     format: "esm",
     outfile: OUTPUT_PATH,
     platform: "node",
+    // Strip layout-specific generated names/comments without changing module resolution.
+    minify: true,
     sourcemap: false,
     target: "node24.0",
     write: false,

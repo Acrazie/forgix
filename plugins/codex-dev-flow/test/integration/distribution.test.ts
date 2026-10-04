@@ -13,6 +13,7 @@ test("distribution bundle exists", () => {
   const bundle = new URL("../../dist/dev-flow.mjs", import.meta.url);
   expect(existsSync(bundle)).toBe(true);
   expect(readFileSync(bundle, "utf8").startsWith("#!/usr/bin/env node\n")).toBe(true);
+  expect(readFileSync(bundle, "utf8")).not.toContain("node_modules/.bun/");
   if (process.platform !== "win32") expect(statSync(bundle).mode & 0o111).not.toBe(0);
 });
 

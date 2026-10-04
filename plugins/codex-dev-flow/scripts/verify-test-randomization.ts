@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { parseTestOrder } from "./test-order.ts";
 
 const FIXTURE = "test/fixtures/order-dependent.fixture.test.ts";
 const RECORDED_SEEDS = [1, 3] as const;
@@ -17,9 +18,7 @@ function executeSeed(seed: number): SeedResult {
   );
   if (result.error) throw result.error;
   const output = `${result.stdout}\n${result.stderr}`;
-  const order = [...output.matchAll(/\((?:pass|fail)\) order fixture > ([^[]+)/g)].map((match) =>
-    (match[1] ?? "").trim(),
-  );
+  const order = parseTestOrder(output);
   if (!output.includes(`--seed=${seed}`) || order.length !== 2) {
     throw new Error(`Seed ${seed} did not produce reproducible randomization metadata.`);
   }
