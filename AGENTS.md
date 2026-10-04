@@ -18,3 +18,7 @@ Instructions and standards for AI coding agents working on this repository.
 ## Git & Delivery Protocol
 
 Follow the repository delivery workflow, Conventional Commits, worktrees isolation, and pull request policies defined in [docs/git-workflow.md](docs/git-workflow.md).
+
+## Documentation & Library Guidance
+
+Always use Context7 when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
