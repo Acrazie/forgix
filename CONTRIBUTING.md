@@ -15,8 +15,14 @@ Thanks for helping improve Codex Dev Flow. This guide covers repository developm
 ```bash
 git clone https://github.com/Acrazie/codex-dev-flow.git
 cd codex-dev-flow
-bun install --frozen-lockfile
+./scripts/setup.sh
 bun run check
+```
+
+For parallel work on features or fixes, use Git Worktrees:
+
+```bash
+./scripts/worktree.sh add feat/<branch-name>
 ```
 
 To test the terminal wizard from a source checkout, link the package during local development only:
@@ -30,7 +36,7 @@ codex-dev-flow init
 
 End users should run `npx codex-dev-flow init`; `npm link` is not part of the published installation flow.
 
-The root installation also activates the Husky pre-commit hook. `bun run check` verifies
+The setup script activates Lefthook git hooks (`pre-commit` and `commit-msg`). See [docs/git-workflow.md](./docs/git-workflow.md) for full branch, worktree, and Conventional Commit guidelines. `bun run check` verifies
 formatting, runs native and type-aware linting, checks tool scripts, builds the bundled
 ESM distribution, and executes every current test suite.
 
@@ -38,9 +44,9 @@ ESM distribution, and executes every current test suite.
 
 ```text
 .agents/plugins/marketplace.json       Local marketplace catalog
-.github/workflows/                    Repository CI
-.husky/                               Git hooks
-scripts/                              Repository quality tooling
+.github/workflows/                    Repository CI and release workflows
+lefthook.yml                          Git hooks (pre-commit & commit-msg)
+scripts/                              Repository quality & workflow tooling
 test/                                 Repository tooling tests
 plugins/codex-dev-flow/
   .codex-plugin/plugin.json            Plugin manifest
