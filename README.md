@@ -194,7 +194,7 @@ bun run check
 
 The full gate runs formatting, native and type-aware linting, tool typechecking, tests,
 plugin typechecking/build, randomized test-order verification, coverage, and deterministic
-artifact size checks. The lightweight Husky pre-commit hook runs the staged-file Bun
+artifact size checks. The lightweight Lefthook pre-commit hook runs the staged-file Bun
 adapter; CI remains authoritative.
 
 See [Contributing](./CONTRIBUTING.md) for repository structure, focused commands, design

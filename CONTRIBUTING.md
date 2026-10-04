@@ -5,7 +5,7 @@ Thanks for helping improve Codex Dev Flow. This guide covers repository developm
 ## Prerequisites
 
 - Node.js 24 or newer.
-- Bun 1.3 or newer.
+- Bun 1.4.2, matching `.bun-version` and `package.json`.
 - Git.
 - GitHub CLI (`gh`) for releases.
 - Linux or macOS. Windows is not supported.

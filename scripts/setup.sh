@@ -9,12 +9,15 @@ if [ -f ".env.example" ] && [ ! -f ".env" ]; then
   cp .env.example .env
 fi
 
-# 2. Install dependencies with bun
-echo "--> Installing dependencies via bun..."
-bun install
+# Husky previously redirected hooks to .husky/_. Restore Git's default only
+# for that legacy repository-local setting; preserve unrelated custom paths.
+if [ "$(git config --local --get core.hooksPath || true)" = ".husky/_" ]; then
+  git config --local --unset core.hooksPath
+fi
 
-# 3. Setup git hooks with lefthook
-echo "--> Installing git hooks via lefthook..."
-bunx lefthook install
+# Install dependencies reproducibly. The prepare script installs Lefthook.
+echo "--> Installing dependencies via bun..."
+bun install --frozen-lockfile
+
 
 echo "==> Setup completed successfully!"
