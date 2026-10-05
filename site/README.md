@@ -1,4 +1,4 @@
-# Codex Dev Flow Website
+# Dev Flow Website
 
 Private static Astro workspace. Install once from the repository root using Bun 1.4.2.
 Website commands require Node 26; plugin and existing CI commands remain on Node 24.

@@ -222,7 +222,7 @@ export {
   createTaskStateStore,
 } from "./state-store.js";
 
-export const HELP_TEXT = `Usage: codex-dev-flow <command|objective>
+export const HELP_TEXT = `Usage: dev-flow <command|objective>
 
 Commands:
   init
@@ -239,8 +239,8 @@ Commands:
   --help
 
 Workflow:
-  codex-dev-flow <objective>
-  codex-dev-flow --benchmark <objective>
+  dev-flow <objective>
+  dev-flow --benchmark <objective>
 `;
 
 export interface RunInvocationOptions {

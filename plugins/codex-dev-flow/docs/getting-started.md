@@ -1,6 +1,6 @@
-# Getting Started with Codex Dev Flow
+# Getting Started with Dev Flow
 
-This guide installs Codex Dev Flow, creates durable project engineering conventions,
+This guide installs Dev Flow, creates durable project engineering conventions,
 runs a first task, and explains how to resume safely. Normative behavior remains in the
 [Lifecycle contract](lifecycle-contract.md) and
 [Project Engineering Profile contract](project-profile-contract.md).
@@ -26,11 +26,11 @@ Bun is not required to use the published plugin. It is a contributor dependency 
 
 ```bash
 codex plugin marketplace add Acrazie/codex-dev-flow
-codex plugin add codex-dev-flow@acrazie
+codex plugin add dev-flow@acrazie
 ```
 
 The same installation is available interactively through `/plugins`: select
-**Acrazie**, install **Codex Dev Flow**, then start a new Codex session.
+**Acrazie**, install **Dev Flow**, then start a new Codex session.
 
 ## 3. Run Project INIT
 
@@ -120,8 +120,16 @@ Project INIT owns project engineering knowledge. The separate deterministic
 Configuration wizard owns plugin operating preferences:
 
 ```bash
-npx codex-dev-flow init
+npx dev-flow init
 ```
+
+The npm package is now named `dev-flow`. The installed `codex-dev-flow` command
+remains an alias of the same executable; it does not require a separate package.
+Existing installations of the old npm package are not automatically migrated.
+Upgrade the Acrazie marketplace and install `dev-flow@acrazie` to use the renamed
+plugin; existing `.codex/` project configuration and state remain unchanged.
+Replace the old plugin installation rather than installing both plugin identities
+side by side.
 
 Use it to customize worktree behavior, subscription/quota hints, or allowlisted
 integrations. Defaults already exist, so the wizard is optional. Inspect or validate the

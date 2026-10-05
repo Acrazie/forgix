@@ -3,7 +3,7 @@
   "packages": {
     "plugins/codex-dev-flow": {
       "release-type": "node",
-      "package-name": "codex-dev-flow",
+      "package-name": "dev-flow",
       "changelog-path": "CHANGELOG.md"
     }
   }

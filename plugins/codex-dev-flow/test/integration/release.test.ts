@@ -116,7 +116,7 @@ describe("release plans", () => {
 describe("release safety", () => {
   test("updates only JSON version bytes and preserves formatter-owned layout", () => {
     const manifest = `{
-  "name": "codex-dev-flow",
+  "name": "dev-flow",
   "version": "0.2.1+codex.20260731175436",
   "keywords": ["codex", "workflow"]
 }
@@ -151,13 +151,14 @@ describe("release safety", () => {
 
   test("validates minimum plugin manifest contract", () => {
     const manifest = {
-      name: "codex-dev-flow",
+      name: "dev-flow",
       version: "0.2.0+codex.20260728140509",
       description: "Flow",
       license: "MIT",
       skills: "./skills/",
     };
     expect(() => validatePluginManifest(manifest)).not.toThrow();
+    expect(() => validatePluginManifest({ ...manifest, name: "codex-dev-flow" })).toThrow(/name/);
     expect(() => validatePluginManifest({ ...manifest, skills: "./skills" })).toThrow(/must end/);
   });
 
@@ -205,7 +206,7 @@ describe("release safety", () => {
   });
 
   test("restores original bytes, mode, and absence after cancellation", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "codex-dev-flow-release-"));
+    const directory = await mkdtemp(join(tmpdir(), "dev-flow-release-"));
     const existing = join(directory, "existing");
     const created = join(directory, "created");
     await writeFile(existing, Buffer.from([0, 1, 2, 255]));

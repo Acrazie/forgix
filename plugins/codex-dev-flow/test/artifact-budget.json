@@ -20,6 +20,7 @@
     ".codex-plugin/plugin.json",
     "LICENSE",
     "README.md",
+    "dist/codex-dev-flow.mjs",
     "dist/dev-flow.mjs",
     "docs/adr/0001-hybrid-portable-workflow.md",
     "docs/adr/0002-share-an-invalidable-context-capsule.md",

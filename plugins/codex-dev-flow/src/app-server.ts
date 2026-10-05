@@ -88,7 +88,7 @@ export class AppServerClient {
 
   async readSnapshot(config?: AppServerOptions["config"]): Promise<BuiltRoutingSnapshot> {
     await this.request("initialize", {
-      clientInfo: { name: "codex-dev-flow", title: "Codex Dev Flow", version: "0.1.0" },
+      clientInfo: { name: "dev-flow", title: "Dev Flow", version: "0.1.0" },
     });
     this.notify("initialized", {});
     const account = await this.request("account/read", { refreshToken: false });

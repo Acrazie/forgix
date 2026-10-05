@@ -13,7 +13,7 @@ const api = async () => sourceApi;
 
 test("state schema is strict V6 and contains no legacy mode contract", async () => {
   const schema = JSON.parse(await readFile(stateSchemaUrl, "utf8"));
-  expect(schema.title).toBe("Codex Dev Flow task state V6");
+  expect(schema.title).toBe("Dev Flow task state V6");
   expect(schema.properties.schemaVersion.const).toBe(6);
   expect(schema.additionalProperties).toBe(false);
   expect("mode" in schema.properties).toBe(false);

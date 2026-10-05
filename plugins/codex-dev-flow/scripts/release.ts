@@ -49,7 +49,7 @@ const manifestPath = resolve(pluginRoot, ".codex-plugin/plugin.json");
 const lockPath = resolve(pluginRoot, "bun.lock");
 const bundlePath = resolve(pluginRoot, "dist/dev-flow.mjs");
 const marketplace = "acrazie";
-const packageName = "codex-dev-flow";
+const packageName = "dev-flow";
 
 let cleanup: (() => Promise<void>) | undefined;
 let externalPublicationStarted = false;
@@ -634,7 +634,7 @@ async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  intro("Codex Dev Flow release");
+  intro("Dev Flow release");
   assertSupportedPlatform();
   assertCleanMain();
 

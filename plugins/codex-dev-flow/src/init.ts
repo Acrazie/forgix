@@ -90,7 +90,7 @@ export async function runInit(options: InitOptions = {}): Promise<CliResult> {
   const current = existed ? readConfiguration(path) : {};
   let draft = draftFromConfiguration(current);
 
-  prompts.intro("Codex Dev Flow · project setup");
+  prompts.intro("Dev Flow · project setup");
   prompts.note(
     "Configure workflow isolation, subscription-aware routing, quota safeguards, and optional integrations.\nNo model choice is required: Dev Flow assigns models and reasoning automatically.",
     "What this wizard does",

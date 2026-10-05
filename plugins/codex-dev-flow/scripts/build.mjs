@@ -31,6 +31,14 @@ export async function writeDistributionBundle() {
   await mkdir("dist", { recursive: true });
   await writeFile(OUTPUT_PATH, contents);
   await chmod(OUTPUT_PATH, 0o755);
+  // Bun packs duplicate bin targets twice. Keep the legacy command as a thin alias
+  // so both names share the same implementation without duplicating the bundle.
+  const legacyPath = "dist/codex-dev-flow.mjs";
+  await writeFile(
+    legacyPath,
+    '#!/usr/bin/env node\nimport { main } from "./dev-flow.mjs";\nmain();\n',
+  );
+  await chmod(legacyPath, 0o755);
 }
 
 const invokedPath = process.argv[1] ? resolve(process.argv[1]) : undefined;

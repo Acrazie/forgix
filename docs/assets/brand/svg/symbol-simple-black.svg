@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Codex Dev Flow simple symbol in black</title>
+  <title id="title">Dev Flow simple symbol in black</title>
   <desc id="desc">ASCII left bracket, slash, and right bracket forming a checkpoint crossed by a path.</desc>
   <path fill="#000000" d="M72 88h120v56h-56v224h56v56H72V88Zm368 0H320v56h56v224h-56v56h120V88Z"/>
   <path fill="#000000" d="M275 72h82L237 440h-82L275 72Z"/>

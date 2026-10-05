@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "==> Setting up development environment for codex-dev-flow..."
+echo "==> Setting up development environment for dev-flow..."
 
 # 1. Copy environment template if not present
 if [ -f ".env.example" ] && [ ! -f ".env" ]; then

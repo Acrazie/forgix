@@ -13,7 +13,7 @@ test("renders stable CLI help without runtime routing", async () => {
     status: "ok",
     data: { text: sourceApi.HELP_TEXT },
   });
-  expect(sourceApi.HELP_TEXT).toContain("Usage: codex-dev-flow");
+  expect(sourceApi.HELP_TEXT).toContain("Usage: dev-flow");
   expect(sourceApi.HELP_TEXT).toContain("config validate [--json]");
 });
 

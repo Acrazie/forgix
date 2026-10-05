@@ -28,25 +28,33 @@ test("distribution bundle matches the current source build", async () => {
   expect(readFileSync(bundle)).toEqual(Buffer.from(await createDistributionBundle()));
 });
 
-test(
-  "package binary executes through a package-manager symlink",
-  { skip: process.platform === "win32" },
-  () => {
-    const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-bin-"));
-    const binary = join(directory, "codex-dev-flow");
-    symlinkSync(fileURLToPath(new URL("../../dist/dev-flow.mjs", import.meta.url)), binary);
+for (const command of ["dev-flow", "codex-dev-flow"]) {
+  test(
+    `${command} executes through a package-manager symlink`,
+    { skip: process.platform === "win32" },
+    () => {
+      const directory = mkdtempSync(join(tmpdir(), "dev-flow-bin-"));
+      const binary = join(directory, command);
+      const manifest = JSON.parse(
+        readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+      );
+      symlinkSync(
+        fileURLToPath(new URL(`../../${manifest.bin[command]}`, import.meta.url)),
+        binary,
+      );
 
-    try {
-      const result = spawnSync(binary, ["config", "validate", "--json"], { encoding: "utf8" });
-      expect(result.status, result.stderr).toBe(0);
-      const output = JSON.parse(result.stdout);
-      expect(output.command).toBe("config_validate");
-      expect(output.status).toBe("valid");
-    } finally {
-      rmSync(directory, { recursive: true, force: true });
-    }
-  },
-);
+      try {
+        const result = spawnSync(binary, ["config", "validate", "--json"], { encoding: "utf8" });
+        expect(result.status, result.stderr).toBe(0);
+        const output = JSON.parse(result.stdout);
+        expect(output.command).toBe("config_validate");
+        expect(output.status).toBe("valid");
+      } finally {
+        rmSync(directory, { recursive: true, force: true });
+      }
+    },
+  );
+}
 
 test("init rejects non-interactive invocation explicitly", () => {
   const bundle = fileURLToPath(new URL("../../dist/dev-flow.mjs", import.meta.url));
@@ -59,7 +67,7 @@ test("init rejects non-interactive invocation explicitly", () => {
 });
 
 test("built CLI validates project profile stdin without writing", () => {
-  const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-profile-bundle-"));
+  const directory = mkdtempSync(join(tmpdir(), "dev-flow-profile-bundle-"));
   const bundle = fileURLToPath(new URL("../../dist/dev-flow.mjs", import.meta.url));
   try {
     const result = spawnSync(process.execPath, [bundle, "project-profile", "validate"], {
@@ -83,7 +91,7 @@ test("public skill isolates external skills behind configured allowlists", () =>
   expect(skill).toMatch(/integrations\.skills/);
   expect(skill).toMatch(/Do not invoke skills from other plugins/);
   expect(skill).toMatch(/standalone CLI command/);
-  expect(skill).toMatch(/codex-dev-flow init/);
+  expect(skill).toMatch(/dev-flow init/);
   expect(skill).toMatch(/Exact `\$dev-flow init` is agentic/);
   expect(skill).toMatch(/project-profile validate/);
   expect(skill).toMatch(/project-profile session-save/);
@@ -98,13 +106,17 @@ test("public skill isolates external skills behind configured allowlists", () =>
   expect(skill).toMatch(/If approval is denied or the retry fails, block/);
 });
 
-test("package exposes the standalone codex-dev-flow binary", () => {
+test("package exposes the standalone dev-flow binary", () => {
   const manifest = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
   expect(manifest.private).toBe(undefined);
   expect(manifest.license).toBe("MIT");
   expect(manifest.dependencies).toBe(undefined);
   expect(manifest.publishConfig.access).toBe("public");
-  expect(manifest.bin["codex-dev-flow"]).toBe("dist/dev-flow.mjs");
+  expect(manifest.name).toBe("dev-flow");
+  expect(manifest.bin).toEqual({
+    "dev-flow": "dist/dev-flow.mjs",
+    "codex-dev-flow": "dist/codex-dev-flow.mjs",
+  });
   expect(manifest.files).toEqual([
     ".codex-plugin/",
     "dist/",
@@ -120,7 +132,7 @@ test("package exposes the standalone codex-dev-flow binary", () => {
 });
 
 test("npm package contains runtime assets and excludes development files", () => {
-  const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-pack-"));
+  const directory = mkdtempSync(join(tmpdir(), "dev-flow-pack-"));
   const root = fileURLToPath(new URL("../..", import.meta.url));
 
   try {
@@ -138,6 +150,7 @@ test("npm package contains runtime assets and excludes development files", () =>
     for (const required of [
       ".codex-plugin/plugin.json",
       "dist/dev-flow.mjs",
+      "dist/codex-dev-flow.mjs",
       "schemas/config.schema.json",
       "schemas/project-profile.schema.json",
       "schemas/project-profile-local.schema.json",
@@ -158,4 +171,21 @@ test("npm package contains runtime assets and excludes development files", () =>
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("plugin identity matches its marketplace entry and release configuration", () => {
+  const plugin = JSON.parse(
+    readFileSync(new URL("../../.codex-plugin/plugin.json", import.meta.url), "utf8"),
+  );
+  const marketplace = JSON.parse(
+    readFileSync(new URL("../../../../.agents/plugins/marketplace.json", import.meta.url), "utf8"),
+  );
+  const release = JSON.parse(
+    readFileSync(new URL("../../../../release-please-config.json", import.meta.url), "utf8"),
+  );
+  expect(plugin.name).toBe("dev-flow");
+  expect(plugin.interface.displayName).toBe("Dev Flow");
+  expect(marketplace.plugins[0].name).toBe(plugin.name);
+  expect(marketplace.plugins[0].source.path).toBe("./plugins/codex-dev-flow");
+  expect(release.packages["plugins/codex-dev-flow"]["package-name"]).toBe(plugin.name);
 });

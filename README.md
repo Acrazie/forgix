@@ -1,16 +1,16 @@
-# Codex Dev Flow
+# Dev Flow
 
 <p align="center">
   <img
     src="./docs/assets/brand/svg/lockup-color.svg"
-    alt="Codex Dev Flow"
+    alt="Dev Flow"
     width="620"
   />
 </p>
 
 > Turn a software objective into an approved, implemented, and verified change.
 
-Codex Dev Flow is a portable Codex plugin for evidence-backed software changes. It
+Dev Flow is a portable Codex plugin for evidence-backed software changes. It
 combines product clarification, repository discovery, explicit approval, implementation,
 and fresh verification without treating a plausible answer as completed work.
 
@@ -32,10 +32,10 @@ Add the marketplace and install the plugin:
 
 ```bash
 codex plugin marketplace add Acrazie/codex-dev-flow
-codex plugin add codex-dev-flow@acrazie
+codex plugin add dev-flow@acrazie
 ```
 
-Alternatively, open `/plugins`, select **Acrazie**, and install **Codex Dev Flow**.
+Alternatively, open `/plugins`, select **Acrazie**, and install **Dev Flow**.
 Start a new Codex session after installation or upgrade.
 
 ## Quick start
@@ -64,8 +64,16 @@ The optional Configuration wizard customizes plugin operation such as worktree,
 subscription, quota, and integrations:
 
 ```bash
-npx codex-dev-flow init
+npx dev-flow init
 ```
+
+The npm package is now named `dev-flow`. The installed `codex-dev-flow` command
+remains an alias of the same executable; it does not require a separate package.
+Existing installations of the old npm package are not automatically migrated.
+Upgrade the Acrazie marketplace and install `dev-flow@acrazie` to use the renamed
+plugin; existing `.codex/` project configuration and state remain unchanged.
+Replace the old plugin installation rather than installing both plugin identities
+side by side.
 
 Project INIT and the Configuration wizard are separate interfaces; neither aliases the
 other. See the [Getting Started guide](./plugins/codex-dev-flow/docs/getting-started.md)
@@ -91,17 +99,17 @@ Flow task.
 
 ## Commands
 
-| Interface                              | Purpose                                                       |
-| -------------------------------------- | ------------------------------------------------------------- |
-| `$dev-flow <objective>`                | Start a software change.                                      |
-| `$dev-flow init`                       | Discover and approve durable project engineering conventions. |
-| `$dev-flow resume <task-id>`           | Resume an interrupted task.                                   |
-| `$dev-flow status [task-id]`           | Inspect task status.                                          |
-| `$dev-flow --benchmark <objective>`    | Run a task with local benchmark measurement enabled.          |
-| `$dev-flow config show [--explain]`    | Show effective configuration and optional provenance.         |
-| `$dev-flow config validate [--json]`   | Validate effective configuration.                             |
-| `npx codex-dev-flow init`              | Run the optional Configuration wizard.                        |
-| `npx codex-dev-flow benchmark summary` | Summarize allowlisted local benchmark data.                   |
+| Interface                            | Purpose                                                       |
+| ------------------------------------ | ------------------------------------------------------------- |
+| `$dev-flow <objective>`              | Start a software change.                                      |
+| `$dev-flow init`                     | Discover and approve durable project engineering conventions. |
+| `$dev-flow resume <task-id>`         | Resume an interrupted task.                                   |
+| `$dev-flow status [task-id]`         | Inspect task status.                                          |
+| `$dev-flow --benchmark <objective>`  | Run a task with local benchmark measurement enabled.          |
+| `$dev-flow config show [--explain]`  | Show effective configuration and optional provenance.         |
+| `$dev-flow config validate [--json]` | Validate effective configuration.                             |
+| `npx dev-flow init`                  | Run the optional Configuration wizard.                        |
+| `npx dev-flow benchmark summary`     | Summarize allowlisted local benchmark data.                   |
 
 `quick`, `standard`, and `critical` at objective start are plain objective text, not
 modes or aliases. Quick or Plan is selected only after Discovery. Risk and policy—not
