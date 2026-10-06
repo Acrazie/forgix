@@ -1,5 +1,5 @@
 interface:
-  display_name: "Codex Dev Flow"
+  display_name: "Dev Flow"
   short_description: "Run a governed change workflow."
   default_prompt: "Use $dev-flow to implement a reviewed change."
 policy:

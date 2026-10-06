@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Codex Dev Flow policy",
+  "title": "Dev Flow policy",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "requirements", "prohibitions", "bounds", "locks"],

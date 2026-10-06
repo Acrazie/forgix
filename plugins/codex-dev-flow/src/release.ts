@@ -229,8 +229,8 @@ export function validatePluginManifest(value: unknown): asserts value is Record<
       throw new ReleaseError(`Plugin manifest field "${field}" must be a non-empty string.`);
     }
   }
-  if (manifest.name !== "codex-dev-flow") {
-    throw new ReleaseError('Plugin manifest name must be "codex-dev-flow".');
+  if (manifest.name !== "dev-flow") {
+    throw new ReleaseError('Plugin manifest name must be "dev-flow".');
   }
   semanticBase(String(manifest.version));
   if (!String(manifest.skills).endsWith("/")) {

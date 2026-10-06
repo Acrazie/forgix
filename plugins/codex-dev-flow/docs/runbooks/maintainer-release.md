@@ -2,11 +2,11 @@
 
 ## Purpose and ownership
 
-This runbook is the canonical production-release procedure for Codex Dev Flow. A
+This runbook is the canonical production-release procedure for Dev Flow. A
 maintainer runs it from a trusted local workstation. CI validates releases but does not
 publish the canonical npm package or the Codex plugin. After an npm-bearing GitHub
 Release is published, a separate GitHub Actions workflow mirrors its canonical npmjs
-tarball to GitHub Packages as `@acrazie/codex-dev-flow`.
+tarball to GitHub Packages as `@acrazie/dev-flow`.
 
 Use the repository release program rather than invoking `npm publish`, creating tags,
 or editing release versions manually:
@@ -36,7 +36,7 @@ from Conventional Commits; maintainer retains final version authority.
 - Install repository-pinned Bun version from root `package.json`.
 - Install `git` and GitHub CLI `gh`.
 - Have push permission for `origin/main` and release creation permission on GitHub.
-- For npm or combined release, have publish permission for `codex-dev-flow`.
+- For npm or combined release, have publish permission for `dev-flow`.
 - Keep `main` clean, with no staged, unstaged, or untracked files.
 - Ensure local `main` can fast-forward to `origin/main`; release program never rebases,
   resets, or creates a merge commit.
@@ -134,14 +134,14 @@ gh release view <tag>
 For npm or combined target, use npm version printed by release program:
 
 ```bash
-npm view codex-dev-flow@<version> version
+npm view dev-flow@<version> version
 ```
 
 After the mirror workflow succeeds, an authenticated GitHub Packages client can verify
 the scoped alias:
 
 ```bash
-npm view @acrazie/codex-dev-flow@<version> version \
+npm view @acrazie/dev-flow@<version> version \
   --registry=https://npm.pkg.github.com
 ```
 
@@ -151,15 +151,25 @@ Expected final state:
 - annotated tag points to same commit;
 - GitHub Release exists for tag;
 - selected npm version exists when applicable;
-- matching `@acrazie/codex-dev-flow` version exists after the asynchronous mirror;
+- matching `@acrazie/dev-flow` version exists after the asynchronous mirror;
 - worktree is clean.
 
 The release commit, tag, npm registry entry, and GitHub Release are durable audit
 records. No separate local release-state file exists.
 
+## Package rename
+
+New releases target `dev-flow` on npmjs and `@acrazie/dev-flow` on GitHub Packages.
+Historical `codex-dev-flow` releases remain separate; this workflow does not republish
+or migrate them. Its `all` selector backfills only versions published as `dev-flow`.
+Before the first renamed release, verify npm name availability and publication rights
+and set the new GitHub package visibility after its first publication. The retained
+`codex-dev-flow` binary alias is included in the new package. No package is published
+by the rename itself.
+
 ## Initial GitHub Packages publication and historical backfill
 
-The canonical package remains the public, unscoped `codex-dev-flow` package on npmjs.
+The canonical package is now the public, unscoped `dev-flow` package on npmjs.
 GitHub Packages contains a scoped mirror because its npm registry accepts only scoped
 names. Mirror input always comes from the already-published npmjs tarball; the workflow
 validates source name, version, and repository, then changes only the package name.
@@ -176,7 +186,7 @@ backfill:
    gh workflow run publish-github-package.yml -f versions=0.1.0
    ```
 
-3. Wait for success. Open the new `@acrazie/codex-dev-flow` package settings and change
+3. Wait for success. Open the new `@acrazie/dev-flow` package settings and change
    visibility to **Public**. This UI operation is deliberately manual.
 4. Obtain confirmation immediately before the visibility change: making a GitHub
    package public cannot be reversed.
@@ -228,7 +238,7 @@ failed, do **not** rerun release solely for that refresh. Run it directly:
 
 ```bash
 codex plugin marketplace upgrade acrazie
-codex plugin add codex-dev-flow@acrazie
+codex plugin add dev-flow@acrazie
 ```
 
 Then start a new Codex thread.

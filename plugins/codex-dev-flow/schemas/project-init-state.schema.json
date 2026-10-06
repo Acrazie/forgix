@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Codex Dev Flow agentic Project INIT session state",
+  "title": "Dev Flow agentic Project INIT session state",
   "type": "object",
   "additionalProperties": false,
   "required": [

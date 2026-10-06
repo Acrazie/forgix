@@ -7,13 +7,13 @@
 
 ---
 
-# Codex Dev Flow — Agent Guidelines
+# Dev Flow — Agent Guidelines
 
 Instructions and standards for AI coding agents working on this repository.
 
 ## Mission & Architecture
 
-`codex-dev-flow` is a portable development workflow tool and Codex CLI plugin providing structured orchestration, lifecycle gates, and quality verification for coding workflows.
+`dev-flow` is a portable development workflow tool and Codex CLI plugin providing structured orchestration, lifecycle gates, and quality verification for coding workflows.
 
 ## Git & Delivery Protocol
 

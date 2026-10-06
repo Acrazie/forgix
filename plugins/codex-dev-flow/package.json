@@ -1,5 +1,5 @@
 {
-  "name": "codex-dev-flow",
+  "name": "dev-flow",
   "version": "0.4.0",
   "description": "Portable Codex development workflow plugin.",
   "license": "MIT",
@@ -22,7 +22,8 @@
   "type": "module",
   "packageManager": "bun@1.4.2",
   "bin": {
-    "codex-dev-flow": "dist/dev-flow.mjs"
+    "dev-flow": "dist/dev-flow.mjs",
+    "codex-dev-flow": "dist/codex-dev-flow.mjs"
   },
   "files": [
     ".codex-plugin/",
@@ -43,7 +44,7 @@
     "build": "node scripts/build.mjs",
     "baseline:p0": "bun run build && node scripts/generate-p0-baseline.mjs",
     "check:size": "bun scripts/check-size-budget.ts",
-    "pack:runtime": "bun scripts/package-artifact.ts ../../.artifacts/codex-dev-flow.tgz",
+    "pack:runtime": "bun scripts/package-artifact.ts ../../.artifacts/dev-flow.tgz",
     "release": "bun scripts/release.ts",
     "release:test": "bun test test/integration/release.test.ts",
     "typecheck": "tsc --noEmit",

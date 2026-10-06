@@ -1,5 +1,5 @@
 name: Feature Request
-description: Propose an idea or enhancement for codex-dev-flow
+description: Propose an idea or enhancement for dev-flow
 labels: ["enhancement"]
 body:
   - type: textarea

@@ -5,8 +5,8 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-export const SOURCE_PACKAGE = "codex-dev-flow";
-export const DESTINATION_PACKAGE = "@acrazie/codex-dev-flow";
+export const SOURCE_PACKAGE = "dev-flow";
+export const DESTINATION_PACKAGE = "@acrazie/dev-flow";
 export const SOURCE_REGISTRY = "https://registry.npmjs.org";
 export const DESTINATION_REGISTRY = "https://npm.pkg.github.com";
 
@@ -137,7 +137,7 @@ export function transformPackageManifest(source: string, expectedVersion: string
     throw new MirrorError(`Source package repository must be "${EXPECTED_REPOSITORY}".`);
   }
 
-  const namePattern = /("name"\s*:\s*)"codex-dev-flow"/;
+  const namePattern = /("name"\s*:\s*)"dev-flow"/;
   if (!namePattern.test(source)) {
     throw new MirrorError("Cannot replace source package name without rewriting manifest bytes.");
   }
@@ -229,7 +229,7 @@ function mirrorVersion(version: string, run: RunCommand): "published" | "skipped
     return "skipped";
   }
 
-  const directory = mkdtempSync(join(tmpdir(), "codex-dev-flow-github-package-"));
+  const directory = mkdtempSync(join(tmpdir(), "dev-flow-github-package-"));
   try {
     requireSuccess(
       `Download ${SOURCE_PACKAGE}@${version}`,

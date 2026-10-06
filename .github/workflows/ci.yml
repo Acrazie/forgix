@@ -40,8 +40,8 @@ jobs:
         run: bun run pack:runtime
       - uses: actions/upload-artifact@v4
         with:
-          name: codex-dev-flow-runtime
-          path: .artifacts/codex-dev-flow.tgz
+          name: dev-flow-runtime
+          path: .artifacts/dev-flow.tgz
           if-no-files-found: error
 
   runtime-smoke:
@@ -59,7 +59,7 @@ jobs:
           node-version: 24
       - uses: actions/download-artifact@v4
         with:
-          name: codex-dev-flow-runtime
+          name: dev-flow-runtime
           path: .artifacts
       - name: Run packed runtime smoke
         run: node --test plugins/codex-dev-flow/test/runtime/runtime-smoke.test.mjs

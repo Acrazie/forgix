@@ -15,15 +15,19 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 
 const defaultTarball = fileURLToPath(
-  new URL("../../../../.artifacts/codex-dev-flow.tgz", import.meta.url),
+  new URL("../../../../.artifacts/dev-flow.tgz", import.meta.url),
 );
 const tarball = resolve(process.env.DEV_FLOW_TARBALL ?? defaultTarball);
-const sandbox = mkdtempSync(join(tmpdir(), "codex-dev-flow-runtime-"));
+const sandbox = mkdtempSync(join(tmpdir(), "dev-flow-runtime-"));
 const packageRoot = join(sandbox, "package");
 const bundle = join(packageRoot, "dist", "dev-flow.mjs");
 
 before(() => {
   assert.ok(existsSync(tarball), `packed runtime artifact missing: ${tarball}`);
+  const listing = spawnSync("tar", ["-tzf", tarball], { encoding: "utf8", shell: false });
+  assert.equal(listing.status, 0, listing.stderr);
+  const entries = listing.stdout.trim().split("\n");
+  assert.equal(new Set(entries).size, entries.length, "packed archive must not duplicate files");
   const extracted = spawnSync("tar", ["-xzf", tarball, "-C", sandbox], {
     encoding: "utf8",
     shell: false,
@@ -35,6 +39,11 @@ after(() => rmSync(sandbox, { recursive: true, force: true }));
 
 test("packed npm artifact contains runtime-only files for Node 24", () => {
   const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+  assert.equal(manifest.name, "dev-flow");
+  assert.deepEqual(manifest.bin, {
+    "dev-flow": "dist/dev-flow.mjs",
+    "codex-dev-flow": "dist/codex-dev-flow.mjs",
+  });
   assert.equal(manifest.engines.node, ">=24.0.0");
   assert.ok(existsSync(join(packageRoot, ".codex-plugin", "plugin.json")));
   assert.ok(existsSync(bundle));
@@ -52,7 +61,7 @@ test("packed CLI exposes help and validates configuration", () => {
   const helpStart = performance.now();
   const help = runNodeCli(bundle, ["--help"]);
   observeTiming("Cold CLI start", performance.now() - helpStart);
-  assert.match(help.stdout, /Usage: codex-dev-flow/);
+  assert.match(help.stdout, /Usage: dev-flow/);
 
   const validate = runNodeCli(bundle, ["config", "validate", "--json"]);
   const result = JSON.parse(validate.stdout);
@@ -60,14 +69,17 @@ test("packed CLI exposes help and validates configuration", () => {
   assert.equal(result.status, "valid");
 });
 
-test("packed CLI executes through installed binary symlink", () => {
-  const binary = join(sandbox, "bin", "codex-dev-flow");
-  mkdirSync(dirname(binary), { recursive: true });
-  symlinkSync(bundle, binary);
-  const result = spawnSync(binary, ["--help"], { encoding: "utf8", shell: false });
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Usage: codex-dev-flow/);
-});
+for (const command of ["dev-flow", "codex-dev-flow"]) {
+  test(`packed CLI executes through installed ${command} symlink`, () => {
+    const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+    const binary = join(sandbox, "bin", command);
+    mkdirSync(dirname(binary), { recursive: true });
+    symlinkSync(join(packageRoot, manifest.bin[command]), binary);
+    const result = spawnSync(binary, ["--help"], { encoding: "utf8", shell: false });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Usage: dev-flow/);
+  });
+}
 
 function runNodeCli(entrypoint, args) {
   const result = spawnSync(process.execPath, [entrypoint, ...args], {

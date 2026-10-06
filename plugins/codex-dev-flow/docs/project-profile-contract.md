@@ -8,15 +8,15 @@ and does not yet make project profiles part of ordinary SHAPE completion.
 
 - `$dev-flow init`: agentic Discovery, adaptive interview, validation, and explicit
   Profile Approval.
-- `npx codex-dev-flow init`: separate deterministic plugin-configuration wizard.
-- `codex-dev-flow project-profile inspect`: read existing shared/local profiles and
+- `npx dev-flow init`: separate deterministic plugin-configuration wizard.
+- `dev-flow project-profile inspect`: read existing shared/local profiles and
   ignore status.
-- `codex-dev-flow project-profile validate [--local]`: validate stdin without writing.
-- `codex-dev-flow project-profile publish [--local]`: publish validated stdin after
+- `dev-flow project-profile validate [--local]`: validate stdin without writing.
+- `dev-flow project-profile publish [--local]`: publish validated stdin after
   agent confirms explicit Profile Approval.
-- `codex-dev-flow project-profile view [--local]`: render exact published canonical
+- `dev-flow project-profile view [--local]`: render exact published canonical
   YAML.
-- `codex-dev-flow project-profile session-view|session-save|session-clear`: resume,
+- `dev-flow project-profile session-view|session-save|session-clear`: resume,
   persist, or remove compact local INIT interview state.
 
 `project-profile` commands are deterministic backend primitives. They perform no model

@@ -1,6 +1,6 @@
 ---
 name: dev-flow
-description: Use when shaping, implementing, debugging, reviewing, or assuring a repository change through the Codex Dev Flow lifecycle.
+description: Use when shaping, implementing, debugging, reviewing, or assuring a repository change through the Dev Flow lifecycle.
 ---
 
 # Dev Flow
@@ -24,7 +24,7 @@ in `integrations.plugins` or fully qualified skill identifier in `integrations.s
 Allowlisting is not activation; selected skill must still be relevant. System,
 developer, repository, and effective policy instructions remain authoritative.
 
-`npx codex-dev-flow init` remains standalone CLI command and interactive
+`npx dev-flow init` remains standalone CLI command and interactive
 plugin-configuration wizard.
 It is separate from agentic `$dev-flow init`; never substitute one for other.
 
@@ -35,7 +35,7 @@ lifecycle and task GATE. It creates no TaskState and no product scaffold. Use bu
 dependency-free CLI `project-profile` commands as deterministic backend; never install
 or fetch another package.
 
-1. Run `codex-dev-flow project-profile session-view`, then `project-profile inspect`.
+1. Run `dev-flow project-profile session-view`, then `project-profile inspect`.
    Resume exact persisted active question unless dependency evidence changed; otherwise
    invalidate affected closure and return to Discovery. Before first session save, ensure
    `/.codex/project-init/` is ignored; if repository does not already cover it, request
@@ -82,18 +82,18 @@ or fetch another package.
    -> explicit task exception -> shared engineering profile -> local non-contractual
    preferences -> agent defaults. Lower authority never weakens higher authority.
 10. Build candidate transaction containing `profile` and optional exact `projections`.
-    Pipe it to `codex-dev-flow project-profile validate`. Render adaptive summary,
+    Pipe it to `dev-flow project-profile validate`. Render adaptive summary,
     changed/stale decisions, topology, exceptions, sources, exact content digest, and
     exact canonical YAML on `view`. Validation must be read-only. Save
     `awaiting_approval` session bound to returned candidate content digest.
 11. Ask one explicit final Profile Approval over exact validated digest and projections.
     Approval is separate from task GATE. Only after approval, pipe unchanged candidate
-    to `codex-dev-flow project-profile publish`; backend creates receipt and publishes
+    to `dev-flow project-profile publish`; backend creates receipt and publishes
     projections then shared profile atomically. Validate and publish local overlay with
     `--local`. Any candidate change requires validation and approval again. After all
     approved publications succeed, run `project-profile session-clear`.
 
-`codex-dev-flow project-profile view [--local]` renders published canonical YAML.
+`dev-flow project-profile view [--local]` renders published canonical YAML.
 Backend validation, digest, revision, privacy, receipt, symlink, and atomic-write errors
 are blocking; never bypass them with direct file write. Ordinary SHAPE consumes approved profile and domain-documentation conventions through
 portable digest-bound references. Task-local exceptions never mutate shared authority.
@@ -284,7 +284,7 @@ Benchmark is out-of-band and never changes lifecycle outcome.
   profiles. New file is deviation only when forbidden or unplanned by that authority.
 - Write complete allowlisted/redacted record atomically to
   `.codex/benchmarks/<task-id>.json`. Never upload it. Write failure is non-fatal.
-- `npx codex-dev-flow benchmark summary` aggregates complete local records without model
+- `npx dev-flow benchmark summary` aggregates complete local records without model
   calls.
 
 ## Resume, evidence, and artifacts

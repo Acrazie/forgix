@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Codex Dev Flow local project engineering profile overlay",
+  "title": "Dev Flow local project engineering profile overlay",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "profileId", "servicePaths", "preferences"],

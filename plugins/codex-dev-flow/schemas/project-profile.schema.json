@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Codex Dev Flow shared project engineering profile",
+  "title": "Dev Flow shared project engineering profile",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "profileId", "revision", "contentDigest", "content", "approval"],

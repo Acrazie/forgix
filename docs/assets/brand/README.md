@@ -1,6 +1,6 @@
-# Codex Dev Flow Brand Kit
+# Dev Flow Brand Kit
 
-The Codex Dev Flow mark is ASCII-native: `[`, `/`, and `]` form a checkpoint crossed by
+The Dev Flow mark is ASCII-native: `[`, `/`, and `]` form a checkpoint crossed by
 a guided path. Its detailed master adds exactly three down-right echo outlines, giving
 the mark depth without shadows or gradients. Use the color symbol by default and a
 monochrome variant when production constraints require one color.

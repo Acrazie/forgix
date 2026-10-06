@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   destinationVersionState,
   DESTINATION_PACKAGE,
+  SOURCE_PACKAGE,
   MirrorError,
   parsePublishedVersions,
   transformPackageManifest,
@@ -9,14 +10,14 @@ import {
 } from "../scripts/mirror-npm-to-github.ts";
 
 const manifest = `{
-  "name": "codex-dev-flow",
+  "name": "dev-flow",
   "version": "0.3.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Acrazie/codex-dev-flow.git",
     "directory": "plugins/codex-dev-flow"
   },
-  "description": "codex-dev-flow remains text here"
+  "description": "dev-flow remains text here"
 }
 `;
 
@@ -45,12 +46,22 @@ describe("GitHub package mirror selection", () => {
 });
 
 describe("GitHub package mirror manifest", () => {
+  test("targets the renamed package without accepting historical package identity", () => {
+    expect(SOURCE_PACKAGE).toBe("dev-flow");
+    expect(DESTINATION_PACKAGE).toBe("@acrazie/dev-flow");
+    expect(() =>
+      transformPackageManifest(
+        manifest.replace('"name": "dev-flow"', '"name": "codex-dev-flow"'),
+        "0.3.2",
+      ),
+    ).toThrow(/name/);
+  });
   test("changes only package identity bytes", () => {
     const transformed = transformPackageManifest(manifest, "0.3.2");
     expect(transformed).toBe(
-      manifest.replace('"name": "codex-dev-flow"', `"name": "${DESTINATION_PACKAGE}"`),
+      manifest.replace('"name": "dev-flow"', `"name": "${DESTINATION_PACKAGE}"`),
     );
-    expect(JSON.parse(transformed).description).toBe("codex-dev-flow remains text here");
+    expect(JSON.parse(transformed).description).toBe("dev-flow remains text here");
   });
 
   test("rejects source identity, version, and repository drift", () => {
@@ -61,10 +72,7 @@ describe("GitHub package mirror manifest", () => {
       /repository/,
     );
     expect(() =>
-      transformPackageManifest(
-        manifest.replace('"name": "codex-dev-flow"', '"name": "other"'),
-        "0.3.2",
-      ),
+      transformPackageManifest(manifest.replace('"name": "dev-flow"', '"name": "other"'), "0.3.2"),
     ).toThrow(/name/);
   });
 });

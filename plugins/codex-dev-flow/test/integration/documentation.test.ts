@@ -12,10 +12,10 @@ const read = (path: string) => readFileSync(path, "utf8");
 const sharedJourneyMarkers = [
   "Turn a software objective into an approved, implemented, and verified change.",
   "codex plugin marketplace add Acrazie/codex-dev-flow",
-  "codex plugin add codex-dev-flow@acrazie",
+  "codex plugin add dev-flow@acrazie",
   "$dev-flow init",
   "$dev-flow Add rate limiting to the public authentication endpoints",
-  "npx codex-dev-flow init",
+  "npx dev-flow init",
   "INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓",
   "Project INIT",
   "Configuration wizard",
@@ -53,4 +53,16 @@ describe("public documentation", () => {
       }
     }
   });
+});
+
+test("website branding uses Dev Flow and preserves its scaffold boundary", () => {
+  const siteRoot = new URL("../../../../site/", import.meta.url);
+  const manifest = JSON.parse(read(fileURLToPath(new URL("package.json", siteRoot))));
+  const page = read(fileURLToPath(new URL("src/pages/index.astro", siteRoot)));
+  const config = read(fileURLToPath(new URL("astro.config.mjs", siteRoot)));
+  expect(manifest.name).toBe("dev-flow-site");
+  expect(page).toContain('<h1 class="text-4xl font-semibold">Dev Flow</h1>');
+  expect(page).toContain("<title>Dev Flow — local build scaffold</title>");
+  expect(page).toContain('name="robots" content="noindex"');
+  expect(config).toContain('site: "https://dev-flow.acrazie.dev"');
 });
