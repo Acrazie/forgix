@@ -10,7 +10,7 @@ import {
 } from "../scripts/mirror-npm-to-github.ts";
 
 const manifest = `{
-  "name": "dev-flow",
+  "name": "@acrasie/dev-flow",
   "version": "0.3.2",
   "repository": {
     "type": "git",
@@ -26,6 +26,7 @@ describe("GitHub package mirror selection", () => {
     expect(versionsForSelector("0.3.2")).toEqual(["0.3.2"]);
     expect(versionsForSelector("v0.3.2")).toEqual(["0.3.2"]);
     expect(versionsForSelector("npm-v0.3.2")).toEqual(["0.3.2"]);
+    expect(versionsForSelector("dev-flow-v1.0.1")).toEqual(["1.0.1"]);
     expect(versionsForSelector("plugin-v0.3.2-codex.20260813133125")).toEqual([]);
   });
 
@@ -47,11 +48,11 @@ describe("GitHub package mirror selection", () => {
 
 describe("GitHub package mirror manifest", () => {
   test("targets the renamed package without accepting historical package identity", () => {
-    expect(SOURCE_PACKAGE).toBe("dev-flow");
+    expect(SOURCE_PACKAGE).toBe("@acrasie/dev-flow");
     expect(DESTINATION_PACKAGE).toBe("@acrazie/dev-flow");
     expect(() =>
       transformPackageManifest(
-        manifest.replace('"name": "dev-flow"', '"name": "codex-dev-flow"'),
+        manifest.replace('"name": "@acrasie/dev-flow"', '"name": "codex-dev-flow"'),
         "0.3.2",
       ),
     ).toThrow(/name/);
@@ -59,7 +60,7 @@ describe("GitHub package mirror manifest", () => {
   test("changes only package identity bytes", () => {
     const transformed = transformPackageManifest(manifest, "0.3.2");
     expect(transformed).toBe(
-      manifest.replace('"name": "dev-flow"', `"name": "${DESTINATION_PACKAGE}"`),
+      manifest.replace('"name": "@acrasie/dev-flow"', `"name": "${DESTINATION_PACKAGE}"`),
     );
     expect(JSON.parse(transformed).description).toBe("dev-flow remains text here");
   });
@@ -72,7 +73,10 @@ describe("GitHub package mirror manifest", () => {
       /repository/,
     );
     expect(() =>
-      transformPackageManifest(manifest.replace('"name": "dev-flow"', '"name": "other"'), "0.3.2"),
+      transformPackageManifest(
+        manifest.replace('"name": "@acrasie/dev-flow"', '"name": "other"'),
+        "0.3.2",
+      ),
     ).toThrow(/name/);
   });
 });

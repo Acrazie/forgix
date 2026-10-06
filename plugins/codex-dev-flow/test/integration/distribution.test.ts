@@ -112,7 +112,7 @@ test("package exposes the standalone dev-flow binary", () => {
   expect(manifest.license).toBe("MIT");
   expect(manifest.dependencies).toBe(undefined);
   expect(manifest.publishConfig.access).toBe("public");
-  expect(manifest.name).toBe("dev-flow");
+  expect(manifest.name).toBe("@acrasie/dev-flow");
   expect(manifest.bin).toEqual({
     "dev-flow": "dist/dev-flow.mjs",
     "codex-dev-flow": "dist/codex-dev-flow.mjs",
@@ -187,5 +187,6 @@ test("plugin identity matches its marketplace entry and release configuration", 
   expect(plugin.interface.displayName).toBe("Dev Flow");
   expect(marketplace.plugins[0].name).toBe(plugin.name);
   expect(marketplace.plugins[0].source.path).toBe("./plugins/codex-dev-flow");
-  expect(release.packages["plugins/codex-dev-flow"]["package-name"]).toBe(plugin.name);
+  expect(release.packages["plugins/codex-dev-flow"]["package-name"]).toBe("@acrasie/dev-flow");
+  expect(release.packages["plugins/codex-dev-flow"].component).toBe(plugin.name);
 });

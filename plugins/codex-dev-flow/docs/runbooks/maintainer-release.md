@@ -36,7 +36,7 @@ from Conventional Commits; maintainer retains final version authority.
 - Install repository-pinned Bun version from root `package.json`.
 - Install `git` and GitHub CLI `gh`.
 - Have push permission for `origin/main` and release creation permission on GitHub.
-- For npm or combined release, have publish permission for `dev-flow`.
+- For npm or combined release, have publish permission for `@acrasie/dev-flow`.
 - Keep `main` clean, with no staged, unstaged, or untracked files.
 - Ensure local `main` can fast-forward to `origin/main`; release program never rebases,
   resets, or creates a merge commit.
@@ -134,7 +134,7 @@ gh release view <tag>
 For npm or combined target, use npm version printed by release program:
 
 ```bash
-npm view dev-flow@<version> version
+npm view @acrasie/dev-flow@<version> version
 ```
 
 After the mirror workflow succeeds, an authenticated GitHub Packages client can verify
@@ -159,17 +159,20 @@ records. No separate local release-state file exists.
 
 ## Package rename
 
-New releases target `dev-flow` on npmjs and `@acrazie/dev-flow` on GitHub Packages.
+New releases target `@acrasie/dev-flow` on npmjs and `@acrazie/dev-flow` on GitHub Packages.
 Historical `codex-dev-flow` releases remain separate; this workflow does not republish
-or migrate them. Its `all` selector backfills only versions published as `dev-flow`.
-Before the first renamed release, verify npm name availability and publication rights
+or migrate them. Its `all` selector backfills only versions published as `@acrasie/dev-flow`.
+The unscoped `dev-flow` publication was rejected by npm due to similarity to `devflow`.
+The npm scope is `acrasie`, while the GitHub owner and mirror scope remain `acrazie`.
+The CLI and Codex plugin identity remain `dev-flow`.
+Before the first scoped release, verify npm name availability and publication rights
 and set the new GitHub package visibility after its first publication. The retained
 `codex-dev-flow` binary alias is included in the new package. No package is published
 by the rename itself.
 
 ## Initial GitHub Packages publication and historical backfill
 
-The canonical package is now the public, unscoped `dev-flow` package on npmjs.
+The canonical package is now the public, scoped `@acrasie/dev-flow` package on npmjs.
 GitHub Packages contains a scoped mirror because its npm registry accepts only scoped
 names. Mirror input always comes from the already-published npmjs tarball; the workflow
 validates source name, version, and repository, then changes only the package name.
@@ -203,6 +206,27 @@ Publishing the public package exposes only content already present in the public
 tarball; it does not make the private source repository readable.
 
 ## Cancellation and failure recovery
+
+### Complete npm publication for an existing Release Please release
+
+When Release Please has already merged a release PR and published its GitHub release,
+but the corresponding npm version is missing, use:
+
+```bash
+bun run release --publish-existing dev-flow-v1.0.1
+```
+
+This mode verifies the published stable GitHub release, the local and remote tag commit,
+and ancestry on `origin/main`. It exports that exact commit into a temporary directory,
+requires its pinned Bun version, installs frozen workspace dependencies, runs release
+validations and the full quality gate, and previews npm publication before confirmation.
+The invoking checkout is not published, so it may contain the recovery-tool correction
+on a dedicated branch. No version, plugin manifest, tag, or GitHub release is changed.
+An already-published npm version is skipped. Only the missing npm publication is performed.
+
+The existing GitHub release event is not emitted again. If a GitHub Packages mirror is
+required, dispatch the repository mirror workflow for the exact npm version after npm
+publication is verified; do not create another release.
 
 ### Before first successful push
 

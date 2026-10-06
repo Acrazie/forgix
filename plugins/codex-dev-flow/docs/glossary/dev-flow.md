@@ -411,7 +411,7 @@ Profile backend, and ordinary SHAPE profile consumption.
 ### Configuration Wizard
 
 The optional deterministic terminal workflow invoked through
-`npx dev-flow init`. It writes validated plugin operating configuration such as
+`npx @acrasie/dev-flow init`. It writes validated plugin operating configuration such as
 worktree, subscription/quota, and integration preferences. It performs no model-assisted
 repository Discovery and is distinct from Project INIT.
 

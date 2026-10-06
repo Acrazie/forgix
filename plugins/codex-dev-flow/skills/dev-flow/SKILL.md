@@ -24,7 +24,7 @@ in `integrations.plugins` or fully qualified skill identifier in `integrations.s
 Allowlisting is not activation; selected skill must still be relevant. System,
 developer, repository, and effective policy instructions remain authoritative.
 
-`npx dev-flow init` remains standalone CLI command and interactive
+`npx @acrasie/dev-flow init` remains standalone CLI command and interactive
 plugin-configuration wizard.
 It is separate from agentic `$dev-flow init`; never substitute one for other.
 
@@ -284,7 +284,7 @@ Benchmark is out-of-band and never changes lifecycle outcome.
   profiles. New file is deviation only when forbidden or unplanned by that authority.
 - Write complete allowlisted/redacted record atomically to
   `.codex/benchmarks/<task-id>.json`. Never upload it. Write failure is non-fatal.
-- `npx dev-flow benchmark summary` aggregates complete local records without model
+- `npx @acrasie/dev-flow benchmark summary` aggregates complete local records without model
   calls.
 
 ## Resume, evidence, and artifacts

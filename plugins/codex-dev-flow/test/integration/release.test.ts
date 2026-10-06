@@ -7,6 +7,7 @@ import {
   captureFileSnapshots,
   compareVersions,
   createReleasePlan,
+  existingNpmReleaseVersion,
   formatCachebuster,
   incrementVersion,
   missingPublicationSteps,
@@ -114,6 +115,23 @@ describe("release plans", () => {
 });
 
 describe("release safety", () => {
+  test("existing npm publication preserves the exact renamed release identity", () => {
+    expect(existingNpmReleaseVersion("dev-flow-v1.0.0", "@acrasie/dev-flow", "1.0.0")).toBe(
+      "1.0.0",
+    );
+    for (const tag of ["v1.0.0", "dev-flow-v1.0.1", "--help", "dev-flow-v1.0.0; echo unsafe"]) {
+      expect(() => existingNpmReleaseVersion(tag, "@acrasie/dev-flow", "1.0.0")).toThrow(
+        ReleaseError,
+      );
+    }
+    expect(() => existingNpmReleaseVersion("dev-flow-v1.0.0", "dev-flow", "1.0.0")).toThrow(
+      ReleaseError,
+    );
+    expect(() =>
+      existingNpmReleaseVersion("dev-flow-v1.0.0-beta.1", "@acrasie/dev-flow", "1.0.0-beta.1"),
+    ).toThrow(ReleaseError);
+  });
+
   test("updates only JSON version bytes and preserves formatter-owned layout", () => {
     const manifest = `{
   "name": "dev-flow",

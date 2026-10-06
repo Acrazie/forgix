@@ -8,7 +8,7 @@ and does not yet make project profiles part of ordinary SHAPE completion.
 
 - `$dev-flow init`: agentic Discovery, adaptive interview, validation, and explicit
   Profile Approval.
-- `npx dev-flow init`: separate deterministic plugin-configuration wizard.
+- `npx @acrasie/dev-flow init`: separate deterministic plugin-configuration wizard.
 - `dev-flow project-profile inspect`: read existing shared/local profiles and
   ignore status.
 - `dev-flow project-profile validate [--local]`: validate stdin without writing.

@@ -3,8 +3,9 @@
   "packages": {
     "plugins/codex-dev-flow": {
       "release-type": "node",
-      "package-name": "dev-flow",
-      "changelog-path": "CHANGELOG.md"
+      "package-name": "@acrasie/dev-flow",
+      "changelog-path": "CHANGELOG.md",
+      "component": "dev-flow"
     }
   }
 }
