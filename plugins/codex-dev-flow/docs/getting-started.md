@@ -120,10 +120,11 @@ Project INIT owns project engineering knowledge. The separate deterministic
 Configuration wizard owns plugin operating preferences:
 
 ```bash
-npx dev-flow init
+npx @acrasie/dev-flow init
 ```
 
-The npm package is now named `dev-flow`. The installed `codex-dev-flow` command
+The npm package is named `@acrasie/dev-flow` because npm rejects the unscoped
+`dev-flow` name as too similar to an existing package. The installed `codex-dev-flow` command
 remains an alias of the same executable; it does not require a separate package.
 Existing installations of the old npm package are not automatically migrated.
 Upgrade the Acrazie marketplace and install `dev-flow@acrazie` to use the renamed

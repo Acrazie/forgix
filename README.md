@@ -64,10 +64,11 @@ The optional Configuration wizard customizes plugin operation such as worktree,
 subscription, quota, and integrations:
 
 ```bash
-npx dev-flow init
+npx @acrasie/dev-flow init
 ```
 
-The npm package is now named `dev-flow`. The installed `codex-dev-flow` command
+The npm package is named `@acrasie/dev-flow` because npm rejects the unscoped
+`dev-flow` name as too similar to an existing package. The installed `codex-dev-flow` command
 remains an alias of the same executable; it does not require a separate package.
 Existing installations of the old npm package are not automatically migrated.
 Upgrade the Acrazie marketplace and install `dev-flow@acrazie` to use the renamed
@@ -99,17 +100,17 @@ Flow task.
 
 ## Commands
 
-| Interface                            | Purpose                                                       |
-| ------------------------------------ | ------------------------------------------------------------- |
-| `$dev-flow <objective>`              | Start a software change.                                      |
-| `$dev-flow init`                     | Discover and approve durable project engineering conventions. |
-| `$dev-flow resume <task-id>`         | Resume an interrupted task.                                   |
-| `$dev-flow status [task-id]`         | Inspect task status.                                          |
-| `$dev-flow --benchmark <objective>`  | Run a task with local benchmark measurement enabled.          |
-| `$dev-flow config show [--explain]`  | Show effective configuration and optional provenance.         |
-| `$dev-flow config validate [--json]` | Validate effective configuration.                             |
-| `npx dev-flow init`                  | Run the optional Configuration wizard.                        |
-| `npx dev-flow benchmark summary`     | Summarize allowlisted local benchmark data.                   |
+| Interface                                 | Purpose                                                       |
+| ----------------------------------------- | ------------------------------------------------------------- |
+| `$dev-flow <objective>`                   | Start a software change.                                      |
+| `$dev-flow init`                          | Discover and approve durable project engineering conventions. |
+| `$dev-flow resume <task-id>`              | Resume an interrupted task.                                   |
+| `$dev-flow status [task-id]`              | Inspect task status.                                          |
+| `$dev-flow --benchmark <objective>`       | Run a task with local benchmark measurement enabled.          |
+| `$dev-flow config show [--explain]`       | Show effective configuration and optional provenance.         |
+| `$dev-flow config validate [--json]`      | Validate effective configuration.                             |
+| `npx @acrasie/dev-flow init`              | Run the optional Configuration wizard.                        |
+| `npx @acrasie/dev-flow benchmark summary` | Summarize allowlisted local benchmark data.                   |
 
 `quick`, `standard`, and `critical` at objective start are plain objective text, not
 modes or aliases. Quick or Plan is selected only after Discovery. Risk and policy—not

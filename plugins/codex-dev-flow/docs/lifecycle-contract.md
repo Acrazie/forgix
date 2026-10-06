@@ -174,7 +174,7 @@ events, canonical state, and projections.
 Exact `$dev-flow init` performs agentic repository Discovery and adaptive engineering
 convention interview, then validates and publishes digest-bound shared/local project
 profiles after explicit Profile Approval. It creates no TaskState, product scaffold, or
-task GATE approval. Deterministic `npx dev-flow init` remains separate plugin
+task GATE approval. Deterministic `npx @acrasie/dev-flow init` remains separate plugin
 configuration wizard.
 
 Normative profile schema, authority, reconciliation, privacy, and atomic publication:

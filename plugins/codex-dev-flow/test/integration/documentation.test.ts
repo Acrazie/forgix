@@ -15,7 +15,7 @@ const sharedJourneyMarkers = [
   "codex plugin add dev-flow@acrazie",
   "$dev-flow init",
   "$dev-flow Add rate limiting to the public authentication endpoints",
-  "npx dev-flow init",
+  "npx @acrasie/dev-flow init",
   "INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓",
   "Project INIT",
   "Configuration wizard",

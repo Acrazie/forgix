@@ -1,5 +1,5 @@
 {
-  "name": "dev-flow",
+  "name": "@acrasie/dev-flow",
   "version": "1.0.0",
   "description": "Portable Codex development workflow plugin.",
   "license": "MIT",

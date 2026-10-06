@@ -17,8 +17,8 @@
       },
     },
     "plugins/codex-dev-flow": {
-      "name": "dev-flow",
-      "version": "0.4.0",
+      "name": "@acrasie/dev-flow",
+      "version": "1.0.0",
       "bin": {
         "dev-flow": "dist/dev-flow.mjs",
         "codex-dev-flow": "dist/codex-dev-flow.mjs",
@@ -48,6 +48,8 @@
     },
   },
   "packages": {
+    "@acrasie/dev-flow": ["@acrasie/dev-flow@workspace:plugins/codex-dev-flow"],
+
     "@astrojs/astro2tsx": ["@astrojs/astro2tsx@0.1.2", "", { "dependencies": { "@emnapi/core": "1.11.3", "@napi-rs/wasm-runtime": "1.2.4" } }, "sha512-Uj/M9zbrhu5cIZEvWAGTbQJRKSxXWJ/E59BZwt7F+chrKhbfttW+9rkS/l+1QxoJP1KU3UnpM62M7yszfAI0WA=="],
 
     "@astrojs/check": ["@astrojs/check@0.9.10", "", { "dependencies": { "@astrojs/language-server": "^2.16.7", "chokidar": "^4.0.3", "kleur": "^4.1.5", "yargs": "^18.0.0" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" }, "bin": { "astro-check": "./bin/astro-check.js" } }, "sha512-zgx/UQMozdjOa3bOxjgeCFdtpE3c9rRX6xHwa+2QXvy8z8Akifu2AtubHyv/zzC2znO8dl8fFWL4K+Ba9kS8HQ=="],
@@ -637,8 +639,6 @@
     "destr": ["destr@2.0.5", "", {}, "sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA=="],
 
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
-
-    "dev-flow": ["dev-flow@workspace:plugins/codex-dev-flow"],
 
     "dev-flow-site": ["dev-flow-site@workspace:site"],
 

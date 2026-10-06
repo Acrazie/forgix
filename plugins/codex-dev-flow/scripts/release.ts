@@ -12,13 +12,15 @@ import {
   spinner,
   text,
 } from "@clack/prompts";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   compareVersions,
   captureFileSnapshots,
   createReleasePlan,
+  existingNpmReleaseVersion,
   incrementVersion,
   normalizeGitOutput,
   parsePorcelainPaths,
@@ -49,7 +51,8 @@ const manifestPath = resolve(pluginRoot, ".codex-plugin/plugin.json");
 const lockPath = resolve(pluginRoot, "bun.lock");
 const bundlePath = resolve(pluginRoot, "dist/dev-flow.mjs");
 const marketplace = "acrazie";
-const packageName = "dev-flow";
+const packageName = "@acrasie/dev-flow";
+const pluginName = "dev-flow";
 
 let cleanup: (() => Promise<void>) | undefined;
 let externalPublicationStarted = false;
@@ -157,9 +160,12 @@ function assertAuthentication(target: ReleaseTarget): void {
 }
 
 async function npmVersionPublished(version: string): Promise<boolean> {
-  const response = await fetch(`https://registry.npmjs.org/${packageName}/${version}`, {
-    headers: { accept: "application/json" },
-  });
+  const response = await fetch(
+    `https://registry.npmjs.org/${encodeURIComponent(packageName)}/${version}`,
+    {
+      headers: { accept: "application/json" },
+    },
+  );
   if (response.status === 404) return false;
   if (!response.ok)
     throw new ReleaseError(`npm registry check failed with HTTP ${response.status}.`);
@@ -367,27 +373,112 @@ function validateChangedPaths(plan: ReleasePlan): string[] {
   return paths;
 }
 
-async function runPreflightValidations(target: ReleaseTarget, readOnly: boolean): Promise<void> {
+async function runPreflightValidations(
+  target: ReleaseTarget,
+  readOnly: boolean,
+  sourceRoot = pluginRoot,
+): Promise<void> {
   runCheck(
     "Frozen Bun install",
     "bun",
-    ["install", "--frozen-lockfile", ...(readOnly ? ["--dry-run"] : [])],
-    pluginRoot,
+    ["install", "--frozen-lockfile", "--ignore-scripts", ...(readOnly ? ["--dry-run"] : [])],
+    resolve(sourceRoot, "../.."),
   );
-  runCheck("Typecheck", "bun", ["run", "typecheck"], pluginRoot);
-  runCheck("Deterministic build", "bun", ["run", "build"], pluginRoot);
-  runCheck("Test suite", "bun", ["run", "test"], pluginRoot);
-  runCheck("Release tests", "bun", ["run", "release:test"], pluginRoot);
+  runCheck("Typecheck", "bun", ["run", "typecheck"], sourceRoot);
+  runCheck("Deterministic build", "bun", ["run", "build"], sourceRoot);
+  runCheck("Test suite", "bun", ["run", "test"], sourceRoot);
+  runCheck("Release tests", "bun", ["run", "release:test"], sourceRoot);
 
-  const manifest = await readJson(manifestPath);
+  const manifest = await readJson(resolve(sourceRoot, ".codex-plugin/plugin.json"));
   validatePluginManifest(manifest);
   if (target !== "plugin") {
     runCheck(
       "npm package content",
       "bun",
       ["pm", "pack", "--dry-run", "--ignore-scripts"],
-      pluginRoot,
+      sourceRoot,
     );
+  }
+}
+
+async function publishExistingNpmRelease(tag: string): Promise<void> {
+  // Only the exact published Release Please identity may be resumed; never bump or retag it.
+  const match = /^dev-flow-v((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$/.exec(tag);
+  if (!match) throw new ReleaseError("Expected an existing dev-flow-v<stable-version> tag.");
+  assertAuthentication("npm");
+  runCheck("Fetch published release", "git", ["fetch", "origin", "main", "--tags"]);
+  const commit = git(["rev-parse", `refs/tags/${tag}^{commit}`]);
+  if (remoteTagCommit(tag) !== commit)
+    throw new ReleaseError("Local and remote release tags differ.");
+  requireCommand("git", ["merge-base", "--is-ancestor", commit, "origin/main"], { cwd: repoRoot });
+  const release = JSON.parse(
+    requireCommand("gh", ["release", "view", tag, "--json", "tagName,isDraft,isPrerelease"], {
+      cwd: repoRoot,
+    }).stdout,
+  );
+  if (release.tagName !== tag || release.isDraft || release.isPrerelease) {
+    throw new ReleaseError("Existing GitHub release must be published and stable.");
+  }
+  const directory = await mkdtemp(resolve(tmpdir(), "dev-flow-existing-release-"));
+  try {
+    const archive = resolve(directory, "source.tar");
+    runCheck("Archive exact release commit", "git", [
+      "archive",
+      "--format=tar",
+      `--output=${archive}`,
+      commit,
+    ]);
+    runCheck("Extract release source", "tar", ["-xf", archive, "-C", directory]);
+    await rm(archive);
+    const sourceRoot = resolve(directory, "plugins/codex-dev-flow");
+    const sourcePackage = await readJson(resolve(sourceRoot, "package.json"));
+    const version = existingNpmReleaseVersion(
+      tag,
+      String(sourcePackage.name),
+      String(sourcePackage.version),
+    );
+    const rootPackage = await readJson(resolve(directory, "package.json"));
+    if (rootPackage.packageManager !== `bun@${process.versions.bun}`) {
+      throw new ReleaseError(`Existing release requires ${String(rootPackage.packageManager)}.`);
+    }
+    if (await npmVersionPublished(version)) {
+      outro(`${packageName}@${version} already published; no changes made.`);
+      return;
+    }
+    await runPreflightValidations("npm", false, sourceRoot);
+    runCheck("Full quality gate", "bun", ["run", "check"], directory);
+    runCheck(
+      "npm publication dry-run",
+      "bun",
+      ["publish", "--dry-run", "--ignore-scripts", "--access", "public"],
+      sourceRoot,
+    );
+    note(
+      `Package: ${packageName}@${version}\nTag: ${tag}\nSource commit: ${commit}\nOnly missing npm publication; no Git or plugin version changes.`,
+      "Existing release publication",
+    );
+    const approved = await confirm({
+      message: "Publish this existing npm release?",
+      initialValue: false,
+    });
+    if (cancelled(approved) || !approved) return;
+    if (remoteTagCommit(tag) !== commit)
+      throw new ReleaseError("Remote release tag changed during validation.");
+    if (!(await npmVersionPublished(version))) {
+      externalPublicationStarted = true;
+      runCheck(
+        "Publish existing npm package",
+        "bun",
+        ["publish", "--access", "public"],
+        sourceRoot,
+        true,
+      );
+    }
+    if (!(await npmVersionPublished(version)))
+      throw new ReleaseError("npm publication could not be verified.");
+    outro(`${packageName}@${version} published and verified. Existing GitHub release unchanged.`);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 }
 
@@ -443,7 +534,7 @@ async function optionalLocalInstall(target: ReleaseTarget): Promise<void> {
   runCheck(
     "Install plugin",
     "codex",
-    ["plugin", "add", `${packageName}@${marketplace}`],
+    ["plugin", "add", `${pluginName}@${marketplace}`],
     repoRoot,
     true,
   );
@@ -636,6 +727,14 @@ async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
 async function main(): Promise<void> {
   intro("Dev Flow release");
   assertSupportedPlatform();
+  const args = process.argv.slice(2);
+  if (args.length) {
+    if (args.length !== 2 || args[0] !== "--publish-existing" || !args[1]) {
+      throw new ReleaseError("Usage: bun run release [--publish-existing dev-flow-v<version>]");
+    }
+    await publishExistingNpmRelease(args[1]);
+    return;
+  }
   assertCleanMain();
 
   if (await maybeResumePartialRelease()) return;

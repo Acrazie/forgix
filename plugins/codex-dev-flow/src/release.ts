@@ -256,6 +256,16 @@ export function parseReleaseCommit(subject: string): {
   };
 }
 
+export function existingNpmReleaseVersion(tag: string, name: string, version: string): string {
+  if (name !== "@acrasie/dev-flow")
+    throw new ReleaseError("Existing release must contain package @acrasie/dev-flow.");
+  parseStableVersion(version);
+  if (tag !== `dev-flow-v${version}`) {
+    throw new ReleaseError("Existing release tag does not match package name and version.");
+  }
+  return version;
+}
+
 export function missingPublicationSteps(
   target: ReleaseTarget,
   state: PublicationState,

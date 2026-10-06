@@ -20,7 +20,8 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       startsWith(github.event.release.tag_name, 'v') ||
-      startsWith(github.event.release.tag_name, 'npm-v')
+      startsWith(github.event.release.tag_name, 'npm-v') ||
+      startsWith(github.event.release.tag_name, 'dev-flow-v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
