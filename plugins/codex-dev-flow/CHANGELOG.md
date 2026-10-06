@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/Acrazie/codex-dev-flow/compare/dev-flow-v1.0.0...dev-flow-v1.0.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* **release:** scope npm package and resume existing releases ([#27](https://github.com/Acrazie/codex-dev-flow/issues/27)) ([ae36f2e](https://github.com/Acrazie/codex-dev-flow/commit/ae36f2eae47ba6728f9869c8a0bd3ad9ac2e4f35))
+
 ## [1.0.0](https://github.com/Acrazie/codex-dev-flow/compare/dev-flow-v0.4.0...dev-flow-v1.0.0) (2026-10-06)
 
 
