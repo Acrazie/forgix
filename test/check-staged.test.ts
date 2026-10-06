@@ -22,6 +22,24 @@ describe("staged path parsing", () => {
 });
 
 describe("staged path classification", () => {
+  test("excludes only the Release Please generated changelog, not other Markdown", () => {
+    expect(
+      classifyStagedPaths([
+        "plugins/codex-dev-flow/CHANGELOG.md",
+        "plugins/codex-dev-flow/README.md",
+        "docs/CHANGELOG.md",
+        "plugins/other/CHANGELOG.md",
+      ]),
+    ).toEqual({
+      formatPaths: [
+        "plugins/codex-dev-flow/README.md",
+        "docs/CHANGELOG.md",
+        "plugins/other/CHANGELOG.md",
+      ],
+      lintPaths: [],
+    });
+  });
+
   test("separates formatter and linter inputs without duplicates", () => {
     expect(
       classifyStagedPaths([

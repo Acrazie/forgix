@@ -15,6 +15,7 @@
     ".codex/benchmarks/**",
     "docs/roadmap.md",
     "bun.lock",
+    "plugins/codex-dev-flow/CHANGELOG.md",
     "plugins/codex-dev-flow/test/fixtures/**",
     "plugins/codex-dev-flow/docs/baselines/**",
     "plugins/codex-dev-flow/docs/lifecycle-contract.projection.json"
