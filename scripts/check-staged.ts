@@ -51,6 +51,8 @@ const EXCLUDED_PREFIXES = [
 
 const EXCLUDED_PATHS = new Set([
   "bun.lock",
+  // Release Please owns this generated file's formatting.
+  "plugins/codex-dev-flow/CHANGELOG.md",
   "plugins/codex-dev-flow/docs/lifecycle-contract.projection.json",
 ]);
 
