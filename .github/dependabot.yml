@@ -20,7 +20,7 @@ updates:
           - "*"
 
   - package-ecosystem: "npm"
-    directory: "/plugins/codex-dev-flow"
+    directory: "/plugins/forgix"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10

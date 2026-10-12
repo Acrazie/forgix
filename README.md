@@ -1,16 +1,16 @@
-# Dev Flow
+# Forgix
 
 <p align="center">
   <img
-    src="./docs/assets/brand/svg/lockup-color.svg"
-    alt="Dev Flow"
-    width="620"
+    src="./docs/assets/brand/svg/symbol-color.svg"
+    alt="Forgix"
+    width="128"
   />
 </p>
 
 > Turn a software objective into an approved, implemented, and verified change.
 
-Dev Flow is a portable Codex plugin for evidence-backed software changes. It
+Forgix is a portable Codex plugin for evidence-backed software changes. It
 combines product clarification, repository discovery, explicit approval, implementation,
 and fresh verification without treating a plausible answer as completed work.
 
@@ -26,16 +26,22 @@ For plugin use:
 The distributed ESM runtime installs no dependencies and performs no network access by
 itself. Bun is required only for repository development.
 
+## Existing projects
+
+Use `forgix` and `$forgix`; former commands have no aliases. Existing configurations,
+profiles and task documents keep their paths. No data migration is required.
+GitHub repository and website hosting URL are unchanged.
+
 ## Install
 
 Add the marketplace and install the plugin:
 
 ```bash
 codex plugin marketplace add Acrazie/codex-dev-flow
-codex plugin add dev-flow@acrazie
+codex plugin add forgix@acrazie
 ```
 
-Alternatively, open `/plugins`, select **Acrazie**, and install **Dev Flow**.
+Alternatively, open `/plugins`, select **Acrazie**, and install **Forgix**.
 Start a new Codex session after installation or upgrade.
 
 ## Quick start
@@ -44,7 +50,7 @@ Open Codex in the project repository. First, create or reconcile its durable eng
 conventions:
 
 ```text
-$dev-flow init
+$forgix init
 ```
 
 Project INIT inspects the repository before asking questions. It asks one material
@@ -54,33 +60,32 @@ Approval.
 Then run a real objective:
 
 ```text
-$dev-flow Add rate limiting to the public authentication endpoints
+$forgix Add rate limiting to the public authentication endpoints
 ```
 
-Dev Flow carries the objective through product decisions, technical shaping, one plan
+Forgix carries the objective through product decisions, technical shaping, one plan
 approval, implementation, and fresh assurance.
 
 The optional Configuration wizard customizes plugin operation such as worktree,
 subscription, quota, and integrations:
 
 ```bash
-npx @acrasie/dev-flow init
+npx forgix init
 ```
 
-The npm package is named `@acrasie/dev-flow` because npm rejects the unscoped
-`dev-flow` name as too similar to an existing package. The installed `codex-dev-flow` command
-remains an alias of the same executable; it does not require a separate package.
+The npm package and installed command are named `forgix`; the primary skill is `$forgix`.
+Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.
 Existing installations of the old npm package are not automatically migrated.
-Upgrade the Acrazie marketplace and install `dev-flow@acrazie` to use the renamed
+Upgrade the Acrazie marketplace and install `forgix@acrazie` to use the renamed
 plugin; existing `.codex/` project configuration and state remain unchanged.
 Replace the old plugin installation rather than installing both plugin identities
 side by side.
 
 Project INIT and the Configuration wizard are separate interfaces; neither aliases the
-other. See the [Getting Started guide](./plugins/codex-dev-flow/docs/getting-started.md)
+other. See the [Getting Started guide](./plugins/forgix/docs/getting-started.md)
 for a complete walkthrough.
 
-## How Dev Flow works
+## How Forgix works
 
 ```text
 INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
@@ -90,27 +95,26 @@ INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
 - **SHAPE** discovers repository facts, resolves technical uncertainty, and prepares a
   Quick or Plan implementation contract.
 - **GATE** validates that exact contract and asks for one explicit approval.
-- **BUILD** lets native Codex implement the complete approved plan. Dev Flow adds no
+- **BUILD** lets native Codex implement the complete approved plan. Forgix adds no
   execution skill, checkpoint, progress tracker, or validation loop.
 - **ASSURE** reviews and verifies the change with fresh command-backed evidence.
 
-Use Dev Flow when a change needs product or technical decisions, implementation, or
-proof. Plain questions, read-only exploration, and Git/GitHub delivery do not need a Dev
-Flow task.
+Use Forgix when a change needs product or technical decisions, implementation, or
+proof. Plain questions, read-only exploration, and Git/GitHub delivery do not need a Forgix task.
 
 ## Commands
 
-| Interface                                 | Purpose                                                       |
-| ----------------------------------------- | ------------------------------------------------------------- |
-| `$dev-flow <objective>`                   | Start a software change.                                      |
-| `$dev-flow init`                          | Discover and approve durable project engineering conventions. |
-| `$dev-flow resume <task-id>`              | Resume an interrupted task.                                   |
-| `$dev-flow status [task-id]`              | Inspect task status.                                          |
-| `$dev-flow --benchmark <objective>`       | Run a task with local benchmark measurement enabled.          |
-| `$dev-flow config show [--explain]`       | Show effective configuration and optional provenance.         |
-| `$dev-flow config validate [--json]`      | Validate effective configuration.                             |
-| `npx @acrasie/dev-flow init`              | Run the optional Configuration wizard.                        |
-| `npx @acrasie/dev-flow benchmark summary` | Summarize allowlisted local benchmark data.                   |
+| Interface                          | Purpose                                                       |
+| ---------------------------------- | ------------------------------------------------------------- |
+| `$forgix <objective>`              | Start a software change.                                      |
+| `$forgix init`                     | Discover and approve durable project engineering conventions. |
+| `$forgix resume <task-id>`         | Resume an interrupted task.                                   |
+| `$forgix status [task-id]`         | Inspect task status.                                          |
+| `$forgix --benchmark <objective>`  | Run a task with local benchmark measurement enabled.          |
+| `$forgix config show [--explain]`  | Show effective configuration and optional provenance.         |
+| `$forgix config validate [--json]` | Validate effective configuration.                             |
+| `npx forgix init`                  | Run the optional Configuration wizard.                        |
+| `npx forgix benchmark summary`     | Summarize allowlisted local benchmark data.                   |
 
 `quick`, `standard`, and `critical` at objective start are plain objective text, not
 modes or aliases. Quick or Plan is selected only after Discovery. Risk and policy—not
@@ -143,7 +147,7 @@ profile                and session state
 Shared profiles reject secret-like values and absolute local paths. Project INIT creates
 no product scaffold and no task state. Full schema, authority, reconciliation, and
 atomic publication rules live in the
-[Project Engineering Profile contract](./plugins/codex-dev-flow/docs/project-profile-contract.md).
+[Project Engineering Profile contract](./plugins/forgix/docs/project-profile-contract.md).
 
 ## Configuration
 
@@ -162,8 +166,8 @@ flags. Use the optional Configuration wizard for guided setup, or validate exist
 configuration directly:
 
 ```text
-$dev-flow config show --explain
-$dev-flow config validate --json
+$forgix config show --explain
+$forgix config validate --json
 ```
 
 ## Safety guarantees
@@ -173,21 +177,21 @@ $dev-flow config validate --json
 - Task state is durable and resumable.
 - Local configuration cannot weaken repository policy.
 - Commit, push, pull request, registry, and release operations are never authorized
-  implicitly by Dev Flow approval.
+  implicitly by Forgix approval.
 
-Normative details live in the [Lifecycle contract](./plugins/codex-dev-flow/docs/lifecycle-contract.md).
+Normative details live in the [Lifecycle contract](./plugins/forgix/docs/lifecycle-contract.md).
 
 ## Documentation
 
-- [Getting Started](./plugins/codex-dev-flow/docs/getting-started.md)
-- [Lifecycle contract](./plugins/codex-dev-flow/docs/lifecycle-contract.md)
-- [Project Engineering Profile contract](./plugins/codex-dev-flow/docs/project-profile-contract.md)
-- [Design](./plugins/codex-dev-flow/docs/design.md)
-- [Artifact contract](./plugins/codex-dev-flow/docs/artifacts.md)
-- [Measurement protocol](./plugins/codex-dev-flow/docs/metrics-protocol.md)
-- [Maintainer release runbook](./plugins/codex-dev-flow/docs/runbooks/maintainer-release.md)
-- [ADR directory](./plugins/codex-dev-flow/docs/adr/)
-- [Glossary](./plugins/codex-dev-flow/docs/glossary/dev-flow.md)
+- [Getting Started](./plugins/forgix/docs/getting-started.md)
+- [Lifecycle contract](./plugins/forgix/docs/lifecycle-contract.md)
+- [Project Engineering Profile contract](./plugins/forgix/docs/project-profile-contract.md)
+- [Design](./plugins/forgix/docs/design.md)
+- [Artifact contract](./plugins/forgix/docs/artifacts.md)
+- [Measurement protocol](./plugins/forgix/docs/metrics-protocol.md)
+- [Maintainer release runbook](./plugins/forgix/docs/runbooks/maintainer-release.md)
+- [ADR directory](./plugins/forgix/docs/adr/)
+- [Glossary](./plugins/forgix/docs/glossary/forgix.md)
 
 ## Development and quality
 

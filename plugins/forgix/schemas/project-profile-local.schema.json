@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forgix local project engineering profile overlay",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profileId", "servicePaths", "preferences"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "profileId": { "$ref": "#/$defs/id" },
+    "sharedContentDigest": { "$ref": "#/$defs/digest" },
+    "servicePaths": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["serviceId", "path"],
+        "properties": {
+          "serviceId": { "$ref": "#/$defs/id" },
+          "path": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        }
+      }
+    },
+    "preferences": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "value"],
+        "properties": {
+          "key": { "$ref": "#/$defs/key" },
+          "value": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9._/-]*$"
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

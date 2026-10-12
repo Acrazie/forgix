@@ -26,17 +26,17 @@
     ".worktrees/**",
     ".codex/tasks/**",
     ".codex/benchmarks/**",
-    "plugins/codex-dev-flow/test/fixtures/**"
+    "plugins/forgix/test/fixtures/**"
   ],
   "overrides": [
     {
       "files": [
-        "plugins/codex-dev-flow/src/benchmark.ts",
-        "plugins/codex-dev-flow/src/init.ts",
-        "plugins/codex-dev-flow/src/release.ts",
-        "plugins/codex-dev-flow/src/state-store.ts",
-        "plugins/codex-dev-flow/test/integration/lifecycle-paths.test.ts",
-        "plugins/codex-dev-flow/test/integration/state-store.test.ts"
+        "plugins/forgix/src/benchmark.ts",
+        "plugins/forgix/src/init.ts",
+        "plugins/forgix/src/release.ts",
+        "plugins/forgix/src/state-store.ts",
+        "plugins/forgix/test/integration/lifecycle-paths.test.ts",
+        "plugins/forgix/test/integration/state-store.test.ts"
       ],
       "rules": {
         "eslint/no-await-in-loop": "off"

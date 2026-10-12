@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "codex-dev-flow",
+      "name": "forgix-repository",
       "devDependencies": {
         "@commitlint/cli": "^19.8.0",
         "@commitlint/config-conventional": "^19.8.0",
@@ -16,12 +16,11 @@
         "yaml": "2.9.0",
       },
     },
-    "plugins/codex-dev-flow": {
-      "name": "@acrasie/dev-flow",
-      "version": "1.0.0",
+    "plugins/forgix": {
+      "name": "forgix",
+      "version": "1.0.1",
       "bin": {
-        "dev-flow": "dist/dev-flow.mjs",
-        "codex-dev-flow": "dist/codex-dev-flow.mjs",
+        "forgix": "dist/forgix.mjs",
       },
       "devDependencies": {
         "@clack/prompts": "1.0.0",
@@ -34,7 +33,7 @@
       },
     },
     "site": {
-      "name": "dev-flow-site",
+      "name": "forgix-site",
       "dependencies": {
         "astro": "7.3.5",
         "motion": "14.0.0",
@@ -48,8 +47,6 @@
     },
   },
   "packages": {
-    "@acrasie/dev-flow": ["@acrasie/dev-flow@workspace:plugins/codex-dev-flow"],
-
     "@astrojs/astro2tsx": ["@astrojs/astro2tsx@0.1.2", "", { "dependencies": { "@emnapi/core": "1.11.3", "@napi-rs/wasm-runtime": "1.2.4" } }, "sha512-Uj/M9zbrhu5cIZEvWAGTbQJRKSxXWJ/E59BZwt7F+chrKhbfttW+9rkS/l+1QxoJP1KU3UnpM62M7yszfAI0WA=="],
 
     "@astrojs/check": ["@astrojs/check@0.9.10", "", { "dependencies": { "@astrojs/language-server": "^2.16.7", "chokidar": "^4.0.3", "kleur": "^4.1.5", "yargs": "^18.0.0" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" }, "bin": { "astro-check": "./bin/astro-check.js" } }, "sha512-zgx/UQMozdjOa3bOxjgeCFdtpE3c9rRX6xHwa+2QXvy8z8Akifu2AtubHyv/zzC2znO8dl8fFWL4K+Ba9kS8HQ=="],
@@ -640,8 +637,6 @@
 
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
-    "dev-flow-site": ["dev-flow-site@workspace:site"],
-
     "devalue": ["devalue@5.9.4", "", {}, "sha512-sPAT4pztbu6586/hrhOnMKS17IJrvg12mXiSPSS3W5qDeN2RGgvZ0diZCm31dBbnevfVmujNO3IM2wrS4Y2Rhg=="],
 
     "devlop": ["devlop@1.1.0", "", { "dependencies": { "dequal": "^2.0.0" } }, "sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA=="],
@@ -703,6 +698,10 @@
     "fontace": ["fontace@0.4.1", "", { "dependencies": { "fontkitten": "^1.0.2" } }, "sha512-lDMvbAzSnHmbYMTEld5qdtvNH2/pWpICOqpean9IgC7vUbUJc3k+k5Dokp85CegamqQpFbXf0rAVkbzpyTA8aw=="],
 
     "fontkitten": ["fontkitten@1.0.3", "", { "dependencies": { "tiny-inflate": "^1.0.3" } }, "sha512-Wp1zXWPVUPBmfoa3Cqc9ctaKuzKAV6uLstRqlR56kSjplf5uAce+qeyYym7F+PHbGTk+tCEdkCW6RD7DX/gBZw=="],
+
+    "forgix": ["forgix@workspace:plugins/forgix"],
+
+    "forgix-site": ["forgix-site@workspace:site"],
 
     "framer-motion": ["framer-motion@14.0.0", "", { "dependencies": { "motion-dom": "14.0.0", "motion-utils": "14.0.0", "tslib": "^2.4.0" }, "peerDependencies": { "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["react", "react-dom"] }, "sha512-QAtHmybrDFSliyW1sexMtSQTQd+1jw2ajibEmzpuI4XdPVzQkn+dAzJMm2sW3pl9MJuSS4xN51djQ7huhlP/VA=="],
 
@@ -1144,7 +1143,7 @@
 
     "csso/css-tree": ["css-tree@2.2.1", "", { "dependencies": { "mdn-data": "2.0.28", "source-map-js": "^1.0.1" } }, "sha512-OA0mILzGc1kCOCSJerOeqDxDQ4HOh+G8NbOJFOTgOCzpw7fCBubk0fEyxp8AgOL/jvLgYA/uV0cMbe43ElF1JA=="],
 
-    "dev-flow-site/typescript": ["typescript@6.0.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-bGdAIrZ0wiGDo5l8c++HWtbaNCWTS4UTv7RaTH/ThVIgjkveJt83m74bBHMJkuCbslY8ixgLBVZJIOiQlQTjfQ=="],
+    "forgix-site/typescript": ["typescript@6.0.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-bGdAIrZ0wiGDo5l8c++HWtbaNCWTS4UTv7RaTH/ThVIgjkveJt83m74bBHMJkuCbslY8ixgLBVZJIOiQlQTjfQ=="],
 
     "import-fresh/resolve-from": ["resolve-from@4.0.0", "", {}, "sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g=="],
 

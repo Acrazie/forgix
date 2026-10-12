@@ -1,6 +1,6 @@
 # Repository Git & Delivery Workflow
 
-This document serves as the authoritative source of truth for Git operations, branching strategy, commit standards, quality gates, and Pull Request procedures for `codex-dev-flow`. Contributors and coding agents must adhere strictly to these policies.
+This document serves as the authoritative source of truth for Git operations, branching strategy, commit standards, quality gates, and Pull Request procedures for `forgix`. Contributors and coding agents must adhere strictly to these policies.
 
 ---
 

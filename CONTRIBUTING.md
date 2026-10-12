@@ -1,6 +1,6 @@
-# Contributing to Dev Flow
+# Contributing to Forgix
 
-Thanks for helping improve Dev Flow. This guide covers repository development; user installation and usage belong in the [README](./README.md).
+Thanks for helping improve Forgix. This guide covers repository development; user installation and usage belong in the [README](./README.md).
 
 ## Prerequisites
 
@@ -28,13 +28,13 @@ For parallel work on features or fixes, use Git Worktrees:
 To test the terminal wizard from a source checkout, link the package during local development only:
 
 ```bash
-cd plugins/codex-dev-flow
+cd plugins/forgix
 bun link
 cd /path/to/project
-dev-flow init
+forgix init
 ```
 
-End users should run `npx @acrasie/dev-flow init`; `npm link` is not part of the published installation flow.
+End users should run `npx forgix init`; `npm link` is not part of the published installation flow.
 
 The setup script activates Lefthook git hooks (`pre-commit` and `commit-msg`). See [docs/git-workflow.md](./docs/git-workflow.md) for full branch, worktree, and Conventional Commit guidelines. `bun run check` verifies
 formatting, runs native and type-aware linting, checks tool scripts, builds the bundled
@@ -48,7 +48,7 @@ ESM distribution, and executes every current test suite.
 lefthook.yml                          Git hooks (pre-commit & commit-msg)
 scripts/                              Repository quality & workflow tooling
 test/                                 Repository tooling tests
-plugins/codex-dev-flow/
+plugins/forgix/
   .codex-plugin/plugin.json            Plugin manifest
   skills/                              Workflow reasoning and stage guidance
   src/                                 Deterministic runtime behavior
@@ -59,7 +59,7 @@ plugins/codex-dev-flow/
 
 Skills own discovery, planning, execution guidance, debugging, review, and verification. TypeScript owns deterministic parsing, configuration resolution, policy enforcement, routing, state transitions, fingerprints, and artifact handling.
 
-Keep `$dev-flow` as the only public workflow. Internal stage skills are implementation details, not separate user-facing commands.
+Keep `$forgix` as the only public workflow. Internal stage skills are implementation details, not separate user-facing commands.
 
 ## Make a change
 
@@ -76,7 +76,7 @@ bun run check
 For configuration work, also validate the built CLI:
 
 ```bash
-node plugins/codex-dev-flow/dist/dev-flow.mjs config validate --json
+node plugins/forgix/dist/forgix.mjs config validate --json
 ```
 
 ## Design constraints
@@ -89,10 +89,10 @@ node plugins/codex-dev-flow/dist/dev-flow.mjs config validate --json
 - Do not persist credentials or raw `codex app-server` protocol payloads.
 - Keep state transitions resumable and schema-valid.
 
-Architecture changes should update [the design document](./plugins/codex-dev-flow/docs/design.md). Durable trade-offs should receive an ADR under `plugins/codex-dev-flow/docs/adr/`.
+Architecture changes should update [the design document](./plugins/forgix/docs/design.md). Durable trade-offs should receive an ADR under `plugins/forgix/docs/adr/`.
 
 Public documentation follows
-[ADR 0028](./plugins/codex-dev-flow/docs/adr/0028-make-public-documentation-user-first-and-current.md):
+[ADR 0028](./plugins/forgix/docs/adr/0028-make-public-documentation-user-first-and-current.md):
 README files teach current user behavior, the Getting Started guide owns the practical
 walkthrough, contracts own normative details, and clearly labeled target documents own
 unimplemented design. Keep the root and packaged README user journeys aligned.
@@ -115,13 +115,13 @@ bun run lint:type-aware
 bun run typecheck:tools
 bun run test:tools
 bun run build
-bun run --cwd plugins/codex-dev-flow typecheck
-bun run --cwd plugins/codex-dev-flow test
-bun run --cwd plugins/codex-dev-flow test:coverage
-bun run --cwd plugins/codex-dev-flow test:randomization
-bun run --cwd plugins/codex-dev-flow check:size
-bun run --cwd plugins/codex-dev-flow test:runtime
-bun run --cwd plugins/codex-dev-flow release:test
+bun run --cwd plugins/forgix typecheck
+bun run --cwd plugins/forgix test
+bun run --cwd plugins/forgix test:coverage
+bun run --cwd plugins/forgix test:randomization
+bun run --cwd plugins/forgix check:size
+bun run --cwd plugins/forgix test:runtime
+bun run --cwd plugins/forgix release:test
 bun run check
 ```
 

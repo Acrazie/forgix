@@ -25,17 +25,13 @@ describe("staged path classification", () => {
   test("excludes only the Release Please generated changelog, not other Markdown", () => {
     expect(
       classifyStagedPaths([
-        "plugins/codex-dev-flow/CHANGELOG.md",
-        "plugins/codex-dev-flow/README.md",
+        "plugins/forgix/CHANGELOG.md",
+        "plugins/forgix/README.md",
         "docs/CHANGELOG.md",
         "plugins/other/CHANGELOG.md",
       ]),
     ).toEqual({
-      formatPaths: [
-        "plugins/codex-dev-flow/README.md",
-        "docs/CHANGELOG.md",
-        "plugins/other/CHANGELOG.md",
-      ],
+      formatPaths: ["plugins/forgix/README.md", "docs/CHANGELOG.md", "plugins/other/CHANGELOG.md"],
       lintPaths: [],
     });
   });
@@ -44,20 +40,20 @@ describe("staged path classification", () => {
     expect(
       classifyStagedPaths([
         "README.md",
-        "plugins/codex-dev-flow/src/cli.ts",
-        "plugins/codex-dev-flow/src/cli.ts",
-        "plugins/codex-dev-flow/test/copy name.mjs",
-        "plugins/codex-dev-flow/.github/workflows/ci.yml",
+        "plugins/forgix/src/cli.ts",
+        "plugins/forgix/src/cli.ts",
+        "plugins/forgix/test/copy name.mjs",
+        "plugins/forgix/.github/workflows/ci.yml",
         ".gitignore",
       ]),
     ).toEqual({
       formatPaths: [
         "README.md",
-        "plugins/codex-dev-flow/src/cli.ts",
-        "plugins/codex-dev-flow/test/copy name.mjs",
-        "plugins/codex-dev-flow/.github/workflows/ci.yml",
+        "plugins/forgix/src/cli.ts",
+        "plugins/forgix/test/copy name.mjs",
+        "plugins/forgix/.github/workflows/ci.yml",
       ],
-      lintPaths: ["plugins/codex-dev-flow/src/cli.ts", "plugins/codex-dev-flow/test/copy name.mjs"],
+      lintPaths: ["plugins/forgix/src/cli.ts", "plugins/forgix/test/copy name.mjs"],
     });
   });
 
@@ -68,14 +64,14 @@ describe("staged path classification", () => {
         ".worktrees/task/src/a.ts",
         ".codex/tasks/task/state.json",
         ".codex/benchmarks/run.json",
-        "plugins/codex-dev-flow/dist/dev-flow.mjs",
-        "plugins/codex-dev-flow/coverage/lcov.info",
-        "plugins/codex-dev-flow/test/fixtures/app-server-error.mjs",
-        "plugins/codex-dev-flow/src/state.ts",
+        "plugins/forgix/dist/forgix.mjs",
+        "plugins/forgix/coverage/lcov.info",
+        "plugins/forgix/test/fixtures/app-server-error.mjs",
+        "plugins/forgix/src/state.ts",
       ]),
     ).toEqual({
-      formatPaths: ["plugins/codex-dev-flow/src/state.ts"],
-      lintPaths: ["plugins/codex-dev-flow/src/state.ts"],
+      formatPaths: ["plugins/forgix/src/state.ts"],
+      lintPaths: ["plugins/forgix/src/state.ts"],
     });
   });
 });
@@ -110,8 +106,8 @@ describe("Fast Gate execution", () => {
     const calls: Array<{ command: string; args: string[]; capture: boolean }> = [];
     const status = executeFastGate({
       cwd: "/repo",
-      formatPaths: ["docs/space name.md", "plugins/codex-dev-flow/src/a.ts"],
-      lintPaths: ["plugins/codex-dev-flow/src/a.ts"],
+      formatPaths: ["docs/space name.md", "plugins/forgix/src/a.ts"],
+      lintPaths: ["plugins/forgix/src/a.ts"],
       run(command, args, options) {
         calls.push({ command, args, capture: options.capture });
         return { status: 0 };
@@ -127,7 +123,7 @@ describe("Fast Gate execution", () => {
           "--no-error-on-unmatched-pattern",
           "--disable-nested-config",
           "docs/space name.md",
-          "plugins/codex-dev-flow/src/a.ts",
+          "plugins/forgix/src/a.ts",
         ],
         capture: false,
       },
@@ -136,7 +132,7 @@ describe("Fast Gate execution", () => {
         args: [
           "--disable-nested-config",
           "--no-error-on-unmatched-pattern",
-          "plugins/codex-dev-flow/src/a.ts",
+          "plugins/forgix/src/a.ts",
         ],
         capture: false,
       },
@@ -180,7 +176,7 @@ describe("Git adapter", () => {
       if (command === "git") {
         return {
           status: 0,
-          stdout: Buffer.from("README.md\0plugins/codex-dev-flow/src/renamed.ts\0"),
+          stdout: Buffer.from("README.md\0plugins/forgix/src/renamed.ts\0"),
         };
       }
       return { status: 0 };

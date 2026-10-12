@@ -7,13 +7,13 @@
 
 ---
 
-# Dev Flow — Agent Guidelines
+# Forgix — Agent Guidelines
 
 Instructions and standards for AI coding agents working on this repository.
 
 ## Mission & Architecture
 
-`dev-flow` is a portable development workflow tool and Codex CLI plugin providing structured orchestration, lifecycle gates, and quality verification for coding workflows.
+`forgix` is a portable development workflow tool and Codex CLI plugin providing structured orchestration, lifecycle gates, and quality verification for coding workflows.
 
 ## Git & Delivery Protocol
 

@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "dev-flow",
+      "name": "forgix",
       "source": {
         "source": "local",
-        "path": "./plugins/codex-dev-flow"
+        "path": "./plugins/forgix"
       },
       "policy": {
         "installation": "AVAILABLE",

@@ -1,0 +1,69 @@
+{
+  "name": "forgix",
+  "version": "1.0.1",
+  "description": "Portable Codex development workflow plugin.",
+  "license": "MIT",
+  "homepage": "https://github.com/Acrazie/codex-dev-flow#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Acrazie/codex-dev-flow.git",
+    "directory": "plugins/forgix"
+  },
+  "bugs": {
+    "url": "https://github.com/Acrazie/codex-dev-flow/issues"
+  },
+  "keywords": [
+    "codex",
+    "workflow",
+    "cli",
+    "plugin",
+    "development"
+  ],
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "bin": {
+    "forgix": "dist/forgix.mjs"
+  },
+  "files": [
+    ".codex-plugin/",
+    "dist/",
+    "docs/",
+    "schemas/",
+    "skills/",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "baseline:p0": "bun run build && node scripts/generate-p0-baseline.mjs",
+    "check:size": "bun scripts/check-size-budget.ts",
+    "pack:runtime": "bun scripts/package-artifact.ts ../../.artifacts/forgix.tgz",
+    "release": "bun scripts/release.ts",
+    "release:test": "bun test test/integration/release.test.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test test/unit test/integration",
+    "test:unit": "bun test test/unit",
+    "test:integration": "bun test test/integration",
+    "test:runtime": "node --test test/runtime/runtime-smoke.test.mjs",
+    "test:coverage": "bun test --coverage test/unit test/integration",
+    "test:randomization": "bun scripts/verify-test-randomization.ts",
+    "check": "bun run typecheck && bun run build && bun run test:randomization && bun run test:coverage && bun run check:size",
+    "prepack": "bun run build",
+    "prepublishOnly": "bun run check"
+  },
+  "devDependencies": {
+    "@clack/prompts": "1.0.0",
+    "@types/bun": "1.3.14",
+    "@types/node": "24.13.3",
+    "ajv": "8.20.0",
+    "esbuild": "0.28.1",
+    "typescript": "7.0.2",
+    "yaml": "2.9.0"
+  }
+}
