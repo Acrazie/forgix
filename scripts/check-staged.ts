@@ -45,15 +45,15 @@ const EXCLUDED_PREFIXES = [
   ".worktrees/",
   ".codex/tasks/",
   ".codex/benchmarks/",
-  "plugins/codex-dev-flow/test/fixtures/",
-  "plugins/codex-dev-flow/docs/baselines/",
+  "plugins/forgix/test/fixtures/",
+  "plugins/forgix/docs/baselines/",
 ];
 
 const EXCLUDED_PATHS = new Set([
   "bun.lock",
   // Release Please owns this generated file's formatting.
-  "plugins/codex-dev-flow/CHANGELOG.md",
-  "plugins/codex-dev-flow/docs/lifecycle-contract.projection.json",
+  "plugins/forgix/CHANGELOG.md",
+  "plugins/forgix/docs/lifecycle-contract.projection.json",
 ]);
 
 export type CommandResult = {

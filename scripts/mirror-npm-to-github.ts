@@ -5,8 +5,8 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-export const SOURCE_PACKAGE = "@acrasie/dev-flow";
-export const DESTINATION_PACKAGE = "@acrazie/dev-flow";
+export const SOURCE_PACKAGE = "forgix";
+export const DESTINATION_PACKAGE = "@acrazie/forgix";
 export const SOURCE_REGISTRY = "https://registry.npmjs.org";
 export const DESTINATION_REGISTRY = "https://npm.pkg.github.com";
 
@@ -84,7 +84,7 @@ export function versionsForSelector(
     );
   }
   if (selector.startsWith("plugin-v")) return [];
-  if (selector.startsWith("dev-flow-v")) return [requireStableVersion(selector.slice(10))];
+  if (selector.startsWith("forgix-v")) return [requireStableVersion(selector.slice(8))];
   if (selector.startsWith("npm-v")) return [requireStableVersion(selector.slice(5))];
   if (selector.startsWith("v")) return [requireStableVersion(selector.slice(1))];
   return [requireStableVersion(selector)];
@@ -138,7 +138,7 @@ export function transformPackageManifest(source: string, expectedVersion: string
     throw new MirrorError(`Source package repository must be "${EXPECTED_REPOSITORY}".`);
   }
 
-  const namePattern = /("name"\s*:\s*)"@acrasie\/dev-flow"/;
+  const namePattern = /("name"\s*:\s*)"forgix"/;
   if (!namePattern.test(source)) {
     throw new MirrorError("Cannot replace source package name without rewriting manifest bytes.");
   }
@@ -230,7 +230,7 @@ function mirrorVersion(version: string, run: RunCommand): "published" | "skipped
     return "skipped";
   }
 
-  const directory = mkdtempSync(join(tmpdir(), "dev-flow-github-package-"));
+  const directory = mkdtempSync(join(tmpdir(), "forgix-github-package-"));
   try {
     requireSuccess(
       `Download ${SOURCE_PACKAGE}@${version}`,

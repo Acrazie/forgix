@@ -1,0 +1,6 @@
+interface:
+  display_name: "Forgix"
+  short_description: "Run a governed change workflow."
+  default_prompt: "Use $forgix to implement a reviewed change."
+policy:
+  allow_implicit_invocation: false

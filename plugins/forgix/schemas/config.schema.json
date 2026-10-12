@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forgix configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "worktree": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["auto", "required"]
+        }
+      }
+    },
+    "merge": {
+      "type": "string",
+      "const": "never"
+    },
+    "integrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plugins": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/integrationId" }
+        },
+        "skills": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/integrationId" }
+        }
+      }
+    },
+    "subscription": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plan": {
+          "type": "string",
+          "enum": ["auto", "plus", "pro_5x", "pro_20x"]
+        },
+        "planOverride": {
+          "type": "string",
+          "enum": ["plus", "pro_5x", "pro_20x"]
+        },
+        "multiplierOverride": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "quota": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "warningPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "criticalPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "unknownPolicy": { "type": "string", "const": "conservative" }
+          }
+        },
+        "modelAllowlist": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"]
+          }
+        },
+        "modelCosts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "gpt-5.6-luna": { "$ref": "#/$defs/modelCost" },
+            "gpt-5.6-terra": { "$ref": "#/$defs/modelCost" },
+            "gpt-5.6-sol": { "$ref": "#/$defs/modelCost" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "integrationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*(?::[A-Za-z0-9][A-Za-z0-9._/-]*)?$"
+    },
+    "modelCost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "multiplier": { "type": "number", "exclusiveMinimum": 0 },
+        "rateVersion": { "type": "string", "minLength": 1 },
+        "inputCreditsPerMillion": { "type": "number", "minimum": 0 },
+        "cachedInputCreditsPerMillion": { "type": "number", "minimum": 0 },
+        "outputCreditsPerMillion": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

@@ -14,7 +14,7 @@ describe("GitHub package workflow", () => {
     expect(workflow.jobs.mirror.if).toContain("startsWith(github.event.release.tag_name, 'v')");
     expect(workflow.jobs.mirror.if).toContain("startsWith(github.event.release.tag_name, 'npm-v')");
     expect(workflow.jobs.mirror.if).toContain(
-      "startsWith(github.event.release.tag_name, 'dev-flow-v')",
+      "startsWith(github.event.release.tag_name, 'forgix-v')",
     );
   });
 

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forgix policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "requirements", "prohibitions", "bounds", "locks"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "requirements": { "type": "object", "additionalProperties": true },
+    "prohibitions": { "type": "object", "additionalProperties": true },
+    "bounds": { "type": "object", "additionalProperties": true },
+    "locks": { "type": "array", "items": { "type": "string" } }
+  }
+}

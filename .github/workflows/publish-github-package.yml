@@ -21,7 +21,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       startsWith(github.event.release.tag_name, 'v') ||
       startsWith(github.event.release.tag_name, 'npm-v') ||
-      startsWith(github.event.release.tag_name, 'dev-flow-v')
+      startsWith(github.event.release.tag_name, 'forgix-v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
