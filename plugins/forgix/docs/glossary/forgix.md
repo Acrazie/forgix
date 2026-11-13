@@ -530,3 +530,38 @@ runtime or major dependencies, data or migration, cross-service contracts, secur
 compatibility, concurrency, performance, cost, operations, rollback, or approved
 profile conventions. Reversible repository-conforming implementation details remain
 agent-owned.
+
+## Ideation and roadmap target terms
+
+Following upstream ideation and backlog terms capture the domain model for planned
+multi-item roadmaps outside single-task lifecycle runs.
+
+### Roadmap
+
+A prioritized, dependency-ordered collection of planned product `Feature`s and
+deliverable `Work Item`s representing the project's living backlog across multiple
+lifecycle runs.
+
+### Feature
+
+A user-facing product capability or coherent value outcome that groups one or more
+dependent `Work Item`s. Avoid using `Epic` or `Ticket` as synonyms.
+
+### Work Item
+
+The smallest independently deliverable slice of a `Feature`, sized for one Forgix
+lifecycle execution and reviewable increment with explicit prerequisites and acceptance
+criteria. Avoid `Task` (reserved for `TaskState`) or `Issue` (reserved for
+`AssuranceIssue`).
+
+### Roadmap Ideation
+
+The upstream `$forgix roadmap` workflow outside `TaskState` that turns product vision
+into durable repository domain records and a dependency-ordered GitHub `Roadmap` of
+`Feature`s and `Work Item`s after explicit user approval.
+
+### Autonomous Gate Receipt
+
+A pre-`BUILD` authorization distinct from a human `Plan Approval Receipt`, issued only
+when a pre-specified `Work Item` runs under explicit autonomous policy, stays at `low`
+or `medium` confirmed risk, and leaves no open `INTAKE` or `SHAPE` decision.

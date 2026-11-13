@@ -66,6 +66,7 @@
     "schemas/project-init-state.schema.json",
     "schemas/project-profile-local.schema.json",
     "schemas/project-profile.schema.json",
+    "schemas/roadmap-state.schema.json",
     "schemas/state.schema.json",
     "skills/debug-root-cause/SKILL.md",
     "skills/design-decisions/SKILL.md",

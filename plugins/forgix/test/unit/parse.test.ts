@@ -51,6 +51,31 @@ test("treats legacy mode words as objective text and parses read-only subcommand
   expect(parseInvocation(["project-profile", "session-view"])).toEqual({
     command: "project_profile_session_view",
   });
+  expect(parseInvocation(["roadmap", "session-view", "--format=mermaid"])).toEqual({
+    command: "roadmap_session_view",
+    format: "mermaid",
+  });
+  expect(parseInvocation(["roadmap", "validate", "--session"])).toEqual({
+    command: "roadmap_validate",
+    session: true,
+  });
+  expect(parseInvocation(["roadmap", "publish-plan"])).toEqual({
+    command: "roadmap_publish_plan",
+  });
+  expect(
+    parseInvocation([
+      "roadmap",
+      "select-ready",
+      "--limit=2",
+      "--max-risk=medium",
+      "--require-issue",
+    ]),
+  ).toEqual({
+    command: "roadmap_select_ready",
+    limit: 2,
+    maxRisk: "medium",
+    requireIssueNumber: true,
+  });
 });
 
 test("rejects invalid invocations with a stable exit code", async () => {
@@ -62,4 +87,8 @@ test("rejects invalid invocations with a stable exit code", async () => {
   expect(() => parseInvocation(["project-profile", "inspect", "--local"])).toThrow(
     /Invalid project-profile invocation/,
   );
+  expect(() => parseInvocation(["roadmap", "select-ready", "--limit=0"])).toThrow(
+    /Invalid --limit value/,
+  );
+  expect(() => parseInvocation(["roadmap", "unknown"])).toThrow(/Invalid roadmap invocation/);
 });

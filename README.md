@@ -104,17 +104,20 @@ proof. Plain questions, read-only exploration, and Git/GitHub delivery do not ne
 
 ## Commands
 
-| Interface                          | Purpose                                                       |
-| ---------------------------------- | ------------------------------------------------------------- |
-| `$forgix <objective>`              | Start a software change.                                      |
-| `$forgix init`                     | Discover and approve durable project engineering conventions. |
-| `$forgix resume <task-id>`         | Resume an interrupted task.                                   |
-| `$forgix status [task-id]`         | Inspect task status.                                          |
-| `$forgix --benchmark <objective>`  | Run a task with local benchmark measurement enabled.          |
-| `$forgix config show [--explain]`  | Show effective configuration and optional provenance.         |
-| `$forgix config validate [--json]` | Validate effective configuration.                             |
-| `npx forgix init`                  | Run the optional Configuration wizard.                        |
-| `npx forgix benchmark summary`     | Summarize allowlisted local benchmark data.                   |
+| Interface                          | Purpose                                                         |
+| ---------------------------------- | --------------------------------------------------------------- |
+| `$forgix <objective>`              | Start a software change.                                        |
+| `$forgix init`                     | Discover and approve durable project engineering conventions.   |
+| `$forgix roadmap`                  | Ideate and publish a GitHub Project v2 feature roadmap.         |
+| `$forgix run-issue <#num>`         | Run one ready roadmap Work Item in an isolated worktree.        |
+| `$forgix run-roadmap [flags]`      | Execute ready roadmap Work Items (`--limit N`, `--parallel M`). |
+| `$forgix resume <task-id>`         | Resume an interrupted task.                                     |
+| `$forgix status [task-id]`         | Inspect task status.                                            |
+| `$forgix --benchmark <objective>`  | Run a task with local benchmark measurement enabled.            |
+| `$forgix config show [--explain]`  | Show effective configuration and optional provenance.           |
+| `$forgix config validate [--json]` | Validate effective configuration.                               |
+| `npx forgix init`                  | Run the optional Configuration wizard.                          |
+| `npx forgix benchmark summary`     | Summarize allowlisted local benchmark data.                     |
 
 `quick`, `standard`, and `critical` at objective start are plain objective text, not
 modes or aliases. Quick or Plan is selected only after Discovery. Risk and policy—not

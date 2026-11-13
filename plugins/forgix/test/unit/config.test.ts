@@ -107,3 +107,45 @@ test("subscription config is strict, versioned, and explainable", async () => {
   expect(resolveSubscriptionMultiplier("pro_5x")).toBe(5);
   expect(resolveSubscriptionMultiplier("pro_20x", 7)).toBe(7);
 });
+
+test("validates optional roadmap config section strictly", async () => {
+  const { validateSchema } = sourceApi;
+  expect(
+    validateSchema("config", {
+      schemaVersion: 1,
+      roadmap: {
+        project: {
+          owner: "acrazie",
+          number: 12,
+          title: "Product Roadmap",
+          productVisionPath: "docs/product-vision.md",
+        },
+        fields: {
+          status: "Status",
+          kind: "Kind",
+          risk: "Risk",
+          priority: "Priority",
+          wave: "Wave",
+        },
+        autonomous: {
+          enabled: true,
+          maxRisk: "medium",
+          defaultParallel: 1,
+          worktreeBaseBranch: "main",
+          requireExistingWorktree: false,
+        },
+      },
+    }).valid,
+  ).toBe(true);
+
+  expect(
+    validateSchema("config", {
+      schemaVersion: 1,
+      roadmap: {
+        autonomous: {
+          maxRisk: "high",
+        },
+      },
+    }).valid,
+  ).toBe(false);
+});

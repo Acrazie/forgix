@@ -19,7 +19,19 @@ export type ParsedInvocation =
     }
   | { command: "project_profile_session_view" }
   | { command: "project_profile_session_save" }
-  | { command: "project_profile_session_clear" };
+  | { command: "project_profile_session_clear" }
+  | { command: "roadmap_session_view"; format?: "tree" | "mermaid" }
+  | { command: "roadmap_session_save" }
+  | { command: "roadmap_session_clear" }
+  | { command: "roadmap_validate"; session: boolean }
+  | { command: "roadmap_publish_plan" }
+  | { command: "roadmap_publish_record" }
+  | {
+      command: "roadmap_select_ready";
+      limit?: number;
+      maxRisk?: "low" | "medium" | "all";
+      requireIssueNumber: boolean;
+    };
 
 export class InvocationError extends Error {
   readonly exitCode = EXIT_CODES.INVALID_INVOCATION;
@@ -101,6 +113,71 @@ export function parseInvocation(argv: string[]): ParsedInvocation {
       return { command: "project_profile_session_clear" };
     }
     invalid("Invalid project-profile invocation.");
+  }
+
+  if (first === "roadmap") {
+    const [subcommand, ...flags] = rest;
+    if (subcommand === "session-view") {
+      let format: "tree" | "mermaid" | undefined;
+      for (const flag of flags) {
+        if (flag === "--format=tree" || flag === "--tree") format = "tree";
+        else if (flag === "--format=mermaid" || flag === "--mermaid") format = "mermaid";
+        else invalid("Invalid roadmap session-view flag.");
+      }
+      return format
+        ? { command: "roadmap_session_view", format }
+        : { command: "roadmap_session_view" };
+    }
+    if (subcommand === "session-save" && flags.length === 0) {
+      return { command: "roadmap_session_save" };
+    }
+    if (subcommand === "session-clear" && flags.length === 0) {
+      return { command: "roadmap_session_clear" };
+    }
+    if (subcommand === "validate") {
+      if (flags.length === 0) return { command: "roadmap_validate", session: false };
+      if (flags.length === 1 && flags[0] === "--session") {
+        return { command: "roadmap_validate", session: true };
+      }
+      invalid("Invalid roadmap validate flag.");
+    }
+    if (subcommand === "publish-plan" && flags.length === 0) {
+      return { command: "roadmap_publish_plan" };
+    }
+    if (subcommand === "publish-record" && flags.length === 0) {
+      return { command: "roadmap_publish_record" };
+    }
+    if (subcommand === "select-ready") {
+      let limit: number | undefined;
+      let maxRisk: "low" | "medium" | "all" | undefined;
+      let requireIssueNumber = false;
+      for (const flag of flags) {
+        if (flag.startsWith("--limit=")) {
+          const parsed = Number(flag.slice("--limit=".length));
+          if (!Number.isInteger(parsed) || parsed < 1) {
+            invalid("Invalid --limit value.");
+          }
+          limit = parsed;
+        } else if (
+          flag === "--max-risk=low" ||
+          flag === "--max-risk=medium" ||
+          flag === "--max-risk=all"
+        ) {
+          maxRisk = flag.slice("--max-risk=".length) as "low" | "medium" | "all";
+        } else if (flag === "--require-issue") {
+          requireIssueNumber = true;
+        } else {
+          invalid("Invalid roadmap select-ready flag.");
+        }
+      }
+      return {
+        command: "roadmap_select_ready",
+        ...(limit !== undefined ? { limit } : {}),
+        ...(maxRisk !== undefined ? { maxRisk } : {}),
+        requireIssueNumber,
+      };
+    }
+    invalid("Invalid roadmap invocation.");
   }
 
   const benchmark = first === "--benchmark";

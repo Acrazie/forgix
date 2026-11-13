@@ -744,7 +744,11 @@
           "enum": ["approved", "change_requested", "rejected"]
         },
         "actor": {
-          "const": "user"
+          "enum": ["user", "autonomous_policy"]
+        },
+        "issueRef": {
+          "type": "string",
+          "pattern": "^([a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+)?#[1-9][0-9]*$"
         },
         "decidedAt": {
           "type": "string"
@@ -796,7 +800,11 @@
           "const": "approved"
         },
         "actor": {
-          "const": "user"
+          "enum": ["user", "autonomous_policy"]
+        },
+        "issueRef": {
+          "type": "string",
+          "pattern": "^([a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+)?#[1-9][0-9]*$"
         },
         "decidedAt": {
           "type": "string"

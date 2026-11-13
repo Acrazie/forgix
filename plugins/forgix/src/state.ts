@@ -18,7 +18,7 @@ import {
   validateDesignState,
   type DesignState,
 } from "./design.js";
-import { preflightGate } from "./gate.js";
+import { evaluateAutonomousGateEligibility, preflightGate } from "./gate.js";
 import {
   GUARD_IDS,
   STATE_MACHINE,
@@ -46,6 +46,7 @@ import type {
   ActiveWorktreeReference,
   ContextCapsule,
   EvaluatorReceiptRecord,
+  GateActor,
   GateDecisionRecord,
   GuardEvidenceRecord,
   HistoryReferenceKind,
@@ -130,8 +131,25 @@ export interface CreateGuardAttestationInput {
 
 export interface CreateGateDecisionInput {
   decision: GateDecision["decision"];
+  actor?: GateActor;
+  issueRef?: string;
   instructionRef?: string;
   at?: string;
+}
+
+const GATE_ISSUE_REF = /^([a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+)?#[1-9][0-9]*$/;
+
+function validGateActor(decision: Pick<GateDecision, "actor" | "decision" | "issueRef">): boolean {
+  if (decision.actor !== "user" && decision.actor !== "autonomous_policy") return false;
+  if (decision.issueRef !== undefined && !GATE_ISSUE_REF.test(decision.issueRef)) return false;
+  if (decision.actor === "autonomous_policy") {
+    return (
+      decision.decision === "approved" &&
+      typeof decision.issueRef === "string" &&
+      GATE_ISSUE_REF.test(decision.issueRef)
+    );
+  }
+  return true;
 }
 export class StateValidationError extends Error {
   constructor(
@@ -431,11 +449,24 @@ export function evaluatePlanningGuard(state: TaskState, receipt: PlanningReceipt
 export function createGateDecision(state: TaskState, input: CreateGateDecisionInput): GateDecision {
   assertStateV6(state);
   const unknown = Object.keys(input).filter(
-    (key) => !["decision", "instructionRef", "at"].includes(key),
+    (key) => !["decision", "actor", "issueRef", "instructionRef", "at"].includes(key),
   );
   if (unknown.length) throw new Error(`Unknown Gate decision fields: ${unknown.join(", ")}.`);
   if (!(["approved", "change_requested", "rejected"] as const).includes(input.decision))
     throw new Error("Gate decision kind is invalid.");
+  const actor: GateActor = input.actor ?? "user";
+  if (actor !== "user" && actor !== "autonomous_policy")
+    throw new Error("Gate decision actor is invalid.");
+  if (input.issueRef !== undefined && !GATE_ISSUE_REF.test(input.issueRef))
+    throw new Error("Gate issue reference is invalid.");
+  if (actor === "autonomous_policy") {
+    if (input.decision !== "approved")
+      throw new Error("Autonomous Gate receipt must be an approved decision.");
+    if (!input.issueRef) throw new Error("Autonomous Gate receipt requires a GitHub issueRef.");
+    const eligibility = evaluateAutonomousGateEligibility(state, { issueRef: input.issueRef });
+    if (!eligibility.eligible)
+      throw new Error(eligibility.reason ?? "State is not eligible for autonomous Gate approval.");
+  }
   if (input.at !== undefined && !validAt(input.at))
     throw new Error("Gate decision time is invalid.");
   const contract = state.shape?.contract;
@@ -452,7 +483,8 @@ export function createGateDecision(state: TaskState, input: CreateGateDecisionIn
   const base = {
     schemaVersion: 1 as const,
     decision: input.decision,
-    actor: "user" as const,
+    actor,
+    ...(input.issueRef ? { issueRef: input.issueRef } : {}),
     decidedAt: normalizeEventAt(input.at),
     taskId: state.taskId,
     artifactId: contract.artifactId,
@@ -1058,7 +1090,7 @@ function validateGateDecision(state: TaskState, decision: GateDecision): void {
     state.status !== "awaiting_approval" ||
     decision.schemaVersion !== 1 ||
     !["approved", "change_requested", "rejected"].includes(decision.decision) ||
-    decision.actor !== "user" ||
+    !validGateActor(decision) ||
     decision.taskId !== state.taskId ||
     decision.artifactId !== state.shape?.contract?.artifactId ||
     decision.stateRevision !== state.revision ||
@@ -1075,7 +1107,7 @@ function validateGateDecision(state: TaskState, decision: GateDecision): void {
 function validatePlanApproval(state: TaskState, receipt: TaskState["planApproval"] & {}): void {
   if (
     receipt.decision !== "approved" ||
-    receipt.actor !== "user" ||
+    !validGateActor(receipt) ||
     receipt.taskId !== state.taskId ||
     receipt.artifactId !== state.shape?.contract?.artifactId ||
     receipt.receiptDigest !== digest({ ...receipt, receiptDigest: undefined }) ||
@@ -1223,7 +1255,7 @@ function validatePersistedTransitionEvent(
       event.gateDecision.contractDigest !== event.contractDigest ||
       event.gateDecision.schemaVersion !== 1 ||
       !["approved", "change_requested", "rejected"].includes(event.gateDecision.decision) ||
-      event.gateDecision.actor !== "user" ||
+      !validGateActor(event.gateDecision) ||
       !gateDecisionAllows(event.gateDecision, event.to) ||
       !validAt(event.gateDecision.decidedAt) ||
       (event.gateDecision.instructionRef !== undefined &&

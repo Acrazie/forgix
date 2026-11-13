@@ -82,6 +82,45 @@
           }
         }
       }
+    },
+    "roadmap": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "owner": { "type": "string", "minLength": 1 },
+            "number": { "type": "integer", "minimum": 1 },
+            "title": { "type": "string", "minLength": 1 },
+            "url": { "type": "string", "minLength": 1 },
+            "productVisionPath": { "type": "string", "minLength": 1 }
+          }
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": { "type": "string", "minLength": 1 },
+            "kind": { "type": "string", "minLength": 1 },
+            "risk": { "type": "string", "minLength": 1 },
+            "priority": { "type": "string", "minLength": 1 },
+            "wave": { "type": "string", "minLength": 1 }
+          }
+        },
+        "autonomous": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "maxRisk": { "enum": ["low", "medium"] },
+            "defaultParallel": { "type": "integer", "minimum": 1, "maximum": 8 },
+            "worktreeBaseBranch": { "type": "string", "minLength": 1 },
+            "requireExistingWorktree": { "type": "boolean" }
+          }
+        }
+      }
     }
   },
   "$defs": {
