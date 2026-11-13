@@ -7,7 +7,7 @@ const json = (path: string) => JSON.parse(read(path));
 test("Forgix has one package, plugin, marketplace and public skill identity", () => {
   expect(existsSync(new URL("../plugins/codex-dev-flow", import.meta.url))).toBe(false);
   const manifest = json("plugins/forgix/package.json");
-  expect(manifest.name).toBe("forgix");
+  expect(manifest.name).toBe("@acrasie/forgix");
   expect(manifest.bin).toEqual({ forgix: "dist/forgix.mjs" });
   expect(manifest.repository.directory).toBe("plugins/forgix");
   expect(manifest.repository.url).toBe("git+https://github.com/Acrazie/codex-dev-flow.git");
@@ -32,7 +32,7 @@ test("release configuration preserves version under the new path and component",
   expect(json("release-please-config.json").packages).toEqual({
     "plugins/forgix": {
       "release-type": "node",
-      "package-name": "forgix",
+      "package-name": "@acrasie/forgix",
       component: "forgix",
       "changelog-path": "CHANGELOG.md",
     },
@@ -47,7 +47,7 @@ test("active root tooling follows the renamed workspace and artifact", () => {
   }
   expect(read(".github/workflows/ci.yml")).toContain(".artifacts/forgix.tgz");
   expect(read(".github/workflows/publish-github-package.yml")).toContain("forgix-v");
-  expect(read("scripts/mirror-npm-to-github.ts")).toContain('SOURCE_PACKAGE = "forgix"');
+  expect(read("scripts/mirror-npm-to-github.ts")).toContain('SOURCE_PACKAGE = "@acrasie/forgix"');
   expect(read("scripts/mirror-npm-to-github.ts")).toContain(
     'DESTINATION_PACKAGE = "@acrazie/forgix"',
   );

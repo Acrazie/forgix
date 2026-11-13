@@ -112,7 +112,7 @@ test("package exposes the standalone forgix binary", () => {
   expect(manifest.license).toBe("MIT");
   expect(manifest.dependencies).toBe(undefined);
   expect(manifest.publishConfig.access).toBe("public");
-  expect(manifest.name).toBe("forgix");
+  expect(manifest.name).toBe("@acrasie/forgix");
   expect(manifest.bin).toEqual({
     forgix: "dist/forgix.mjs",
   });
@@ -214,7 +214,7 @@ test("plugin identity matches its marketplace entry and release configuration", 
   expect(claudeMarketplace.plugins[0].name).toBe("forgix");
   expect(claudeMarketplace.plugins[0].source).toBe("./plugins/forgix");
   expect(claudeMarketplace.plugins[0].version).toBe(baseVersion);
-  expect(release.packages["plugins/forgix"]["package-name"]).toBe("forgix");
+  expect(release.packages["plugins/forgix"]["package-name"]).toBe("@acrasie/forgix");
   expect(release.packages["plugins/forgix"].component).toBe(plugin.name);
 
   const publicSkill = readFileSync(

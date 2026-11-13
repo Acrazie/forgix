@@ -9,7 +9,7 @@
       "name": "forgix",
       "source": "./plugins/forgix",
       "description": "Portable, evidence-based development workflow.",
-      "version": "2.0.0",
+      "version": "0.1.0",
       "category": "Productivity"
     }
   ]

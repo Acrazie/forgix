@@ -53,10 +53,11 @@ const manifestPath = resolve(pluginRoot, ".codex-plugin/plugin.json");
 const claudeManifestPath = resolve(pluginRoot, ".claude-plugin/plugin.json");
 const antigravityManifestPath = resolve(pluginRoot, "plugin.json");
 const claudeMarketplacePath = resolve(repoRoot, ".claude-plugin/marketplace.json");
+const releasePleaseManifestPath = resolve(repoRoot, ".release-please-manifest.json");
 const lockPath = resolve(repoRoot, "bun.lock");
 const bundlePath = resolve(pluginRoot, "dist/forgix.mjs");
 const marketplace = "acrazie";
-const packageName = "forgix";
+const packageName = "@acrasie/forgix";
 const pluginName = "forgix";
 
 let cleanup: (() => Promise<void>) | undefined;
@@ -397,7 +398,9 @@ function planSummary(plan: ReleasePlan, mode: ReleaseMode): string {
             "../../.claude-plugin/marketplace.json",
           ]
         : []),
-      ...(plan.target !== "plugin" ? ["package.json", "../../bun.lock"] : []),
+      ...(plan.target !== "plugin"
+        ? ["package.json", "../../.release-please-manifest.json", "../../bun.lock"]
+        : []),
       "dist/forgix.mjs",
     ]),
   ];
@@ -714,6 +717,7 @@ async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
     claudeManifestPath,
     antigravityManifestPath,
     claudeMarketplacePath,
+    releasePleaseManifestPath,
     lockPath,
     bundlePath,
   ];
@@ -742,6 +746,11 @@ async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
   try {
     if (plan.target !== "plugin") {
       await writeVersion(packagePath, plan.packageVersion);
+      await writeFile(
+        releasePleaseManifestPath,
+        `${JSON.stringify({ "plugins/forgix": plan.packageVersion }, null, 2)}\n`,
+        "utf8",
+      );
       runCheck("Update Bun lock", "bun", ["install"], pluginRoot);
     }
     if (plan.target !== "npm") {

@@ -347,7 +347,7 @@ Shared Project Engineering Profile gains optional `domain_documentation` facet:
 
 Facet activates when evidence shows domain docs/contexts or user requests capability.
 INIT discovers first and asks only contradictory or durable missing choices. Standalone
-`npx forgix init` remains plugin configuration wizard and does not replace
+`npx @acrasie/forgix init` remains plugin configuration wizard and does not replace
 agentic `$forgix init`.
 
 ## Privacy, language, and visuals

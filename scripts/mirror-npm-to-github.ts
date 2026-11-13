@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-export const SOURCE_PACKAGE = "forgix";
+export const SOURCE_PACKAGE = "@acrasie/forgix";
 export const DESTINATION_PACKAGE = "@acrazie/forgix";
 export const SOURCE_REGISTRY = "https://registry.npmjs.org";
 export const DESTINATION_REGISTRY = "https://npm.pkg.github.com";
@@ -138,7 +138,7 @@ export function transformPackageManifest(source: string, expectedVersion: string
     throw new MirrorError(`Source package repository must be "${EXPECTED_REPOSITORY}".`);
   }
 
-  const namePattern = /("name"\s*:\s*)"forgix"/;
+  const namePattern = /("name"\s*:\s*)"@acrasie\/forgix"/;
   if (!namePattern.test(source)) {
     throw new MirrorError("Cannot replace source package name without rewriting manifest bytes.");
   }

@@ -10,7 +10,7 @@ import {
 } from "../scripts/mirror-npm-to-github.ts";
 
 const manifest = `{
-  "name": "forgix",
+  "name": "@acrasie/forgix",
   "version": "0.3.2",
   "repository": {
     "type": "git",
@@ -48,11 +48,11 @@ describe("GitHub package mirror selection", () => {
 
 describe("GitHub package mirror manifest", () => {
   test("targets the renamed package without accepting historical package identity", () => {
-    expect(SOURCE_PACKAGE).toBe("forgix");
+    expect(SOURCE_PACKAGE).toBe("@acrasie/forgix");
     expect(DESTINATION_PACKAGE).toBe("@acrazie/forgix");
     expect(() =>
       transformPackageManifest(
-        manifest.replace('"name": "forgix"', '"name": "codex-dev-flow"'),
+        manifest.replace('"name": "@acrasie/forgix"', '"name": "codex-dev-flow"'),
         "0.3.2",
       ),
     ).toThrow(/name/);
@@ -60,7 +60,7 @@ describe("GitHub package mirror manifest", () => {
   test("changes only package identity bytes", () => {
     const transformed = transformPackageManifest(manifest, "0.3.2");
     expect(transformed).toBe(
-      manifest.replace('"name": "forgix"', `"name": "${DESTINATION_PACKAGE}"`),
+      manifest.replace('"name": "@acrasie/forgix"', `"name": "${DESTINATION_PACKAGE}"`),
     );
     expect(JSON.parse(transformed).description).toBe("forgix remains text here");
   });
@@ -73,7 +73,10 @@ describe("GitHub package mirror manifest", () => {
       /repository/,
     );
     expect(() =>
-      transformPackageManifest(manifest.replace('"name": "forgix"', '"name": "other"'), "0.3.2"),
+      transformPackageManifest(
+        manifest.replace('"name": "@acrasie/forgix"', '"name": "other"'),
+        "0.3.2",
+      ),
     ).toThrow(/name/);
   });
 });

@@ -185,7 +185,7 @@ Exact `$forgix init` (Codex), `/forgix:forgix init` (Claude Code), or `/forgix i
 (Antigravity) performs agentic repository Discovery and adaptive engineering convention
 interview, then validates and publishes digest-bound shared/local project profiles after
 explicit Profile Approval. It creates no TaskState, product scaffold, or task GATE
-approval. Deterministic `npx forgix init` remains separate plugin configuration wizard.
+approval. Deterministic `npx @acrasie/forgix init` remains separate plugin configuration wizard.
 
 Normative profile schema, authority, reconciliation, privacy, and atomic publication:
 [Project Engineering Profile contract](project-profile-contract.md). Ordinary SHAPE may

@@ -3,7 +3,7 @@
   "packages": {
     "plugins/forgix": {
       "release-type": "node",
-      "package-name": "forgix",
+      "package-name": "@acrasie/forgix",
       "changelog-path": "CHANGELOG.md",
       "component": "forgix"
     }

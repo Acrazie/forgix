@@ -70,10 +70,10 @@ copying `./codex-dev-flow/plugins/forgix/` into `~/.gemini/config/plugins/forgix
 ### Standalone CLI
 
 ```bash
-npx forgix init
-npx forgix status
-npx forgix resume <task-id>
-npx forgix config validate
+npx @acrasie/forgix init
+npx @acrasie/forgix status
+npx @acrasie/forgix resume <task-id>
+npx @acrasie/forgix config validate
 ```
 
 ## Quick start
@@ -116,10 +116,10 @@ The optional Configuration wizard customizes plugin operation such as target har
 worktree, subscription, quota, and integrations:
 
 ```bash
-npx forgix init
+npx @acrasie/forgix init
 ```
 
-The npm package and installed command are named `forgix`; the primary skill is `$forgix`
+The npm package is named `@acrasie/forgix` and the installed command is named `forgix`; the primary skill is `$forgix`
 (Codex), `/forgix:forgix` (Claude Code), or `/forgix` (Antigravity).
 Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.
 Existing installations of the old npm package are not automatically migrated.
@@ -169,8 +169,8 @@ proof. Plain questions, read-only exploration, and Git/GitHub delivery do not ne
 | `$forgix config show [--explain]`  | `/forgix:forgix config show [--explain]`  | `/forgix config show [--explain]`  | Show effective configuration and optional provenance.           |
 | `$forgix config validate [--json]` | `/forgix:forgix config validate [--json]` | `/forgix config validate [--json]` | Validate effective configuration.                               |
 
-Standalone CLI: `npx forgix init`, `npx forgix status`, `npx forgix resume <task-id>`,
-`npx forgix config validate`, and `npx forgix benchmark summary`. Durable task state
+Standalone CLI: `npx @acrasie/forgix init`, `npx @acrasie/forgix status`, `npx @acrasie/forgix resume <task-id>`,
+`npx @acrasie/forgix config validate`, and `npx @acrasie/forgix benchmark summary`. Durable task state
 is stored under `.codex/tasks/<task-id>.yaml` and `.codex/tasks/<task-id>.events.jsonl`.
 
 `quick`, `standard`, and `critical` at objective start are plain objective text, not
