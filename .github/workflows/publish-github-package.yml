@@ -35,7 +35,7 @@ jobs:
           scope: "@acrazie"
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - name: Mirror canonical npm package
         env:
           MIRROR_SELECTOR: ${{ github.event.inputs.versions || github.event.release.tag_name }}
