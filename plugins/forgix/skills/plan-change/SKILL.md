@@ -1,6 +1,7 @@
 ---
 name: plan-change
 description: Use when forgix needs an approved, independently verifiable implementation plan.
+user-invocable: false
 ---
 
 Operate only as SHAPE Planning and remain read-only. Consume selected Quick/Plan profile,

@@ -18,8 +18,10 @@ import {
   type RouteTask,
 } from "./routing.js";
 import {
+  HARNESS_IDS,
   REASONING_EFFORTS,
   type CliResult,
+  type HarnessPreference,
   type ModelCapability,
   type QuotaPressure,
   type ResolvedSubscriptionPlan,
@@ -57,15 +59,24 @@ export interface InitOptions {
 
 type WorktreeMode = "auto" | "required";
 type SubscriptionPlan = "auto" | "plus" | "pro_5x" | "pro_20x";
-type ReviewAction = "write" | "workflow" | "subscription" | "integrations" | "cancel";
+type ReviewAction = "write" | "harness" | "workflow" | "subscription" | "integrations" | "cancel";
 
 interface InitDraft {
+  harness: HarnessPreference;
   worktreeMode: WorktreeMode;
   plan: SubscriptionPlan;
   warningPercent: number;
   criticalPercent: number;
   plugins: string[];
   skills: string[];
+}
+
+function usesCodexRouting(harness: HarnessPreference): boolean {
+  return harness === "codex" || harness === "auto";
+}
+
+function totalSteps(harness: HarnessPreference): number {
+  return usesCodexRouting(harness) ? 4 : 3;
 }
 
 const INTEGRATION_ID = /^[A-Za-z0-9][A-Za-z0-9._/-]*(?::[A-Za-z0-9][A-Za-z0-9._/-]*)?$/;
@@ -97,18 +108,61 @@ export async function runInit(options: InitOptions = {}): Promise<CliResult> {
   );
 
   try {
+    draft = await collectHarness(prompts, draft);
     draft = await collectWorkflow(prompts, draft);
-    draft = await collectSubscription(prompts, draft);
+    if (usesCodexRouting(draft.harness)) {
+      draft = await collectSubscription(prompts, draft);
+    }
     draft = await collectIntegrations(prompts, draft);
 
     for (;;) {
       const config = buildConfiguration(current, draft);
       validateConfigSource(config, "init");
       prompts.note(renderConfigurationSummary(path, draft), "Configuration summary");
-      prompts.note(
-        renderRoutingSummary(draft.plan, "normal"),
-        `Automatic routing · ${ROUTING_POLICY_VERSION}`,
-      );
+      if (usesCodexRouting(draft.harness)) {
+        prompts.note(
+          renderRoutingSummary(draft.plan, "normal"),
+          `Automatic routing · ${ROUTING_POLICY_VERSION}`,
+        );
+      } else {
+        prompts.note(
+          "Host-native routing active: Codex app-server and gpt-5.6-* quotas are not required.",
+          `Host-native routing · ${ROUTING_POLICY_VERSION}`,
+        );
+      }
+
+      const choices: PromptChoice<ReviewAction>[] = [
+        {
+          value: "write",
+          label: existed ? "Update configuration" : "Create configuration",
+          hint: path,
+        },
+        {
+          value: "harness",
+          label: "Edit target harness",
+          hint: "Auto, Codex, Claude Code, or Antigravity",
+        },
+        {
+          value: "workflow",
+          label: "Edit workflow behavior",
+          hint: "Worktree isolation",
+        },
+        ...(usesCodexRouting(draft.harness)
+          ? [
+              {
+                value: "subscription" as const,
+                label: "Edit subscription and quota",
+                hint: "Plan and pressure thresholds",
+              },
+            ]
+          : []),
+        {
+          value: "integrations",
+          label: "Edit integrations",
+          hint: "External plugin and skill allowlists",
+        },
+        { value: "cancel", label: "Cancel", hint: "Leave existing files unchanged" },
+      ];
 
       const action = await required(
         prompts,
@@ -117,32 +171,18 @@ export async function runInit(options: InitOptions = {}): Promise<CliResult> {
             ? "Review complete. What should Forgix do?"
             : "Configuration ready. What should Forgix do?",
           initialValue: "write",
-          choices: [
-            {
-              value: "write",
-              label: existed ? "Update configuration" : "Create configuration",
-              hint: path,
-            },
-            {
-              value: "workflow",
-              label: "Edit workflow behavior",
-              hint: "Worktree isolation",
-            },
-            {
-              value: "subscription",
-              label: "Edit subscription and quota",
-              hint: "Plan and pressure thresholds",
-            },
-            {
-              value: "integrations",
-              label: "Edit integrations",
-              hint: "External plugin and skill allowlists",
-            },
-            { value: "cancel", label: "Cancel", hint: "Leave existing files unchanged" },
-          ],
+          choices,
         }),
       );
 
+      if (action === "harness") {
+        const previousHarness = draft.harness;
+        draft = await collectHarness(prompts, draft);
+        if (!usesCodexRouting(previousHarness) && usesCodexRouting(draft.harness)) {
+          draft = await collectSubscription(prompts, draft);
+        }
+        continue;
+      }
       if (action === "workflow") {
         draft = await collectWorkflow(prompts, draft);
         continue;
@@ -206,8 +246,48 @@ export function buildRoutingPreview(
   );
 }
 
+async function collectHarness(prompts: InitPromptAdapter, draft: InitDraft): Promise<InitDraft> {
+  prompts.note(
+    "Choose which agent harness runs Forgix routing in this repository.",
+    `1/${totalSteps(draft.harness)} · Target harness`,
+  );
+  const harness = await required(
+    prompts,
+    prompts.select<HarnessPreference>({
+      message: "Which harness should Forgix target in this repository?",
+      initialValue: draft.harness,
+      choices: [
+        {
+          value: "auto",
+          label: "Auto-detect active harness",
+          hint: "Recommended — detects Codex, Claude Code, or Antigravity at runtime",
+        },
+        {
+          value: "codex",
+          label: "Codex",
+          hint: "Uses Codex app-server and gpt-5.6-* quota-aware routing",
+        },
+        {
+          value: "claude",
+          label: "Claude Code",
+          hint: "Uses host-native Claude Code model and session",
+        },
+        {
+          value: "antigravity",
+          label: "Antigravity",
+          hint: "Uses host-native Antigravity model and session",
+        },
+      ],
+    }),
+  );
+  return { ...draft, harness };
+}
+
 async function collectWorkflow(prompts: InitPromptAdapter, draft: InitDraft): Promise<InitDraft> {
-  prompts.note("Choose how Forgix isolates changes.", "1/3 · Workflow behavior");
+  prompts.note(
+    "Choose how Forgix isolates changes.",
+    `2/${totalSteps(draft.harness)} · Workflow behavior`,
+  );
   const worktreeMode = await required(
     prompts,
     prompts.select<WorktreeMode>({
@@ -236,7 +316,7 @@ async function collectSubscription(
 ): Promise<InitDraft> {
   prompts.note(
     "Your plan controls available routing depth. Forgix still chooses each model by skill, workflow risk, and initial quota pressure.",
-    "2/3 · Subscription and quota",
+    "3/4 · Subscription and quota",
   );
   const plan = await required(
     prompts,
@@ -292,9 +372,10 @@ async function collectIntegrations(
   prompts: InitPromptAdapter,
   draft: InitDraft,
 ): Promise<InitDraft> {
+  const steps = totalSteps(draft.harness);
   prompts.note(
     "Optional allowlists restrict external capabilities Forgix may use. Leave empty for none.\nExamples: impeccable, context-mode:ctx-search",
-    "3/3 · External integrations",
+    `${steps}/${steps} · External integrations`,
   );
   const plugins = await idsPrompt(
     prompts,
@@ -315,13 +396,15 @@ function buildConfiguration(
   current: Record<string, unknown>,
   draft: InitDraft,
 ): Record<string, unknown> {
-  const worktree = record(current.worktree);
-  const subscription = record(current.subscription);
+  const { harness: _previousHarness, ...restCurrent } = current;
+  const worktree = record(restCurrent.worktree);
+  const subscription = record(restCurrent.subscription);
   const quota = record(subscription.quota);
-  const integrations = record(current.integrations);
+  const integrations = record(restCurrent.integrations);
   return {
-    ...current,
+    ...restCurrent,
     schemaVersion: 1,
+    ...(draft.harness !== "auto" ? { harness: draft.harness } : {}),
     worktree: { ...worktree, mode: draft.worktreeMode },
     merge: "never",
     subscription: {
@@ -344,6 +427,7 @@ function draftFromConfiguration(current: Record<string, unknown>): InitDraft {
   const quota = record(subscription.quota);
   const integrations = record(current.integrations);
   return {
+    harness: choiceValue(current.harness, ["auto", ...HARNESS_IDS], "auto"),
     worktreeMode: choiceValue(worktree.mode, ["auto", "required"], "auto"),
     plan: choiceValue(subscription.plan, ["auto", "plus", "pro_5x", "pro_20x"], "auto"),
     warningPercent: numberValue(quota.warningPercent, 50),
@@ -356,12 +440,21 @@ function draftFromConfiguration(current: Record<string, unknown>): InitDraft {
 function renderConfigurationSummary(path: string, draft: InitDraft): string {
   return [
     `Target: ${path}`,
+    `Harness: ${draft.harness}`,
     `Worktrees: ${draft.worktreeMode}`,
-    `Subscription: ${draft.plan === "auto" ? "automatic (Plus if unknown)" : draft.plan}`,
-    `Quota pressure: warning ${draft.warningPercent}% · critical ${draft.criticalPercent}%`,
+    ...(usesCodexRouting(draft.harness)
+      ? [
+          `Subscription: ${draft.plan === "auto" ? "automatic (Plus if unknown)" : draft.plan}`,
+          `Quota pressure: warning ${draft.warningPercent}% · critical ${draft.criticalPercent}%`,
+        ]
+      : [`Routing: host-native (managed by ${draft.harness})`]),
     `Plugins: ${draft.plugins.join(", ") || "none"}`,
     `Skills: ${draft.skills.join(", ") || "none"}`,
-    `Model costs: Luna ${MODEL_COST_MULTIPLIERS["gpt-5.6-luna"]}x · Terra ${MODEL_COST_MULTIPLIERS["gpt-5.6-terra"]}x · Sol ${MODEL_COST_MULTIPLIERS["gpt-5.6-sol"]}x`,
+    ...(usesCodexRouting(draft.harness)
+      ? [
+          `Model costs: Luna ${MODEL_COST_MULTIPLIERS["gpt-5.6-luna"]}x · Terra ${MODEL_COST_MULTIPLIERS["gpt-5.6-terra"]}x · Sol ${MODEL_COST_MULTIPLIERS["gpt-5.6-sol"]}x`,
+        ]
+      : []),
   ].join("\n");
 }
 

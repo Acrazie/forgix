@@ -1,7 +1,7 @@
 {
   "name": "forgix",
   "version": "1.0.1",
-  "description": "Portable Codex development workflow plugin.",
+  "description": "Portable development workflow plugin for Codex, Claude Code, and Antigravity.",
   "license": "MIT",
   "homepage": "https://github.com/Acrazie/codex-dev-flow#readme",
   "repository": {
@@ -14,6 +14,8 @@
   },
   "keywords": [
     "codex",
+    "claude-code",
+    "antigravity",
     "workflow",
     "cli",
     "plugin",
@@ -25,13 +27,15 @@
     "forgix": "dist/forgix.mjs"
   },
   "files": [
+    ".claude-plugin/",
     ".codex-plugin/",
     "dist/",
     "docs/",
     "schemas/",
     "skills/",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "plugin.json"
   ],
   "publishConfig": {
     "access": "public"

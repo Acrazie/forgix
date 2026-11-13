@@ -1392,8 +1392,12 @@ function defaultContextCapsule(config: unknown, policy: unknown): ContextCapsule
   };
 }
 function routingStable(snapshot: RoutingSnapshot): string {
-  const { capturedAt: _capturedAt, ...rest } = snapshot;
-  return stable(rest);
+  const { capturedAt: _capturedAt, mode, harness, ...rest } = snapshot;
+  return stable({
+    ...rest,
+    mode: mode ?? "codex-app-server",
+    harness: harness ?? "codex",
+  });
 }
 function validateTransitionOptionKeys(options: TransitionOptions): void {
   const allowed = new Set([

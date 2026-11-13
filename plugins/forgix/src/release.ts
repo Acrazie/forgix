@@ -191,7 +191,12 @@ export function createReleasePlan(input: {
 
 export function allowedReleasePaths(target: ReleaseTarget): ReadonlySet<string> {
   const paths = new Set<string>(["plugins/forgix/dist/forgix.mjs"]);
-  if (target !== "npm") paths.add("plugins/forgix/.codex-plugin/plugin.json");
+  if (target !== "npm") {
+    paths.add("plugins/forgix/.codex-plugin/plugin.json");
+    paths.add("plugins/forgix/.claude-plugin/plugin.json");
+    paths.add("plugins/forgix/plugin.json");
+    paths.add(".claude-plugin/marketplace.json");
+  }
   if (target !== "plugin") {
     paths.add("plugins/forgix/package.json");
     paths.add("bun.lock");
@@ -219,12 +224,17 @@ export function unexpectedReleasePaths(paths: readonly string[], target: Release
   return paths.filter((path) => !allowed.has(path));
 }
 
-export function validatePluginManifest(value: unknown): asserts value is Record<string, unknown> {
+export type PluginManifestKind = "codex" | "claude" | "antigravity";
+
+export function validatePluginManifest(
+  value: unknown,
+  kind: PluginManifestKind = "codex",
+): asserts value is Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new ReleaseError("Plugin manifest must be a JSON object.");
   }
   const manifest = value as Record<string, unknown>;
-  for (const field of ["name", "version", "description", "license", "skills"]) {
+  for (const field of ["name", "version", "description", "license"]) {
     if (typeof manifest[field] !== "string" || manifest[field] === "") {
       throw new ReleaseError(`Plugin manifest field "${field}" must be a non-empty string.`);
     }
@@ -232,10 +242,143 @@ export function validatePluginManifest(value: unknown): asserts value is Record<
   if (manifest.name !== "forgix") {
     throw new ReleaseError('Plugin manifest name must be "forgix".');
   }
-  semanticBase(String(manifest.version));
-  if (!String(manifest.skills).endsWith("/")) {
-    throw new ReleaseError('Plugin manifest "skills" path must end with "/".');
+
+  if (kind === "codex") {
+    semanticBase(String(manifest.version));
+  } else {
+    parseStableVersion(String(manifest.version));
   }
+
+  if (kind === "claude") {
+    if ("interface" in manifest) {
+      throw new ReleaseError('Claude plugin manifest must not contain "interface".');
+    }
+    if (typeof manifest.skills !== "string" || manifest.skills === "") {
+      throw new ReleaseError('Plugin manifest field "skills" must be a non-empty string.');
+    }
+    if (!manifest.skills.endsWith("/")) {
+      throw new ReleaseError('Plugin manifest "skills" path must end with "/".');
+    }
+  } else if (kind === "codex") {
+    if (typeof manifest.skills !== "string" || manifest.skills === "") {
+      throw new ReleaseError('Plugin manifest field "skills" must be a non-empty string.');
+    }
+    if (!manifest.skills.endsWith("/")) {
+      throw new ReleaseError('Plugin manifest "skills" path must end with "/".');
+    }
+  } else if (manifest.skills !== undefined) {
+    if (
+      typeof manifest.skills !== "string" ||
+      manifest.skills === "" ||
+      !manifest.skills.endsWith("/")
+    ) {
+      throw new ReleaseError(
+        'Plugin manifest "skills" path must be a non-empty string ending with "/".',
+      );
+    }
+  }
+}
+
+export function validateClaudeMarketplaceManifest(
+  value: unknown,
+): asserts value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new ReleaseError("Claude marketplace manifest must be a JSON object.");
+  }
+  const manifest = value as Record<string, unknown>;
+  if (manifest.name !== "acrazie") {
+    throw new ReleaseError('Claude marketplace manifest "name" must be "acrazie".');
+  }
+  if (
+    !manifest.owner ||
+    typeof manifest.owner !== "object" ||
+    Array.isArray(manifest.owner) ||
+    typeof (manifest.owner as Record<string, unknown>).name !== "string" ||
+    (manifest.owner as Record<string, unknown>).name === ""
+  ) {
+    throw new ReleaseError('Claude marketplace manifest "owner.name" must be a non-empty string.');
+  }
+  if (typeof manifest.description !== "string" || manifest.description === "") {
+    throw new ReleaseError('Claude marketplace manifest "description" must be a non-empty string.');
+  }
+  if (!Array.isArray(manifest.plugins) || manifest.plugins.length === 0) {
+    throw new ReleaseError('Claude marketplace manifest "plugins" must be a non-empty array.');
+  }
+  const forgix = manifest.plugins.find(
+    (entry): entry is Record<string, unknown> =>
+      Boolean(entry) &&
+      typeof entry === "object" &&
+      !Array.isArray(entry) &&
+      (entry as Record<string, unknown>).name === "forgix",
+  );
+  if (!forgix) {
+    throw new ReleaseError('Claude marketplace manifest must include a "forgix" plugin entry.');
+  }
+  if (forgix.source !== "./plugins/forgix") {
+    throw new ReleaseError(
+      'Claude marketplace manifest "forgix" entry source must be "./plugins/forgix".',
+    );
+  }
+  if (typeof forgix.description !== "string" || forgix.description === "") {
+    throw new ReleaseError(
+      'Claude marketplace manifest "forgix" entry must have a non-empty description.',
+    );
+  }
+  if (typeof forgix.version !== "string") {
+    throw new ReleaseError(
+      'Claude marketplace manifest "forgix" entry must have a string version.',
+    );
+  }
+  parseStableVersion(forgix.version);
+}
+
+export function replaceMarketplacePluginVersion(
+  contents: string,
+  pluginName: string,
+  nextVersion: string,
+): string {
+  parseStableVersion(nextVersion);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(contents);
+  } catch {
+    throw new ReleaseError("Cannot update plugin version in invalid JSON marketplace.");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new ReleaseError("Cannot update plugin version outside a JSON object marketplace.");
+  }
+  const plugins = (parsed as Record<string, unknown>).plugins;
+  if (!Array.isArray(plugins)) {
+    throw new ReleaseError('Cannot locate "plugins" array in Claude marketplace manifest.');
+  }
+  const entry = plugins.find(
+    (item): item is Record<string, unknown> =>
+      Boolean(item) &&
+      typeof item === "object" &&
+      !Array.isArray(item) &&
+      (item as Record<string, unknown>).name === pluginName,
+  );
+  if (!entry || typeof entry.version !== "string") {
+    throw new ReleaseError(
+      `Cannot locate plugin "${pluginName}" version in Claude marketplace manifest.`,
+    );
+  }
+  const entryPattern = new RegExp(
+    `("name"\\s*:\\s*${escapeRegex(JSON.stringify(pluginName))}[\\s\\S]*?"version"\\s*:\\s*)("(?:\\\\.|[^"\\\\])*")`,
+  );
+  const match = entryPattern.exec(contents);
+  if (!match || JSON.parse(match[2]!) !== entry.version) {
+    throw new ReleaseError(
+      `Cannot locate formatted version field for "${pluginName}" in marketplace JSON.`,
+    );
+  }
+  const valueStart = match.index + match[1]!.length;
+  const valueEnd = valueStart + match[2]!.length;
+  return `${contents.slice(0, valueStart)}${JSON.stringify(nextVersion)}${contents.slice(valueEnd)}`;
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function parseReleaseCommit(subject: string): {

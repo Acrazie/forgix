@@ -43,13 +43,16 @@ ESM distribution, and executes every current test suite.
 ## Repository layout
 
 ```text
-.agents/plugins/marketplace.json       Local marketplace catalog
+.agents/plugins/marketplace.json       Codex marketplace catalog
+.claude-plugin/marketplace.json        Claude Code marketplace catalog
 .github/workflows/                    Repository CI and release workflows
 lefthook.yml                          Git hooks (pre-commit & commit-msg)
 scripts/                              Repository quality & workflow tooling
 test/                                 Repository tooling tests
 plugins/forgix/
-  .codex-plugin/plugin.json            Plugin manifest
+  .claude-plugin/plugin.json           Claude Code plugin manifest
+  .codex-plugin/plugin.json            Codex plugin manifest
+  plugin.json                          Antigravity plugin manifest
   skills/                              Workflow reasoning and stage guidance
   src/                                 Deterministic runtime behavior
   schemas/                             Configuration, policy, and state schemas
@@ -59,7 +62,7 @@ plugins/forgix/
 
 Skills own discovery, planning, execution guidance, debugging, review, and verification. TypeScript owns deterministic parsing, configuration resolution, policy enforcement, routing, state transitions, fingerprints, and artifact handling.
 
-Keep `$forgix` as the only public workflow. Internal stage skills are implementation details, not separate user-facing commands.
+Keep Forgix (`$forgix` / `/forgix:forgix` / `/forgix`) as the only public workflow. Internal stage skills carry `user-invocable: false` and are implementation details, not separate user-facing commands.
 
 ## Make a change
 
@@ -141,8 +144,8 @@ From repository root:
 bun run release
 ```
 
-Interactive flow selects plugin, npm, or combined release; previews without durable
-changes; checks GitHub/npm authentication; validates release; and asks before publishing.
+Interactive flow selects multi-harness plugins (`plugin`), `npm`, or combined (`both`) release; previews without durable
+changes; checks GitHub/npm authentication; validates synchronized manifests; and asks before publishing.
 It requires clean, synchronized `main`. Missing auth prints corrective command. Partial
 publication is detected on next run and can resume without creating another version.
 Release automation is supported on Linux and macOS. Windows is unsupported.

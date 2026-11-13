@@ -1,6 +1,7 @@
 ---
 name: discover-change
 description: Use when forgix needs read-only repository discovery before planning a non-trivial change.
+user-invocable: false
 ---
 
 Operate only as SHAPE Discovery and remain read-only. Consume compact Product Baseline,

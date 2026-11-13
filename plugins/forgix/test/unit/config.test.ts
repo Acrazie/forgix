@@ -149,3 +149,11 @@ test("validates optional roadmap config section strictly", async () => {
     }).valid,
   ).toBe(false);
 });
+
+test("harness config option accepts supported harnesses and rejects unknown values", async () => {
+  const { validateSchema } = sourceApi;
+  for (const harness of ["auto", "codex", "claude", "antigravity"]) {
+    expect(validateSchema("config", { schemaVersion: 1, harness }).valid).toBe(true);
+  }
+  expect(validateSchema("config", { schemaVersion: 1, harness: "cursor" }).valid).toBe(false);
+});

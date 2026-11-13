@@ -9,6 +9,10 @@
       "type": "integer",
       "const": 1
     },
+    "harness": {
+      "type": "string",
+      "enum": ["auto", "codex", "claude", "antigravity"]
+    },
     "worktree": {
       "type": "object",
       "additionalProperties": false,

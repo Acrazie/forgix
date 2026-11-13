@@ -1,6 +1,7 @@
 ---
 name: design-decisions
 description: Use internally when forgix resolves one material product, domain, terminology, or technical design frontier.
+user-invocable: false
 ---
 
 Operate only inside parent Forgix INTAKE or SHAPE. Consume typed design state, current

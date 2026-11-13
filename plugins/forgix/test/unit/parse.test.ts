@@ -92,3 +92,46 @@ test("rejects invalid invocations with a stable exit code", async () => {
   );
   expect(() => parseInvocation(["roadmap", "unknown"])).toThrow(/Invalid roadmap invocation/);
 });
+
+test("parses --harness option across subcommands and run objectives", async () => {
+  const { InvocationError, parseInvocation } = sourceApi;
+  expect(parseInvocation(["--harness", "claude", "status"])).toEqual({
+    command: "status",
+    taskId: undefined,
+    harness: "claude",
+  });
+  expect(parseInvocation(["status", "task-7", "--harness=antigravity"])).toEqual({
+    command: "status",
+    taskId: "task-7",
+    harness: "antigravity",
+  });
+  expect(parseInvocation(["config", "show", "--harness", "codex", "--explain"])).toEqual({
+    command: "config_show",
+    explain: true,
+    harness: "codex",
+  });
+  expect(parseInvocation(["--harness", "claude", "--benchmark", "ship", "auth"])).toEqual({
+    command: "run",
+    objective: "ship auth",
+    flags: { benchmark: true },
+    harness: "claude",
+  });
+  expect(parseInvocation(["--benchmark", "--harness=auto", "ship", "auth"])).toEqual({
+    command: "run",
+    objective: "ship auth",
+    flags: { benchmark: true },
+    harness: "auto",
+  });
+  expectThrown(
+    () => parseInvocation(["--harness", "cursor", "status"]),
+    (e) => e instanceof InvocationError,
+  );
+  expectThrown(
+    () => parseInvocation(["--harness", "claude", "--harness", "codex", "status"]),
+    (e) => e instanceof InvocationError,
+  );
+  expectThrown(
+    () => parseInvocation(["status", "--harness="]),
+    (e) => e instanceof InvocationError,
+  );
+});

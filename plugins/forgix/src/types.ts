@@ -4,6 +4,11 @@ import type { DesignState } from "./design.js";
 export const ALLOWED_MODEL_IDS = ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] as const;
 export type ModelId = (typeof ALLOWED_MODEL_IDS)[number];
 
+export const HARNESS_IDS = ["codex", "claude", "antigravity"] as const;
+export type HarnessId = (typeof HARNESS_IDS)[number];
+export type HarnessPreference = "auto" | HarnessId;
+export type RoutingMode = "codex-app-server" | "host-native";
+
 export const REASONING_EFFORTS = ["low", "medium", "high", "xhigh"] as const;
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
@@ -42,6 +47,8 @@ export interface SanitizedAccount {
 
 export interface RoutingSnapshot {
   schemaVersion: 1;
+  mode?: RoutingMode;
+  harness?: HarnessId;
   capturedAt: string;
   plan: ResolvedSubscriptionPlan;
   account: SanitizedAccount;

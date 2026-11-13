@@ -2,8 +2,10 @@
 
 ## Forgix
 
-The software engineering package, CLI (`forgix`), plugin and primary skill (`$forgix`).
-Historical configuration paths and persisted identifiers remain unchanged, not command aliases.
+The software engineering package, CLI (`forgix`), multi-harness plugin (Codex, Claude Code,
+and Antigravity), and primary skill (`$forgix`, `/forgix:forgix`, `/forgix`).
+Historical `.codex/` configuration paths and persisted identifiers remain unchanged across all
+three harnesses, not command aliases.
 
 ## Artifact
 
@@ -50,11 +52,11 @@ the lifecycle, never changes task outcome, and is never uploaded automatically.
 
 ## BUILD
 
-The thin lifecycle boundary in which native Codex implements the complete approved plan.
-Forgix verifies current Approval and exact digest before writes or resume, but adds no
-execution skill, checkpoint, progress tracker, validation loop, or persisted BUILD
-output. Material contract change returns to SHAPE then GATE; completion enters ASSURE
-automatically.
+The thin lifecycle boundary in which the active host agent (Codex, Claude Code, or
+Antigravity) implements the complete approved plan. Forgix verifies current Approval and
+exact digest before writes or resume, but adds no execution skill, checkpoint, progress
+tracker, validation loop, or persisted BUILD output. Material contract change returns to
+SHAPE then GATE; completion enters ASSURE automatically.
 
 ## Bun test suite
 
@@ -326,9 +328,10 @@ and optional local Codex plugin refresh.
 
 ## Release target
 
-The maintainer-selected artifact set for one release: Codex plugin, npm package, or both.
-It determines version mutation, tag namespace, validation, publication, and recovery
-steps.
+The maintainer-selected artifact set for one release: multi-harness plugins (`plugin`:
+Codex, Claude Code, and Antigravity manifests + Claude marketplace), `npm` package, or
+`both`. It determines version mutation, tag namespace, validation, publication, and
+recovery steps.
 
 ## Root cause ID
 

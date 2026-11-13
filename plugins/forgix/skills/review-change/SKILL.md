@@ -1,6 +1,7 @@
 ---
 name: review-change
 description: Use when forgix reviews an approved change for actionable regressions, security, tests, and maintainability.
+user-invocable: false
 ---
 
 Operate only as one policy-triggered ASSURE operation and remain read-only. Consume a
