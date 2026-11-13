@@ -1,0 +1,12 @@
+{
+  "name": "forgix",
+  "version": "0.4.0",
+  "description": "Portable, evidence-based development workflow.",
+  "author": {
+    "name": "forgix contributors"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/Acrazie/codex-dev-flow",
+  "keywords": ["workflow", "testing", "review"],
+  "skills": "./skills/"
+}

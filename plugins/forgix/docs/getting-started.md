@@ -7,9 +7,9 @@ runs a first task, and explains how to resume safely. Normative behavior remains
 
 ## 1. Check requirements
 
-Plugin users need:
+Plugin and CLI users need:
 
-- Codex with plugin support;
+- **Codex**, **Claude Code**, or **Antigravity** (with plugin support);
 - Node.js 24 or newer;
 - Git; and
 - Linux or macOS.
@@ -24,6 +24,10 @@ Bun is not required to use the published plugin. It is a contributor dependency 
 
 ## 2. Install the plugin
 
+Choose your agent harness:
+
+### Codex
+
 ```bash
 codex plugin marketplace add Acrazie/codex-dev-flow
 codex plugin add forgix@acrazie
@@ -32,9 +36,29 @@ codex plugin add forgix@acrazie
 The same installation is available interactively through `/plugins`: select
 **Acrazie**, install **Forgix**, then start a new Codex session.
 
+### Claude Code
+
+```text
+/plugin marketplace add Acrazie/codex-dev-flow
+/plugin install forgix@acrazie
+```
+
+Or via CLI: `claude plugin marketplace add Acrazie/codex-dev-flow && claude plugin install forgix@acrazie`.
+
+### Antigravity
+
+```bash
+git clone https://github.com/Acrazie/codex-dev-flow.git
+agy plugin install ./codex-dev-flow/plugins/forgix
+```
+
+You can also import an existing Claude Code installation (`agy plugin import claude`) or
+copy `./codex-dev-flow/plugins/forgix/` into `~/.gemini/config/plugins/forgix/`.
+
 ## 3. Run Project INIT
 
-Open Codex from the project repository and invoke:
+Open your repository in Codex (`$forgix init`), Claude Code (`/forgix:forgix init`), or
+Antigravity (`/forgix init`) and invoke:
 
 ```text
 $forgix init
@@ -90,7 +114,8 @@ convention. Project INIT creates neither application code nor Forgix task state.
 
 ## 4. Run the first task
 
-Invoke a concrete software objective:
+Invoke a concrete software objective (`$forgix` on Codex, `/forgix:forgix` on Claude Code,
+`/forgix` on Antigravity):
 
 ```text
 $forgix Add rate limiting to the public authentication endpoints
@@ -107,8 +132,9 @@ INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
    Quick or Plan implementation contract.
 3. **GATE** displays a compact validation card and requires explicit approval of the
    exact contract.
-4. **BUILD** lets native Codex implement the complete approved plan. Forgix only
-   checks the current approval/digest boundary and returns material changes to SHAPE.
+4. **BUILD** lets the active host agent (Codex, Claude Code, or Antigravity) implement the
+   complete approved plan. Forgix only checks the current approval/digest boundary and
+   returns material changes to SHAPE.
 5. **ASSURE** reviews the result and runs fresh criterion-linked verification.
 
 GATE approval covers local implementation only. It never authorizes commit, push, pull
@@ -134,13 +160,15 @@ pause `high`/`critical` items for human approval), and hand off Draft PRs on `AS
 ## 5. Optional Configuration wizard
 
 Project INIT owns project engineering knowledge. The separate deterministic
-Configuration wizard owns plugin operating preferences:
+Configuration wizard owns plugin operating preferences (including target `harness`,
+worktree behavior, subscription/quota hints for `codex`/`auto`, and allowlisted integrations):
 
 ```bash
 npx forgix init
 ```
 
-The npm package and installed command are named `forgix`; the primary skill is `$forgix`.
+The npm package and installed command are named `forgix`; the primary skill is `$forgix`
+(Codex), `/forgix:forgix` (Claude Code), or `/forgix` (Antigravity).
 Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.
 Existing installations of the old npm package are not automatically migrated.
 Upgrade the Acrazie marketplace and install `forgix@acrazie` to use the renamed
@@ -148,9 +176,9 @@ plugin; existing `.codex/` project configuration and state remain unchanged.
 Replace the old plugin installation rather than installing both plugin identities
 side by side.
 
-Use it to customize worktree behavior, subscription/quota hints, or allowlisted
+Use it to customize target harness, worktree behavior, subscription/quota hints, or allowlisted
 integrations. Defaults already exist, so the wizard is optional. Inspect or validate the
-resolved configuration from Codex:
+resolved configuration from your harness (`$forgix`, `/forgix:forgix`, or `/forgix`) or CLI:
 
 ```text
 $forgix config show --explain

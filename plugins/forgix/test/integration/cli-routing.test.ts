@@ -44,7 +44,11 @@ test("run and resume capture one routing snapshot per invocation", async () => {
     calls += 1;
     return routingResult();
   };
-  const run = await runInvocation(["standard", "change", "thing"], { captureSnapshot });
+  const run = await runInvocation(["standard", "change", "thing"], {
+    captureSnapshot,
+    env: {},
+    entrypointPath: "/usr/local/bin/forgix",
+  });
   expect(calls).toBe(1);
   expect(run.status).toBe("routed");
   expect(run.data.routingDecisions.length).toBe(5);
@@ -56,7 +60,11 @@ test("run and resume capture one routing snapshot per invocation", async () => {
     "review",
   ]);
   expect(run.data.routingPolicyVersion).toBe("2026-08-13.taskstate-v6.v1");
-  await runInvocation(["resume", "task-1"], { captureSnapshot });
+  await runInvocation(["resume", "task-1"], {
+    captureSnapshot,
+    env: {},
+    entrypointPath: "/usr/local/bin/forgix",
+  });
   expect(calls).toBe(2);
 });
 
@@ -66,6 +74,8 @@ test("missing exact route reports routing_unavailable without fallback", async (
   result.snapshot.models = result.snapshot.models.filter((model) => model.id === "gpt-5.6-luna");
   const run = await runInvocation(["standard", "change", "thing"], {
     captureSnapshot: async () => result,
+    env: {},
+    entrypointPath: "/usr/local/bin/forgix",
   });
   expect(run.status).toBe("routing_unavailable");
   const plan = run.data.routingDecisions.find((decision) => decision.stage === "plan");
@@ -90,6 +100,8 @@ test("state permission failure requests approval instead of reporting generic ro
 
   const run = await runInvocation(["standard", "change", "thing"], {
     captureSnapshot: async () => unavailable,
+    env: {},
+    entrypointPath: "/usr/local/bin/forgix",
   });
   expect(run.status).toBe("routing_permission_required");
   expect(run.data.routingFailure).toEqual(unavailable.failure);
@@ -119,6 +131,8 @@ test("a cached five-hour reset supplies safe fallback metadata without stale usa
       captureSnapshot: async () => live,
       quotaCachePath,
       nowEpochSeconds,
+      env: {},
+      entrypointPath: "/usr/local/bin/forgix",
     });
     const cached = JSON.parse(await readFile(quotaCachePath, "utf8"));
     expect(cached).toEqual({
@@ -143,6 +157,8 @@ test("a cached five-hour reset supplies safe fallback metadata without stale usa
       captureSnapshot: async () => missing,
       quotaCachePath,
       nowEpochSeconds,
+      env: {},
+      entrypointPath: "/usr/local/bin/forgix",
     });
     expect(fallback.data.routingSnapshot.quota).toEqual({
       windowDurationMins: 300,
@@ -184,6 +200,8 @@ test("an expired cached reset is ignored", async () => {
       captureSnapshot: async () => missing,
       quotaCachePath,
       nowEpochSeconds,
+      env: {},
+      entrypointPath: "/usr/local/bin/forgix",
     });
     expect(result.data.routingSnapshot.quota.source).toBe("unknown");
     expect(result.data.routingSnapshot.warnings.includes("quota_fallback_last_known")).toBe(false);
@@ -214,10 +232,116 @@ test("cache write failure is non-fatal and explicit", async () => {
       captureSnapshot: async () => live,
       quotaCachePath: join(blocker, "quota-cache.json"),
       nowEpochSeconds,
+      env: {},
+      entrypointPath: "/usr/local/bin/forgix",
     });
     expect(result.status).toBe("routed");
     expect(result.data.routingSnapshot.warnings.includes("quota_cache_write_failed")).toBeTruthy();
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("claude and antigravity use host-native routing without invoking app-server or quota cache", async () => {
+  const { runInvocation } = sourceApi;
+  const directory = await mkdtemp(join(tmpdir(), "forgix-host-native-"));
+  const quotaCachePath = join(directory, "quota-cache.json");
+  let calls = 0;
+  try {
+    const results = await Promise.all(
+      ["claude", "antigravity"].map(async (harness) => ({
+        harness,
+        result: await runInvocation(["--harness", harness, "ship", "feature"], {
+          captureSnapshot: async () => {
+            calls += 1;
+            return routingResult();
+          },
+          quotaCachePath,
+          env: {},
+          entrypointPath: "/usr/local/bin/forgix",
+        }),
+      })),
+    );
+    expect(calls).toBe(0);
+    for (const { harness, result } of results) {
+      expect(result.status).toBe("routed");
+      expect(result.data.routingSnapshot.mode).toBe("host-native");
+      expect(result.data.routingSnapshot.harness).toBe(harness);
+      expect("subscriptionMultiplier" in result.data.routingSnapshot).toBe(false);
+      expect(
+        result.data.routingDecisions.every(
+          (decision) =>
+            decision.model === null &&
+            decision.effort === null &&
+            decision.reason === `host-native:${harness}`,
+        ),
+      ).toBe(true);
+    }
+    const cachePresent = await readFile(quotaCachePath, "utf8").then(
+      () => true,
+      () => false,
+    );
+    expect(cachePresent).toBe(false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("resolveHarness follows CLI flag, config, env, entrypoint, and fallback precedence", () => {
+  const { resolveHarness } = sourceApi;
+  expect(
+    resolveHarness({
+      flag: "claude",
+      configHarness: "codex",
+      env: { CODEX_THREAD_ID: "t1" },
+      entrypointPath: "/Users/me/.gemini/config/plugins/forgix/dist/forgix.mjs",
+    }),
+  ).toBe("claude");
+  expect(
+    resolveHarness({
+      flag: "auto",
+      configHarness: "claude",
+      env: { ANTIGRAVITY_AGENT: "1" },
+    }),
+  ).toBe("antigravity");
+  expect(
+    resolveHarness({
+      configHarness: "antigravity",
+      env: { CLAUDECODE: "1" },
+    }),
+  ).toBe("antigravity");
+  expect(
+    resolveHarness({
+      env: { CODEX_THREAD_ID: "t1", CLAUDECODE: "1", ANTIGRAVITY_AGENT: "1" },
+    }),
+  ).toBe("codex");
+  expect(
+    resolveHarness({
+      env: { CLAUDE_PLUGIN_ROOT: "/tmp/p", ANTIGRAVITY_AGENT: "1" },
+    }),
+  ).toBe("claude");
+  expect(
+    resolveHarness({
+      env: {},
+      entrypointPath: "/Users/me/.gemini/config/plugins/forgix/dist/forgix.mjs",
+    }),
+  ).toBe("antigravity");
+  expect(
+    resolveHarness({
+      env: {},
+      entrypointPath: "/Users/me/.gemini/antigravity/worktrees/repo/branch/dist/forgix.mjs",
+    }),
+  ).toBe("codex");
+  expect(
+    resolveHarness({
+      env: {},
+      entrypointPath: "/Users/me/.claude/plugins/forgix/dist/forgix.mjs",
+    }),
+  ).toBe("claude");
+  expect(
+    resolveHarness({
+      env: {},
+      entrypointPath: "/usr/local/bin/forgix",
+    }),
+  ).toBe("codex");
 });

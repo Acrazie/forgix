@@ -1,6 +1,7 @@
 ---
 name: debug-root-cause
 description: Use when a stable validation or review issue has failed two code corrections.
+user-invocable: false
 ---
 
 Operate only inside ASSURE resolution after same stable Issue survives two code

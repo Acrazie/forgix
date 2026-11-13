@@ -20,11 +20,11 @@ The release design and safety rationale are recorded in
 
 ## Supported release targets
 
-| Target       | Version change                                                   | Tag                                     | Publication                                                  |
-| ------------ | ---------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------ |
-| Plugin + npm | Increment npm SemVer; give plugin same base plus UTC cachebuster | `v<version>`                            | Git push, npm, GitHub Release, optional local plugin refresh |
-| Codex plugin | Keep semantic base; replace plugin UTC cachebuster               | `plugin-v<version>-codex.<cachebuster>` | Git push, GitHub Release, optional local plugin refresh      |
-| npm package  | Increment npm SemVer; leave plugin manifest unchanged            | `npm-v<version>`                        | Git push, npm, GitHub Release                                |
+| Target                | Version change                                                                               | Tag                                     | Publication                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------ |
+| Plugin + npm          | Increment npm SemVer; sync base SemVer across all plugin/marketplace manifests + cachebuster | `v<version>`                            | Git push, npm, GitHub Release, optional local plugin refresh |
+| Multi-harness plugins | Keep semantic base across Codex/Claude/Antigravity/marketplace; replace Codex cachebuster    | `plugin-v<version>-codex.<cachebuster>` | Git push, GitHub Release, optional local plugin refresh      |
+| npm package           | Increment npm SemVer; leave plugin manifests unchanged                                       | `npm-v<version>`                        | Git push, npm, GitHub Release                                |
 
 Only stable npm versions are supported. The program recommends patch, minor, or major
 from Conventional Commits; maintainer retains final version authority.
@@ -102,7 +102,7 @@ Before any publication, program performs:
 2. frozen dependency installation;
 3. typecheck and deterministic build;
 4. main and release test suites;
-5. plugin-manifest validation;
+5. plugin-manifest validation across `plugins/forgix/.codex-plugin/plugin.json`, `plugins/forgix/.claude-plugin/plugin.json`, `plugins/forgix/plugin.json`, and `.claude-plugin/marketplace.json` (plus `claude plugin validate --strict` and `agy plugin validate plugins/forgix --strict --json` when locally installed);
 6. npm package inspection and publish dry-run when applicable;
 7. generated-file allowlist validation;
 8. release commit, annotated tag, and generated GitHub release-note preview.

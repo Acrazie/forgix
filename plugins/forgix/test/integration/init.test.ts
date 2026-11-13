@@ -33,7 +33,7 @@ test("init writes validated configuration and explains automatic skill routing",
   const { runInvocation, validateSchema } = sourceApi;
   const root = await mkdtemp(join(tmpdir(), "forgix-init-"));
   const prompts = scriptedPrompts({
-    selects: ["required", "plus", "write"],
+    selects: ["auto", "required", "plus", "write"],
     texts: ["60", "85", "impeccable", "impeccable:frontend-design"],
   });
   try {
@@ -66,7 +66,7 @@ test("review can revisit subscription before one atomic write", async () => {
   const { runInvocation } = sourceApi;
   const root = await mkdtemp(join(tmpdir(), "forgix-init-revisit-"));
   const prompts = scriptedPrompts({
-    selects: ["auto", "plus", "subscription", "pro_20x", "write"],
+    selects: ["auto", "auto", "plus", "subscription", "pro_20x", "write"],
     texts: ["50", "80", "", "", "55", "90"],
   });
   try {
@@ -89,13 +89,13 @@ test("cancellation preserves an existing configuration byte-for-byte", async () 
   const root = await mkdtemp(join(tmpdir(), "forgix-init-cancel-"));
   try {
     const firstPrompts = scriptedPrompts({
-      selects: ["auto", "auto", "write"],
+      selects: ["auto", "auto", "auto", "write"],
       texts: ["50", "80", "", ""],
     });
     const first = await runInvocation(["init"], { init: { cwd: root, prompts: firstPrompts } });
     const before = await readFile(first.data.path, "utf8");
     const cancelPrompts = scriptedPrompts({
-      selects: ["auto", "auto", "cancel"],
+      selects: ["auto", "auto", "auto", "cancel"],
       texts: ["50", "80", "", ""],
     });
     const second = await runInvocation(["init"], { init: { cwd: root, prompts: cancelPrompts } });
@@ -133,4 +133,34 @@ test("routing preview applies Plus baseline for auto without model selection", a
     ["debug", "gpt-5.6-sol", "high"],
     ["review", "gpt-5.6-luna", "medium"],
   ]);
+});
+
+test("claude harness init skips subscription prompts and returning to auto removes harness key", async () => {
+  const { runInvocation } = sourceApi;
+  const root = await mkdtemp(join(tmpdir(), "forgix-init-harness-"));
+  try {
+    const firstPrompts = scriptedPrompts({
+      selects: ["claude", "auto", "write"],
+      texts: ["", ""],
+    });
+    const first = await runInvocation(["init"], { init: { cwd: root, prompts: firstPrompts } });
+    expect(first.status).toBe("created");
+    const createdConfig = parseYaml(await readFile(first.data.path, "utf8"));
+    expect(createdConfig.harness).toBe("claude");
+    expect(firstPrompts.output.some((line) => line.includes("Host-native routing active"))).toBe(
+      true,
+    );
+
+    const secondPrompts = scriptedPrompts({
+      selects: ["claude", "auto", "harness", "auto", "pro_5x", "write"],
+      texts: ["", "", "50", "80"],
+    });
+    const second = await runInvocation(["init"], { init: { cwd: root, prompts: secondPrompts } });
+    expect(second.status).toBe("updated");
+    const updatedConfig = parseYaml(await readFile(second.data.path, "utf8"));
+    expect("harness" in updatedConfig).toBe(false);
+    expect(updatedConfig.subscription.plan).toBe("pro_5x");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

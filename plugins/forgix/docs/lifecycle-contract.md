@@ -23,6 +23,16 @@ Statuses: `new`, `intaking`, plus `awaiting_intake_decision` when Shape needs ex
 product decision. Rich escalation stores evidence/provenance, product impact, 2–3
 options, recommendation/basis, affected dependency roots, and prior Shape role.
 
+After complete INTAKE, `ROUTING_SNAPSHOT` resolves once per run or resume using
+`2026-08-13.taskstate-v6.v1`:
+
+- On `codex` (`mode: "codex-app-server"`), snapshot captures `account/read`,
+  `account/rateLimits/read`, and `model/list` and assigns exact `gpt-5.6-luna`,
+  `gpt-5.6-terra`, or `gpt-5.6-sol` routes without silent fallback.
+- On `claude` and `antigravity` (`mode: "host-native"`), snapshot records `harness` with
+  `model: null`, `effort: null`, and `reason: "host-native:<harness>"`, bypassing
+  `codex app-server` and quota caches so the host session runs stages directly.
+
 ## SHAPE
 
 ### Discovery
@@ -85,10 +95,10 @@ Git, GitHub, registry, or release actions.
 ## BUILD
 
 BUILD is one thin `executing` boundary. Current Plan Approval Receipt and exact contract
-digest are mandatory before first write and resume. Native Codex implements the complete
-approved plan without a Forgix execution skill, checkpoint, progress tracker,
-validation requirement, or persisted BUILD output. Current command evidence may be
-checkpointed for later reuse. Local technical corrections continue
+digest are mandatory before first write and resume. The active host agent (Codex, Claude Code,
+or Antigravity) implements the complete approved plan without a Forgix execution skill,
+checkpoint, progress tracker, validation requirement, or persisted BUILD output. Current
+command evidence may be checkpointed for later reuse. Local technical corrections continue
 natively. Material scope, product behavior, approved architecture, or risk change stops
 writes and returns through SHAPE then GATE. Completion transitions automatically to
 `assuring`.
@@ -107,7 +117,7 @@ missing response blocks with exact `resumeTo: assuring`.
 Exact coverage atomically freezes completion index, creates minimal Assurance Receipt,
 and appends `assure.completed`. Valid paired proof makes `assuring` immutable and derives
 public `ASSURE ✓` / `success`; no separate success status exists. External delivery is
-outside Forgix task state and uses native Codex authorization afterward.
+outside Forgix task state and uses the active host agent's own authorization afterward.
 
 ## Canonical statuses
 
@@ -171,11 +181,11 @@ events, canonical state, and projections.
 
 ## Project INIT outside task lifecycle
 
-Exact `$forgix init` performs agentic repository Discovery and adaptive engineering
-convention interview, then validates and publishes digest-bound shared/local project
-profiles after explicit Profile Approval. It creates no TaskState, product scaffold, or
-task GATE approval. Deterministic `npx forgix init` remains separate plugin
-configuration wizard.
+Exact `$forgix init` (Codex), `/forgix:forgix init` (Claude Code), or `/forgix init`
+(Antigravity) performs agentic repository Discovery and adaptive engineering convention
+interview, then validates and publishes digest-bound shared/local project profiles after
+explicit Profile Approval. It creates no TaskState, product scaffold, or task GATE
+approval. Deterministic `npx forgix init` remains separate plugin configuration wizard.
 
 Normative profile schema, authority, reconciliation, privacy, and atomic publication:
 [Project Engineering Profile contract](project-profile-contract.md). Ordinary SHAPE may

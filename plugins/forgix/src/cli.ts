@@ -26,7 +26,12 @@ import {
   readFiveHourResetCache,
   writeFiveHourResetCache,
 } from "./quota-cache.js";
-import { chooseRoute, ROUTING_POLICY_VERSION, type RouteTask } from "./routing.js";
+import {
+  chooseRoute,
+  createHostNativeRoutingSnapshot,
+  ROUTING_POLICY_VERSION,
+  type RouteTask,
+} from "./routing.js";
 import {
   RoadmapError,
   buildWorkItemBranchAndWorktree,
@@ -43,7 +48,7 @@ import {
 } from "./roadmap.js";
 import { deriveMacroPhase } from "./state-machine.js";
 import { StateStoreError, createTaskStateStore } from "./state-store.js";
-import type { CliResult } from "./types.js";
+import type { CliResult, HarnessId, HarnessPreference } from "./types.js";
 
 export { EXIT_CODES } from "./exit-codes.js";
 export { resolveConfig } from "./config.js";
@@ -246,6 +251,7 @@ export {
   buildRoutingSnapshot,
   chooseRoute,
   classifyQuotaPressure,
+  createHostNativeRoutingSnapshot,
   createUnavailableRoutingSnapshot,
   resolveSubscriptionPlan,
   resolveSubscriptionMultiplier,
@@ -266,7 +272,7 @@ export {
   createTaskStateStore,
 } from "./state-store.js";
 
-export const HELP_TEXT = `Usage: forgix <command|objective>
+export const HELP_TEXT = `Usage: forgix [--harness auto|codex|claude|antigravity] <command|objective>
 
 Commands:
   init
@@ -288,8 +294,8 @@ Commands:
   --help
 
 Workflow:
-  forgix <objective>
-  forgix --benchmark <objective>
+  forgix [--harness auto|codex|claude|antigravity] <objective>
+  forgix [--harness auto|codex|claude|antigravity] --benchmark <objective>
 `;
 
 export interface RunInvocationOptions {
@@ -304,6 +310,8 @@ export interface RunInvocationOptions {
   workspaceRoot?: string;
   projectProfile?: ProjectProfileCommandOptions;
   roadmap?: ProjectProfileCommandOptions;
+  env?: NodeJS.ProcessEnv;
+  entrypointPath?: string;
 }
 
 export interface ProjectProfileCommandOptions {
@@ -328,7 +336,7 @@ export async function runInvocation(
     return runRoadmapInvocation(invocation, options);
   }
   if (invocation.command === "config_show" || invocation.command === "config_validate") {
-    const config = resolveRuntimeConfig(options.configSources);
+    const config = resolveRuntimeConfig(options.configSources, invocation.harness);
     return invocation.command === "config_show"
       ? {
           command: invocation.command,
@@ -364,7 +372,35 @@ export async function runInvocation(
     invocation.command === "resume"
       ? await loadResumeStateIfPresent(options.workspaceRoot ?? process.cwd(), invocation.taskId)
       : undefined;
-  const config = resolveRuntimeConfig(options.configSources);
+  const config = resolveRuntimeConfig(options.configSources, invocation.harness);
+  const harness = resolveHarness({
+    ...(invocation.harness ? { flag: invocation.harness } : {}),
+    configHarness: config.value.harness,
+    env: options.env ?? process.env,
+    ...(options.entrypointPath ? { entrypointPath: options.entrypointPath } : {}),
+  });
+  if (harness === "claude" || harness === "antigravity") {
+    const routingSnapshot = createHostNativeRoutingSnapshot(harness);
+    const decisions = ROUTING_TASKS.map((task) => chooseRoute(routingSnapshot, task));
+    return {
+      command: invocation.command,
+      status: "routed",
+      data: {
+        ...(invocation.command === "run"
+          ? {
+              objective: invocation.objective,
+              benchmarkEnabled: invocation.flags.benchmark === true,
+            }
+          : {
+              taskId: invocation.taskId,
+              benchmarkEnabled: resumedState?.benchmarkEnabled ?? false,
+            }),
+        routingSnapshot,
+        routingPolicyVersion: ROUTING_POLICY_VERSION,
+        routingDecisions: decisions,
+      },
+    };
+  }
   const capture = options.captureSnapshot ?? captureRoutingSnapshot;
   const subscription = isRecord(config.value.subscription) ? config.value.subscription : {};
   const snapshotResult = await capture({
@@ -833,8 +869,68 @@ const ROUTING_TASKS: RouteTask[] = [
   { stage: "review", risk: "medium", ambiguity: "medium" },
 ];
 
-function resolveRuntimeConfig(sources: ConfigSource[] | undefined): ResolvedConfig {
-  return resolveConfig(sources ?? loadConfigSources());
+function isTruthyEnv(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized.length > 0 && normalized !== "0" && normalized !== "false";
+}
+
+export function resolveHarness(options: {
+  flag?: HarnessPreference;
+  configHarness?: unknown;
+  env?: NodeJS.ProcessEnv;
+  entrypointPath?: string;
+}): HarnessId {
+  if (options.flag && options.flag !== "auto") {
+    return options.flag;
+  }
+  if (
+    options.flag !== "auto" &&
+    (options.configHarness === "codex" ||
+      options.configHarness === "claude" ||
+      options.configHarness === "antigravity")
+  ) {
+    return options.configHarness;
+  }
+  const env = options.env ?? process.env;
+  if (isTruthyEnv(env.CODEX_THREAD_ID)) {
+    return "codex";
+  }
+  if (
+    isTruthyEnv(env.CLAUDE_PLUGIN_ROOT) ||
+    isTruthyEnv(env.CLAUDECODE) ||
+    isTruthyEnv(env.CLAUDE_CODE_ENTRYPOINT)
+  ) {
+    return "claude";
+  }
+  const entry = (options.entrypointPath ?? process.argv[1] ?? "").replaceAll("\\", "/");
+  if (
+    isTruthyEnv(env.ANTIGRAVITY_AGENT) ||
+    isTruthyEnv(env.ANTIGRAVITY_CLI) ||
+    isTruthyEnv(env.ANTIGRAVITY_SESSION_ID) ||
+    (!entry.includes("/.gemini/antigravity/worktrees/") &&
+      (entry.includes("/.gemini/config/plugins/") ||
+        entry.includes("/.gemini/antigravity/plugins/")))
+  ) {
+    return "antigravity";
+  }
+  if (entry.includes("/.claude/plugins/")) {
+    return "claude";
+  }
+  return "codex";
+}
+
+function resolveRuntimeConfig(
+  sources: ConfigSource[] | undefined,
+  harnessFlag?: HarnessPreference,
+): ResolvedConfig {
+  const base = sources ?? loadConfigSources();
+  const merged: ConfigSource[] = harnessFlag
+    ? [...base, { source: "flags", value: { harness: harnessFlag } }]
+    : base;
+  return resolveConfig(merged);
 }
 
 async function loadResumeStateIfPresent(workspaceRoot: string, taskId: string) {

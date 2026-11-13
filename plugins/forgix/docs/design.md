@@ -2,18 +2,37 @@
 
 ## Goal
 
-Portable five-phase workflow with high correctness and low token waste. Deterministic
-code owns state, validation, routing, fingerprints, dependency closure, projections, and
-guards. Skills own scoped reasoning. Each phase uses native Codex capabilities unless its
-contract requires a narrower read-only role.
+Portable five-phase workflow for **Codex**, **Claude Code**, and **Antigravity** with high
+correctness and low token waste. Deterministic code owns state, validation, harness-aware
+routing, fingerprints, dependency closure, projections, and guards. Skills own scoped
+reasoning. Each phase uses native host agent capabilities unless its contract requires a
+narrower read-only role.
+
+## Multi-harness distribution and routing
+
+Forgix ships a single plugin root (`plugins/forgix/`) backed by harness-specific manifests:
+
+- **Codex**: `plugins/forgix/.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json`
+- **Claude Code**: `plugins/forgix/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
+- **Antigravity**: `plugins/forgix/plugin.json`
+- **Standalone / bundled CLI**: `plugins/forgix/dist/forgix.mjs` (`bin.forgix`)
+
+Runtime routing selects `codex-app-server` on Codex (quota-aware `gpt-5.6-luna` / `terra` / `sol`
+routing from `account/read`, `account/rateLimits/read`, and `model/list`) and `host-native` on
+Claude Code and Antigravity (`model: null`, `effort: null`, `reason: "host-native:<harness>"`),
+while keeping `.codex/` repository paths shared across harnesses.
 
 ## Public surface
 
 ```text
+# Codex ($forgix), Claude Code (/forgix:forgix), Antigravity (/forgix)
 $forgix <objective>
 $forgix --benchmark <objective>
 $forgix resume <task-id>
 $forgix status [task-id]
+
+# Standalone or bundled CLI
+forgix [--harness auto|codex|claude|antigravity] <objective>
 ```
 
 No invocation mode exists. Entire run text is objective. State V6 rejects V1–V5 without
@@ -62,10 +81,10 @@ explicit user approve/change/reject intent. Approval covers complete local canon
 contract and exact digest. Contract change invalidates receipt. It never authorizes an
 external action.
 
-BUILD verifies only current approval and exact digest, then native Codex implements the
-complete approved plan without a Forgix execution skill, checkpoint, progress tracker,
-validation loop, or persisted BUILD output. Local technical corrections stay native;
-material contract changes return to SHAPE then GATE. ASSURE derives current worktree diff,
+BUILD verifies only current approval and exact digest, then the active host agent (Codex,
+Claude Code, or Antigravity) implements the complete approved plan without a Forgix
+execution skill, checkpoint, progress tracker, validation loop, or persisted BUILD output.
+Local technical corrections stay native; material contract changes return to SHAPE then GATE. ASSURE derives current worktree diff,
 records fresh criterion-linked evidence, and atomically derives `success` inside final
 ASSURE phase. Git, GitHub, registry, and release delivery remains outside lifecycle
 state.

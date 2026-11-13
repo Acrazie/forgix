@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { expectRejected } from "../support/expect-error.ts";
 import {
+  allowedReleasePaths,
   captureFileSnapshots,
   compareVersions,
   createReleasePlan,
@@ -17,11 +18,13 @@ import {
   parseStableVersion,
   recommendBump,
   replaceJsonVersion,
+  replaceMarketplacePluginVersion,
   ReleaseError,
   restoreFileSnapshots,
   runCommand,
   semanticBase,
   unexpectedReleasePaths,
+  validateClaudeMarketplaceManifest,
   validatePluginManifest,
 } from "../../src/release.ts";
 
@@ -168,6 +171,39 @@ describe("release safety", () => {
     expect(() => validatePluginManifest(manifest)).not.toThrow();
     expect(() => validatePluginManifest({ ...manifest, name: "codex-dev-flow" })).toThrow(/name/);
     expect(() => validatePluginManifest({ ...manifest, skills: "./skills" })).toThrow(/must end/);
+    expect(() => validatePluginManifest({ ...manifest, version: "0.2.0" }, "claude")).not.toThrow();
+    expect(() => validatePluginManifest(manifest, "claude")).toThrow(ReleaseError);
+    expect(() =>
+      validatePluginManifest({ ...manifest, version: "0.2.0", interface: {} }, "claude"),
+    ).toThrow(/interface/);
+    const { skills: _omittedSkills, ...antigravity } = { ...manifest, version: "0.2.0" };
+    expect(() => validatePluginManifest(antigravity, "antigravity")).not.toThrow();
+  });
+
+  test("validates and updates Claude marketplace manifest and release path allowlists", () => {
+    const marketplaceJson = `{
+  "name": "acrazie",
+  "owner": { "name": "Acrazie" },
+  "description": "Acrazie plugins marketplace.",
+  "plugins": [
+    {
+      "name": "forgix",
+      "source": "./plugins/forgix",
+      "description": "Flow",
+      "version": "0.4.0"
+    }
+  ]
+}
+`;
+    expect(() => validateClaudeMarketplaceManifest(JSON.parse(marketplaceJson))).not.toThrow();
+    expect(replaceMarketplacePluginVersion(marketplaceJson, "forgix", "0.5.0")).toBe(
+      marketplaceJson.replace("0.4.0", "0.5.0"),
+    );
+    expect(allowedReleasePaths("both").has("plugins/forgix/.claude-plugin/plugin.json")).toBe(true);
+    expect(allowedReleasePaths("both").has("plugins/forgix/plugin.json")).toBe(true);
+    expect(allowedReleasePaths("both").has(".claude-plugin/marketplace.json")).toBe(true);
+    expect(allowedReleasePaths("plugin").has("plugins/forgix/package.json")).toBe(false);
+    expect(allowedReleasePaths("npm").has("plugins/forgix/.claude-plugin/plugin.json")).toBe(false);
   });
 
   test("recognizes target-specific release commits", () => {

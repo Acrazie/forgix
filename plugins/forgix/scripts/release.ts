@@ -28,12 +28,14 @@ import {
   parseStableVersion,
   recommendBump,
   replaceJsonVersion,
+  replaceMarketplacePluginVersion,
   ReleaseError,
   requireCommand,
   restoreFileSnapshots,
   runCommand,
   semanticBase,
   unexpectedReleasePaths,
+  validateClaudeMarketplaceManifest,
   validatePluginManifest,
   type ReleaseMode,
   type ReleasePlan,
@@ -48,6 +50,9 @@ const repoRoot = requireCommand("git", ["rev-parse", "--show-toplevel"], {
 }).stdout.trim();
 const packagePath = resolve(pluginRoot, "package.json");
 const manifestPath = resolve(pluginRoot, ".codex-plugin/plugin.json");
+const claudeManifestPath = resolve(pluginRoot, ".claude-plugin/plugin.json");
+const antigravityManifestPath = resolve(pluginRoot, "plugin.json");
+const claudeMarketplacePath = resolve(repoRoot, ".claude-plugin/marketplace.json");
 const lockPath = resolve(repoRoot, "bun.lock");
 const bundlePath = resolve(pluginRoot, "dist/forgix.mjs");
 const marketplace = "acrazie";
@@ -244,6 +249,44 @@ async function readJson(path: string): Promise<Record<string, unknown>> {
   return JSON.parse(await readFile(path, "utf8")) as Record<string, unknown>;
 }
 
+async function validatePluginPlane(
+  sourceRoot = pluginRoot,
+  expectedBaseVersion?: string,
+): Promise<void> {
+  const codex = await readJson(resolve(sourceRoot, ".codex-plugin/plugin.json"));
+  validatePluginManifest(codex, "codex");
+  const claude = await readJson(resolve(sourceRoot, ".claude-plugin/plugin.json"));
+  validatePluginManifest(claude, "claude");
+  const antigravity = await readJson(resolve(sourceRoot, "plugin.json"));
+  validatePluginManifest(antigravity, "antigravity");
+  const claudeMarketplace = await readJson(
+    resolve(sourceRoot, "../../.claude-plugin/marketplace.json"),
+  );
+  validateClaudeMarketplaceManifest(claudeMarketplace);
+
+  const codexBase = semanticBase(String(codex.version));
+  const claudeVersion = String(claude.version);
+  const antigravityVersion = String(antigravity.version);
+  const marketplacePlugins = claudeMarketplace.plugins as Array<Record<string, unknown>>;
+  const forgixEntry = marketplacePlugins.find((entry) => entry.name === "forgix");
+  const marketplaceVersion = typeof forgixEntry?.version === "string" ? forgixEntry.version : "";
+
+  if (
+    claudeVersion !== codexBase ||
+    antigravityVersion !== codexBase ||
+    marketplaceVersion !== codexBase
+  ) {
+    throw new ReleaseError(
+      `Plugin manifest versions must share base SemVer (${codexBase}): claude=${claudeVersion}, antigravity=${antigravityVersion}, marketplace=${marketplaceVersion}.`,
+    );
+  }
+  if (expectedBaseVersion !== undefined && codexBase !== expectedBaseVersion) {
+    throw new ReleaseError(
+      `Plugin manifest base version (${codexBase}) does not match expected version (${expectedBaseVersion}).`,
+    );
+  }
+}
+
 function currentVersions(
   packageJson: Record<string, unknown>,
   manifest: Record<string, unknown>,
@@ -273,7 +316,7 @@ async function chooseTarget(): Promise<ReleaseTarget> {
     initialValue: "both",
     options: [
       { value: "both", label: "Plugin + npm", hint: "recommended" },
-      { value: "plugin", label: "Codex plugin" },
+      { value: "plugin", label: "Multi-harness plugins" },
       { value: "npm", label: "npm package" },
     ],
   });
@@ -346,7 +389,14 @@ async function chooseVersion(current: string, recommendation: VersionBump): Prom
 function planSummary(plan: ReleasePlan, mode: ReleaseMode): string {
   const files = [
     ...new Set([
-      ...(plan.target !== "npm" ? [".codex-plugin/plugin.json"] : []),
+      ...(plan.target !== "npm"
+        ? [
+            ".codex-plugin/plugin.json",
+            ".claude-plugin/plugin.json",
+            "plugin.json",
+            "../../.claude-plugin/marketplace.json",
+          ]
+        : []),
       ...(plan.target !== "plugin" ? ["package.json", "../../bun.lock"] : []),
       "dist/forgix.mjs",
     ]),
@@ -391,6 +441,9 @@ async function runPreflightValidations(
 
   const manifest = await readJson(resolve(sourceRoot, ".codex-plugin/plugin.json"));
   validatePluginManifest(manifest);
+  if (target !== "npm") {
+    await validatePluginPlane(sourceRoot);
+  }
   if (target !== "plugin") {
     runCheck(
       "npm package content",
@@ -485,6 +538,9 @@ async function publishExistingNpmRelease(tag: string): Promise<void> {
 async function runPreparedValidations(plan: ReleasePlan): Promise<void> {
   runCheck("Frozen Bun install", "bun", ["install", "--frozen-lockfile"], pluginRoot);
   validatePluginManifest(await readJson(manifestPath));
+  if (plan.target !== "npm") {
+    await validatePluginPlane(pluginRoot, semanticBase(plan.pluginVersion));
+  }
   if (plan.target !== "plugin") {
     runCheck(
       "npm package dry-run",
@@ -593,6 +649,9 @@ async function maybeResumePartialRelease(): Promise<boolean> {
   if (release.target !== "npm" && semanticBase(versions.pluginVersion) !== release.version) {
     throw new ReleaseError("Release commit identity does not match plugin manifest version.");
   }
+  if (release.target !== "npm") {
+    await validatePluginPlane(pluginRoot, release.version);
+  }
   if (
     release.target === "plugin" &&
     release.identity !== `plugin-v${versions.pluginVersion.replace("+codex.", "-codex.")}`
@@ -649,7 +708,15 @@ async function maybeResumePartialRelease(): Promise<boolean> {
 
 async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
   const originalHead = git(["rev-parse", "HEAD"]);
-  const paths = [packagePath, manifestPath, lockPath, bundlePath];
+  const paths = [
+    packagePath,
+    manifestPath,
+    claudeManifestPath,
+    antigravityManifestPath,
+    claudeMarketplacePath,
+    lockPath,
+    bundlePath,
+  ];
   const snapshots = await captureFileSnapshots(paths);
   let indexTouched = false;
   let localCommitCreated = false;
@@ -678,7 +745,30 @@ async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
       runCheck("Update Bun lock", "bun", ["install"], pluginRoot);
     }
     if (plan.target !== "npm") {
+      const basePluginVersion = semanticBase(plan.pluginVersion);
       await writeVersion(manifestPath, plan.pluginVersion);
+      const claudeManifest = await readJson(claudeManifestPath);
+      if (claudeManifest.version !== basePluginVersion) {
+        await writeVersion(claudeManifestPath, basePluginVersion);
+      }
+      const antigravityManifest = await readJson(antigravityManifestPath);
+      if (antigravityManifest.version !== basePluginVersion) {
+        await writeVersion(antigravityManifestPath, basePluginVersion);
+      }
+      const marketplaceJson = await readJson(claudeMarketplacePath);
+      const forgixEntry = (marketplaceJson.plugins as Array<Record<string, unknown>>).find(
+        (entry) => entry.name === pluginName,
+      );
+      if (forgixEntry?.version !== basePluginVersion) {
+        await writeFile(
+          claudeMarketplacePath,
+          replaceMarketplacePluginVersion(
+            await readFile(claudeMarketplacePath, "utf8"),
+            pluginName,
+            basePluginVersion,
+          ),
+        );
+      }
     }
 
     await runPreparedValidations(plan);
@@ -749,6 +839,9 @@ async function main(): Promise<void> {
   const packageJson = await readJson(packagePath);
   const manifest = await readJson(manifestPath);
   validatePluginManifest(manifest);
+  if (target !== "npm") {
+    await validatePluginPlane(pluginRoot);
+  }
   const current = currentVersions(packageJson, manifest);
   const recommendation = recommendBump(commitsSinceLastTag());
   const nextPackageVersion =

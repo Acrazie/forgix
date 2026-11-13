@@ -1,0 +1,16 @@
+{
+  "name": "acrazie",
+  "owner": {
+    "name": "Acrazie"
+  },
+  "description": "Acrazie plugins marketplace.",
+  "plugins": [
+    {
+      "name": "forgix",
+      "source": "./plugins/forgix",
+      "description": "Portable, evidence-based development workflow.",
+      "version": "0.4.0",
+      "category": "Productivity"
+    }
+  ]
+}

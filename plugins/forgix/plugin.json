@@ -1,0 +1,10 @@
+{
+  "name": "forgix",
+  "displayName": "Forgix",
+  "version": "0.4.0",
+  "description": "Portable, evidence-based development workflow.",
+  "author": "forgix contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/Acrazie/codex-dev-flow#readme",
+  "repository": "https://github.com/Acrazie/codex-dev-flow"
+}

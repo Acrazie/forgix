@@ -1,6 +1,7 @@
 import {
   ALLOWED_MODEL_IDS,
   REASONING_EFFORTS,
+  type HarnessId,
   type ModelCapability,
   type ModelId,
   type QuotaPressure,
@@ -201,6 +202,31 @@ export function createUnavailableRoutingSnapshot(
   return buildRoutingSnapshot({ capturedAt, config: { plan: "auto" } }, false);
 }
 
+export function createHostNativeRoutingSnapshot(
+  harness: Exclude<HarnessId, "codex">,
+  capturedAt = new Date().toISOString(),
+): RoutingSnapshot {
+  return {
+    schemaVersion: 1,
+    mode: "host-native",
+    harness,
+    capturedAt,
+    plan: "unknown",
+    account: {},
+    quota: {
+      pressure: "unknown",
+      source: "unknown",
+    },
+    models: [],
+    warnings: [],
+    provenance: {
+      plan: "unknown",
+      quota: "unknown",
+      models: "unknown",
+    },
+  };
+}
+
 export interface RouteTask {
   stage: RoutingStage;
   risk: RiskLevel;
@@ -208,6 +234,16 @@ export interface RouteTask {
 }
 
 export function chooseRoute(snapshot: RoutingSnapshot, task: RouteTask): RoutingDecision {
+  if (snapshot.mode === "host-native") {
+    return {
+      stage: task.stage,
+      model: null,
+      effort: null,
+      quotaPressure: "unknown",
+      reason: `host-native:${snapshot.harness ?? "unknown"}`,
+      warnings: [],
+    };
+  }
   const warnings = [...snapshot.warnings];
   const pressure = snapshot.quota.pressure;
   const unknownPlan = snapshot.plan === "unknown";

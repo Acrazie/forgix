@@ -11,15 +11,25 @@ success status. Canonical registry, strict V6 state, durable state store, unifie
 and local benchmark store are available primitives. Never claim a durable transition,
 Approval binding, or Assurance Receipt without deterministic evidence.
 
-Exact `$forgix init` follows Project INIT below. Exact `$forgix roadmap` follows Roadmap
+Exact `$forgix init` (Codex), `/forgix:forgix init` (Claude Code), or `/forgix init`
+(Antigravity) follows Project INIT below. Exact `$forgix roadmap` follows Roadmap
 Ideation below, and `$forgix run-issue <#num>` / `$forgix run-roadmap` follow
-Autonomous Roadmap Execution below. Parse every other invocation with bundled
-deterministic script before acting.
+Autonomous Roadmap Execution below. Parse every other invocation with the bundled
+deterministic CLI before acting. Resolve the CLI in this order (never run `npx forgix`
+during a plugin lifecycle turn):
+
+1. `node "${CLAUDE_PLUGIN_ROOT}/dist/forgix.mjs"` when `CLAUDE_PLUGIN_ROOT` is set.
+2. `node "<skill_dir>/../../dist/forgix.mjs"` relative to this loaded `skills/forgix/SKILL.md`.
+3. `forgix` on `$PATH`.
+
+Pass `--harness codex`, `--harness claude`, or `--harness antigravity` matching the active
+host harness (or omit when configured for `auto` detection).
 
 ## Skill isolation and configured integrations
 
-When `$forgix` is explicitly invoked, use bundled Forgix skills by default.
-Do not invoke skills from other plugins merely because descriptions match.
+When Forgix (`$forgix`, `/forgix:forgix`, or `/forgix`) is explicitly invoked, use bundled
+Forgix skills by default. Do not invoke skills from other plugins merely because
+descriptions match.
 
 External skills are eligible only when repository configuration lists plugin identifier
 in `integrations.plugins` or fully qualified skill identifier in `integrations.skills`.
@@ -28,14 +38,19 @@ developer, repository, and effective policy instructions remain authoritative.
 
 `npx forgix init` remains standalone CLI command and interactive
 plugin-configuration wizard.
-It is separate from agentic `$forgix init`; never substitute one for other.
+It is separate from agentic `$forgix init` (`/forgix:forgix init`, `/forgix init`); never
+substitute one for other.
 
 ## Project INIT
 
-Exact `$forgix init` is agentic project-engineering profile transaction, outside task
-lifecycle and task GATE. It creates no TaskState and no product scaffold. Use bundled
-dependency-free CLI `project-profile` commands as deterministic backend; never install
-or fetch another package.
+Exact `$forgix init` is agentic (also `/forgix:forgix init` on Claude Code or `/forgix init`
+on Antigravity): a project-engineering profile transaction, outside task lifecycle and task GATE. It creates no TaskState and no
+product scaffold. Use bundled dependency-free CLI `project-profile` commands as
+deterministic backend; never install or fetch another package.
+
+When configuring or confirming target harness defaults during `init`, ask which harness
+this repository targets (`auto`, `codex`, `claude`, `antigravity`), and ask Codex
+subscription/quota questions only when targeting `codex` or `auto`.
 
 1. Run `forgix project-profile session-view`, then `project-profile inspect`.
    Resume exact persisted active question unless dependency evidence changed; otherwise
@@ -143,34 +158,38 @@ completion.
 After complete INTAKE, resolve routing and workspace. Risk/policy-required worktree must
 be ready before any repository write.
 
-At beginning of every run/resume, create exactly one routing snapshot through `codex
-app-server`: complete `initialize`/`initialized`, then read `account/read`,
-`account/rateLimits/read`, and `model/list`. Persist no credentials or raw protocol
-payloads.
+At the beginning of every run/resume, resolve one immutable routing snapshot via the
+bundled CLI using policy `2026-08-13.taskstate-v6.v1` and persist no credentials or raw
+protocol payloads:
 
-If parser returns `routing_permission_required`, request explicit user approval to rerun
-same invocation outside restrictive sandbox. Retry the same invocation at most once.
-Never escalate silently. Failed first attempt is not snapshot; persist only successful
-retry. If approval is denied or the retry fails, block with structured diagnostic.
+- **Host-native harnesses (`claude`, `antigravity`, `routingSnapshot.mode === "host-native"`)**:
+  the CLI returns `status: "routed"` with `model: null`, `effort: null`, and
+  `reason: "host-native:<harness>"`, bypassing `codex app-server` and quota caches. Run
+  the five reasoning stages (`design`, `discover`, `plan`, `debug`, `review`) natively in
+  the active host harness session or its subagents.
+- **Codex (`codex`, `routingSnapshot.mode === "codex-app-server"`)**: capture the snapshot
+  through `codex app-server` (`initialize`/`initialized`, then `account/read`,
+  `account/rateLimits/read`, and `model/list`). If the CLI returns
+  `routing_permission_required`, request explicit user approval to rerun the same
+  invocation outside a restrictive sandbox. Retry the same invocation at most once.
+  Never escalate silently. Failed first attempt is not snapshot; persist only successful
+  retry. If approval is denied or the retry fails, block with structured diagnostic.
+  - Use only `gpt-5.6-luna`, `gpt-5.6-terra`, `gpt-5.6-sol`; efforts `low`, `medium`,
+    `high`, `xhigh`. Recognize quota pressure only from exact five-hour window
+    `windowDurationMins === 300`, warning at 50%, critical at 80%.
+  - If live five-hour window absent, reuse only non-expired cached reset timestamp. Never
+    reuse cached usage percentage. Keep pressure `unknown`, route conservatively, report
+    `quota_fallback_last_known`. Other windows stay informational. Normalize string and
+    object `supportedReasoningEfforts` entries.
+  - Unknown plan uses Plus baseline. Warning quota lowers one subscription tier; critical
+    or unknown quota uses Plus. High risk/ambiguity raises reasoning one level, capped
+    `xhigh`.
+  - Require exact assigned model/effort in initial catalog.
+    Never substitute a fallback model or effort. Missing assignment blocks that skill.
 
-Use only `gpt-5.6-luna`, `gpt-5.6-terra`, `gpt-5.6-sol`; efforts `low`, `medium`, `high`,
-`xhigh`. Recognize quota pressure only from exact five-hour window
-`windowDurationMins === 300`, warning at 50%, critical at 80%.
-
-If live five-hour window absent, reuse only non-expired cached reset timestamp. Never
-reuse cached usage percentage. Keep pressure `unknown`, route conservatively, report
-`quota_fallback_last_known`. Other windows stay informational. Normalize string and
-object `supportedReasoningEfforts` entries.
-
-Resolve five reasoning-stage routes once from immutable snapshot using policy
-`2026-08-13.taskstate-v6.v1`: `design`, `discover`, `plan`, `debug`, `review`.
-Unknown plan uses Plus baseline. Warning quota lowers one subscription tier; critical or
-unknown quota uses Plus. High risk/ambiguity raises reasoning one level, capped `xhigh`.
-
-Require exact assigned model/effort in initial catalog.
-Never substitute a fallback model or effort. Missing assignment blocks that skill.
-Do not refresh account, quota, or model data between skills. Native Codex owns BUILD
-execution; parent owns ASSURE deterministic commands and evidence persistence.
+Do not refresh account, quota, or model data between skills. The active host agent
+(Codex, Claude Code, or Antigravity) owns BUILD execution; parent owns ASSURE
+deterministic commands and evidence persistence.
 
 ## SHAPE
 
@@ -243,9 +262,10 @@ external action.
 ## BUILD
 
 Announce `[DEV FLOW · GATE → BUILD]`. Before first write or resume, require current Plan
-Approval Receipt and exact contract digest. Then let native Codex implement the complete
-approved plan without BUILD-specific skill, orchestration, checkpoint, progress tracker,
-validation requirement, or persisted output. Local technical corrections remain native.
+Approval Receipt and exact contract digest. Then let the active host agent implement the
+complete approved plan without BUILD-specific skill, orchestration, checkpoint, progress
+tracker, validation requirement, or persisted output. Local technical corrections remain
+native.
 Material scope, product behavior, approved architecture, or risk change stops writes and
 returns to SHAPE then GATE. When implementation is complete, transition automatically and
 announce `[DEV FLOW · BUILD → ASSURE]`.
@@ -270,8 +290,8 @@ completion index, creates minimal Assurance Receipt, appends `assure.completed`,
 renders `[DEV FLOW · ASSURE ✓]` with derived `success`.
 
 Commit, push, pull request, registry, release, and other delivery work is outside Dev
-Flow lifecycle/state. Native Codex may perform it afterward under its own explicit
-authorization. GATE approval grants no authority for those actions.
+Flow lifecycle/state. The active host agent may perform it afterward under its own
+explicit authorization. GATE approval grants no authority for those actions.
 
 ### Opt-in local benchmark
 
@@ -293,53 +313,44 @@ Benchmark is out-of-band and never changes lifecycle outcome.
 
 ### Upstream `$forgix roadmap`
 
-Exact `$forgix roadmap` runs outside `TaskState` to concentrate product ideation into a
-GitHub Project v2 roadmap:
+Exact `$forgix roadmap` runs outside `TaskState` to build a GitHub Project v2 roadmap:
 
-1. **Preflight & context**: Read `Project Engineering Profile` (`.codex/dev-flow.project.yaml`)
-   and domain rules/glossary if present (recommend `$forgix init` without blocking if missing).
-   On existing repositories, run lightweight codebase discovery before ideation; on greenfield
-   repositories, start directly in Divergence. Check `gh auth status` for `project` scope
-   before any GitHub mutation.
-2. **3-phase session** persisted locally in gitignored `.codex/roadmap/state.yaml` via
-   bundled `forgix roadmap session-view|session-save|session-clear`:
+1. **Preflight**: Read `.codex/dev-flow.project.yaml` and domain rules/glossary if present
+   (suggest `$forgix init` without blocking if missing). Run lightweight codebase discovery
+   on existing repos; start in Divergence on greenfield repos. Verify `gh auth status` has
+   `project` scope before GitHub mutations.
+2. **3-phase session** in gitignored `.codex/roadmap/state.yaml` via
+   `forgix roadmap session-view|session-save|session-clear`:
    - **Divergence**: explore themes, user outcomes, constraints, and initial risks.
-   - **Convergence**: structure a 2-level hierarchy of `Feature` parents and atomic
-     `Work Item` sub-issues (no frozen file lists or code plans — live discovery stays in
-     `SHAPE`). Each `Work Item` defines objective, `scopeIn`/`scopeOut`, `linkedRuleIds`,
-     observable `acceptanceCriteria`, `risk`, `priority` (`P0`–`P3`), optional `wave`, and
-     acyclic `blockedBy` dependencies.
-   - **Visual synthesis & approval**: validate via `forgix roadmap validate --session` and
-     present ASCII `"tree"` or `"mermaid"` DAG (`renderRoadmapVisualSummary`). Wave 1
-     unblocked items default to `Ready` (adjustable in review); later waves start `Backlog`.
-3. **Hybrid authority & idempotent publication**: Commit durable product vision
-   (`docs/product-vision.md`), domain docs, and light `.codex/dev-flow.yaml` `roadmap`
-   binding in Git only when requested; compute `forgix roadmap publish-plan`, create or
-   attach the GitHub Project v2, create/update `Feature` issues (`feature` label) and
-   atomic `Work Item` sub-issues with native `blocked-by` edges and Project fields
-   (`Status`, `Kind`, `Risk`, `Priority`, optional `Wave`), and record issue numbers after
-   each batch via `forgix roadmap publish-record`.
+   - **Convergence**: build a 2-level hierarchy of `Feature` parents and atomic `Work Item`
+     sub-issues (no frozen file lists or code plans; live discovery stays in `SHAPE`) with
+     objective, `scopeIn`/`scopeOut`, `linkedRuleIds`, `acceptanceCriteria`, `risk`,
+     `priority` (`P0`–`P3`), optional `wave`, and acyclic `blockedBy`.
+   - **Synthesis & approval**: run `forgix roadmap validate --session` and render ASCII
+     `"tree"` or `"mermaid"` DAG (`renderRoadmapVisualSummary`). Wave 1 unblocked items
+     default to `Ready`; later waves start `Backlog`.
+3. **Publication**: Commit `docs/product-vision.md`, domain docs, and `.codex/dev-flow.yaml`
+   `roadmap` binding in Git only when requested; run `forgix roadmap publish-plan`, create/attach
+   the GitHub Project v2, publish `Feature` (`feature` label) and `Work Item` sub-issues with
+   native `blocked-by` edges and Project fields (`Status`, `Kind`, `Risk`, `Priority`, `Wave`),
+   and record issue numbers per batch via `forgix roadmap publish-record`.
 
 ### `$forgix run-issue <#num>` and `$forgix run-roadmap [--limit N] [--parallel M]`
 
-1. Select `Ready` `Work Item` issues (`forgix roadmap select-ready`) whose `blockedBy`
-   dependencies are all `Done` (`In Review` still blocks downstream work; default `--parallel 1`).
-2. Create an isolated branch and Git worktree fresh from `main` (`buildWorkItemBranchAndWorktree`),
-   preserving each worktree cleanly across concurrent runs.
-3. Seed `INTAKE` from the live GitHub Issue plus repo vision, glossary, and engineering profile,
-   and transition issue status to `In Progress` (updating parent `Feature` to `In Progress`).
-4. Run `SHAPE` against live repository code (passing `policy:autonomous:issue-<num>` to
-   `selectPreparationProfile`). If `INTAKE` uncovers a contradiction, risk rises to
-   `high`/`critical`, or an irreversible (`adrQualified`) `TechnicalDecision` arises, pause as
-   `Blocked`, comment on the issue, and stop unattended execution for that item.
-5. For `low`/`medium` items passing `evaluateAutonomousGateEligibility`, record an `Autonomous
-Gate Receipt` (`actor: "autonomous_policy"`, `issueRef: "#<num>"`) in `GATE`, execute
-   `BUILD`, and run `ASSURE`.
-6. On `ASSURE ✓` (or green automated checks with only `user-observation` pending), commit,
-   push the branch, open a Draft PR referencing `Closes #<num>` with verification evidence,
-   and move the issue to `In Review` (`Done` is applied on merge). If `ASSURE` fails after
-   bounded `debug-root-cause`, mark `Blocked`, comment diagnostics on the issue, and preserve
-   the worktree.
+1. Select `Ready` `Work Item`s (`forgix roadmap select-ready`) whose `blockedBy` items are
+   all `Done` (`In Review` still blocks; default `--parallel 1`).
+2. Create an isolated branch and worktree from `main` (`buildWorkItemBranchAndWorktree`).
+3. Seed `INTAKE` from the GitHub Issue, vision, glossary, and profile; set issue and parent
+   `Feature` status to `In Progress`.
+4. Run `SHAPE` on live code (`policy:autonomous:issue-<num>` in `selectPreparationProfile`).
+   On `INTAKE` contradiction, `high`/`critical` risk, or `adrQualified` `TechnicalDecision`,
+   mark `Blocked`, comment on the issue, and stop unattended execution for that item.
+5. For `low`/`medium` items passing `evaluateAutonomousGateEligibility`, record an
+   `Autonomous Gate Receipt` (`actor: "autonomous_policy"`, `issueRef: "#<num>"`) in `GATE`,
+   run `BUILD`, then `ASSURE`.
+6. On `ASSURE ✓` (or green checks with only `user-observation` pending), commit, push, open a
+   Draft PR (`Closes #<num>`), and set `In Review` (`Done` on merge). If `ASSURE` fails after
+   bounded `debug-root-cause`, mark `Blocked`, comment diagnostics, and keep the worktree.
 
 ## Resume, evidence, and artifacts
 

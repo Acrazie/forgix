@@ -117,6 +117,7 @@ test("package exposes the standalone forgix binary", () => {
     forgix: "dist/forgix.mjs",
   });
   expect(manifest.files).toEqual([
+    ".claude-plugin/",
     ".codex-plugin/",
     "dist/",
     "docs/",
@@ -124,6 +125,7 @@ test("package exposes the standalone forgix binary", () => {
     "skills/",
     "LICENSE",
     "README.md",
+    "plugin.json",
   ]);
   expect(manifest.scripts.prepack).toBe("bun run build");
   expect(manifest.scripts.prepublishOnly).toBe("bun run check");
@@ -147,7 +149,9 @@ test("npm package contains runtime assets and excludes development files", () =>
       .filter(Boolean);
 
     for (const required of [
+      ".claude-plugin/plugin.json",
       ".codex-plugin/plugin.json",
+      "plugin.json",
       "dist/forgix.mjs",
       "schemas/config.schema.json",
       "schemas/project-profile.schema.json",
@@ -179,16 +183,56 @@ test("plugin identity matches its marketplace entry and release configuration", 
   const plugin = JSON.parse(
     readFileSync(new URL("../../.codex-plugin/plugin.json", import.meta.url), "utf8"),
   );
+  const claudePlugin = JSON.parse(
+    readFileSync(new URL("../../.claude-plugin/plugin.json", import.meta.url), "utf8"),
+  );
+  const antigravityPlugin = JSON.parse(
+    readFileSync(new URL("../../plugin.json", import.meta.url), "utf8"),
+  );
   const marketplace = JSON.parse(
     readFileSync(new URL("../../../../.agents/plugins/marketplace.json", import.meta.url), "utf8"),
+  );
+  const claudeMarketplace = JSON.parse(
+    readFileSync(new URL("../../../../.claude-plugin/marketplace.json", import.meta.url), "utf8"),
   );
   const release = JSON.parse(
     readFileSync(new URL("../../../../release-please-config.json", import.meta.url), "utf8"),
   );
+  const baseVersion = plugin.version.split("+")[0];
   expect(plugin.name).toBe("forgix");
   expect(plugin.interface.displayName).toBe("Forgix");
+  expect(claudePlugin.name).toBe("forgix");
+  expect(claudePlugin.version).toBe(baseVersion);
+  expect(claudePlugin.skills).toBe("./skills/");
+  expect("interface" in claudePlugin).toBe(false);
+  expect(antigravityPlugin.name).toBe("forgix");
+  expect(antigravityPlugin.displayName).toBe("Forgix");
+  expect(antigravityPlugin.version).toBe(baseVersion);
   expect(marketplace.plugins[0].name).toBe(plugin.name);
   expect(marketplace.plugins[0].source.path).toBe("./plugins/forgix");
+  expect(claudeMarketplace.name).toBe("acrazie");
+  expect(claudeMarketplace.plugins[0].name).toBe("forgix");
+  expect(claudeMarketplace.plugins[0].source).toBe("./plugins/forgix");
+  expect(claudeMarketplace.plugins[0].version).toBe(baseVersion);
   expect(release.packages["plugins/forgix"]["package-name"]).toBe("forgix");
   expect(release.packages["plugins/forgix"].component).toBe(plugin.name);
+
+  const publicSkill = readFileSync(
+    new URL("../../skills/forgix/SKILL.md", import.meta.url),
+    "utf8",
+  );
+  expect(publicSkill).not.toMatch(/user-invocable:\s*false/);
+  for (const internalSkill of [
+    "discover-change",
+    "plan-change",
+    "design-decisions",
+    "review-change",
+    "debug-root-cause",
+  ]) {
+    const content = readFileSync(
+      new URL(`../../skills/${internalSkill}/SKILL.md`, import.meta.url),
+      "utf8",
+    );
+    expect(content).toMatch(/^user-invocable:\s*false$/m);
+  }
 });
