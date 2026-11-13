@@ -18,7 +18,7 @@
     },
     "plugins/forgix": {
       "name": "@acrasie/forgix",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "bin": {
         "forgix": "dist/forgix.mjs",
       },
