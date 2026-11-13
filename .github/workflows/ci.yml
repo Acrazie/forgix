@@ -16,7 +16,7 @@ jobs:
           node-version-file: site/.node-version
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       - run: bun run site:build
 
@@ -30,7 +30,7 @@ jobs:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       - name: Observe Fast Gate
         run: bun scripts/observe-command.ts "Fast Gate" bun run check:staged
@@ -75,7 +75,7 @@ jobs:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       - run: bun run --cwd plugins/forgix release:test
 
