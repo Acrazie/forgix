@@ -35,7 +35,7 @@ GitHub repository and website hosting URL are unchanged.
 
 ## Install
 
-Install Forgix for your harness, or run the standalone CLI directly with `npx forgix`.
+Install Forgix for your harness, or run the standalone CLI directly with `npx @acrasie/forgix init`.
 
 ### Codex
 
@@ -82,8 +82,8 @@ Alternatives on Antigravity:
 ### Standalone CLI
 
 ```bash
-npx forgix init
-npx forgix "<objective>"
+npx @acrasie/forgix init
+npx @acrasie/forgix "<objective>"
 ```
 
 ## Quick start
@@ -127,10 +127,10 @@ worktree isolation, Codex subscription/quota thresholds (when targeting `auto` o
 and integrations:
 
 ```bash
-npx forgix init
+npx @acrasie/forgix init
 ```
 
-The npm package and installed command are named `forgix`; the primary skill is `$forgix`
+The npm package is named `@acrasie/forgix` and the installed command is named `forgix`; the primary skill is `$forgix`
 (Codex), `/forgix:forgix` (Claude Code), or `/forgix` (Antigravity).
 Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.
 Existing installations of the old npm package are not automatically migrated.
@@ -192,11 +192,11 @@ proof. Plain questions, read-only exploration, and Git/GitHub delivery do not ne
 
 Standalone CLI commands:
 
-| Command                                                               | Purpose                                                         |
-| --------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `npx forgix init`                                                     | Run the optional Configuration wizard.                          |
-| `npx forgix benchmark summary`                                        | Summarize allowlisted local benchmark data.                     |
-| `npx forgix [--harness auto\|codex\|claude\|antigravity] <objective>` | Invoke the bundled CLI directly with optional harness override. |
+| Command                                                                        | Purpose                                                         |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| `npx @acrasie/forgix init`                                                     | Run the optional Configuration wizard.                          |
+| `npx @acrasie/forgix benchmark summary`                                        | Summarize allowlisted local benchmark data.                     |
+| `npx @acrasie/forgix [--harness auto\|codex\|claude\|antigravity] <objective>` | Invoke the bundled CLI directly with optional harness override. |
 
 `quick`, `standard`, and `critical` at objective start are plain objective text, not
 modes or aliases. Quick or Plan is selected only after Discovery. Risk and policy—not

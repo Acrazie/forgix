@@ -34,7 +34,7 @@ cd /path/to/project
 forgix init
 ```
 
-End users should run `npx forgix init`; `npm link` is not part of the published installation flow.
+End users should run `npx @acrasie/forgix init`; `npm link` is not part of the published installation flow.
 
 The setup script activates Lefthook git hooks (`pre-commit` and `commit-msg`). See [docs/git-workflow.md](./docs/git-workflow.md) for full branch, worktree, and Conventional Commit guidelines. `bun run check` verifies
 formatting, runs native and type-aware linting, checks tool scripts, builds the bundled

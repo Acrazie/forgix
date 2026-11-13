@@ -36,7 +36,7 @@ from Conventional Commits; maintainer retains final version authority.
 - Install repository-pinned Bun version from root `package.json`.
 - Install `git` and GitHub CLI `gh`.
 - Have push permission for `origin/main` and release creation permission on GitHub.
-- For npm or combined release, have publish permission for `forgix`.
+- For npm or combined release, have publish permission for `@acrasie/forgix`.
 - Keep `main` clean, with no staged, unstaged, or untracked files.
 - Ensure local `main` can fast-forward to `origin/main`; release program never rebases,
   resets, or creates a merge commit.
@@ -134,7 +134,7 @@ gh release view <tag>
 For npm or combined target, use npm version printed by release program:
 
 ```bash
-npm view forgix@<version> version
+npm view @acrasie/forgix@<version> version
 ```
 
 After the mirror workflow succeeds, an authenticated GitHub Packages client can verify
@@ -159,10 +159,10 @@ records. No separate local release-state file exists.
 
 ## Package rename
 
-New releases target `forgix` on npmjs and `@acrazie/forgix` on GitHub Packages.
+New releases target `@acrasie/forgix` on npmjs and `@acrazie/forgix` on GitHub Packages.
 Historical `codex-dev-flow` and `@acrasie/dev-flow` packages remain separate; this
 workflow does not republish, remove or migrate them. The `all` selector backfills
-only versions published as `forgix`. The CLI and Codex plugin are also named `forgix`;
+only versions published as `@acrasie/forgix`. The CLI and Codex plugin are also named `forgix`;
 no former CLI alias is retained.
 
 Before the first Forgix release, verify npm name availability and publication rights.
@@ -171,7 +171,7 @@ by the rename itself, and a registry 404 does not guarantee npm will accept the 
 
 ## Initial GitHub Packages publication and historical backfill
 
-The canonical release target is the public, unscoped `forgix` package on npmjs.
+The canonical release target is the public `@acrasie/forgix` package on npmjs.
 GitHub Packages contains a scoped mirror because its npm registry accepts only scoped
 names. Mirror input always comes from the already-published npmjs tarball; the workflow
 validates source name, version, and repository, then changes only the package name.

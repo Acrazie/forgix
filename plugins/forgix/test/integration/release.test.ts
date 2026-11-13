@@ -119,15 +119,17 @@ describe("release plans", () => {
 
 describe("release safety", () => {
   test("existing npm publication preserves the exact renamed release identity", () => {
-    expect(existingNpmReleaseVersion("forgix-v1.0.0", "forgix", "1.0.0")).toBe("1.0.0");
+    expect(existingNpmReleaseVersion("forgix-v1.0.0", "@acrasie/forgix", "1.0.0")).toBe("1.0.0");
     for (const tag of ["v1.0.0", "forgix-v1.0.1", "--help", "forgix-v1.0.0; echo unsafe"]) {
-      expect(() => existingNpmReleaseVersion(tag, "forgix", "1.0.0")).toThrow(ReleaseError);
+      expect(() => existingNpmReleaseVersion(tag, "@acrasie/forgix", "1.0.0")).toThrow(
+        ReleaseError,
+      );
     }
     expect(() => existingNpmReleaseVersion("forgix-v1.0.0", "dev-flow", "1.0.0")).toThrow(
       ReleaseError,
     );
     expect(() =>
-      existingNpmReleaseVersion("forgix-v1.0.0-beta.1", "forgix", "1.0.0-beta.1"),
+      existingNpmReleaseVersion("forgix-v1.0.0-beta.1", "@acrasie/forgix", "1.0.0-beta.1"),
     ).toThrow(ReleaseError);
   });
 
@@ -202,7 +204,10 @@ describe("release safety", () => {
     expect(allowedReleasePaths("both").has("plugins/forgix/.claude-plugin/plugin.json")).toBe(true);
     expect(allowedReleasePaths("both").has("plugins/forgix/plugin.json")).toBe(true);
     expect(allowedReleasePaths("both").has(".claude-plugin/marketplace.json")).toBe(true);
+    expect(allowedReleasePaths("both").has(".release-please-manifest.json")).toBe(true);
+    expect(allowedReleasePaths("npm").has(".release-please-manifest.json")).toBe(true);
     expect(allowedReleasePaths("plugin").has("plugins/forgix/package.json")).toBe(false);
+    expect(allowedReleasePaths("plugin").has(".release-please-manifest.json")).toBe(false);
     expect(allowedReleasePaths("npm").has("plugins/forgix/.claude-plugin/plugin.json")).toBe(false);
   });
 

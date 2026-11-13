@@ -37,7 +37,7 @@ after(() => rmSync(sandbox, { recursive: true, force: true }));
 
 test("packed npm artifact contains runtime-only files for Node 24", () => {
   const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
-  assert.equal(manifest.name, "forgix");
+  assert.equal(manifest.name, "@acrasie/forgix");
   assert.deepEqual(manifest.bin, {
     forgix: "dist/forgix.mjs",
   });

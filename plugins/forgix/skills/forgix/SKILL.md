@@ -15,7 +15,7 @@ Exact `$forgix init` (Codex), `/forgix:forgix init` (Claude Code), or `/forgix i
 (Antigravity) follows Project INIT below. Exact `$forgix roadmap` follows Roadmap
 Ideation below, and `$forgix run-issue <#num>` / `$forgix run-roadmap` follow
 Autonomous Roadmap Execution below. Parse every other invocation with the bundled
-deterministic CLI before acting. Resolve the CLI in this order (never run `npx forgix`
+deterministic CLI before acting. Resolve the CLI in this order (never run `npx @acrasie/forgix`
 during a plugin lifecycle turn):
 
 1. `node "${CLAUDE_PLUGIN_ROOT}/dist/forgix.mjs"` when `CLAUDE_PLUGIN_ROOT` is set.
@@ -36,7 +36,7 @@ in `integrations.plugins` or fully qualified skill identifier in `integrations.s
 Allowlisting is not activation; selected skill must still be relevant. System,
 developer, repository, and effective policy instructions remain authoritative.
 
-`npx forgix init` remains standalone CLI command and interactive
+`npx @acrasie/forgix init` remains standalone CLI command and interactive
 plugin-configuration wizard.
 It is separate from agentic `$forgix init` (`/forgix:forgix init`, `/forgix init`); never
 substitute one for other.
@@ -306,7 +306,7 @@ Benchmark is out-of-band and never changes lifecycle outcome.
   profiles. New file is deviation only when forbidden or unplanned by that authority.
 - Write complete allowlisted/redacted record atomically to
   `.codex/benchmarks/<task-id>.json`. Never upload it. Write failure is non-fatal.
-- `npx forgix benchmark summary` aggregates complete local records without model
+- `npx @acrasie/forgix benchmark summary` aggregates complete local records without model
   calls.
 
 ## Roadmap Ideation and Autonomous Execution

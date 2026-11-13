@@ -20,7 +20,7 @@ const sharedJourneyMarkers = [
   "/forgix:forgix",
   "/forgix",
   "$forgix Add rate limiting to the public authentication endpoints",
-  "npx forgix init",
+  "npx @acrasie/forgix init",
   "INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓",
   "Project INIT",
   "Configuration wizard",
@@ -51,7 +51,7 @@ describe("public documentation", () => {
     const runbook = read(
       fileURLToPath(new URL("../../docs/runbooks/maintainer-release.md", import.meta.url)),
     );
-    expect(runbook).toContain("public, unscoped `forgix` package on npmjs");
+    expect(runbook).toContain("public `@acrasie/forgix` package on npmjs");
     expect(runbook).not.toContain("unscoped `forgix` publication was rejected");
     expect(runbook).toContain("no former CLI alias is retained");
   });

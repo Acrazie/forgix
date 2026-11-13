@@ -199,6 +199,7 @@ export function allowedReleasePaths(target: ReleaseTarget): ReadonlySet<string> 
   }
   if (target !== "plugin") {
     paths.add("plugins/forgix/package.json");
+    paths.add(".release-please-manifest.json");
     paths.add("bun.lock");
   }
   return paths;
@@ -400,7 +401,9 @@ export function parseReleaseCommit(subject: string): {
 }
 
 export function existingNpmReleaseVersion(tag: string, name: string, version: string): string {
-  if (name !== "forgix") throw new ReleaseError("Existing release must contain package forgix.");
+  if (name !== "@acrasie/forgix") {
+    throw new ReleaseError("Existing release must contain package @acrasie/forgix.");
+  }
   parseStableVersion(version);
   if (tag !== `forgix-v${version}`) {
     throw new ReleaseError("Existing release tag does not match package name and version.");

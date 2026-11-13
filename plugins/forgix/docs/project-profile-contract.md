@@ -8,7 +8,7 @@ and does not yet make project profiles part of ordinary SHAPE completion.
 
 - `$forgix init`: agentic Discovery, adaptive interview, validation, and explicit
   Profile Approval.
-- `npx forgix init`: separate deterministic plugin-configuration wizard.
+- `npx @acrasie/forgix init`: separate deterministic plugin-configuration wizard.
 - `forgix project-profile inspect`: read existing shared/local profiles and
   ignore status.
 - `forgix project-profile validate [--local]`: validate stdin without writing.
