@@ -277,3 +277,48 @@ test("resume reuses fresh evidence without reasoning and targets only stale bran
   expect(stale.state.evidence.some((item) => item.id === "evidence.other")).toBe(true);
   expect(stale.state.preparationProfileChoice).toBe(undefined);
 });
+
+test("autonomous policy evidence allows preselecting Quick preparation profile", async () => {
+  const {
+    applyDiscoveryEvaluation,
+    attestDiscoverySufficient,
+    createShapeState,
+    requestPreparationProfileChoice,
+  } = await api();
+  const discovered = applyDiscoveryEvaluation(
+    createShapeState({ risk: "low", productBaselineRef: "design:product-baseline:auto" }),
+    completeDiscoveryEvaluation(),
+  );
+  const receipt = attestDiscoverySufficient(discovered);
+  const selected = requestPreparationProfileChoice(discovered, {
+    recommendation: "quick",
+    recommendationBasis: "Localized change with direct tests.",
+    checkpoint: {
+      changeShape: "localized",
+      surfaceCategories: ["auth"],
+      materialFacts: ["Unit tests cover login flow."],
+    },
+    discoveryReceipt: receipt,
+    preselectedProfile: "quick",
+    selectionEvidenceRef: "policy:autonomous:issue-42",
+  });
+  expect(selected.preparationProfileChoice?.selectedProfile).toBe("quick");
+  expect(selected.preparationProfileChoice?.selectionEvidenceRef).toBe(
+    "policy:autonomous:issue-42",
+  );
+
+  expect(() =>
+    requestPreparationProfileChoice(discovered, {
+      recommendation: "quick",
+      recommendationBasis: "Localized change.",
+      checkpoint: {
+        changeShape: "localized",
+        surfaceCategories: ["auth"],
+        materialFacts: ["No migration"],
+      },
+      discoveryReceipt: receipt,
+      preselectedProfile: "quick",
+      selectionEvidenceRef: "manual-override",
+    }),
+  ).toThrow(/preselect Plan/);
+});

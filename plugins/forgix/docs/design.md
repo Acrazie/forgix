@@ -97,5 +97,18 @@ second owner. Manual edit triggers integrate-or-regenerate reconciliation; mater
 integration changes digest and invalidates Approval.
 
 See [lifecycle-contract.md](lifecycle-contract.md), [artifacts.md](artifacts.md),
-[ADR 0009](adr/0009-separate-intake-decisions-from-shape-discovery.md), and
-[ADR 0010](adr/0010-choose-quick-or-plan-after-discovery.md).
+[ADR 0009](adr/0009-separate-intake-decisions-from-shape-discovery.md),
+[ADR 0010](adr/0010-choose-quick-or-plan-after-discovery.md),
+[ADR 0033](../../../docs/adr/0033-upstream-roadmap-ideation-and-hybrid-github-authority.md), and
+[ADR 0034](../../../docs/adr/0034-risk-conditioned-autonomous-execution-for-roadmap-work-items.md).
+
+## Upstream roadmap and risk-conditioned autonomy
+
+Forgix separates concentrated upstream planning (`$forgix roadmap`) from individual task
+execution (`$forgix <objective>` or `$forgix run-issue <#num>`). The bundled CLI owns
+deterministic validation, DAG acyclicity checks, candidate digesting, visual synthesis
+(`tree` / `mermaid`), idempotent publication planning, and `Ready` / `blocked-by` selection
+with zero network dependencies, while GitHub Project v2 mutations run through `gh` in the
+agent skill after explicit user approval. Low- and medium-risk pre-specified `Work Item`s
+receive an `Autonomous Gate Receipt` (`actor: "autonomous_policy"`, `issueRef`) inside
+`GATE` and isolate each branch/worktree from `main`.

@@ -139,3 +139,35 @@ test("durable trusted receipts reject post-persistence tampering", async () => {
   evidence.evaluatorReceipt.inputDigest = "tampered";
   expect(() => a.loadStateV6(tampered)).toThrow(/evaluator receipt.*invalid/i);
 });
+
+test("Autonomous Gate Receipt requires low/medium eligibility and valid issueRef", async () => {
+  const a = await api();
+  let state = await toGate(a, "quick", "auto-receipt");
+  expect(() =>
+    a.createGateDecision(state, {
+      decision: "approved",
+      actor: "autonomous_policy",
+    }),
+  ).toThrow(/issueRef/);
+
+  const receipt = a.createGateDecision(state, {
+    decision: "approved",
+    actor: "autonomous_policy",
+    issueRef: "acrazie/codex-dev-flow#42",
+    at: "2026-11-13T10:00:00.000Z",
+  });
+  expect(receipt.actor).toBe("autonomous_policy");
+  expect(receipt.issueRef).toBe("acrazie/codex-dev-flow#42");
+
+  state = a.transition(state, "executing", { gateDecision: receipt });
+  expect(state.planApproval?.actor).toBe("autonomous_policy");
+  expect(state.planApproval?.issueRef).toBe("acrazie/codex-dev-flow#42");
+  expect(() => a.loadStateV6(state)).not.toThrow();
+
+  expect(() =>
+    a.loadStateV6({
+      ...state,
+      planApproval: { ...receipt, actor: "autonomous_policy", issueRef: undefined },
+    }),
+  ).toThrow(/PlanApprovalReceipt/);
+});

@@ -120,3 +120,63 @@ test("GATE preflight returns targeted owner without mutating state", async () =>
     reason: "gate_state_invalid",
   });
 });
+
+test("evaluateAutonomousGateEligibility enforces low/medium risk, contradiction, ADR, and issueRef rules", async () => {
+  const lowState = await toGate(api, "quick", "auto-gate-low");
+  expect(api.evaluateAutonomousGateEligibility(lowState, { issueRef: "#42" })).toEqual({
+    eligible: true,
+  });
+
+  expect(
+    api.evaluateAutonomousGateEligibility({ ...lowState, risk: "high" }, { issueRef: "#42" }),
+  ).toEqual({
+    eligible: false,
+    reason: 'Risk level "high" requires human GATE approval.',
+  });
+
+  expect(
+    api.evaluateAutonomousGateEligibility(
+      { ...lowState, intake: { ...lowState.intake, contradictions: ["Scope conflict"] } },
+      { issueRef: "#42" },
+    ),
+  ).toEqual({
+    eligible: false,
+    reason: "Unresolved INTAKE contradiction requires human clarification.",
+  });
+
+  expect(
+    api.evaluateAutonomousGateEligibility(
+      {
+        ...lowState,
+        shape: {
+          ...lowState.shape,
+          technicalDecisions: [
+            {
+              schemaVersion: 1,
+              id: "td-1",
+              decisionKey: "storage-engine",
+              targetId: "t-1",
+              materialityReason: "Irreversible schema",
+              evidenceIds: [],
+              options: [
+                { id: "a", label: "A", impact: "one" },
+                { id: "b", label: "B", impact: "two" },
+              ],
+              recommendedOptionId: "a",
+              recommendationBasis: "Default",
+              confidence: "high",
+              adrQualified: true,
+              affectedDependencyRootIds: [],
+              priorRole: "planning",
+              status: "resolved",
+            },
+          ],
+        },
+      },
+      { issueRef: "#42" },
+    ),
+  ).toEqual({
+    eligible: false,
+    reason: 'Irreversible technical decision "storage-engine" requires human GATE approval.',
+  });
+});

@@ -114,6 +114,23 @@ INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
 GATE approval covers local implementation only. It never authorizes commit, push, pull
 request, registry publication, or release.
 
+### Optional: Plan and run a GitHub Project roadmap
+
+For multi-feature initiatives, run upstream roadmap ideation first:
+
+```text
+$forgix roadmap
+$forgix run-issue 42
+$forgix run-roadmap --limit 3 --parallel 1
+```
+
+`$forgix roadmap` guides a 3-phase ideation session (Divergence -> Convergence -> ASCII `tree`
+or Mermaid DAG synthesis), publishes `Feature` parents and atomic `Work Item` sub-issues to
+GitHub Project v2 (`gh auth status` with `project` scope required), and sets Wave-1 unblocked
+items to `Ready`. `$forgix run-issue` / `$forgix run-roadmap` isolate each `Work Item` in a
+fresh `main`-based worktree, apply autonomous `low`/`medium` Gate receipts when eligible (or
+pause `high`/`critical` items for human approval), and hand off Draft PRs on `ASSURE ✓`.
+
 ## 5. Optional Configuration wizard
 
 Project INIT owns project engineering knowledge. The separate deterministic

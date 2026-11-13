@@ -153,6 +153,7 @@ test("npm package contains runtime assets and excludes development files", () =>
       "schemas/project-profile.schema.json",
       "schemas/project-profile-local.schema.json",
       "schemas/project-init-state.schema.json",
+      "schemas/roadmap-state.schema.json",
       "skills/forgix/SKILL.md",
       "LICENSE",
       "README.md",

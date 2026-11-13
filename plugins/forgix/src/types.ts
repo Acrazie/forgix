@@ -557,10 +557,13 @@ export interface EvaluatorReceiptRecord {
   receiptDigest: string;
 }
 
+export type GateActor = "user" | "autonomous_policy";
+
 export interface GateDecisionRecord {
   schemaVersion: 1;
   decision: "approved" | "rejected" | "change_requested";
-  actor: "user";
+  actor: GateActor;
+  issueRef?: string;
   decidedAt: string;
   taskId: string;
   artifactId: string;

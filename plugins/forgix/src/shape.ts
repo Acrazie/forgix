@@ -607,7 +607,8 @@ export function requestPreparationProfileChoice(
   if (input.preselectedProfile && !TOKEN.test(input.selectionEvidenceRef ?? "")) {
     throw new Error("Preselected preparation profile requires evidence.");
   }
-  if (input.preselectedProfile && input.preselectedProfile !== "plan") {
+  const autonomousPreselect = input.selectionEvidenceRef?.startsWith("policy:autonomous:") ?? false;
+  if (input.preselectedProfile && input.preselectedProfile !== "plan" && !autonomousPreselect) {
     throw new Error("Only explicit durable-plan request or policy may preselect Plan.");
   }
   const selected = input.preselectedProfile;

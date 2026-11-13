@@ -60,7 +60,8 @@ export type SchemaName =
   | "state"
   | "project-init-state"
   | "project-profile"
-  | "project-profile-local";
+  | "project-profile-local"
+  | "roadmap-state";
 
 export interface SchemaValidationResult {
   valid: boolean;

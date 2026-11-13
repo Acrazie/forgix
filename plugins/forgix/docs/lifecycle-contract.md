@@ -181,6 +181,28 @@ Normative profile schema, authority, reconciliation, privacy, and atomic publica
 [Project Engineering Profile contract](project-profile-contract.md). Ordinary SHAPE may
 consume approved profile and domain-documentation conventions by digest-bound reference.
 
+## Roadmap ideation and autonomous Work Items
+
+Exact `$forgix roadmap` also runs outside `TaskState`. It maintains a local gitignored
+3-phase session draft (`.codex/roadmap/state.yaml`) and publishes approved `Feature` and
+atomic `Work Item` issues with native `blocked-by` edges into a GitHub Project v2 while
+keeping durable vision/domain rules and light project binding in Git.
+
+When `$forgix run-issue <#num>` or `$forgix run-roadmap` executes a pre-specified `Work Item`:
+
+- Each `Work Item` runs in its own branch and isolated Git worktree created fresh from `main`.
+- `INTAKE` is seeded from the live GitHub issue plus repository vision, domain rules, and
+  profile conventions; `SHAPE` discovers live code dynamically without relying on frozen file
+  lists.
+- `low` and `medium` risk `Work Item`s without unresolved `INTAKE` contradictions or
+  irreversible (`adrQualified`) technical decisions may bypass interactive human `GATE` by
+  persisting a digest-bound `Autonomous Gate Receipt` (`actor: "autonomous_policy"`,
+  `issueRef: "#<num>"`).
+- `high` and `critical` `Work Item`s, or lower-risk items that escalate during `INTAKE`/`SHAPE`,
+  still require explicit human `GATE` approval (`actor: "user"`).
+- On `ASSURE ✓` (or green automated checks with only `user-observation` pending), delivery
+  opens a Draft PR (`Closes #<num>`) and moves the issue to `In Review` (`Done` only on merge).
+
 ## Privacy and metrics
 
 Metrics allow only opaque run identity, preparation profile/unselected, macro-phase,

@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgix.dev/schemas/roadmap-state.schema.json",
+  "title": "Forgix Roadmap Ideation Session State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sessionId",
+    "phase",
+    "codebaseKind",
+    "projectMode",
+    "visualFormat",
+    "updatedAt",
+    "themes",
+    "features",
+    "workItems"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "sessionId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "phase": {
+      "enum": ["divergence", "convergence", "synthesis", "published"]
+    },
+    "codebaseKind": {
+      "enum": ["greenfield", "existing"]
+    },
+    "projectMode": {
+      "enum": ["create", "attach"]
+    },
+    "visualFormat": {
+      "enum": ["tree", "mermaid"]
+    },
+    "updatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "productVisionPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "productVisionSummary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner"],
+      "properties": {
+        "owner": { "type": "string", "minLength": 1 },
+        "number": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "minLength": 1 }
+      }
+    },
+    "themes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "summary"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+          "title": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 },
+          "notes": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "features": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/featureCandidate" }
+    },
+    "workItems": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/workItemCandidate" }
+    },
+    "candidateDigest": {
+      "type": "string",
+      "minLength": 8
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved"],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvedAt": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "minLength": 8 }
+      }
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["pending", "partial", "completed"] },
+        "projectNumber": { "type": "integer", "minimum": 1 },
+        "projectUrl": { "type": "string", "minLength": 1 },
+        "publishedAt": { "type": "string", "minLength": 1 },
+        "batchHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["batchId", "recordedAt", "createdIssues", "updatedIssues"],
+            "properties": {
+              "batchId": { "type": "string", "minLength": 1 },
+              "recordedAt": { "type": "string", "minLength": 1 },
+              "createdIssues": { "type": "integer", "minimum": 0 },
+              "updatedIssues": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "risk": {
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "priority": {
+      "enum": ["P0", "P1", "P2", "P3"]
+    },
+    "boardStatus": {
+      "enum": ["Backlog", "Ready", "In Progress", "Blocked", "In Review", "Done"]
+    },
+    "featureCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "summary", "priority", "risk", "scopeIn", "scopeOut"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "priority": { "$ref": "#/$defs/priority" },
+        "risk": { "$ref": "#/$defs/risk" },
+        "wave": { "type": "integer", "minimum": 1 },
+        "scopeIn": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "scopeOut": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "issueNumber": { "type": "integer", "minimum": 1 },
+        "issueUrl": { "type": "string", "minLength": 1 },
+        "projectItemId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "workItemCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "featureId",
+        "title",
+        "objective",
+        "scopeIn",
+        "scopeOut",
+        "acceptanceCriteria",
+        "risk",
+        "priority",
+        "blockedBy"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "featureId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "objective": { "type": "string", "minLength": 1 },
+        "scopeIn": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "scopeOut": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "linkedRuleIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "risk": { "$ref": "#/$defs/risk" },
+        "priority": { "$ref": "#/$defs/priority" },
+        "wave": { "type": "integer", "minimum": 1 },
+        "blockedBy": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }
+        },
+        "initialStatus": { "$ref": "#/$defs/boardStatus" },
+        "status": { "$ref": "#/$defs/boardStatus" },
+        "issueNumber": { "type": "integer", "minimum": 1 },
+        "issueUrl": { "type": "string", "minLength": 1 },
+        "projectItemId": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

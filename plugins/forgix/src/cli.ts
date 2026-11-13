@@ -27,6 +27,20 @@ import {
   writeFiveHourResetCache,
 } from "./quota-cache.js";
 import { chooseRoute, ROUTING_POLICY_VERSION, type RouteTask } from "./routing.js";
+import {
+  RoadmapError,
+  buildWorkItemBranchAndWorktree,
+  computeRoadmapCandidateDigest,
+  createRoadmapStore,
+  deriveFeatureStatus,
+  planIdempotentPublication,
+  recordPublishedRoadmapBatch,
+  renderRoadmapSessionState,
+  renderRoadmapVisualSummary,
+  selectEligibleWorkItems,
+  validateRoadmapState,
+  type RoadmapState,
+} from "./roadmap.js";
 import { deriveMacroPhase } from "./state-machine.js";
 import { StateStoreError, createTaskStateStore } from "./state-store.js";
 import type { CliResult } from "./types.js";
@@ -126,7 +140,37 @@ export {
   updateResumeContext,
   transition,
 } from "./state.js";
-export { parseGateIntent, preflightGate, renderGateCard, renderGateContract } from "./gate.js";
+export {
+  evaluateAutonomousGateEligibility,
+  parseGateIntent,
+  preflightGate,
+  renderGateCard,
+  renderGateContract,
+} from "./gate.js";
+export {
+  DEFAULT_PRODUCT_VISION_PATH,
+  DEFAULT_WORKTREE_BASE_BRANCH,
+  DEFAULT_WORKTREE_ROOT,
+  ROADMAP_IGNORE_ENTRY,
+  ROADMAP_STATE_PATH,
+  RoadmapError,
+  RoadmapStore,
+  buildWorkItemBranchAndWorktree,
+  computeRoadmapCandidateDigest,
+  createRoadmapStore,
+  deriveFeatureStatus,
+  detectDependencyCycles,
+  planIdempotentPublication,
+  recordPublishedRoadmapBatch,
+  renderRoadmapSessionState,
+  renderRoadmapVisualSummary,
+  selectEligibleWorkItems,
+  validateRoadmapState,
+  type RoadmapBoardStatus,
+  type RoadmapPublishRecordPatch,
+  type RoadmapState,
+  type RoadmapWorkItem,
+} from "./roadmap.js";
 export { GUARD_IDS, MACRO_PHASES, buildStateMachineProjection } from "./state-machine.js";
 export {
   LIFECYCLE_METRICS,
@@ -236,6 +280,11 @@ Commands:
   project-profile validate [--local]
   project-profile publish [--local]
   project-profile session-view|session-save|session-clear
+  roadmap session-view [--format=tree|mermaid]
+  roadmap session-save|session-clear
+  roadmap validate [--session]
+  roadmap publish-plan|publish-record
+  roadmap select-ready [--limit=N] [--max-risk=low|medium|all] [--require-issue]
   --help
 
 Workflow:
@@ -254,6 +303,7 @@ export interface RunInvocationOptions {
   nowEpochSeconds?: number;
   workspaceRoot?: string;
   projectProfile?: ProjectProfileCommandOptions;
+  roadmap?: ProjectProfileCommandOptions;
 }
 
 export interface ProjectProfileCommandOptions {
@@ -273,6 +323,9 @@ export async function runInvocation(
   if (invocation.command === "init") return runInit(options.init);
   if (isProjectProfileInvocation(invocation)) {
     return runProjectProfileInvocation(invocation, options);
+  }
+  if (isRoadmapInvocation(invocation)) {
+    return runRoadmapInvocation(invocation, options);
   }
   if (invocation.command === "config_show" || invocation.command === "config_validate") {
     const config = resolveRuntimeConfig(options.configSources);
@@ -516,32 +569,42 @@ async function runProjectProfileInvocation(
 }
 
 async function readProjectProfileInput(options: ProjectProfileCommandOptions | undefined) {
+  return readStructuredTextInput(
+    "project-profile validate/publish requires YAML or JSON on stdin.",
+    options,
+  );
+}
+
+async function readStructuredTextInput(
+  emptyMessage: string,
+  options: ProjectProfileCommandOptions | undefined,
+): Promise<string> {
   const maximumBytes = 2_000_000;
   if (options?.input !== undefined) {
     if (Buffer.byteLength(options.input) > maximumBytes) {
-      throw new InvocationError("Project profile input exceeds 2000000 bytes.");
+      throw new InvocationError(`Structured input exceeds ${maximumBytes} bytes.`);
     }
     return options.input;
   }
   if (options?.readInput) {
     const input = await options.readInput();
     if (Buffer.byteLength(input) > maximumBytes) {
-      throw new InvocationError("Project profile input exceeds 2000000 bytes.");
+      throw new InvocationError(`Structured input exceeds ${maximumBytes} bytes.`);
     }
     return input;
   }
   if (process.stdin.isTTY) {
-    throw new InvocationError("project-profile validate/publish requires YAML or JSON on stdin.");
+    throw new InvocationError(emptyMessage);
   }
   let source = "";
   for await (const chunk of process.stdin) {
     source += String(chunk);
     if (Buffer.byteLength(source) > maximumBytes) {
-      throw new InvocationError("Project profile input exceeds 2000000 bytes.");
+      throw new InvocationError(`Structured input exceeds ${maximumBytes} bytes.`);
     }
   }
   if (!source.trim()) {
-    throw new InvocationError("project-profile validate/publish requires YAML or JSON on stdin.");
+    throw new InvocationError(emptyMessage);
   }
   return source;
 }
@@ -586,9 +649,164 @@ function parseStructuredInput(source: string): unknown {
 }
 
 type ProjectProfileInvocation = Extract<ParsedInvocation, { command: `project_profile_${string}` }>;
+type RoadmapInvocation = Extract<ParsedInvocation, { command: `roadmap_${string}` }>;
 
 function isProjectProfileInvocation(value: ParsedInvocation): value is ProjectProfileInvocation {
   return value.command.startsWith("project_profile_");
+}
+
+function isRoadmapInvocation(value: ParsedInvocation): value is RoadmapInvocation {
+  return value.command.startsWith("roadmap_");
+}
+
+async function runRoadmapInvocation(
+  invocation: RoadmapInvocation,
+  options: RunInvocationOptions,
+): Promise<CliResult> {
+  const workspaceRoot = options.workspaceRoot ?? process.cwd();
+  const store = createRoadmapStore(workspaceRoot);
+  const gitignored = store.isGitignored();
+
+  if (invocation.command === "roadmap_session_clear") {
+    return {
+      command: invocation.command,
+      status: "ok",
+      data: { cleared: await store.clear() },
+    };
+  }
+
+  if (invocation.command === "roadmap_session_view") {
+    let state: RoadmapState | null = null;
+    try {
+      state = await store.load();
+    } catch (error) {
+      if (!(error instanceof RoadmapError && error.code === "roadmap_not_found")) {
+        throw error;
+      }
+    }
+    return {
+      command: invocation.command,
+      status: "ok",
+      data: state
+        ? {
+            state,
+            gitignored,
+            candidateDigest: computeRoadmapCandidateDigest(state),
+            summary: renderRoadmapSessionState(state, { gitignored }),
+            visual: renderRoadmapVisualSummary(state, invocation.format),
+          }
+        : { state: null, gitignored },
+    };
+  }
+
+  if (invocation.command === "roadmap_session_save") {
+    const raw = await readStructuredTextInput(
+      "roadmap session-save requires YAML or JSON on stdin.",
+      options.roadmap,
+    );
+    const parsed = parseStructuredInput(raw);
+    const state = await store.save(parsed);
+    return {
+      command: invocation.command,
+      status: "saved",
+      data: {
+        state,
+        gitignored,
+        candidateDigest: computeRoadmapCandidateDigest(state),
+        summary: renderRoadmapSessionState(state, { gitignored }),
+        visual: renderRoadmapVisualSummary(state),
+      },
+    };
+  }
+
+  if (invocation.command === "roadmap_validate") {
+    const rawState = invocation.session
+      ? await store.load()
+      : parseStructuredInput(
+          await readStructuredTextInput(
+            "roadmap validate requires YAML or JSON on stdin unless --session is passed.",
+            options.roadmap,
+          ),
+        );
+    const state = validateRoadmapState(rawState);
+    return {
+      command: invocation.command,
+      status: "valid",
+      data: {
+        state,
+        candidateDigest: computeRoadmapCandidateDigest(state),
+        visual: renderRoadmapVisualSummary(state),
+      },
+    };
+  }
+
+  if (invocation.command === "roadmap_publish_plan") {
+    const state = options.roadmap?.input
+      ? validateRoadmapState(parseStructuredInput(options.roadmap.input))
+      : await store.load();
+    return {
+      command: invocation.command,
+      status: "ok",
+      data: { plan: planIdempotentPublication(state) },
+    };
+  }
+
+  if (invocation.command === "roadmap_publish_record") {
+    const raw = await readStructuredTextInput(
+      "roadmap publish-record requires a JSON or YAML patch on stdin.",
+      options.roadmap,
+    );
+    const patch = parseStructuredInput(raw);
+    if (!isRecord(patch)) {
+      throw new InvocationError("Roadmap publish-record payload must be a YAML or JSON object.");
+    }
+    const existing = await store.load();
+    const updated = recordPublishedRoadmapBatch(existing, patch);
+    await store.save(updated);
+    return {
+      command: invocation.command,
+      status: "saved",
+      data: {
+        state: updated,
+        publication: updated.publication,
+      },
+    };
+  }
+
+  const state = options.roadmap?.input
+    ? validateRoadmapState(parseStructuredInput(options.roadmap.input))
+    : await store.load();
+  const selection = selectEligibleWorkItems(state.workItems, {
+    ...(invocation.limit !== undefined ? { limit: invocation.limit } : {}),
+    ...(invocation.maxRisk !== undefined ? { maxRisk: invocation.maxRisk } : {}),
+    requireIssueNumber: invocation.requireIssueNumber,
+  });
+  const eligible = selection.eligible.map((item) => ({
+    workItem: item,
+    workspace: buildWorkItemBranchAndWorktree(item),
+    featureStatusAfterStart: deriveFeatureStatus(
+      state.workItems
+        .filter((candidate) => candidate.featureId === item.featureId)
+        .map((candidate) => {
+          if (candidate.id === item.id) {
+            return { status: "In Progress" as const };
+          }
+          const projection: {
+            status?: RoadmapState["workItems"][number]["status"];
+            initialStatus?: RoadmapState["workItems"][number]["initialStatus"];
+          } = {};
+          if (candidate.status !== undefined) projection.status = candidate.status;
+          if (candidate.initialStatus !== undefined)
+            projection.initialStatus = candidate.initialStatus;
+          return projection;
+        }),
+    ),
+  }));
+  return {
+    command: invocation.command,
+    status: "ok",
+    data: { eligible, skipped: selection.skipped },
+  };
 }
 
 function appendRoutingWarning(

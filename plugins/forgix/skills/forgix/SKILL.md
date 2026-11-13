@@ -11,8 +11,10 @@ success status. Canonical registry, strict V6 state, durable state store, unifie
 and local benchmark store are available primitives. Never claim a durable transition,
 Approval binding, or Assurance Receipt without deterministic evidence.
 
-Exact `$forgix init` follows Project INIT below. Parse every other invocation with
-bundled deterministic script before acting.
+Exact `$forgix init` follows Project INIT below. Exact `$forgix roadmap` follows Roadmap
+Ideation below, and `$forgix run-issue <#num>` / `$forgix run-roadmap` follow
+Autonomous Roadmap Execution below. Parse every other invocation with bundled
+deterministic script before acting.
 
 ## Skill isolation and configured integrations
 
@@ -286,6 +288,58 @@ Benchmark is out-of-band and never changes lifecycle outcome.
   `.codex/benchmarks/<task-id>.json`. Never upload it. Write failure is non-fatal.
 - `npx forgix benchmark summary` aggregates complete local records without model
   calls.
+
+## Roadmap Ideation and Autonomous Execution
+
+### Upstream `$forgix roadmap`
+
+Exact `$forgix roadmap` runs outside `TaskState` to concentrate product ideation into a
+GitHub Project v2 roadmap:
+
+1. **Preflight & context**: Read `Project Engineering Profile` (`.codex/dev-flow.project.yaml`)
+   and domain rules/glossary if present (recommend `$forgix init` without blocking if missing).
+   On existing repositories, run lightweight codebase discovery before ideation; on greenfield
+   repositories, start directly in Divergence. Check `gh auth status` for `project` scope
+   before any GitHub mutation.
+2. **3-phase session** persisted locally in gitignored `.codex/roadmap/state.yaml` via
+   bundled `forgix roadmap session-view|session-save|session-clear`:
+   - **Divergence**: explore themes, user outcomes, constraints, and initial risks.
+   - **Convergence**: structure a 2-level hierarchy of `Feature` parents and atomic
+     `Work Item` sub-issues (no frozen file lists or code plans — live discovery stays in
+     `SHAPE`). Each `Work Item` defines objective, `scopeIn`/`scopeOut`, `linkedRuleIds`,
+     observable `acceptanceCriteria`, `risk`, `priority` (`P0`–`P3`), optional `wave`, and
+     acyclic `blockedBy` dependencies.
+   - **Visual synthesis & approval**: validate via `forgix roadmap validate --session` and
+     present ASCII `"tree"` or `"mermaid"` DAG (`renderRoadmapVisualSummary`). Wave 1
+     unblocked items default to `Ready` (adjustable in review); later waves start `Backlog`.
+3. **Hybrid authority & idempotent publication**: Commit durable product vision
+   (`docs/product-vision.md`), domain docs, and light `.codex/dev-flow.yaml` `roadmap`
+   binding in Git only when requested; compute `forgix roadmap publish-plan`, create or
+   attach the GitHub Project v2, create/update `Feature` issues (`feature` label) and
+   atomic `Work Item` sub-issues with native `blocked-by` edges and Project fields
+   (`Status`, `Kind`, `Risk`, `Priority`, optional `Wave`), and record issue numbers after
+   each batch via `forgix roadmap publish-record`.
+
+### `$forgix run-issue <#num>` and `$forgix run-roadmap [--limit N] [--parallel M]`
+
+1. Select `Ready` `Work Item` issues (`forgix roadmap select-ready`) whose `blockedBy`
+   dependencies are all `Done` (`In Review` still blocks downstream work; default `--parallel 1`).
+2. Create an isolated branch and Git worktree fresh from `main` (`buildWorkItemBranchAndWorktree`),
+   preserving each worktree cleanly across concurrent runs.
+3. Seed `INTAKE` from the live GitHub Issue plus repo vision, glossary, and engineering profile,
+   and transition issue status to `In Progress` (updating parent `Feature` to `In Progress`).
+4. Run `SHAPE` against live repository code (passing `policy:autonomous:issue-<num>` to
+   `selectPreparationProfile`). If `INTAKE` uncovers a contradiction, risk rises to
+   `high`/`critical`, or an irreversible (`adrQualified`) `TechnicalDecision` arises, pause as
+   `Blocked`, comment on the issue, and stop unattended execution for that item.
+5. For `low`/`medium` items passing `evaluateAutonomousGateEligibility`, record an `Autonomous
+Gate Receipt` (`actor: "autonomous_policy"`, `issueRef: "#<num>"`) in `GATE`, execute
+   `BUILD`, and run `ASSURE`.
+6. On `ASSURE ✓` (or green automated checks with only `user-observation` pending), commit,
+   push the branch, open a Draft PR referencing `Closes #<num>` with verification evidence,
+   and move the issue to `In Review` (`Done` is applied on merge). If `ASSURE` fails after
+   bounded `debug-root-cause`, mark `Blocked`, comment diagnostics on the issue, and preserve
+   the worktree.
 
 ## Resume, evidence, and artifacts
 

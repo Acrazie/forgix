@@ -152,3 +152,54 @@ function canonicalValue(value: unknown): unknown {
   }
   return value;
 }
+
+const AUTONOMOUS_ISSUE_REF = /^([a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+)?#[1-9][0-9]*$/;
+
+export interface AutonomousGateEligibilityResult {
+  eligible: boolean;
+  reason?: string;
+}
+
+/**
+ * Evaluates whether a TaskState in `awaiting_approval` qualifies for an
+ * Autonomous Gate Receipt under risk-conditioned execution policy.
+ */
+export function evaluateAutonomousGateEligibility(
+  state: TaskState,
+  options: { issueRef?: string } = {},
+): AutonomousGateEligibilityResult {
+  if (state.risk !== "low" && state.risk !== "medium") {
+    return {
+      eligible: false,
+      reason: `Risk level "${state.risk}" requires human GATE approval.`,
+    };
+  }
+  if ((state.intake?.contradictions?.length ?? 0) > 0) {
+    return {
+      eligible: false,
+      reason: "Unresolved INTAKE contradiction requires human clarification.",
+    };
+  }
+  const unresolvedOrIrreversible = (state.shape?.technicalDecisions ?? []).find(
+    (decision) => decision.status !== "resolved" || decision.adrQualified,
+  );
+  if (unresolvedOrIrreversible) {
+    return {
+      eligible: false,
+      reason: unresolvedOrIrreversible.adrQualified
+        ? `Irreversible technical decision "${unresolvedOrIrreversible.decisionKey}" requires human GATE approval.`
+        : `Unresolved technical decision "${unresolvedOrIrreversible.decisionKey}" requires human approval.`,
+    };
+  }
+  if (options.issueRef !== undefined && !AUTONOMOUS_ISSUE_REF.test(options.issueRef)) {
+    return {
+      eligible: false,
+      reason: `Invalid issue reference "${options.issueRef}" for autonomous GATE receipt.`,
+    };
+  }
+  const preflight = preflightGate(state);
+  if (!preflight.ready) {
+    return { eligible: false, reason: preflight.reason };
+  }
+  return { eligible: true };
+}
