@@ -90,8 +90,8 @@ export function applyOwnedMarkdownPatch(source: string, patch: DomainSemanticPat
   const fingerprint = `sha256:${createHash("sha256").update(source).digest("hex")}`;
   if (fingerprint !== patch.sourceFingerprint)
     throw new Error(`Domain semantic patch ${patch.operationId} source is stale.`);
-  const start = `<!-- dev-flow:${patch.ownedIdentity}:start -->`;
-  const end = `<!-- dev-flow:${patch.ownedIdentity}:end -->`;
+  const start = `<!-- forgix:${patch.ownedIdentity}:start -->`;
+  const end = `<!-- forgix:${patch.ownedIdentity}:end -->`;
   const block = `${start}\n${patch.content.trim()}\n${end}`;
   const startIndex = source.indexOf(start);
   const endIndex = source.indexOf(end);

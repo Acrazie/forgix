@@ -54,7 +54,7 @@ validation and approval transaction.
 Canonical shared file is versioned:
 
 ```text
-.codex/dev-flow.project.yaml
+.codex/forgix.project.yaml
 ```
 
 Schema: [project-profile.schema.json](../schemas/project-profile.schema.json).
@@ -68,7 +68,7 @@ Required content:
 - optional `domainDocumentation` conventions: single/multiple context mode, portable
   glossary/rules/ADR/context-map paths, language, stable identity/link conventions, and
   source fingerprints;
-- optional relative Markdown diagram refs below `.codex/dev-flow/diagrams/`; and
+- optional relative Markdown diagram refs below `.codex/forgix/diagrams/`; and
 - monotonic revision, canonical content digest, and Profile Approval Receipt.
 
 Decision dependency graph is acyclic. `user_asserted` decisions cannot carry verified
@@ -86,7 +86,7 @@ digest binds those fields. Any mismatch makes profile invalid.
 Local file is gitignored:
 
 ```text
-.codex/dev-flow.project.local.yaml
+.codex/forgix.project.local.yaml
 ```
 
 Schema: [project-profile-local.schema.json](../schemas/project-profile-local.schema.json).
@@ -130,7 +130,7 @@ Candidate stdin may be raw profile YAML/JSON or transaction object:
 ````yaml
 profile: # profile proposal without approval
 projections:
-  - path: .codex/dev-flow/diagrams/example-r1.mermaid.md
+  - path: .codex/forgix/diagrams/example-r1.mermaid.md
     content: |-
       ```mermaid
       flowchart LR

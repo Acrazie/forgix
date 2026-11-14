@@ -11,7 +11,7 @@ export const SOURCE_REGISTRY = "https://registry.npmjs.org";
 export const DESTINATION_REGISTRY = "https://npm.pkg.github.com";
 
 const STABLE_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
-const EXPECTED_REPOSITORY = "github.com/acrazie/codex-dev-flow";
+const EXPECTED_REPOSITORY = "github.com/acrazie/forgix";
 
 interface CommandResult {
   status: number | null;

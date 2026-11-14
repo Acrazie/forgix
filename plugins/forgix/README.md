@@ -21,9 +21,22 @@ itself. Bun is required only for repository development.
 ## Existing projects
 
 Use `forgix` (`$forgix` on Codex, `/forgix:forgix` on Claude Code, `/forgix` on Antigravity);
-former commands have no aliases. Existing `.codex/` configurations, profiles, and task
-documents keep their paths across all three harnesses—no data migration is required.
-GitHub repository and website hosting URL are unchanged.
+former commands have no aliases. Internal `.codex/` state directories (`tasks/`,
+`benchmarks/`, `project-init/`, `roadmap/`) keep their paths across all three harnesses,
+while configuration, profiles, diagrams, owned domain markers, and Plan projections use
+`forgix` names without fallback:
+
+1. **CLI configuration**: rename `~/.codex/dev-flow.yaml`, `.codex/dev-flow.yaml`, and
+   `.codex/dev-flow.local.yaml` to `forgix.yaml` / `forgix.local.yaml`, or re-run
+   `npx @acrasie/forgix init` (legacy filenames are ignored silently).
+2. **Project Engineering Profile**: re-run `$forgix init` (`/forgix:forgix init` or
+   `/forgix init`) and re-approve rather than hand-renaming signed
+   `.codex/dev-flow.project.yaml` files (especially when `diagramRefs` point below
+   `.codex/forgix/diagrams/`), and rename `.codex/dev-flow.project.local.yaml` to
+   `.codex/forgix.project.local.yaml`.
+3. **Plan projections and domain markers**: move retained `docs/dev-flow/` plan files to
+   `docs/forgix/`, and replace or remove legacy `<!-- dev-flow:... -->` markers in domain
+   documents so the next projection does not append a second `<!-- forgix:... -->` block.
 
 ## Install
 
@@ -32,7 +45,7 @@ GitHub repository and website hosting URL are unchanged.
 Add the marketplace and install the plugin:
 
 ```bash
-codex plugin marketplace add Acrazie/codex-dev-flow
+codex plugin marketplace add Acrazie/forgix
 codex plugin add forgix@acrazie
 ```
 
@@ -44,14 +57,14 @@ Start a new Codex session after installation or upgrade.
 Add the marketplace and install the plugin from inside Claude Code:
 
 ```text
-/plugin marketplace add Acrazie/codex-dev-flow
+/plugin marketplace add Acrazie/forgix
 /plugin install forgix@acrazie
 ```
 
 Or via the `claude` CLI:
 
 ```bash
-claude plugin marketplace add Acrazie/codex-dev-flow
+claude plugin marketplace add Acrazie/forgix
 claude plugin install forgix@acrazie
 ```
 
@@ -60,12 +73,12 @@ claude plugin install forgix@acrazie
 Clone the repository and install the plugin directory with `agy`:
 
 ```bash
-git clone https://github.com/Acrazie/codex-dev-flow.git
-agy plugin install ./codex-dev-flow/plugins/forgix
+git clone https://github.com/Acrazie/forgix.git
+agy plugin install ./forgix/plugins/forgix
 ```
 
 Alternatives on Antigravity: `agy plugin import claude` (after installing in Claude Code) or
-copying `./codex-dev-flow/plugins/forgix/` into `~/.gemini/config/plugins/forgix/`.
+copying `./forgix/plugins/forgix/` into `~/.gemini/config/plugins/forgix/`.
 
 ### Standalone CLI
 
@@ -122,11 +135,15 @@ npx @acrasie/forgix init
 The npm package is named `@acrasie/forgix` and the installed command is named `forgix`; the primary skill is `$forgix`
 (Codex), `/forgix:forgix` (Claude Code), or `/forgix` (Antigravity).
 Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.
-Existing installations of the old npm package are not automatically migrated.
-Upgrade the Acrazie marketplace and install `forgix@acrazie` to use the renamed
-plugin; existing `.codex/` project configuration and state remain unchanged.
-Replace the old plugin installation rather than installing both plugin identities
-side by side.
+Existing installations of the old npm package, marketplace source, or `dev-flow` files are
+not automatically migrated. Replace or re-add the Acrazie marketplace source as
+`Acrazie/forgix`, install `forgix@acrazie`, and replace the old plugin installation rather
+than installing both plugin identities side by side. Rename existing CLI configuration files
+to `~/.codex/forgix.yaml`, `.codex/forgix.yaml`, and `.codex/forgix.local.yaml` (or re-run
+`npx @acrasie/forgix init`), regenerate and re-approve shared project profiles with
+`$forgix init` (`/forgix:forgix init` or `/forgix init`), and update retained `docs/forgix/`
+paths and `<!-- forgix:... -->` domain markers; `.codex/tasks/`, `benchmarks/`,
+`project-init/`, and `roadmap/` remain unchanged.
 
 Project INIT and the Configuration wizard are separate interfaces; neither aliases the
 other. See the [Getting Started guide](docs/getting-started.md) for a complete
@@ -194,12 +211,12 @@ shared engineering     local overlay
 profile                and session state
 ```
 
-| File                                    | Role                                                        | Git policy                      |
-| --------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
-| `.codex/dev-flow.project.yaml`          | Shared architecture, topology, stack, and conventions.      | Review and commit when desired. |
-| `.codex/dev-flow.project.local.yaml`    | Absolute service paths and personal, non-contractual prefs. | Gitignored.                     |
-| `.codex/project-init/state.yaml`        | Compact resumable INIT session.                             | Gitignored and temporary.       |
-| `.codex/dev-flow/diagrams/*.mermaid.md` | Optional projection of approved profile architecture.       | Commit with shared profile.     |
+| File                                  | Role                                                        | Git policy                      |
+| ------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
+| `.codex/forgix.project.yaml`          | Shared architecture, topology, stack, and conventions.      | Review and commit when desired. |
+| `.codex/forgix.project.local.yaml`    | Absolute service paths and personal, non-contractual prefs. | Gitignored.                     |
+| `.codex/project-init/state.yaml`      | Compact resumable INIT session.                             | Gitignored and temporary.       |
+| `.codex/forgix/diagrams/*.mermaid.md` | Optional projection of approved profile architecture.       | Commit with shared profile.     |
 
 Shared profiles reject secret-like values and absolute local paths. Project INIT creates
 no product scaffold and no task state. Full schema, authority, reconciliation, and
@@ -212,9 +229,9 @@ Configuration resolves from broad defaults to invocation-specific values:
 
 ```text
 internal defaults
-  < ~/.codex/dev-flow.yaml
-  < .codex/dev-flow.yaml
-  < .codex/dev-flow.local.yaml
+  < ~/.codex/forgix.yaml
+  < .codex/forgix.yaml
+  < .codex/forgix.local.yaml
   < invocation flags
 ```
 

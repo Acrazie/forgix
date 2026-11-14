@@ -133,7 +133,7 @@ function render(contract: CanonicalChangeContract, status: "Proposed" | "Approve
 function defaultPath(date = new Date().toISOString().slice(0, 10), slug = "change"): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Plan projection date is invalid.");
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error("Plan projection slug is invalid.");
-  return `docs/dev-flow/${date}-${slug}.md`;
+  return `docs/forgix/${date}-${slug}.md`;
 }
 
 function validateProjectionPath(path: string): void {

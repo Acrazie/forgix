@@ -46,7 +46,7 @@ test("Plan renderer is deterministic, path-safe, and detects manual drift", asyn
   const first = renderPlanProjection(contract, { date: "2026-07-29", slug: "pagination" });
   const second = renderPlanProjection(contract, { date: "2026-07-29", slug: "pagination" });
   expect(first).toEqual(second);
-  expect(first.path).toBe("docs/dev-flow/2026-07-29-pagination.md");
+  expect(first.path).toBe("docs/forgix/2026-07-29-pagination.md");
   expect(first.status).toBe("Proposed");
   expect(detectPlanProjectionDrift(first, first.markdown)).toBe(false);
   expect(detectPlanProjectionDrift(first, `${first.markdown}\nmanual edit`)).toBe(true);

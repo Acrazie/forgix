@@ -11,9 +11,9 @@ const read = (path: string) => readFileSync(path, "utf8");
 
 const sharedJourneyMarkers = [
   "Turn a software objective into an approved, implemented, and verified change.",
-  "codex plugin marketplace add Acrazie/codex-dev-flow",
+  "codex plugin marketplace add Acrazie/forgix",
   "codex plugin add forgix@acrazie",
-  "/plugin marketplace add Acrazie/codex-dev-flow",
+  "/plugin marketplace add Acrazie/forgix",
   "/plugin install forgix@acrazie",
   "agy plugin install",
   "$forgix init",
@@ -24,8 +24,8 @@ const sharedJourneyMarkers = [
   "INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓",
   "Project INIT",
   "Configuration wizard",
-  ".codex/dev-flow.project.yaml",
-  ".codex/dev-flow.project.local.yaml",
+  ".codex/forgix.project.yaml",
+  ".codex/forgix.project.local.yaml",
   ".codex/project-init/state.yaml",
 ];
 
@@ -85,5 +85,5 @@ test("website branding uses Forgix and preserves its scaffold boundary", () => {
   expect(page).toContain('<h1 class="text-4xl font-semibold">Forgix</h1>');
   expect(page).toContain("<title>Forgix — local build scaffold</title>");
   expect(page).toContain('name="robots" content="noindex"');
-  expect(config).toContain('site: "https://dev-flow.acrazie.dev"');
+  expect(config).toContain('site: "https://forgix.acrazie.dev"');
 });

@@ -29,7 +29,7 @@ Choose your agent harness:
 ### Codex
 
 ```bash
-codex plugin marketplace add Acrazie/codex-dev-flow
+codex plugin marketplace add Acrazie/forgix
 codex plugin add forgix@acrazie
 ```
 
@@ -39,21 +39,21 @@ The same installation is available interactively through `/plugins`: select
 ### Claude Code
 
 ```text
-/plugin marketplace add Acrazie/codex-dev-flow
+/plugin marketplace add Acrazie/forgix
 /plugin install forgix@acrazie
 ```
 
-Or via CLI: `claude plugin marketplace add Acrazie/codex-dev-flow && claude plugin install forgix@acrazie`.
+Or via CLI: `claude plugin marketplace add Acrazie/forgix && claude plugin install forgix@acrazie`.
 
 ### Antigravity
 
 ```bash
-git clone https://github.com/Acrazie/codex-dev-flow.git
-agy plugin install ./codex-dev-flow/plugins/forgix
+git clone https://github.com/Acrazie/forgix.git
+agy plugin install ./forgix/plugins/forgix
 ```
 
 You can also import an existing Claude Code installation (`agy plugin import claude`) or
-copy `./codex-dev-flow/plugins/forgix/` into `~/.gemini/config/plugins/forgix/`.
+copy `./forgix/plugins/forgix/` into `~/.gemini/config/plugins/forgix/`.
 
 ## 3. Run Project INIT
 
@@ -101,12 +101,12 @@ the sample answer—authorizes profile publication.
 
 ### Project INIT outputs
 
-| File                                    | Content                                                     | Git policy                      |
-| --------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
-| `.codex/dev-flow.project.yaml`          | Portable shared architecture, topology, stack, and rules.   | Review and commit when desired. |
-| `.codex/dev-flow.project.local.yaml`    | Absolute service paths and personal non-contractual prefs.  | Gitignored.                     |
-| `.codex/project-init/state.yaml`        | Compact resumable interview state; no transcript/reasoning. | Gitignored and temporary.       |
-| `.codex/dev-flow/diagrams/*.mermaid.md` | Optional canonical-profile projection.                      | Commit with shared profile.     |
+| File                                  | Content                                                     | Git policy                      |
+| ------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
+| `.codex/forgix.project.yaml`          | Portable shared architecture, topology, stack, and rules.   | Review and commit when desired. |
+| `.codex/forgix.project.local.yaml`    | Absolute service paths and personal non-contractual prefs.  | Gitignored.                     |
+| `.codex/project-init/state.yaml`      | Compact resumable interview state; no transcript/reasoning. | Gitignored and temporary.       |
+| `.codex/forgix/diagrams/*.mermaid.md` | Optional canonical-profile projection.                      | Commit with shared profile.     |
 
 Secrets, secret-like values, and absolute machine paths are rejected from the shared
 profile. A local preference cannot weaken repository policy or an approved shared
@@ -170,11 +170,15 @@ npx @acrasie/forgix init
 The npm package is named `@acrasie/forgix` and the installed command is named `forgix`; the primary skill is `$forgix`
 (Codex), `/forgix:forgix` (Claude Code), or `/forgix` (Antigravity).
 Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.
-Existing installations of the old npm package are not automatically migrated.
-Upgrade the Acrazie marketplace and install `forgix@acrazie` to use the renamed
-plugin; existing `.codex/` project configuration and state remain unchanged.
-Replace the old plugin installation rather than installing both plugin identities
-side by side.
+Existing installations of the old npm package, marketplace source, or `dev-flow` files are
+not automatically migrated. Replace or re-add the Acrazie marketplace source as
+`Acrazie/forgix`, install `forgix@acrazie`, and replace the old plugin installation rather
+than installing both plugin identities side by side. Rename existing CLI configuration files
+to `~/.codex/forgix.yaml`, `.codex/forgix.yaml`, and `.codex/forgix.local.yaml` (or re-run
+`npx @acrasie/forgix init`), regenerate and re-approve shared project profiles with
+`$forgix init` (`/forgix:forgix init` or `/forgix init`), and update retained `docs/forgix/`
+paths and `<!-- forgix:... -->` domain markers; `.codex/tasks/`, `benchmarks/`,
+`project-init/`, and `roadmap/` remain unchanged.
 
 Use it to customize target harness, worktree behavior, subscription/quota hints, or allowlisted
 integrations. Defaults already exist, so the wizard is optional. Inspect or validate the
@@ -189,9 +193,9 @@ Configuration precedence is:
 
 ```text
 internal defaults
-  < ~/.codex/dev-flow.yaml
-  < .codex/dev-flow.yaml
-  < .codex/dev-flow.local.yaml
+  < ~/.codex/forgix.yaml
+  < .codex/forgix.yaml
+  < .codex/forgix.local.yaml
   < invocation flags
   < non-weakenable repository policy
 ```

@@ -4,8 +4,10 @@
 
 The software engineering package, CLI (`forgix`), multi-harness plugin (Codex, Claude Code,
 and Antigravity), and primary skill (`$forgix`, `/forgix:forgix`, `/forgix`).
-Historical `.codex/` configuration paths and persisted identifiers remain unchanged across all
-three harnesses, not command aliases.
+Shared `.codex/` internal state directories (`tasks/`, `benchmarks/`, `project-init/`,
+`roadmap/`) remain unchanged across all three harnesses, while configuration, project
+profiles, diagrams, owned domain markers, and Plan projections use `forgix` identifiers
+without backward compatibility. Former command names have no aliases.
 
 ## Artifact
 
@@ -425,7 +427,7 @@ repository Discovery and is distinct from Project INIT.
 
 ### Local Profile Overlay
 
-The gitignored `.codex/dev-flow.project.local.yaml` file containing non-contractual
+The gitignored `.codex/forgix.project.local.yaml` file containing non-contractual
 personal preferences and mappings from logical service identities to absolute local
 paths. It cannot weaken repository policy or shared project conventions.
 
@@ -443,7 +445,7 @@ affected updates. Rejection leaves shared profile byte-for-byte unchanged.
 
 ### Project Engineering Profile
 
-Versioned `.codex/dev-flow.project.yaml` record containing durable shared architecture,
+Versioned `.codex/forgix.project.yaml` record containing durable shared architecture,
 project boundaries, stack, development conventions, logical topology, source
 fingerprints, revision, digest, and Profile Approval Receipt. Volatile task evidence
 and absolute local paths are forbidden.

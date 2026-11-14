@@ -153,15 +153,15 @@ test("Autonomous Gate Receipt requires low/medium eligibility and valid issueRef
   const receipt = a.createGateDecision(state, {
     decision: "approved",
     actor: "autonomous_policy",
-    issueRef: "acrazie/codex-dev-flow#42",
+    issueRef: "acrazie/forgix#42",
     at: "2026-11-13T10:00:00.000Z",
   });
   expect(receipt.actor).toBe("autonomous_policy");
-  expect(receipt.issueRef).toBe("acrazie/codex-dev-flow#42");
+  expect(receipt.issueRef).toBe("acrazie/forgix#42");
 
   state = a.transition(state, "executing", { gateDecision: receipt });
   expect(state.planApproval?.actor).toBe("autonomous_policy");
-  expect(state.planApproval?.issueRef).toBe("acrazie/codex-dev-flow#42");
+  expect(state.planApproval?.issueRef).toBe("acrazie/forgix#42");
   expect(() => a.loadStateV6(state)).not.toThrow();
 
   expect(() =>

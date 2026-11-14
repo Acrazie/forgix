@@ -5,14 +5,14 @@ import os from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
 
-test("Forgix reads historical configuration paths without rewriting their bytes", async () => {
-  const directory = await mkdtemp(join(os.tmpdir(), "forgix-legacy-config-"));
+test("Forgix reads forgix configuration paths without rewriting their bytes and ignores legacy dev-flow files", async () => {
+  const directory = await mkdtemp(join(os.tmpdir(), "forgix-config-files-"));
   const home = join(directory, "home");
   const root = join(directory, "repo");
   const files = [
-    [join(home, ".codex", "dev-flow.yaml"), "subscription:\n  plan: plus\n"],
-    [join(root, ".codex", "dev-flow.yaml"), "subscription:\n  plan: pro_5x\n"],
-    [join(root, ".codex", "dev-flow.local.yaml"), "subscription:\n  plan: pro_20x\n"],
+    [join(home, ".codex", "forgix.yaml"), "subscription:\n  plan: plus\n"],
+    [join(root, ".codex", "forgix.yaml"), "subscription:\n  plan: pro_5x\n"],
+    [join(root, ".codex", "forgix.local.yaml"), "subscription:\n  plan: pro_20x\n"],
   ];
   try {
     await mkdir(join(home, ".codex"), { recursive: true });
@@ -30,6 +30,18 @@ test("Forgix reads historical configuration paths without rewriting their bytes"
     expect(resolved.provenance["subscription.plan"]).toBe("local");
     const contents = await Promise.all(files.map(([path]) => readFile(path, "utf8")));
     expect(contents).toEqual(files.map(([, bytes]) => bytes));
+
+    const legacyHome = join(directory, "legacy-home");
+    const legacyRoot = join(directory, "legacy-repo");
+    await mkdir(join(legacyHome, ".codex"), { recursive: true });
+    await mkdir(join(legacyRoot, ".codex"), { recursive: true });
+    await writeFile(join(legacyHome, ".codex", "dev-flow.yaml"), "subscription:\n  plan: plus\n");
+    await writeFile(join(legacyRoot, ".codex", "dev-flow.yaml"), "subscription:\n  plan: pro_5x\n");
+    await writeFile(
+      join(legacyRoot, ".codex", "dev-flow.local.yaml"),
+      "subscription:\n  plan: pro_20x\n",
+    );
+    expect(sourceApi.loadConfigSources({ cwd: legacyRoot, home: legacyHome })).toEqual([]);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -41,9 +53,9 @@ test("loads user, repository, local, and flags sources in precedence order", asy
   const home = await mkdtemp(join(os.tmpdir(), "forgix-home-"));
   await mkdir(join(home, ".codex"));
   await mkdir(join(root, ".codex"));
-  await writeFile(join(home, ".codex", "dev-flow.yaml"), "subscription:\n  plan: plus\n");
-  await writeFile(join(root, ".codex", "dev-flow.yaml"), "subscription:\n  plan: pro_5x\n");
-  await writeFile(join(root, ".codex", "dev-flow.local.yaml"), "subscription:\n  plan: pro_20x\n");
+  await writeFile(join(home, ".codex", "forgix.yaml"), "subscription:\n  plan: plus\n");
+  await writeFile(join(root, ".codex", "forgix.yaml"), "subscription:\n  plan: pro_5x\n");
+  await writeFile(join(root, ".codex", "forgix.local.yaml"), "subscription:\n  plan: pro_20x\n");
   const resolved = resolveConfig(
     loadConfigSources({ cwd: root, home, flags: { subscription: { plan: "plus" } } }),
   );
