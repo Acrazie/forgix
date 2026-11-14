@@ -57,7 +57,7 @@ test("stage skills preserve and consume the artifact contract", () => {
 test("artifact documentation keeps legacy layouts non-canonical", () => {
   const documentation = read("../../docs/artifacts.md");
 
-  expect(documentation).toMatch(/docs\/dev-flow\/YYYY-MM-DD-<slug>\.md/);
+  expect(documentation).toMatch(/docs\/forgix\/YYYY-MM-DD-<slug>\.md/);
   expect(documentation).toMatch(/spec\.md/);
   expect(documentation).toMatch(/plan\.md/);
   expect(documentation).toMatch(/risk-and-rollback\.md/);

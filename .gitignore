@@ -24,5 +24,6 @@ coverage/
 # Codex local files
 .codex/tasks/
 .codex/benchmarks/
-.codex/dev-flow.project.local.yaml
+.codex/forgix.local.yaml
+.codex/forgix.project.local.yaml
 .codex/project-init/

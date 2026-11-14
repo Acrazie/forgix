@@ -50,6 +50,19 @@ test("semantic domain patch requires GATE and preserves unrelated content", () =
   const [patch] = compileDomainSemanticPatches(input, true);
   const projected = applyOwnedMarkdownPatch(source, patch!);
   expect(projected).toContain("Unrelated.");
-  expect(projected).toContain("<!-- dev-flow:rule:one:start -->");
+  expect(projected).toContain("<!-- forgix:rule:one:start -->");
   expect(() => applyOwnedMarkdownPatch(projected, patch!)).toThrow(/stale/);
+
+  const legacySource =
+    "# Rules\n\n<!-- dev-flow:rule:one:start -->\nOld\n<!-- dev-flow:rule:one:end -->\n";
+  const legacyFingerprint = `sha256:${createHash("sha256").update(legacySource).digest("hex")}`;
+  const [legacyPatch] = compileDomainSemanticPatches(
+    [{ ...input[0]!, sourceFingerprint: legacyFingerprint }],
+    true,
+  );
+  const appended = applyOwnedMarkdownPatch(legacySource, legacyPatch!);
+  expect(appended).toContain(
+    "<!-- dev-flow:rule:one:start -->\nOld\n<!-- dev-flow:rule:one:end -->",
+  );
+  expect(appended).toContain("<!-- forgix:rule:one:start -->");
 });

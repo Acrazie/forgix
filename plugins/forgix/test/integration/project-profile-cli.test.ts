@@ -28,7 +28,7 @@ test("project-profile validate previews exact diff without writing; publish requ
     expect(validate.data.diff.addedDecisionKeys).toHaveLength(8);
     expect(validate.data.yaml).not.toContain("approval:");
     await expectRejected(
-      () => readFile(join(root, ".codex", "dev-flow.project.yaml")),
+      () => readFile(join(root, ".codex", "forgix.project.yaml")),
       (error) => error instanceof Error && error.message.includes("ENOENT"),
     );
 
@@ -60,7 +60,7 @@ test("project-profile transaction carries exact generated projections", async ()
   const root = await workspace();
   try {
     const profile = projectProfileInput();
-    const path = ".codex/dev-flow/diagrams/project-r1.mermaid.md";
+    const path = ".codex/forgix/diagrams/project-r1.mermaid.md";
     profile.content.diagramRefs = [path];
     const transaction = {
       profile,
@@ -102,7 +102,7 @@ test("project-profile local backend validates ignore and shared authority", asyn
         }),
       (error) => error instanceof sourceApi.ProjectProfileError,
     );
-    await writeFile(join(root, ".gitignore"), ".codex/dev-flow.project.local.yaml\n");
+    await writeFile(join(root, ".gitignore"), ".codex/forgix.project.local.yaml\n");
     const published = await sourceApi.runInvocation(["project-profile", "publish", "--local"], {
       workspaceRoot: root,
       projectProfile: { input: stringify(local) },

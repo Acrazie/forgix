@@ -88,7 +88,7 @@ test("diagram projections publish before canonical profile and never follow syml
   const outside = await workspace();
   try {
     const input = projectProfileInput();
-    const diagram = ".codex/dev-flow/diagrams/codex-dev-flow-r1.mermaid.md";
+    const diagram = ".codex/forgix/diagrams/forgix-r1.mermaid.md";
     input.content.diagramRefs = [diagram];
     const content = "```mermaid\nflowchart LR\nProfile --> Diagram\n```\n";
     const store = createProjectProfileStore(root);
@@ -98,7 +98,7 @@ test("diagram projections publish before canonical profile and never follow syml
     const linkedRoot = await workspace();
     try {
       await mkdir(join(linkedRoot, ".codex"));
-      await symlink(outside, join(linkedRoot, ".codex", "dev-flow"));
+      await symlink(outside, join(linkedRoot, ".codex", "forgix"));
       const linkedInput = projectProfileInput();
       linkedInput.content.diagramRefs = [diagram];
       await expectRejected(
@@ -109,7 +109,7 @@ test("diagram projections publish before canonical profile and never follow syml
         (error) => error instanceof ProjectProfileError && error.code === "profile_path_invalid",
       );
       await expectRejected(
-        () => readFile(join(outside, "diagrams", "codex-dev-flow-r1.mermaid.md")),
+        () => readFile(join(outside, "diagrams", "forgix-r1.mermaid.md")),
         (error) => error instanceof Error && error.message.includes("ENOENT"),
       );
     } finally {
@@ -132,7 +132,7 @@ test("shared profile directory symlink is rejected before any write", async () =
       (error) => error instanceof ProjectProfileError && error.code === "profile_path_invalid",
     );
     await expectRejected(
-      () => readFile(join(outside, "dev-flow.project.yaml")),
+      () => readFile(join(outside, "forgix.project.yaml")),
       (error) => error instanceof Error && error.message.includes("ENOENT"),
     );
   } finally {

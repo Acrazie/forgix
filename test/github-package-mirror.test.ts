@@ -14,7 +14,7 @@ const manifest = `{
   "version": "0.3.2",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Acrazie/codex-dev-flow.git",
+    "url": "git+https://github.com/Acrazie/forgix.git",
     "directory": "plugins/forgix"
   },
   "description": "forgix remains text here"
@@ -72,6 +72,12 @@ describe("GitHub package mirror manifest", () => {
     expect(() => transformPackageManifest(manifest.replace("Acrazie", "someone"), "0.3.2")).toThrow(
       /repository/,
     );
+    expect(() =>
+      transformPackageManifest(
+        manifest.replace("Acrazie/forgix", "Acrazie/codex-dev-flow"),
+        "0.3.2",
+      ),
+    ).toThrow(/repository/);
     expect(() =>
       transformPackageManifest(
         manifest.replace('"name": "@acrasie/forgix"', '"name": "other"'),

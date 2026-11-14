@@ -7,6 +7,7 @@ import {
   readFileSync,
   rmSync,
   symlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -15,7 +16,7 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 
 const defaultTarball = fileURLToPath(new URL("../../../../.artifacts/forgix.tgz", import.meta.url));
-const tarball = resolve(process.env.DEV_FLOW_TARBALL ?? defaultTarball);
+const tarball = resolve(process.env.FORGIX_TARBALL ?? defaultTarball);
 const sandbox = mkdtempSync(join(tmpdir(), "forgix-runtime-"));
 const packageRoot = join(sandbox, "package");
 const bundle = join(packageRoot, "dist", "forgix.mjs");
@@ -59,15 +60,33 @@ test("packed bundle imports under Node", async () => {
 });
 
 test("packed CLI exposes help and validates configuration", () => {
+  const workspace = join(sandbox, "workspace");
+  const home = join(sandbox, "home");
+  mkdirSync(workspace, { recursive: true });
+  mkdirSync(home, { recursive: true });
+
   const helpStart = performance.now();
-  const help = runNodeCli(bundle, ["--help"]);
+  const help = runNodeCli(bundle, ["--help"], { cwd: workspace, home });
   observeTiming("Cold CLI start", performance.now() - helpStart);
   assert.match(help.stdout, /Usage: forgix/);
 
-  const validate = runNodeCli(bundle, ["config", "validate", "--json"]);
-  const result = JSON.parse(validate.stdout);
-  assert.equal(result.command, "config_validate");
-  assert.equal(result.status, "valid");
+  const absentValidate = runNodeCli(bundle, ["config", "validate", "--json"], {
+    cwd: workspace,
+    home,
+  });
+  const absentResult = JSON.parse(absentValidate.stdout);
+  assert.equal(absentResult.command, "config_validate");
+  assert.equal(absentResult.status, "valid");
+
+  mkdirSync(join(workspace, ".codex"), { recursive: true });
+  writeFileSync(join(workspace, ".codex", "forgix.yaml"), "harness: antigravity\n");
+  const presentValidate = runNodeCli(bundle, ["config", "validate", "--json"], {
+    cwd: workspace,
+    home,
+  });
+  const presentResult = JSON.parse(presentValidate.stdout);
+  assert.equal(presentResult.command, "config_validate");
+  assert.equal(presentResult.status, "valid");
 });
 
 for (const command of ["forgix"]) {
@@ -82,9 +101,15 @@ for (const command of ["forgix"]) {
   });
 }
 
-function runNodeCli(entrypoint, args) {
+function runNodeCli(
+  entrypoint,
+  args,
+  { cwd = dirname(entrypoint), home = join(sandbox, "empty-home") } = {},
+) {
+  mkdirSync(home, { recursive: true });
   const result = spawnSync(process.execPath, [entrypoint, ...args], {
-    cwd: dirname(entrypoint),
+    cwd,
+    env: { ...process.env, HOME: home },
     encoding: "utf8",
     shell: false,
   });

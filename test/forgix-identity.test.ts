@@ -10,7 +10,7 @@ test("Forgix has one package, plugin, marketplace and public skill identity", ()
   expect(manifest.name).toBe("@acrasie/forgix");
   expect(manifest.bin).toEqual({ forgix: "dist/forgix.mjs" });
   expect(manifest.repository.directory).toBe("plugins/forgix");
-  expect(manifest.repository.url).toBe("git+https://github.com/Acrazie/codex-dev-flow.git");
+  expect(manifest.repository.url).toBe("git+https://github.com/Acrazie/forgix.git");
 
   const plugin = json("plugins/forgix/.codex-plugin/plugin.json");
   expect(plugin.name).toBe("forgix");

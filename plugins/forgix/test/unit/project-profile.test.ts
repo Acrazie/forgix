@@ -125,7 +125,7 @@ test("profile diff and generated projections describe exact proposed transaction
     category: "api",
     value: "HTTP JSON",
   });
-  changedInput.content.diagramRefs = [".codex/dev-flow/diagrams/codex-dev-flow-r2.mermaid.md"];
+  changedInput.content.diagramRefs = [".codex/forgix/diagrams/forgix-r2.mermaid.md"];
   const changed = prepareProjectProfile(changedInput);
   expect(diffProjectProfiles(approveProjectProfile(initial), changed)).toMatchObject({
     addedDecisionKeys: ["api-contract"],
@@ -146,6 +146,13 @@ test("profile diff and generated projections describe exact proposed transaction
       { path: changed.content.diagramRefs[0]!, content: "not Mermaid" },
     ]),
   ).toThrow(/match profile diagramRefs/);
+
+  const legacyDiagramInput = projectProfileInput();
+  legacyDiagramInput.content.diagramRefs = [".codex/dev-flow/diagrams/legacy.mermaid.md"];
+  expectThrown(
+    () => prepareProjectProfile(legacyDiagramInput),
+    (error) => error instanceof ProjectProfileError && error.code === "profile_projection_invalid",
+  );
 });
 
 test("optional domain documentation facet is portable, digest-bound, and reconciled", () => {

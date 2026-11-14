@@ -39,7 +39,7 @@ test("init writes validated configuration and explains automatic skill routing",
   try {
     const result = await runInvocation(["init"], { init: { cwd: root, prompts } });
     expect(result.status).toBe("created");
-    const path = join(root, ".codex", "dev-flow.yaml");
+    const path = join(root, ".codex", "forgix.yaml");
     const config = parseYaml(await readFile(path, "utf8"));
     expect(config.integrations).toEqual({
       plugins: ["impeccable"],
@@ -53,6 +53,10 @@ test("init writes validated configuration and explains automatic skill routing",
     expect(validateSchema("config", config).valid).toBe(true);
     expect((await stat(path)).mode & 0o777).toBe(0o600);
     const output = prompts.output.join("\n");
+    expect(output).toContain("note:1 · Target harness:");
+    expect(output).toContain("note:2/4 · Workflow behavior:");
+    expect(output).toContain("note:3/4 · Subscription and quota:");
+    expect(output).toContain("note:4/4 · External integrations:");
     expect(output).toMatch(/No model choice is required/);
     expect(output).toMatch(/Plan: gpt-5\.6-sol · medium/);
     expect(output).not.toMatch(/Execute:/);
@@ -115,7 +119,7 @@ test("Ctrl+C cancellation symbol exits cleanly before file creation", async () =
     const result = await runInvocation(["init"], { init: { cwd: root, prompts } });
     expect(result.status).toBe("cancelled");
     await expectRejected(
-      () => readFile(join(root, ".codex", "dev-flow.yaml")),
+      () => readFile(join(root, ".codex", "forgix.yaml")),
       (error) => error instanceof Error && error.message.includes("ENOENT"),
     );
   } finally {
@@ -147,6 +151,10 @@ test("claude harness init skips subscription prompts and returning to auto remov
     expect(first.status).toBe("created");
     const createdConfig = parseYaml(await readFile(first.data.path, "utf8"));
     expect(createdConfig.harness).toBe("claude");
+    const firstOutput = firstPrompts.output.join("\n");
+    expect(firstOutput).toContain("note:1 · Target harness:");
+    expect(firstOutput).toContain("note:2/3 · Workflow behavior:");
+    expect(firstOutput).toContain("note:3/3 · External integrations:");
     expect(firstPrompts.output.some((line) => line.includes("Host-native routing active"))).toBe(
       true,
     );

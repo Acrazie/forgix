@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "description": "Portable development workflow plugin for Codex, Claude Code, and Antigravity.",
   "license": "MIT",
-  "homepage": "https://github.com/Acrazie/codex-dev-flow#readme",
+  "homepage": "https://github.com/Acrazie/forgix#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Acrazie/codex-dev-flow.git",
+    "url": "git+https://github.com/Acrazie/forgix.git",
     "directory": "plugins/forgix"
   },
   "bugs": {
-    "url": "https://github.com/Acrazie/codex-dev-flow/issues"
+    "url": "https://github.com/Acrazie/forgix/issues"
   },
   "keywords": [
     "codex",

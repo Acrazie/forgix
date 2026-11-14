@@ -13,8 +13,8 @@ Thanks for helping improve Forgix. This guide covers repository development; use
 ## Set up the project
 
 ```bash
-git clone https://github.com/Acrazie/codex-dev-flow.git
-cd codex-dev-flow
+git clone https://github.com/Acrazie/forgix.git
+cd forgix
 ./scripts/setup.sh
 bun run check
 ```
@@ -160,4 +160,4 @@ Keep pull requests focused and include:
 - Known limitations or deferred work.
 - Documentation changes for user-visible behavior.
 
-Do not include generated dependencies, credentials, local task state, or `.codex/dev-flow.local.yaml`.
+Do not include generated dependencies, credentials, local task state, or `.codex/forgix.local.yaml`.

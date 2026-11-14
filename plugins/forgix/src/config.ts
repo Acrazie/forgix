@@ -103,9 +103,9 @@ export function loadConfigSources(options: LoadConfigOptions = {}): ConfigSource
   const cwd = options.cwd ?? process.cwd();
   const home = options.home ?? process.env.HOME ?? "";
   const files: Array<{ source: string; path: string }> = [
-    { source: "user", path: join(home, ".codex", "dev-flow.yaml") },
-    { source: "repo", path: join(cwd, ".codex", "dev-flow.yaml") },
-    { source: "local", path: join(cwd, ".codex", "dev-flow.local.yaml") },
+    { source: "user", path: join(home, ".codex", "forgix.yaml") },
+    { source: "repo", path: join(cwd, ".codex", "forgix.yaml") },
+    { source: "local", path: join(cwd, ".codex", "forgix.local.yaml") },
   ];
   const sources: ConfigSource[] = [];
   for (const file of files) {

@@ -96,7 +96,7 @@ export async function runInit(options: InitOptions = {}): Promise<CliResult> {
   const prompts = options.prompts ?? createClackAdapter();
   const cwd = options.cwd ?? process.cwd();
   const directory = join(cwd, ".codex");
-  const path = join(directory, "dev-flow.yaml");
+  const path = join(directory, "forgix.yaml");
   const existed = existsSync(path);
   const current = existed ? readConfiguration(path) : {};
   let draft = draftFromConfiguration(current);
@@ -249,7 +249,7 @@ export function buildRoutingPreview(
 async function collectHarness(prompts: InitPromptAdapter, draft: InitDraft): Promise<InitDraft> {
   prompts.note(
     "Choose which agent harness runs Forgix routing in this repository.",
-    `1/${totalSteps(draft.harness)} · Target harness`,
+    "1 · Target harness",
   );
   const harness = await required(
     prompts,

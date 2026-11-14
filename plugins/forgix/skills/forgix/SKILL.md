@@ -77,14 +77,14 @@ subscription/quota questions only when targeting `codex` or `auto`.
    architecture/state/sequence, isolated temporary HTML/CSS for material UI decisions,
    Excalidraw/image only when requested or necessary. YAML remains canonical; Mermaid
    is generated projection. Temporary prototypes never enter product source.
-5. Keep shared `.codex/dev-flow.project.yaml` durable and portable. It may contain only
+5. Keep shared `.codex/forgix.project.yaml` durable and portable. It may contain only
    logical project/service identities, stack, topology/contracts, approved conventions,
    provenance, source fingerprints, relative diagram refs, revision, digest, and
    receipt. Keep volatile observations in temporary INIT registry. Never place absolute
    paths in shared profile.
-6. Keep `.codex/dev-flow.project.local.yaml` gitignored. It contains only absolute local
+6. Keep `.codex/forgix.project.local.yaml` gitignored. It contains only absolute local
    service-path mappings and non-contractual preferences. Before local publication,
-   propose exact `/.codex/dev-flow.project.local.yaml` ignore rule if absent and obtain
+   propose exact `/.codex/forgix.project.local.yaml` ignore rule if absent and obtain
    approval with profile diff. Local preferences cannot override shared decisions.
 7. Multi-service Discovery is progressive. Root shared profile owns logical topology,
    responsibilities, contracts, and external profile refs. Each repository owns own
@@ -261,14 +261,14 @@ external action.
 
 ## BUILD
 
-Announce `[DEV FLOW · GATE → BUILD]`. Before first write or resume, require current Plan
+Announce `[FORGIX · GATE → BUILD]`. Before first write or resume, require current Plan
 Approval Receipt and exact contract digest. Then let the active host agent implement the
 complete approved plan without BUILD-specific skill, orchestration, checkpoint, progress
 tracker, validation requirement, or persisted output. Local technical corrections remain
 native.
 Material scope, product behavior, approved architecture, or risk change stops writes and
 returns to SHAPE then GATE. When implementation is complete, transition automatically and
-announce `[DEV FLOW · BUILD → ASSURE]`.
+announce `[FORGIX · BUILD → ASSURE]`.
 
 ## ASSURE
 
@@ -287,10 +287,10 @@ Batch required non-automatable user observations once. Missing response/external
 dependency blocks with exact `resumeTo: assuring`; model never substitutes human proof.
 Runtime computes exact coverage without final model synthesis. Atomic completion freezes
 completion index, creates minimal Assurance Receipt, appends `assure.completed`, and
-renders `[DEV FLOW · ASSURE ✓]` with derived `success`.
+renders `[FORGIX · ASSURE ✓]` with derived `success`.
 
-Commit, push, pull request, registry, release, and other delivery work is outside Dev
-Flow lifecycle/state. The active host agent may perform it afterward under its own
+Commit, push, pull request, registry, release, and other delivery work is outside Forgix
+lifecycle/state. The active host agent may perform it afterward under its own
 explicit authorization. GATE approval grants no authority for those actions.
 
 ### Opt-in local benchmark
@@ -315,7 +315,7 @@ Benchmark is out-of-band and never changes lifecycle outcome.
 
 Exact `$forgix roadmap` runs outside `TaskState` to build a GitHub Project v2 roadmap:
 
-1. **Preflight**: Read `.codex/dev-flow.project.yaml` and domain rules/glossary if present
+1. **Preflight**: Read `.codex/forgix.project.yaml` and domain rules/glossary if present
    (suggest `$forgix init` without blocking if missing). Run lightweight codebase discovery
    on existing repos; start in Divergence on greenfield repos. Verify `gh auth status` has
    `project` scope before GitHub mutations.
@@ -329,7 +329,7 @@ Exact `$forgix roadmap` runs outside `TaskState` to build a GitHub Project v2 ro
    - **Synthesis & approval**: run `forgix roadmap validate --session` and render ASCII
      `"tree"` or `"mermaid"` DAG (`renderRoadmapVisualSummary`). Wave 1 unblocked items
      default to `Ready`; later waves start `Backlog`.
-3. **Publication**: Commit `docs/product-vision.md`, domain docs, and `.codex/dev-flow.yaml`
+3. **Publication**: Commit `docs/product-vision.md`, domain docs, and `.codex/forgix.yaml`
    `roadmap` binding in Git only when requested; run `forgix roadmap publish-plan`, create/attach
    the GitHub Project v2, publish `Feature` (`feature` label) and `Work Item` sub-issues with
    native `blocked-by` edges and Project fields (`Status`, `Kind`, `Risk`, `Priority`, `Wave`),
@@ -356,8 +356,8 @@ Exact `$forgix roadmap` runs outside `TaskState` to build a GitHub Project v2 ro
 
 Target local state lives under `.codex/tasks/`; versioned artifact belongs to active
 worktree and follows repository retention policy. Reuse existing artifact
-identity; never duplicate task artifact. Legacy paths such as
-`docs/dev-flow/YYYY-MM-DD-<slug>.md`, `spec.md`, `plan.md`,
+identity; never duplicate task artifact. Plan projections default to
+`docs/forgix/YYYY-MM-DD-<slug>.md`; legacy paths such as `spec.md`, `plan.md`,
 `risk-and-rollback.md`, and `verification.md` are repository choices only.
 
 Resume must validate strict V6 state, reconcile config/policy/routing/artifact/Git/evidence,

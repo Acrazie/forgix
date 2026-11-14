@@ -6,10 +6,10 @@ import { parse, stringify } from "yaml";
 import { validateSchema } from "./config.js";
 import { EXIT_CODES } from "./exit-codes.js";
 
-export const SHARED_PROJECT_PROFILE_PATH = join(".codex", "dev-flow.project.yaml");
-export const LOCAL_PROJECT_PROFILE_PATH = join(".codex", "dev-flow.project.local.yaml");
-export const LOCAL_PROJECT_PROFILE_IGNORE_ENTRY = "/.codex/dev-flow.project.local.yaml";
-export const PROJECT_DIAGRAM_ROOT = join(".codex", "dev-flow", "diagrams");
+export const SHARED_PROJECT_PROFILE_PATH = join(".codex", "forgix.project.yaml");
+export const LOCAL_PROJECT_PROFILE_PATH = join(".codex", "forgix.project.local.yaml");
+export const LOCAL_PROJECT_PROFILE_IGNORE_ENTRY = "/.codex/forgix.project.local.yaml";
+export const PROJECT_DIAGRAM_ROOT = join(".codex", "forgix", "diagrams");
 export const PROJECT_INIT_STATE_PATH = join(".codex", "project-init", "state.yaml");
 
 export const CORE_PROFILE_CATEGORIES = [
@@ -1122,10 +1122,10 @@ function validateProfileContent(content: ProjectProfileContent): void {
       );
     }
     const normalized = ref.replaceAll("\\", "/");
-    if (!normalized.startsWith(".codex/dev-flow/diagrams/") || !normalized.endsWith(".md")) {
+    if (!normalized.startsWith(".codex/forgix/diagrams/") || !normalized.endsWith(".md")) {
       throw new ProjectProfileError(
         "profile_projection_invalid",
-        "Project diagram refs must be Markdown files below .codex/dev-flow/diagrams/.",
+        "Project diagram refs must be Markdown files below .codex/forgix/diagrams/.",
       );
     }
   }

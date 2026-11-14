@@ -18,7 +18,7 @@ Quick and Plan share same schema:
 ## Projection
 
 Parent renders Plan projection at safe repository-relative path, default
-`docs/dev-flow/YYYY-MM-DD-<slug>.md`.
+`docs/forgix/YYYY-MM-DD-<slug>.md`.
 
 1. Render `Proposed` from canonical state.
 2. Persist content fingerprint and logical contract digest.

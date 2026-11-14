@@ -6,7 +6,7 @@
     "name": "forgix contributors"
   },
   "license": "MIT",
-  "repository": "https://github.com/Acrazie/codex-dev-flow",
+  "repository": "https://github.com/Acrazie/forgix",
   "keywords": ["workflow", "testing", "review"],
   "skills": "./skills/"
 }
