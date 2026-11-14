@@ -1,6 +1,6 @@
 {
   "name": "@acrasie/forgix",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Portable development workflow plugin for Codex, Claude Code, and Antigravity.",
   "license": "MIT",
   "homepage": "https://github.com/Acrazie/forgix#readme",
