@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="forgix-init-config-dark-title forgix-init-config-dark-desc" id="forgix-init-config-dark-root">
+        <title id="forgix-init-config-dark-title">Project INIT vs configuration and policy ceiling</title>
+        <desc id="forgix-init-config-dark-desc">Dark architecture diagram separating tracked repository artifacts produced by Project INIT and shared config from local gitignored overlays, showing configuration precedence capped by the non-weakenable repository policy.</desc>
+        <defs>
+      <style>#forgix-init-config-dark-root { --color-paper:  #161318;
+      --color-ink:    #f4eee9;
+      --color-muted:  #c2b8bf;
+      --color-accent: #ff5e68;
+      --font-sans:    system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --font-serif:   Georgia, 'Times New Roman', serif;
+      --font-mono:    ui-monospace, 'SFMono-Regular', Menlo, monospace; }
+      #forgix-init-config-dark-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #forgix-init-config-dark-root .diagram-container { width: 100%; overflow-x: auto; }
+      #forgix-init-config-dark-root text { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      @media print {
+#forgix-init-config-dark-root .diagram-container { overflow-x: visible; }
+}</style>
+          <marker id="forgix-init-config-dark-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#c2b8bf"/>
+          </marker>
+          <marker id="forgix-init-config-dark-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#ff5e68"/>
+          </marker>
+          <marker id="forgix-init-config-dark-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#7da8ea"/>
+          </marker>
+        </defs>
+
+        <!-- Encre background -->
+        <rect width="100%" height="100%" fill="#161318"/>
+
+        <!-- Trust zones -->
+        <rect x="40" y="40" width="520" height="232" rx="8" fill="rgba(244,238,233,0.03)" stroke="#f4eee9" stroke-width="1" stroke-opacity="0.14"/>
+        <rect x="296" y="44" width="112" height="12" rx="2" fill="#161318"/>
+        <text x="352" y="53" fill="#9f949d" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" text-anchor="middle" letter-spacing="0.14em">TRACKED IN GIT</text>
+
+        <rect x="40" y="296" width="520" height="264" rx="8" fill="#211d24" fill-opacity="0.72" stroke="#f4eee9" stroke-width="1" stroke-opacity="0.14"/>
+        <rect x="296" y="300" width="136" height="12" rx="2" fill="#161318"/>
+        <text x="364" y="309" fill="#9f949d" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" text-anchor="middle" letter-spacing="0.14em">LOCAL · GITIGNORED</text>
+
+        <!-- Runtime resolution rail -->
+        <rect x="640" y="40" width="280" height="520" rx="8" fill="rgba(125,168,234,0.04)" stroke="#f4eee9" stroke-width="1" stroke-opacity="0.14"/>
+        <rect x="656" y="44" width="136" height="12" rx="2" fill="#161318"/>
+        <text x="724" y="53" fill="#9f949d" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" text-anchor="middle" letter-spacing="0.14em">RUNTIME RESOLUTION</text>
+
+        <!-- Eight connectors -->
+        <line x1="248" y1="116" x2="296" y2="116" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-init-config-dark-arrow)"/>
+        <line x1="158" y1="156" x2="158" y2="344" stroke="#c2b8bf" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#forgix-init-config-dark-arrow)"/>
+        <line x1="536" y1="116" x2="660" y2="116" stroke="#7da8ea" stroke-width="1.2" marker-end="url(#forgix-init-config-dark-arrow-link)"/>
+        <path d="M 536,216 H 604 Q 612,216 612,224 V 292 Q 612,300 620,300 H 660" fill="none" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-init-config-dark-arrow)"/>
+        <path d="M 536,384 H 620 Q 628,384 628,376 V 340 Q 628,332 636,332 H 660" fill="none" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-init-config-dark-arrow)"/>
+        <path d="M 536,496 H 636 Q 644,496 644,488 V 372 Q 644,364 652,364 H 660" fill="none" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-init-config-dark-arrow)"/>
+        <line x1="780" y1="276" x2="780" y2="156" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-init-config-dark-arrow)"/>
+        <line x1="780" y1="448" x2="780" y2="388" stroke="#ff5e68" stroke-width="1.6" marker-end="url(#forgix-init-config-dark-arrow-accent)"/>
+
+        <!-- Arrow labels (6-10px clear of stroke) -->
+        <g font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="7" text-anchor="middle" letter-spacing="0.06em" fill="#c2b8bf">
+          <text x="272" y="105">EMIT</text>
+          <text x="190" y="225">RESUME</text>
+          <text x="598" y="105" fill="#7da8ea">CONTEXT</text>
+          <text x="568" y="205">3·REPO</text>
+          <text x="570" y="373">4·LOCAL</text>
+          <text x="568" y="485">2·USER</text>
+          <text x="832" y="217">5·CLI FLAGS</text>
+          <text x="832" y="421" fill="#ff5e68">6·POLICY CAP</text>
+        </g>
+
+        <!-- Zone 1 nodes: Tracked in Git -->
+        <g text-anchor="middle">
+          <g>
+            <rect x="68" y="76" width="180" height="80" rx="8" fill="#161318"/>
+            <rect x="68" y="76" width="180" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+            <rect x="76" y="82" width="32" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="92" y="91" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">CMD</text>
+            <text x="158" y="118" fill="#f4eee9" font-size="12" font-weight="600">Project INIT</text>
+            <text x="158" y="136" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">forgix init</text>
+          </g>
+
+          <g>
+            <rect x="296" y="76" width="240" height="80" rx="8" fill="#161318"/>
+            <rect x="296" y="76" width="240" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+            <rect x="304" y="82" width="52" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="330" y="91" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">TRACKED</text>
+            <text x="416" y="118" fill="#f4eee9" font-size="12" font-weight="600">Project Profile</text>
+            <text x="416" y="136" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">project.yaml &amp; diagrams/</text>
+          </g>
+
+          <g>
+            <rect x="296" y="176" width="240" height="80" rx="8" fill="#161318"/>
+            <rect x="296" y="176" width="240" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+            <rect x="304" y="182" width="52" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="330" y="191" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">TRACKED</text>
+            <text x="416" y="218" fill="#f4eee9" font-size="12" font-weight="600">Repo Config</text>
+            <text x="416" y="236" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">.codex/forgix.yaml</text>
+          </g>
+        </g>
+
+        <!-- Zone 2 nodes: Local · Gitignored -->
+        <g text-anchor="middle">
+          <g>
+            <rect x="68" y="344" width="180" height="80" rx="8" fill="#161318"/>
+            <rect x="68" y="344" width="180" height="80" rx="8" fill="#161318" stroke="#c2b8bf" stroke-width="1" stroke-dasharray="5,4"/>
+            <rect x="76" y="350" width="48" height="12" rx="2" fill="none" stroke="#756b78" stroke-width="0.8"/>
+            <text x="100" y="359" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">RESUME</text>
+            <text x="158" y="386" fill="#f4eee9" font-size="12" font-weight="600">INIT State</text>
+            <text x="158" y="404" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">.codex/project-init/</text>
+          </g>
+
+          <g>
+            <rect x="296" y="344" width="240" height="80" rx="8" fill="#161318"/>
+            <rect x="296" y="344" width="240" height="80" rx="8" fill="#211d24" stroke="#c2b8bf" stroke-width="1" stroke-dasharray="5,4"/>
+            <rect x="304" y="350" width="64" height="12" rx="2" fill="none" stroke="#756b78" stroke-width="0.8"/>
+            <text x="336" y="359" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">GITIGNORED</text>
+            <text x="416" y="386" fill="#f4eee9" font-size="12" font-weight="600">Local Overlays</text>
+            <text x="416" y="404" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">.codex/*.local.yaml</text>
+          </g>
+
+          <g>
+            <rect x="296" y="456" width="240" height="80" rx="8" fill="#161318"/>
+            <rect x="296" y="456" width="240" height="80" rx="8" fill="#211d24" stroke="#c2b8bf" stroke-width="1" stroke-dasharray="5,4"/>
+            <rect x="304" y="462" width="48" height="12" rx="2" fill="none" stroke="#756b78" stroke-width="0.8"/>
+            <text x="328" y="471" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">GLOBAL</text>
+            <text x="416" y="498" fill="#f4eee9" font-size="12" font-weight="600">User Defaults</text>
+            <text x="416" y="516" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">~/.codex/forgix.yaml</text>
+          </g>
+        </g>
+
+        <!-- Runtime resolution rail -->
+        <g text-anchor="middle">
+          <g>
+            <rect x="660" y="76" width="240" height="80" rx="8" fill="#161318"/>
+            <rect x="660" y="76" width="240" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1.2"/>
+            <rect x="668" y="82" width="52" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="694" y="91" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">HARNESS</text>
+            <text x="780" y="118" fill="#f4eee9" font-size="12" font-weight="600">Effective Runtime</text>
+            <text x="780" y="136" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">policy + project context</text>
+          </g>
+
+          <g>
+            <rect x="660" y="276" width="240" height="112" rx="8" fill="#161318"/>
+            <rect x="660" y="276" width="240" height="112" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+            <rect x="668" y="282" width="64" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="700" y="291" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">PRECEDENCE</text>
+            <text x="780" y="330" fill="#f4eee9" font-size="12" font-weight="600">Config &amp; CLI Merge</text>
+            <text x="780" y="350" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">1·defaults &lt; ... &lt; 5·flags</text>
+          </g>
+
+          <!-- Focal accent node: Repository Policy -->
+          <g>
+            <rect x="660" y="448" width="240" height="80" rx="8" fill="#161318"/>
+            <rect x="660" y="448" width="240" height="80" rx="8" fill="rgba(255,94,104,0.12)" stroke="#ff5e68" stroke-width="1.5"/>
+            <rect x="668" y="454" width="52" height="12" rx="2" fill="none" stroke="#ff5e68" stroke-width="0.8"/>
+            <text x="694" y="463" fill="#ff5e68" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">CEILING</text>
+            <text x="780" y="490" fill="#f4eee9" font-size="12" font-weight="600">Repository Policy</text>
+            <text x="780" y="508" fill="#ff5e68" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">cannot be weakened</text>
+          </g>
+        </g>
+
+        <!-- Clean legend key in bottom-left -->
+        <g font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="8" fill="#c2b8bf">
+          <rect x="68" y="472" width="14" height="10" rx="2" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+          <text x="90" y="480">Tracked repository artifacts</text>
+          <rect x="68" y="494" width="14" height="10" rx="2" fill="#211d24" stroke="#c2b8bf" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x="90" y="502">Local or global overrides</text>
+          <line x1="68" y1="521" x2="84" y2="521" stroke="#ff5e68" stroke-width="1.6"/>
+          <text x="90" y="524">Non-weakenable policy cap</text>
+        </g>
+      </svg>
