@@ -15,6 +15,9 @@
     "developerName": "forgix contributors",
     "category": "Productivity",
     "capabilities": ["Write"],
-    "defaultPrompt": ["Use $forgix to plan and implement a change."]
+    "defaultPrompt": ["Use $forgix to plan and implement a change."],
+    "logo": "./assets/logo.svg",
+    "logoDark": "./assets/logo.svg",
+    "composerIcon": "./assets/logo.svg"
   }
 }

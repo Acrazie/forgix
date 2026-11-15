@@ -5,12 +5,13 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
@@ -51,6 +52,31 @@ test("packed npm artifact contains runtime-only files for Node 24", () => {
   assert.ok(existsSync(bundle));
   for (const excluded of ["src", "test", "scripts", "node_modules", ".github"]) {
     assert.equal(existsSync(join(packageRoot, excluded)), false, `${excluded} must stay unpacked`);
+  }
+});
+
+test("packed plugin icons and overview resolve without the source repository", () => {
+  const codex = JSON.parse(readFileSync(join(packageRoot, ".codex-plugin/plugin.json"), "utf8"));
+  const antigravity = JSON.parse(readFileSync(join(packageRoot, "plugin.json"), "utf8"));
+  for (const path of [
+    codex.interface.logo,
+    codex.interface.logoDark,
+    codex.interface.composerIcon,
+    antigravity.logo,
+  ]) {
+    assert.equal(typeof path, "string");
+    assert.equal(isAbsolute(path) || /^[a-z]+:/i.test(path), false);
+    const target = realpathSync(resolve(packageRoot, path));
+    const withinRoot = relative(realpathSync(packageRoot), target);
+    assert.ok(withinRoot !== ".." && !withinRoot.startsWith(`..${sep}`) && !isAbsolute(withinRoot));
+    assert.equal(withinRoot.split(sep).join("/"), "assets/logo.svg");
+    assert.match(readFileSync(target, "utf8"), /<svg\b/);
+  }
+  const overview = readFileSync(join(packageRoot, "README.md"), "utf8");
+  assert.match(overview, /!\[Forgix\]\(assets\/logo\.svg\)/);
+  for (const target of ["docs/getting-started.md", "docs/lifecycle-contract.md"]) {
+    assert.ok(existsSync(join(packageRoot, target)));
+    assert.ok(overview.includes(target));
   }
 });
 
