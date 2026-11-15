@@ -111,12 +111,12 @@ the sample answer—authorizes profile publication.
 
 ### Project INIT outputs
 
-| File                                  | Content                                                     | Git policy                      |
-| ------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
-| `.codex/forgix.project.yaml`          | Portable shared architecture, topology, stack, and rules.   | Review and commit when desired. |
-| `.codex/forgix.project.local.yaml`    | Absolute service paths and personal non-contractual prefs.  | Gitignored.                     |
-| `.codex/project-init/state.yaml`      | Compact resumable interview state; no transcript/reasoning. | Gitignored and temporary.       |
-| `.codex/forgix/diagrams/*.mermaid.md` | Optional canonical-profile projection.                      | Commit with shared profile.     |
+| File                            | Content                                                     | Git policy                      |
+| ------------------------------- | ----------------------------------------------------------- | ------------------------------- |
+| `.forgix/project.yaml`          | Portable shared architecture, topology, stack, and rules.   | Review and commit when desired. |
+| `.forgix/project.local.yaml`    | Absolute service paths and personal non-contractual prefs.  | Gitignored.                     |
+| `.forgix/init/state.yaml`       | Compact resumable interview state; no transcript/reasoning. | Gitignored and temporary.       |
+| `.forgix/diagrams/*.mermaid.md` | Optional canonical-profile projection.                      | Commit with shared profile.     |
 
 Secrets, secret-like values, and absolute machine paths are rejected from the shared
 profile. A local preference cannot weaken repository policy or an approved shared
@@ -184,11 +184,11 @@ Existing installations of the old npm package, marketplace source, or `dev-flow`
 not automatically migrated. Replace or re-add the Acrazie marketplace source as
 `Acrazie/forgix`, install `forgix@acrazie`, and replace the old plugin installation rather
 than installing both plugin identities side by side. Rename existing CLI configuration files
-to `~/.codex/forgix.yaml`, `.codex/forgix.yaml`, and `.codex/forgix.local.yaml` (or re-run
+to `~/.forgix/config.yaml`, `.forgix/config.yaml`, and `.forgix/config.local.yaml` (or re-run
 `npx @acrasie/forgix init`), regenerate and re-approve shared project profiles with
 `$forgix init` (`/forgix:forgix init` or `/forgix init`), and update retained `docs/forgix/`
-paths and `<!-- forgix:... -->` domain markers; `.codex/tasks/`, `benchmarks/`,
-`project-init/`, and `roadmap/` remain unchanged.
+paths and `<!-- forgix:... -->` domain markers. Local `.forgix/tasks/`, `.forgix/cache/`,
+`.forgix/init/`, and `.forgix/roadmap/` store runtime state consistently across harnesses.
 
 Use it to customize target harness, worktree behavior, subscription/quota hints, or allowlisted
 integrations. Defaults already exist, so the wizard is optional. Inspect or validate the
@@ -199,13 +199,22 @@ $forgix config show --explain
 $forgix config validate --json
 ```
 
+Task validation, atomic persistence, and gate decisions can also be driven deterministically via
+the bundled CLI:
+
+```text
+npx @acrasie/forgix task validate [task-id]
+npx @acrasie/forgix task save <task-id>
+npx @acrasie/forgix task gate <task-id> [--view | --approve | --reject | --change=<instruction> | --autonomous [--issue=<ref>]]
+```
+
 Configuration precedence is:
 
 ```text
 internal defaults
-  < ~/.codex/forgix.yaml
-  < .codex/forgix.yaml
-  < .codex/forgix.local.yaml
+  < ~/.forgix/config.yaml
+  < .forgix/config.yaml
+  < .forgix/config.local.yaml
   < invocation flags
   < non-weakenable repository policy
 ```
@@ -255,19 +264,19 @@ supported runtime contract.
 ## Existing projects
 
 Use `forgix` (`$forgix` on Codex, `/forgix:forgix` on Claude Code, `/forgix` on Antigravity);
-former commands have no aliases. Internal `.codex/` state directories (`tasks/`,
-`benchmarks/`, `project-init/`, `roadmap/`) keep their paths across all three harnesses,
-while configuration, profiles, diagrams, owned domain markers, and Plan projections use
-`forgix` names without fallback:
+former commands have no aliases. Forgix state, configuration, profiles, diagrams,
+and Plan projections live under `.forgix/` and `docs/forgix/` across all three
+harnesses without fallback:
 
-1. **CLI configuration**: rename `~/.codex/dev-flow.yaml`, `.codex/dev-flow.yaml`, and
-   `.codex/dev-flow.local.yaml` to `forgix.yaml` / `forgix.local.yaml`, or re-run
-   `npx @acrasie/forgix init` (legacy filenames are ignored silently).
+1. **CLI configuration**: migrate legacy `~/.codex/*.yaml` and `.codex/*.yaml`
+   files to `~/.forgix/config.yaml`, `.forgix/config.yaml`, and
+   `.forgix/config.local.yaml`, or re-run `npx @acrasie/forgix init` (legacy filenames
+   are ignored silently).
 2. **Project Engineering Profile**: re-run `$forgix init` (`/forgix:forgix init` or
    `/forgix init`) and re-approve rather than hand-renaming signed
-   `.codex/dev-flow.project.yaml` files (especially when `diagramRefs` point below
-   `.codex/forgix/diagrams/`), and rename `.codex/dev-flow.project.local.yaml` to
-   `.codex/forgix.project.local.yaml`.
+   `.codex/*.project.yaml` files (keeping shared profiles at `.forgix/project.yaml` and
+   diagrams below `.forgix/diagrams/`), and rename local overrides to
+   `.forgix/project.local.yaml`.
 3. **Plan projections and domain markers**: move retained `docs/dev-flow/` plan files to
    `docs/forgix/`, and replace or remove legacy `<!-- dev-flow:... -->` markers in domain
    documents so the next projection does not append a second `<!-- forgix:... -->` block.
@@ -283,13 +292,13 @@ while configuration, profiles, diagrams, owned domain markers, and Plan projecti
 | `$forgix run-roadmap [flags]`      | `/forgix:forgix run-roadmap [flags]`      | `/forgix run-roadmap [flags]`      | Execute ready roadmap Work Items (`--limit N`, `--parallel M`). |
 | `$forgix resume <task-id>`         | `/forgix:forgix resume <task-id>`         | `/forgix resume <task-id>`         | Resume an interrupted task.                                     |
 | `$forgix status [task-id]`         | `/forgix:forgix status [task-id]`         | `/forgix status [task-id]`         | Inspect task status.                                            |
-| `$forgix --benchmark <objective>`  | `/forgix:forgix --benchmark <objective>`  | `/forgix --benchmark <objective>`  | Run a task with local benchmark measurement enabled.            |
 | `$forgix config show [--explain]`  | `/forgix:forgix config show [--explain]`  | `/forgix config show [--explain]`  | Show effective configuration and optional provenance.           |
 | `$forgix config validate [--json]` | `/forgix:forgix config validate [--json]` | `/forgix config validate [--json]` | Validate effective configuration.                               |
 
 Standalone CLI: `npx @acrasie/forgix init`, `npx @acrasie/forgix status`, `npx @acrasie/forgix resume <task-id>`,
-`npx @acrasie/forgix config validate`, and `npx @acrasie/forgix benchmark summary`. Durable task state
-is stored under `.codex/tasks/<task-id>.yaml` and `.codex/tasks/<task-id>.events.jsonl`.
+`npx @acrasie/forgix task validate [task-id]`, `npx @acrasie/forgix task save <task-id>`,
+`npx @acrasie/forgix task gate <task-id> [--view | --approve | --reject | --change=<instruction> | --autonomous [--issue=<ref>]]`,
+and `npx @acrasie/forgix config validate`. Durable task state is stored under `.forgix/tasks/<task-id>.json`.
 
 `quick`, `standard`, and `critical` at objective start are plain objective text, not
 modes or aliases. Quick or Plan is selected only after Discovery. Risk and policy—not

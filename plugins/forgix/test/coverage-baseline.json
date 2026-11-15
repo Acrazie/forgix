@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "runner": "bun@1.3.14",
+  "runner": "bun@1.4.4",
   "scope": "src/**/*.ts",
   "thresholdMode": "per-file-minimum",
   "minimum": {
@@ -8,8 +8,8 @@
     "functions": 0.75
   },
   "observedAggregate": {
-    "lines": 0.9386,
-    "functions": 0.9217
+    "lines": 0.9082,
+    "functions": 0.9566
   },
   "statements": {
     "status": "unavailable",

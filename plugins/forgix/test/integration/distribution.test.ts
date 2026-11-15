@@ -83,8 +83,8 @@ test("built CLI validates project profile stdin without writing", () => {
     const output = JSON.parse(result.stdout);
     expect(output.status).toBe("valid");
     expect(output.data.contentDigest).toMatch(/^[a-f0-9]{64}$/);
+    expect(existsSync(join(directory, ".forgix", "project.yaml"))).toBe(false);
     expect(existsSync(join(directory, ".codex", "forgix.project.yaml"))).toBe(false);
-    expect(existsSync(join(directory, ".codex", "dev-flow.project.yaml"))).toBe(false);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
@@ -177,6 +177,7 @@ test("npm package contains runtime assets and excludes development files", () =>
     expect(paths.some((path) => path.startsWith("src/"))).toBe(false);
     expect(paths.some((path) => path.startsWith("test/"))).toBe(false);
     expect(paths.some((path) => path.startsWith(".github/"))).toBe(false);
+    expect(paths.includes(".forgix/config.yaml")).toBe(false);
     expect(paths.includes(".codex/forgix.yaml")).toBe(false);
     expect(paths.includes(".codex/dev-flow.yaml")).toBe(false);
     expect(paths.some((path) => path.endsWith("dist/dev-flow.mjs"))).toBe(false);

@@ -62,16 +62,18 @@ describe("staged path classification", () => {
       classifyStagedPaths([
         "bun.lock",
         ".worktrees/task/src/a.ts",
-        ".codex/tasks/task/state.json",
-        ".codex/benchmarks/run.json",
+        ".forgix/tasks/task/state.json",
+        ".forgix/cache/five-hour-quota-reset.json",
+        ".forgix/init/state.yaml",
+        ".forgix/roadmap/state.yaml",
         "plugins/forgix/dist/forgix.mjs",
         "plugins/forgix/coverage/lcov.info",
         "plugins/forgix/test/fixtures/app-server-error.mjs",
-        "plugins/forgix/src/state.ts",
+        "plugins/forgix/src/cli.ts",
       ]),
     ).toEqual({
-      formatPaths: ["plugins/forgix/src/state.ts"],
-      lintPaths: ["plugins/forgix/src/state.ts"],
+      formatPaths: ["plugins/forgix/src/cli.ts"],
+      lintPaths: ["plugins/forgix/src/cli.ts"],
     });
   });
 });

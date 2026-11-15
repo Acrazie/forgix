@@ -46,7 +46,6 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "baseline:p0": "bun run build && node scripts/generate-p0-baseline.mjs",
     "check:size": "bun scripts/check-size-budget.ts",
     "pack:runtime": "bun scripts/package-artifact.ts ../../.artifacts/forgix.tgz",
     "release": "bun scripts/release.ts",

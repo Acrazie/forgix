@@ -1,22 +1,22 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
-import * as sourceApi from "../../src/config.ts";
+import * as sourceApi from "../../src/core/config.ts";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
 
-test("Forgix reads forgix configuration paths without rewriting their bytes and ignores legacy dev-flow files", async () => {
+test("Forgix reads forgix configuration paths without rewriting their bytes and ignores legacy files", async () => {
   const directory = await mkdtemp(join(os.tmpdir(), "forgix-config-files-"));
   const home = join(directory, "home");
   const root = join(directory, "repo");
   const files = [
-    [join(home, ".codex", "forgix.yaml"), "subscription:\n  plan: plus\n"],
-    [join(root, ".codex", "forgix.yaml"), "subscription:\n  plan: pro_5x\n"],
-    [join(root, ".codex", "forgix.local.yaml"), "subscription:\n  plan: pro_20x\n"],
+    [join(home, ".forgix", "config.yaml"), "subscription:\n  plan: plus\n"],
+    [join(root, ".forgix", "config.yaml"), "subscription:\n  plan: pro_5x\n"],
+    [join(root, ".forgix", "config.local.yaml"), "subscription:\n  plan: pro_20x\n"],
   ];
   try {
-    await mkdir(join(home, ".codex"), { recursive: true });
-    await mkdir(join(root, ".codex"), { recursive: true });
+    await mkdir(join(home, ".forgix"), { recursive: true });
+    await mkdir(join(root, ".forgix"), { recursive: true });
     await Promise.all(files.map(([path, bytes]) => writeFile(path, bytes)));
     const sources = sourceApi.loadConfigSources({ cwd: root, home });
     expect(sources.map((source) => source.source)).toEqual(["user", "repo", "local"]);
@@ -36,7 +36,7 @@ test("Forgix reads forgix configuration paths without rewriting their bytes and 
     await mkdir(join(legacyHome, ".codex"), { recursive: true });
     await mkdir(join(legacyRoot, ".codex"), { recursive: true });
     await writeFile(join(legacyHome, ".codex", "dev-flow.yaml"), "subscription:\n  plan: plus\n");
-    await writeFile(join(legacyRoot, ".codex", "dev-flow.yaml"), "subscription:\n  plan: pro_5x\n");
+    await writeFile(join(legacyRoot, ".codex", "forgix.yaml"), "subscription:\n  plan: pro_5x\n");
     await writeFile(
       join(legacyRoot, ".codex", "dev-flow.local.yaml"),
       "subscription:\n  plan: pro_20x\n",
@@ -51,11 +51,11 @@ test("loads user, repository, local, and flags sources in precedence order", asy
   const { loadConfigSources, resolveConfig } = sourceApi;
   const root = await mkdtemp(join(os.tmpdir(), "forgix-config-"));
   const home = await mkdtemp(join(os.tmpdir(), "forgix-home-"));
-  await mkdir(join(home, ".codex"));
-  await mkdir(join(root, ".codex"));
-  await writeFile(join(home, ".codex", "forgix.yaml"), "subscription:\n  plan: plus\n");
-  await writeFile(join(root, ".codex", "forgix.yaml"), "subscription:\n  plan: pro_5x\n");
-  await writeFile(join(root, ".codex", "forgix.local.yaml"), "subscription:\n  plan: pro_20x\n");
+  await mkdir(join(home, ".forgix"));
+  await mkdir(join(root, ".forgix"));
+  await writeFile(join(home, ".forgix", "config.yaml"), "subscription:\n  plan: plus\n");
+  await writeFile(join(root, ".forgix", "config.yaml"), "subscription:\n  plan: pro_5x\n");
+  await writeFile(join(root, ".forgix", "config.local.yaml"), "subscription:\n  plan: pro_20x\n");
   const resolved = resolveConfig(
     loadConfigSources({ cwd: root, home, flags: { subscription: { plan: "plus" } } }),
   );

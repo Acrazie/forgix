@@ -1,92 +1,152 @@
-// @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
-import * as sourceApi from "../../src/cli.ts";
 import { expect, test } from "bun:test";
-import { toGate } from "../support/helpers-v6.ts";
-const api = async () => sourceApi;
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { runInvocation } from "../../src/cli.ts";
+import { decideWorktree } from "../../src/core/config.ts";
+import { canonicalize, sha256Prefixed } from "../../src/core/digest.ts";
+import { StateStoreError } from "../../src/core/schema.ts";
+import {
+  MACRO_PHASES,
+  TASK_STATUSES,
+  deriveMacroPhase,
+  validateTaskState,
+} from "../../src/task/index.ts";
+import type { AssuranceEvidenceRecord, AssuranceReceipt } from "../../src/types.ts";
+import { expectThrown } from "../support/expect-error.ts";
+import { makeTaskState } from "../support/helpers-v6.ts";
 
-async function finish(profile) {
-  const a = await api();
-  let state = await toGate(a, profile, `lifecycle-${profile}`);
-  state = a.transition(state, "executing", {
-    gateDecision: a.createGateDecision(state, {
-      decision: "approved",
-    }),
+test("Quick and Plan both traverse all five macro phases cleanly", () => {
+  for (const profile of ["quick", "plan"] as const) {
+    const phases = new Set(
+      (
+        [
+          "new",
+          "intaking",
+          "discovering",
+          "awaiting_profile_choice",
+          "planning",
+          "awaiting_approval",
+          "executing",
+          "assuring",
+        ] as const
+      ).map((status) =>
+        deriveMacroPhase(
+          makeTaskState({
+            taskId: `lifecycle-${profile}`,
+            status,
+            profile,
+          }),
+        ),
+      ),
+    );
+    expect([...MACRO_PHASES].every((phase) => phases.has(phase))).toBe(true);
+  }
+
+  const quickGate = makeTaskState({
+    taskId: "lifecycle-quick",
+    status: "awaiting_approval",
+    profile: "quick",
   });
-  state = a.transition(state, "assuring");
-  const operation = state.shape.contract.assuranceContract.operations[0];
-  state = a.recordAssuranceObservation(state, {
-    evidenceId: `evidence:${operation.id}`,
-    operationId: operation.id,
+  expect(quickGate.shape?.projection).toBeUndefined();
+
+  const planGate = makeTaskState({
+    taskId: "lifecycle-plan",
+    status: "awaiting_approval",
+    profile: "plan",
+  });
+  expect(planGate.shape?.projection?.status).toBe("Proposed");
+
+  const planExec = makeTaskState({
+    taskId: "lifecycle-plan",
+    status: "executing",
+    profile: "plan",
+  });
+  expect(planExec.shape?.projection?.status).toBe("Approved");
+  expect(deriveMacroPhase(planExec)).toBe("BUILD");
+});
+
+test("BUILD is one native state and ASSURE enforces 2-strike rule and computes completion receipt", () => {
+  expect(TASK_STATUSES).not.toContain("reviewing");
+  expect(TASK_STATUSES).not.toContain("verifying");
+  expect(TASK_STATUSES).not.toContain("finished");
+
+  const assuring = makeTaskState({
+    taskId: "assure-task",
+    status: "assuring",
+    profile: "plan",
+  });
+  expect(deriveMacroPhase(assuring)).toBe("ASSURE");
+
+  const opId = assuring.shape!.contract!.assuranceContract!.operations[0]!.id;
+  expectThrown(
+    () =>
+      validateTaskState({
+        ...assuring,
+        assurance: {
+          schemaVersion: 1,
+          evidenceIndex: [],
+          issues: [
+            {
+              issueId: "issue:stable",
+              operationId: opId,
+              status: "active",
+              correctionAttempts: 2,
+              rootCauseRequired: false,
+              evidenceRef: "evidence:finding",
+            },
+          ],
+        },
+      }),
+    (error) => error instanceof StateStoreError && error.code === "state_invalid",
+  );
+
+  const evidenceBody: Omit<AssuranceEvidenceRecord, "digest"> = {
+    schemaVersion: 1,
+    evidenceId: "ev:check:test",
+    operationId: opId,
+    subjectIds: ["criterion.main"],
+    verifierKind: "command",
     result: "passed",
     verifierDigest: "verifier:bun-test",
     observedFingerprint: "workspace:verified",
     detailRef: "log:bun-test",
+    recordedAt: "2026-08-01T00:07:00.000Z",
+  };
+  const evidence: AssuranceEvidenceRecord = {
+    ...evidenceBody,
+    digest: sha256Prefixed(canonicalize(evidenceBody)),
+  };
+  const completed = validateTaskState({
+    ...assuring,
+    assurance: {
+      schemaVersion: 1,
+      evidenceIndex: [evidence],
+      issues: [
+        {
+          issueId: "issue:stable",
+          operationId: opId,
+          status: "resolved",
+          correctionAttempts: 2,
+          rootCauseRequired: true,
+          evidenceRef: "evidence:finding",
+        },
+      ],
+    },
   });
-  return a.completeAssurance(state, {
-    verifiedSnapshotFingerprint: "workspace:verified",
-    currentFingerprints: { [operation.id]: "workspace:verified" },
-  });
-}
-
-test("Quick and Plan both traverse all five phases", async () => {
-  const a = await api();
-  for (const profile of ["quick", "plan"]) {
-    const state = await finish(profile);
-    const phases = new Set(
-      state.history
-        .filter((item) => item.type === "state.transition")
-        .map((item) =>
-          a.deriveMacroPhase({
-            ...state,
-            status: item.to,
-            history: state.history.slice(0, state.history.indexOf(item) + 1),
-            ...(item.to === "blocked" ? { resumeTo: item.terminalResumeTo } : {}),
-          }),
-        ),
-    );
-    for (const phase of ["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE"])
-      expect(phases.has(phase), `${profile} lacks ${phase}`).toBeTruthy();
-    expect(state.status).toBe("assuring");
-    expect(state.assurance.receipt).toBeTruthy();
-    expect(state.history.at(-1).type).toBe("assure.completed");
-  }
+  const receipt: AssuranceReceipt | undefined = completed.assurance?.receipt;
+  expect(receipt).toBeDefined();
+  expect(receipt?.taskId).toBe("assure-task");
+  expect(receipt?.contractDigest).toBe(assuring.contractDigest);
+  expect(completed.assurance?.completionIndex).toEqual(["ev:check:test"]);
 });
 
-test("BUILD is one native execution state and ASSURE owns operations, not status loops", async () => {
-  const a = await api();
-  let state = await toGate(a, "plan", "loops-v5");
-  state = a.transition(state, "executing", {
-    gateDecision: a.createGateDecision(state, {
-      decision: "approved",
-    }),
-  });
-  expect(a.deriveMacroPhase(state)).toBe("BUILD");
-  expect(a.STATE_MACHINE.executing.capsule.produces).toEqual([]);
-  state = a.transition(state, "assuring");
-  expect(state.status).toBe("assuring");
-  const operationId = state.shape.contract.assuranceContract.operations[0].id;
-  state = a.recordTaskAssuranceIssue(state, {
-    issueId: "issue:stable",
-    operationId,
-    evidenceRef: "evidence:finding",
-  });
-  state = a.recordTaskCorrectionAttempt(state, "issue:stable");
-  state = a.recordTaskCorrectionAttempt(state, "issue:stable");
-  expect(state.assurance.issues[0].rootCauseRequired).toBe(true);
-  state = a.resolveTaskAssuranceIssue(state, "issue:stable");
-  expect(state.assurance.issues[0].status).toBe("resolved");
-  expect(a.TASK_STATUSES).not.toContain("reviewing");
-  expect(a.TASK_STATUSES).not.toContain("verifying");
-  expect(a.TASK_STATUSES).not.toContain("finished");
-});
-
-test("risk—not preparation profile—drives critical workspace safeguard", async () => {
-  const a = await api();
+test("risk—not preparation profile—drives critical workspace safeguard", () => {
   expect(
-    a.decideWorktree({ risk: "critical", requested: false, concurrent: false, checkoutSafe: true }),
+    decideWorktree({ risk: "critical", requested: false, concurrent: false, checkoutSafe: true }),
   ).toEqual({ required: true, reason: "critical_risk" });
   expect(
-    a.decideWorktree({
+    decideWorktree({
       risk: "low",
       policyRequired: true,
       requested: false,
@@ -96,19 +156,50 @@ test("risk—not preparation profile—drives critical workspace safeguard", asy
   ).toEqual({ required: true, reason: "policy" });
 });
 
-test("ASSURE rejects stale observations and incomplete coverage", async () => {
-  const a = await api();
-  let state = await toGate(a, "quick", "trusted-terminal");
-  state = a.transition(state, "executing", {
-    gateDecision: a.createGateDecision(state, {
-      decision: "approved",
-    }),
-  });
-  state = a.transition(state, "assuring");
-  expect(() =>
-    a.completeAssurance(state, {
-      verifiedSnapshotFingerprint: "workspace:current",
-      currentFingerprints: {},
-    }),
-  ).toThrow(/evidence|coverage/i);
+test("CLI task validate, save, status, and gate integrate end-to-end", async () => {
+  const root = await mkdtemp(join(tmpdir(), "forgix-cli-task-"));
+  try {
+    const awaiting = makeTaskState({
+      taskId: "cli-e2e",
+      status: "awaiting_approval",
+      profile: "plan",
+    });
+
+    const validated = await runInvocation(["task", "validate"], {
+      workspaceRoot: root,
+      task: { input: JSON.stringify(awaiting) },
+    });
+    expect(validated.status).toBe("valid");
+
+    const saved = await runInvocation(["task", "save", "cli-e2e"], {
+      workspaceRoot: root,
+      task: { input: JSON.stringify(awaiting) },
+    });
+    expect(saved.status).toBe("saved");
+
+    const statusBefore = await runInvocation(["status", "cli-e2e"], {
+      workspaceRoot: root,
+    });
+    expect(statusBefore.status).toBe("awaiting_approval");
+    expect((statusBefore.data as { macroPhase: string }).macroPhase).toBe("GATE");
+
+    const view = await runInvocation(["task", "gate", "cli-e2e", "--view"], {
+      workspaceRoot: root,
+    });
+    expect(view.status).toBe("ready");
+
+    const approved = await runInvocation(["task", "gate", "cli-e2e", "--approve"], {
+      workspaceRoot: root,
+      task: { decidedAt: "2026-08-01T00:05:00.000Z" },
+    });
+    expect(approved.status).toBe("approved");
+    expect((approved.data as { status: string }).status).toBe("executing");
+
+    const statusAfter = await runInvocation(["status", "cli-e2e"], {
+      workspaceRoot: root,
+    });
+    expect((statusAfter.data as { status: string; macroPhase: string }).macroPhase).toBe("BUILD");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

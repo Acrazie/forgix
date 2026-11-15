@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "baselineRationale": "Existing Project INIT baseline retained; bounded headroom covers TaskState V6 design/assurance runtime, one design skill, and ADR 0031 while verify-change is removed.",
+  "baselineRationale": "Architecture simplification baseline after consolidating plugins/forgix/src into 10 focused modules (core/*, task, profile, roadmap, types, cli) and removing retired benchmark/metrics/projection artifacts.",
   "baseline": {
-    "bundleBytes": 859932,
-    "packedBytes": 251481,
-    "unpackedBytes": 1127847
+    "bundleBytes": 386038,
+    "packedBytes": 204216,
+    "unpackedBytes": 676892
   },
   "headroom": {
     "bundleBytes": 81920,
@@ -12,9 +12,9 @@
     "unpackedBytes": 102400
   },
   "maximum": {
-    "bundleBytes": 941852,
-    "packedBytes": 276057,
-    "unpackedBytes": 1230247
+    "bundleBytes": 467958,
+    "packedBytes": 228792,
+    "unpackedBytes": 779292
   },
   "manifest": [
     ".claude-plugin/plugin.json",
@@ -53,13 +53,10 @@
     "docs/adr/0031-make-assure-the-success-boundary.md",
     "docs/adr/0032-consolidate-development-tooling-with-vite-plus.md",
     "docs/artifacts.md",
-    "docs/baselines/2026-07-18-p0-lifecycle.json",
     "docs/design.md",
     "docs/getting-started.md",
     "docs/glossary/forgix.md",
     "docs/lifecycle-contract.md",
-    "docs/lifecycle-contract.projection.json",
-    "docs/metrics-protocol.md",
     "docs/project-profile-contract.md",
     "docs/runbooks/maintainer-release.md",
     "docs/target-intake-shape-contract.md",

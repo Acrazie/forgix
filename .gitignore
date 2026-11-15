@@ -20,12 +20,13 @@ Thumbs.db
 dist/
 coverage/
 
-# Codex local files
-.codex/tasks/
-.codex/benchmarks/
-.codex/forgix.local.yaml
-.codex/forgix.project.local.yaml
-.codex/project-init/
+# Forgix local files
+.forgix/tasks/
+.forgix/cache/
+.forgix/config.local.yaml
+.forgix/project.local.yaml
+.forgix/init/
+.forgix/roadmap/
 
 # Vite+ recreates its dispatcher; project hook scripts remain tracked.
 .vite-hooks/_/

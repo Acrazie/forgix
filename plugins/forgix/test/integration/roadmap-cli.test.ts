@@ -3,14 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
 import { stringify as stringifyYaml } from "yaml";
-import { HELP_TEXT, runInvocation, type RoadmapState } from "../../src/cli.ts";
+import { HELP_TEXT, runInvocation } from "../../src/cli.ts";
+import type { RoadmapState } from "../../src/roadmap/index.ts";
 
 const tempDirs: string[] = [];
 
 function createWorkspace(): string {
   const dir = mkdtempSync(join(tmpdir(), "forgix-roadmap-cli-"));
   tempDirs.push(dir);
-  writeFileSync(join(dir, ".gitignore"), ".codex/roadmap/\n", "utf8");
+  writeFileSync(join(dir, ".gitignore"), ".forgix/roadmap/\n", "utf8");
   return dir;
 }
 

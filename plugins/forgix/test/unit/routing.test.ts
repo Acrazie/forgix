@@ -1,5 +1,5 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
-import * as sourceApi from "../../src/routing.ts";
+import * as sourceApi from "../../src/core/routing.ts";
 import { expect, test } from "bun:test";
 
 const models = [

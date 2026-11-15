@@ -20,19 +20,21 @@ Forgix ships a single plugin root (`plugins/forgix/`) backed by harness-specific
 Runtime routing selects `codex-app-server` on Codex (quota-aware `gpt-5.6-luna` / `terra` / `sol`
 routing from `account/read`, `account/rateLimits/read`, and `model/list`) and `host-native` on
 Claude Code and Antigravity (`model: null`, `effort: null`, `reason: "host-native:<harness>"`),
-while keeping `.codex/` repository paths shared across harnesses.
+while keeping `.forgix/` repository paths shared across harnesses.
 
 ## Public surface
 
 ```text
 # Codex ($forgix), Claude Code (/forgix:forgix), Antigravity (/forgix)
 $forgix <objective>
-$forgix --benchmark <objective>
 $forgix resume <task-id>
 $forgix status [task-id]
 
 # Standalone or bundled CLI
 forgix [--harness auto|codex|claude|antigravity] <objective>
+forgix task validate [task-id]
+forgix task save <task-id>
+forgix task gate <task-id> [--view | --approve | --reject | --change=<instruction> | --autonomous [--issue=<ref>]]
 ```
 
 No invocation mode exists. Entire run text is objective. State V6 rejects V1–V5 without

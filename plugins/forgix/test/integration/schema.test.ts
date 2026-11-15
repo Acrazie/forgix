@@ -1,32 +1,43 @@
-// @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
-import * as sourceApi from "../../src/cli.ts";
-import { readFile } from "node:fs/promises";
 import { expect, test } from "bun:test";
-import { taskInput } from "../support/helpers-v6.ts";
+import { readFile } from "node:fs/promises";
+import { StateStoreError, validateSchema } from "../../src/core/schema.ts";
+import { MACRO_PHASES, TASK_STATUSES, validateTaskState } from "../../src/task/index.ts";
 import { expectThrown } from "../support/expect-error.ts";
-const stateSchemaUrl = new URL("../../schemas/state.schema.json", import.meta.url);
-const lifecycleProjectionUrl = new URL(
-  "../../docs/lifecycle-contract.projection.json",
-  import.meta.url,
-);
-const api = async () => sourceApi;
+import { makeTaskState } from "../support/helpers-v6.ts";
 
-test("state schema is strict V6 and contains no legacy mode contract", async () => {
-  const schema = JSON.parse(await readFile(stateSchemaUrl, "utf8"));
+const stateSchemaUrl = new URL("../../schemas/state.schema.json", import.meta.url);
+
+test("state schema is strict V6 and contains no legacy mode or retired fields", async () => {
+  const schema = JSON.parse(await readFile(stateSchemaUrl, "utf8")) as {
+    title: string;
+    additionalProperties: boolean;
+    properties: Record<string, { const?: number }>;
+    $defs: { status: { enum: string[] } };
+  };
   expect(schema.title).toBe("Forgix task state V6");
-  expect(schema.properties.schemaVersion.const).toBe(6);
+  expect(schema.properties.schemaVersion?.const).toBe(6);
   expect(schema.additionalProperties).toBe(false);
-  expect("mode" in schema.properties).toBe(false);
-  expect("modeConfirmed" in schema.properties).toBe(false);
+  for (const removedProp of [
+    "mode",
+    "modeConfirmed",
+    "intake",
+    "benchmarkEnabled",
+    "evaluatorReceipts",
+  ]) {
+    expect(removedProp in schema.properties).toBe(false);
+  }
   for (const status of [
     "intaking",
+    "discovering",
     "awaiting_shape_decision",
     "awaiting_profile_choice",
+    "planning",
     "awaiting_intake_decision",
     "assuring",
-  ])
-    expect(schema.$defs.status.enum.includes(status)).toBeTruthy();
-  for (const removed of [
+  ]) {
+    expect(schema.$defs.status.enum.includes(status)).toBe(true);
+  }
+  for (const removedStatus of [
     "validating",
     "resolving_build",
     "handing_off",
@@ -36,78 +47,64 @@ test("state schema is strict V6 and contains no legacy mode contract", async () 
     "resolving_assure",
     "verifying",
     "finished",
-  ])
-    expect(schema.$defs.status.enum.includes(removed)).toBe(false);
+  ]) {
+    expect(schema.$defs.status.enum.includes(removedStatus)).toBe(false);
+  }
+  expect([...TASK_STATUSES] as string[]).toEqual(schema.$defs.status.enum);
+  expect([...MACRO_PHASES] as string[]).toEqual(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE"]);
 });
 
-test("runtime V6 validation rejects extras and old schemas", async () => {
-  const a = await api();
-  const state = a.createState(taskInput("schema-v5"));
-  expect(a.loadStateV6(state).schemaVersion).toBe(6);
-  expect(() => a.loadStateV6({ ...state, unexpected: true })).toThrow(/schema validation failed/);
+test("runtime V6 validation rejects extras, old schemas, and invalid approval receipts", () => {
+  const state = makeTaskState({ taskId: "schema-v6" });
+  expect(validateTaskState(state).schemaVersion).toBe(6);
+  expect(() => validateTaskState({ ...state, unexpected: true })).toThrow(/schema validation/);
   expectThrown(
-    () => a.loadStateV6({ schemaVersion: 4 }),
-    (error) =>
-      error instanceof Error && "code" in error && error.code === "state_schema_incompatible",
+    () => validateTaskState({ schemaVersion: 5 }),
+    (error) => error instanceof StateStoreError && error.code === "state_schema_incompatible",
+  );
+  const executing = makeTaskState({ taskId: "schema-exec", status: "executing" });
+  expect(() => validateTaskState({ ...executing, planApproval: undefined })).toThrow(
+    /planApproval/,
   );
 });
 
-test("registry projection has guards, capsules, events, and no mode arrays", async () => {
-  const a = await api();
-  const projection = a.buildStateMachineProjection();
-  expect(JSON.parse(await readFile(lifecycleProjectionUrl, "utf8"))).toEqual(projection);
-  expect(projection.macroPhases).toEqual(["INTAKE", "SHAPE", "GATE", "BUILD", "ASSURE"]);
-  expect(JSON.stringify(projection).toLowerCase()).not.toContain("handoff");
-  expect(JSON.stringify(projection).includes('"modes"')).toBe(false);
-  const discovering = projection.states.find((item) => item.status === "discovering");
-  expect(
-    discovering.transitions.some(
-      (item) =>
-        item.target === "awaiting_profile_choice" && item.guards.includes("discovery_sufficient"),
-    ),
-  ).toBeTruthy();
-  expect(discovering.events.includes("design.question_recorded")).toBeTruthy();
-});
-
-test("Quick and Plan share one Planning state and generic GATE boundary", async () => {
-  const a = await api();
-  const planning = a.STATE_MACHINE.planning.transitions;
-  expect(planning.awaiting_approval.guards).toEqual([
-    "discovery_sufficient",
-    "profile_selected",
-    "contract_complete",
-  ]);
-  expect("executing" in a.STATE_MACHINE.intaking.transitions).toBe(false);
-  expect("awaiting_mode_confirmation" in a.STATE_MACHINE).toBe(false);
-  expect(a.STATE_MACHINE.executing.transitions.assuring.guards).toEqual([]);
-  expect(a.STATE_MACHINE.executing.capsule.produces).toEqual([]);
-});
-
-test("public config has no approval bypass or external delivery contract", async () => {
-  const schema = JSON.parse(
-    await readFile(new URL("../../schemas/config.schema.json", import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(schema).toLowerCase();
+test("public config schema has no approval bypass or external delivery contract", async () => {
+  const serialized = (
+    await readFile(new URL("../../schemas/config.schema.json", import.meta.url), "utf8")
+  ).toLowerCase();
   expect(serialized).not.toMatch(/approval|bypass|handoff|pullrequest/);
 });
 
-test("project profile schemas separate portable shared and absolute local data", async () => {
-  const a = await api();
+test("project profile and roadmap schemas enforce strict boundaries", async () => {
   const shared = JSON.parse(
     await readFile(new URL("../../schemas/project-profile.schema.json", import.meta.url), "utf8"),
-  );
+  ) as {
+    additionalProperties: boolean;
+    required: string[];
+    properties: {
+      content: { properties: { decisions: { maxItems: number } } };
+      approval: { properties: { actor: { const: string } } };
+    };
+  };
   const local = JSON.parse(
     await readFile(
       new URL("../../schemas/project-profile-local.schema.json", import.meta.url),
       "utf8",
     ),
-  );
+  ) as {
+    additionalProperties: boolean;
+    properties: { servicePaths: { items: { properties: { path: { type: string } } } } };
+  };
   const session = JSON.parse(
     await readFile(
       new URL("../../schemas/project-init-state.schema.json", import.meta.url),
       "utf8",
     ),
-  );
+  ) as {
+    properties: Record<string, unknown> & {
+      activeQuestion: { properties: { options: { maxItems: number } } };
+    };
+  };
   expect(shared.additionalProperties).toBe(false);
   expect(shared.required).toContain("approval");
   expect(shared.properties.content.properties.decisions.maxItems).toBe(512);
@@ -116,7 +113,8 @@ test("project profile schemas separate portable shared and absolute local data",
   expect(local.properties.servicePaths.items.properties.path.type).toBe("string");
   expect(session.properties.activeQuestion.properties.options.maxItems).toBe(3);
   expect(session.properties).not.toHaveProperty("transcript");
-  expect(a.validateSchema("project-profile", {}).valid).toBe(false);
-  expect(a.validateSchema("project-profile-local", {}).valid).toBe(false);
-  expect(a.validateSchema("project-init-state", {}).valid).toBe(false);
+  expect(validateSchema("project-profile", {}).valid).toBe(false);
+  expect(validateSchema("project-profile-local", {}).valid).toBe(false);
+  expect(validateSchema("project-init-state", {}).valid).toBe(false);
+  expect(validateSchema("roadmap-state", {}).valid).toBe(false);
 });

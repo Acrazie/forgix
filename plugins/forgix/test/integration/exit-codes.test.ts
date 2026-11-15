@@ -3,8 +3,8 @@ import { expect, test } from "bun:test";
 
 test("bundle exports stable workflow exit codes", async () => {
   const bundle = new URL("../../dist/forgix.mjs", import.meta.url);
-  const { EXIT_CODES } = await import(bundle);
-  expect(EXIT_CODES).toEqual({
+  const { schema } = await import(bundle);
+  expect(schema.EXIT_CODES).toEqual({
     SUCCESS: 0,
     INVALID_INVOCATION: 2,
     INVALID_CONFIGURATION: 3,

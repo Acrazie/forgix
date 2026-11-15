@@ -43,10 +43,11 @@ const LINT_EXTENSIONS = new Set([".cjs", ".cts", ".js", ".jsx", ".mjs", ".mts", 
 
 const EXCLUDED_PREFIXES = [
   ".worktrees/",
-  ".codex/tasks/",
-  ".codex/benchmarks/",
+  ".forgix/tasks/",
+  ".forgix/cache/",
+  ".forgix/init/",
+  ".forgix/roadmap/",
   "plugins/forgix/test/fixtures/",
-  "plugins/forgix/docs/baselines/",
 ];
 
 const EXCLUDED_PATHS = new Set([
@@ -55,7 +56,6 @@ const EXCLUDED_PATHS = new Set([
   "bun.lock",
   // Release Please owns this generated file's formatting.
   "plugins/forgix/CHANGELOG.md",
-  "plugins/forgix/docs/lifecycle-contract.projection.json",
 ]);
 
 export type CommandResult = {

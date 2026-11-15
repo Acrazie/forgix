@@ -2,12 +2,12 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
-import * as api from "../../src/cli.ts";
+import * as api from "../../src/roadmap/index.ts";
 import { expectRejected, expectThrown } from "../support/expect-error.ts";
 
 const tempDirs: string[] = [];
 
-function makeWorkspace(gitignoreContent = ".codex/roadmap/\n"): string {
+function makeWorkspace(gitignoreContent = ".forgix/roadmap/\n"): string {
   const dir = mkdtempSync(join(tmpdir(), "forgix-roadmap-"));
   tempDirs.push(dir);
   if (gitignoreContent) {
@@ -105,7 +105,7 @@ function sampleState(overrides: Partial<api.RoadmapState> = {}): api.RoadmapStat
 
 describe("roadmap core primitives", () => {
   test("roadmap module has zero network, subprocess, or app-server imports", () => {
-    const source = readFileSync(new URL("../../src/roadmap.ts", import.meta.url), "utf8");
+    const source = readFileSync(new URL("../../src/roadmap/index.ts", import.meta.url), "utf8");
     expect(source).not.toMatch(/node:child_process|spawn|execFile|fetch\s*\(|https?:\/\/[^f]/);
     expect(source).not.toMatch(/from\s+["']\.\/app-server|from\s+["']\.\/bridge/);
   });
@@ -197,7 +197,7 @@ describe("roadmap core primitives", () => {
 
     const sessionText = api.renderRoadmapSessionState(state, { gitignored: false });
     expect(sessionText).toContain("Wave-1 Ready: 1");
-    expect(sessionText).toContain(".codex/roadmap/ is not listed in .gitignore");
+    expect(sessionText).toContain(".forgix/roadmap/ is not listed in .gitignore");
   });
 
   test("planIdempotentPublication & recordPublishedRoadmapBatch support resumable batches", () => {
@@ -307,7 +307,7 @@ describe("roadmap core primitives", () => {
       maxRisk: "medium",
       requireIssueNumber: true,
     });
-    expect(selection.eligible.map((item) => item.id)).toEqual(["wi-checkout"]);
+    expect(selection.eligible.map((entry) => entry.workItem.id)).toEqual(["wi-checkout"]);
     expect(selection.skipped).toEqual([
       { id: "wi-login", issueNumber: 101, reason: "status is In Review" },
       {
@@ -320,7 +320,7 @@ describe("roadmap core primitives", () => {
   });
 
   test("RoadmapStore persists atomically and rejects symlink traversal", async () => {
-    const workspace = makeWorkspace(".codex/roadmap/\n");
+    const workspace = makeWorkspace(".forgix/roadmap/\n");
     const store = api.createRoadmapStore(workspace);
     expect(store.isGitignored()).toBe(true);
     expect(await store.exists()).toBe(false);
@@ -343,9 +343,9 @@ describe("roadmap core primitives", () => {
     expect(api.createRoadmapStore(unignoredWorkspace).isGitignored()).toBe(false);
 
     const symlinkWorkspace = makeWorkspace();
-    mkdirSync(join(symlinkWorkspace, ".codex"), { recursive: true });
+    mkdirSync(join(symlinkWorkspace, ".forgix"), { recursive: true });
     const targetDir = makeWorkspace();
-    symlinkSync(targetDir, join(symlinkWorkspace, ".codex", "roadmap"));
+    symlinkSync(targetDir, join(symlinkWorkspace, ".forgix", "roadmap"));
     const symlinkStore = api.createRoadmapStore(symlinkWorkspace);
     await expectRejected(
       () => symlinkStore.save(sampleState()),

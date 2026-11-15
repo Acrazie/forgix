@@ -8,7 +8,6 @@ test("parses an unclassified run objective", async () => {
   expect(parseInvocation(["rename", "the", "DTO"])).toEqual({
     command: "run",
     objective: "rename the DTO",
-    flags: {},
   });
 });
 
@@ -18,7 +17,6 @@ test("treats legacy mode words as objective text and parses read-only subcommand
   expect(parseInvocation(["help", "with", "tests"])).toEqual({
     command: "run",
     objective: "help with tests",
-    flags: {},
   });
   expect(parseInvocation(["init"])).toEqual({
     command: "init",
@@ -26,7 +24,6 @@ test("treats legacy mode words as objective text and parses read-only subcommand
   expect(parseInvocation(["critical", "migrate", "sessions"])).toEqual({
     command: "run",
     objective: "critical migrate sessions",
-    flags: {},
   });
   expect(parseInvocation(["resume", "task-42"])).toEqual({
     command: "resume",
@@ -62,6 +59,39 @@ test("treats legacy mode words as objective text and parses read-only subcommand
   expect(parseInvocation(["roadmap", "publish-plan"])).toEqual({
     command: "roadmap_publish_plan",
   });
+  expect(parseInvocation(["task", "validate", "task-42"])).toEqual({
+    command: "task_validate",
+    taskId: "task-42",
+  });
+  expect(parseInvocation(["task", "validate"])).toEqual({
+    command: "task_validate",
+  });
+  expect(parseInvocation(["task", "save", "task-42"])).toEqual({
+    command: "task_save",
+    taskId: "task-42",
+  });
+  expect(parseInvocation(["task", "gate", "task-42"])).toEqual({
+    command: "task_gate",
+    taskId: "task-42",
+    action: "view",
+  });
+  expect(parseInvocation(["task", "gate", "task-42", "--approve"])).toEqual({
+    command: "task_gate",
+    taskId: "task-42",
+    action: "approve",
+  });
+  expect(parseInvocation(["task", "gate", "task-42", "--change=Narrow scope"])).toEqual({
+    command: "task_gate",
+    taskId: "task-42",
+    action: "change",
+    instruction: "Narrow scope",
+  });
+  expect(parseInvocation(["task", "gate", "task-42", "--autonomous", "--issue=#12"])).toEqual({
+    command: "task_gate",
+    taskId: "task-42",
+    action: "autonomous",
+    issueRef: "#12",
+  });
   expect(
     parseInvocation([
       "roadmap",
@@ -79,14 +109,23 @@ test("treats legacy mode words as objective text and parses read-only subcommand
 });
 
 test("rejects invalid invocations with a stable exit code", async () => {
-  const { EXIT_CODES, InvocationError, parseInvocation } = sourceApi;
+  const { parseInvocation, schema } = sourceApi;
   expectThrown(
     () => parseInvocation(["config", "validate", "--unknown"]),
-    (error) => error instanceof InvocationError && error.exitCode === EXIT_CODES.INVALID_INVOCATION,
+    (error) =>
+      error instanceof schema.InvocationError &&
+      error.exitCode === schema.EXIT_CODES.INVALID_INVOCATION,
+  );
+  expectThrown(
+    () => parseInvocation(["--benchmark", "ship", "auth"]),
+    (error) =>
+      error instanceof schema.InvocationError &&
+      error.exitCode === schema.EXIT_CODES.INVALID_INVOCATION,
   );
   expect(() => parseInvocation(["project-profile", "inspect", "--local"])).toThrow(
     /Invalid project-profile invocation/,
   );
+  expect(() => parseInvocation(["task", "unknown"])).toThrow(/Invalid task invocation/);
   expect(() => parseInvocation(["roadmap", "select-ready", "--limit=0"])).toThrow(
     /Invalid --limit value/,
   );
@@ -94,7 +133,7 @@ test("rejects invalid invocations with a stable exit code", async () => {
 });
 
 test("parses --harness option across subcommands and run objectives", async () => {
-  const { InvocationError, parseInvocation } = sourceApi;
+  const { parseInvocation, schema } = sourceApi;
   expect(parseInvocation(["--harness", "claude", "status"])).toEqual({
     command: "status",
     taskId: undefined,
@@ -110,28 +149,26 @@ test("parses --harness option across subcommands and run objectives", async () =
     explain: true,
     harness: "codex",
   });
-  expect(parseInvocation(["--harness", "claude", "--benchmark", "ship", "auth"])).toEqual({
+  expect(parseInvocation(["--harness", "claude", "ship", "auth"])).toEqual({
     command: "run",
     objective: "ship auth",
-    flags: { benchmark: true },
     harness: "claude",
   });
-  expect(parseInvocation(["--benchmark", "--harness=auto", "ship", "auth"])).toEqual({
+  expect(parseInvocation(["--harness=auto", "ship", "auth"])).toEqual({
     command: "run",
     objective: "ship auth",
-    flags: { benchmark: true },
     harness: "auto",
   });
   expectThrown(
     () => parseInvocation(["--harness", "cursor", "status"]),
-    (e) => e instanceof InvocationError,
+    (e) => e instanceof schema.InvocationError,
   );
   expectThrown(
     () => parseInvocation(["--harness", "claude", "--harness", "codex", "status"]),
-    (e) => e instanceof InvocationError,
+    (e) => e instanceof schema.InvocationError,
   );
   expectThrown(
     () => parseInvocation(["status", "--harness="]),
-    (e) => e instanceof InvocationError,
+    (e) => e instanceof schema.InvocationError,
   );
 });

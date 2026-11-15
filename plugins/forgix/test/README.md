@@ -5,28 +5,26 @@ and never retry failures.
 
 ## Layers
 
-- `unit/`: deterministic contracts imported directly from `src/*.ts`.
+- `unit/`: deterministic contracts imported directly from `src/core/*.ts`, `src/task/index.ts`,
+  `src/profile/index.ts`, `src/roadmap/index.ts`, `src/cli.ts`, and `scripts/*.ts`.
 - `integration/`: filesystem, process, schema, workflow-composition, bundle, and package
   boundaries.
-- `support/`: layer-neutral behavioral fixtures and assertion helpers.
+- `support/`: layer-neutral behavioral fixtures and assertion helpers (`expect-error.ts`,
+  `helpers-v6.ts`, `project-profile.ts`).
 - `fixtures/`: subprocess and infrastructure fixtures excluded from normal discovery.
+- `runtime/`: packed tarball verification executed under Node 24 (`npm run test:runtime` /
+  `bun run test:runtime`).
 
-The distribution bundle is imported only where bundle composition or package behavior
-is material. Unit tests do not require `dist/forgix.mjs`.
+The distribution bundle (`dist/forgix.mjs`) is imported only where bundle composition or package
+behavior is material. Unit tests do not require `dist/forgix.mjs`.
 
-## Migration disposition
+## Suite inventory
 
-All 121 existing cases were retained and rewritten from `node:test` plus
-`node:assert/strict` to native `bun:test` APIs. No case was removed.
-
-| Layer       | Rewritten files                                                                                                                                                                                                                                |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit        | `bridge`, `config`, `discovery`, `fingerprint`, `intake`, `metrics`, `parse`, `project-profile`, `resume-context`, `routing`, `shape-dependencies`, `shape-freshness`, `shape-planning`, `shape-projection`, `shape`, `state`, `worktree`      |
-| Integration | `app-server`, `benchmark`, `cli-routing`, `config-loading`, `distribution`, `documentation`, `exit-codes`, `init`, `lifecycle-paths`, `project-profile-cli`, `project-profile-store`, `release`, `schema`, `state-store`, `workflow-artifacts` |
-
-Former JavaScript behavioral fixtures retain `@ts-nocheck` because several cases
-intentionally construct invalid or partial runtime values. The pre-existing TypeScript
-release suite and maintained source remain strictly typechecked.
+| Layer       | Files                                                                                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Unit        | `artifact-budget`, `config`, `digest`, `parse`, `project-profile`, `roadmap`, `routing`, `schema`, `store`, `task`, `test-order`                                                                                                                 |
+| Integration | `app-server`, `cli-routing`, `config-loading`, `distribution`, `documentation`, `exit-codes`, `init`, `lifecycle-paths`, `project-profile-cli`, `project-profile-store`, `release`, `roadmap-cli`, `schema`, `state-store`, `workflow-artifacts` |
+| Runtime     | `runtime-smoke.test.mjs`                                                                                                                                                                                                                         |
 
 ## Randomization
 
@@ -44,9 +42,5 @@ The complete suite also passes with recorded seeds `20260731` and `31072026`.
 ## Coverage
 
 `bun run test:coverage` measures maintained source and enforces per-file floors of 72%
-lines and 75% functions. The migration baseline is recorded in
-`coverage-baseline.json`; aggregate observation was 93.86% lines and 92.17% functions.
-
-Bun 1.3.14 does not expose statement coverage in text or LCOV output and does not enforce
-its documented statement threshold key. The baseline records that metric as unavailable
-instead of presenting line coverage as statement coverage.
+lines and 75% functions. The observed aggregate baseline is recorded in
+`coverage-baseline.json`.
