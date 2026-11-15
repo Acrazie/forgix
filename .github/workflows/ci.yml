@@ -10,8 +10,8 @@ jobs:
     name: Website (Node 26)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: site/.node-version
       - uses: oven-sh/setup-bun@v2
@@ -24,8 +24,8 @@ jobs:
     name: Full Gate (Ubuntu)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
       - uses: oven-sh/setup-bun@v2
@@ -38,7 +38,7 @@ jobs:
         run: bun scripts/observe-command.ts "Full Gate" bun run check
       - name: Build shared runtime artifact
         run: bun run pack:runtime
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: forgix-runtime
           path: .artifacts/forgix.tgz
@@ -54,11 +54,11 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         node: [24, 26]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: forgix-runtime
           path: .artifacts
@@ -70,8 +70,8 @@ jobs:
     needs: quality-gate
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
       - uses: oven-sh/setup-bun@v2
