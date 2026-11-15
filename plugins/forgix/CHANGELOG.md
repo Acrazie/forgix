@@ -1,5 +1,44 @@
 # Changelog
 
+## [v2.0.0] - 2026-11-15
+
+<!-- forgix-release: {"tag":"v2.0.0","date":"2026-11-15","npmBase":"v1.0.1","pluginBase":"v1.0.1"} -->
+
+### npm + plugins (since v1.0.1)
+
+
+### Bug fixes
+
+- **plugin:** add bundled branding and concise overview ([#42](https://github.com/Acrazie/forgix/pull/42)) ([c978a3a](https://github.com/Acrazie/forgix/commit/c978a3aeef44a5efdaf64871f6fcbe1e8298e3ab))
+
+
+### Documentation
+
+- **readme:** redesign repository README with lifecycle diagrams ([#40](https://github.com/Acrazie/forgix/pull/40)) ([5de801f](https://github.com/Acrazie/forgix/commit/5de801f221a5800a2e66b3b855636e10143c88e8))
+
+
+### Features
+
+- **BREAKING:** require Node.js 26 and extract public website ([#43](https://github.com/Acrazie/forgix/pull/43)) ([50dfbd8](https://github.com/Acrazie/forgix/commit/50dfbd86c2e584fa92faca7b5cb611851a3c24a8))
+
+
+### Maintenance
+
+- **forgix:** add project engineering profile and architecture diagram ([#38](https://github.com/Acrazie/forgix/pull/38)) ([b1e3419](https://github.com/Acrazie/forgix/commit/b1e3419e910ce81fbbcde5551fa3b2d090a00865))
+
+- **tooling:** adopt Node 26 and Vite+ ([#39](https://github.com/Acrazie/forgix/pull/39)) ([d016f38](https://github.com/Acrazie/forgix/commit/d016f3889fad35f32f150ab9f915c22aa201ff4c))
+
+- **deps:** bump the actions group across 1 directory with 5 updates ([#20](https://github.com/Acrazie/forgix/pull/20)) ([d1ca4cf](https://github.com/Acrazie/forgix/commit/d1ca4cf762dfca6f32d38279c0e09ba8fc3436c1))
+
+- **workflows:** harden GitHub Actions permissions, concurrency, and SHA pins ([#41](https://github.com/Acrazie/forgix/pull/41)) ([f8db23b](https://github.com/Acrazie/forgix/commit/f8db23b06322c2c5ad0cae7756d9e4aad8a871fc))
+
+- **release:** migrate publication to git-cliff and tag-based CI ([#61](https://github.com/Acrazie/forgix/pull/61)) ([6f57cb2](https://github.com/Acrazie/forgix/commit/6f57cb21945694fd5e35295a8357bcdfe31bab40))
+
+
+### Refactoring
+
+- **forgix:** simplify runtime into core and deep domain modules ([#60](https://github.com/Acrazie/forgix/pull/60)) ([4a5bfd9](https://github.com/Acrazie/forgix/commit/4a5bfd949ba525501ca1eb3d29f1a6474b61cd46))
+
 ## [1.0.1](https://github.com/Acrazie/codex-dev-flow/compare/dev-flow-v1.0.0...dev-flow-v1.0.1) (2026-10-06)
 
 
