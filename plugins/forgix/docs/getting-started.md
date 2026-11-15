@@ -10,7 +10,7 @@ runs a first task, and explains how to resume safely. Normative behavior remains
 Plugin and CLI users need:
 
 - **Codex**, **Claude Code**, or **Antigravity** (with plugin support);
-- Node.js 24 or newer;
+- Node.js 26 or newer;
 - Git; and
 - Linux or macOS. Windows is unsupported.
 
@@ -249,7 +249,7 @@ previously displayed but changed implementation contract.
 
 ### Node.js is rejected
 
-Run `node --version` and install Node.js 24 or newer. Node.js 22 and older are outside the
+Run `node --version` and install Node.js 26 or newer. Node.js 25 and older are outside the
 supported runtime contract.
 
 ## Existing projects

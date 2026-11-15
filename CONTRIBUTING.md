@@ -4,8 +4,7 @@ Thanks for helping improve Forgix. This guide covers repository development; use
 
 ## Prerequisites
 
-- Node.js 26.8.1 for repository development, matching `.node-version`.
-- Published CLI compatibility remains Node.js 24 or newer.
+- Node.js 26.8.1 (`>=26.0.0`) for repository development and published CLI runtime, matching `.node-version`.
 - Bun 1.4.4, matching `.bun-version` and `package.json`.
 - Git.
 - `fluidise-clint` 0.1.0 on `PATH` for commit-message validation. Install it through
@@ -146,8 +145,7 @@ repositories and the explicit policy differences documented in
 Quality and packaging configuration lives in root `vite.config.ts`. Vite+ 1.6.0
 provides Oxfmt, Oxlint, and tsdown/Rolldown through one pinned dependency. The
 plugin build uses its public `vite-plus/pack` API, retaining an in-memory rebuild
-for distribution tests. Bun remains the package manager and test runner; the site
-retains its independent Astro build and TypeScript 6 checker.
+for distribution tests. Bun remains the package manager and test runner.
 
 The pre-commit hook runs `bun run check:staged`. Its small Bun adapter passes only staged,
 supported files to Vite+ `vp fmt --check` and native `vp lint`. It never formats files or

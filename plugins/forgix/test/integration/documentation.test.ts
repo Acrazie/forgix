@@ -80,7 +80,7 @@ describe("public documentation", () => {
       );
     }
     for (const marker of [
-      "Node.js 24 or newer",
+      "Node.js 26 or newer",
       "Git",
       "Linux or macOS",
       "Windows is unsupported",
@@ -102,16 +102,4 @@ describe("public documentation", () => {
       }
     }
   });
-});
-
-test("website branding uses Forgix and preserves its scaffold boundary", () => {
-  const siteRoot = new URL("../../../../site/", import.meta.url);
-  const manifest = JSON.parse(read(fileURLToPath(new URL("package.json", siteRoot))));
-  const page = read(fileURLToPath(new URL("src/pages/index.astro", siteRoot)));
-  const config = read(fileURLToPath(new URL("astro.config.mjs", siteRoot)));
-  expect(manifest.name).toBe("forgix-site");
-  expect(page).toContain('<h1 class="text-4xl font-semibold">Forgix</h1>');
-  expect(page).toContain("<title>Forgix — local build scaffold</title>");
-  expect(page).toContain('name="robots" content="noindex"');
-  expect(config).toContain('site: "https://forgix.acrazie.dev"');
 });

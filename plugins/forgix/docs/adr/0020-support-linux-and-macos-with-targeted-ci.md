@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Accepted (Amended: supported CI runtime lanes now target Node.js 26 / `>=26.0.0` per root `docs/adr/0035-require-node-26-and-extract-website.md`).
 
 ## Context
 

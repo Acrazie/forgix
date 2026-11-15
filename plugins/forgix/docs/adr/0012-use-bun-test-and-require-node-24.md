@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Accepted (Amended: the minimum runtime floor was raised from Node.js 24 to Node.js `>=26.0.0` per root `docs/adr/0035-require-node-26-and-extract-website.md`; historical references to Node.js 24 below reflect the original baseline).
 
 ## Context
 

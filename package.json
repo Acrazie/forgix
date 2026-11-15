@@ -4,13 +4,9 @@
   "type": "module",
   "packageManager": "bun@1.4.4",
   "workspaces": [
-    "plugins/*",
-    "site"
+    "plugins/*"
   ],
   "scripts": {
-    "site:dev": "bun run --cwd site dev",
-    "site:check": "bun run --cwd site check",
-    "site:build": "bun run --cwd site build",
     "build": "bun run --cwd plugins/forgix build",
     "check": "bun run format:check && bun run lint && bun run lint:type-aware && bun run typecheck:tools && bun run test:tools && bun run --cwd plugins/forgix check",
     "check:staged": "bun scripts/check-staged.ts",
@@ -26,7 +22,7 @@
     "test:hooks": "bun test test/hooks"
   },
   "devDependencies": {
-    "@types/node": "24.13.3",
+    "@types/node": "26.6.6",
     "typescript": "7.0.2",
     "vite-plus": "1.6.0",
     "yaml": "2.9.0"

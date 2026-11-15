@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. CLINT policy differences and worktree-only hook activation were
+Accepted (Amended: the compilation target, CI runtime smoke lane, and `engines.node` floor were raised to Node.js `>=26.0.0`, and the standalone `site/` workspace and isolated linker were removed per root `docs/adr/0035-require-node-26-and-extract-website.md`). CLINT policy differences and worktree-only hook activation were
 explicitly approved after real-tool comparison.
 
 ## Context

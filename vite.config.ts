@@ -8,7 +8,7 @@ export const distribution = {
   outDir: "dist",
   format: "esm",
   platform: "node",
-  target: "node24.0",
+  target: "node26.0",
   deps: { alwaysBundle: [/.*/] },
   dts: false,
   minify: true,

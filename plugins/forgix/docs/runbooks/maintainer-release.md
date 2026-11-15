@@ -32,7 +32,7 @@ from Conventional Commits; maintainer retains final version authority.
 ## Preconditions
 
 - Run on Linux or macOS. Windows is rejected.
-- Install Node.js 24 or newer.
+- Install Node.js 26 or newer.
 - Install repository-pinned Bun version from root `package.json`.
 - Install `git` and GitHub CLI `gh`.
 - Have push permission for `origin/main` and release creation permission on GitHub.
