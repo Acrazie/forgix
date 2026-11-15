@@ -971,19 +971,17 @@ export function reconcileShapeResume(
   const staleEvidence = new Set(result.staleEvidenceIds);
   const refreshTargets = state.evidence
     .filter((item) => staleEvidence.has(item.id))
-    .map(
-      (item): DiscoveryTarget => ({
-        id: `refresh:${item.id}`,
-        question: `Refresh stale evidence ${item.id}`,
-        createdBecause: "Referenced source fingerprint changed during resume reconciliation.",
-        createdAt: now ?? new Date().toISOString(),
-        materialImpacts: ["plan", "validation"],
-        candidateSourceRefs: item.provenanceRefs,
-        status: "open",
-        evidenceIds: [],
-        dependencyNodeId: item.dependencyNodeId,
-      }),
-    );
+    .map((item): DiscoveryTarget => ({
+      id: `refresh:${item.id}`,
+      question: `Refresh stale evidence ${item.id}`,
+      createdBecause: "Referenced source fingerprint changed during resume reconciliation.",
+      createdAt: now ?? new Date().toISOString(),
+      materialImpacts: ["plan", "validation"],
+      candidateSourceRefs: item.provenanceRefs,
+      status: "open",
+      evidenceIds: [],
+      dependencyNodeId: item.dependencyNodeId,
+    }));
   const contract = selectivelyInvalidateContract(state.contract, invalidated);
   const invalidatesContract = contract !== state.contract;
   const invalidatesProjection = [...invalidated].some((id) =>

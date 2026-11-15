@@ -1,7 +1,8 @@
 # Forgix Website
 
 Private static Astro workspace. Install once from the repository root using Bun 1.4.4.
-Website commands require Node 26; plugin and existing CI commands remain on Node 24.
+Repository development and website commands use Node 26. The published plugin CLI
+continues to support Node 24 and newer; runtime CI tests both Node 24 and Node 26.
 
 ```sh
 bun install --frozen-lockfile

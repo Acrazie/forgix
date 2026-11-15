@@ -14,25 +14,21 @@
     "build": "bun run --cwd plugins/forgix build",
     "check": "bun run format:check && bun run lint && bun run lint:type-aware && bun run typecheck:tools && bun run test:tools && bun run --cwd plugins/forgix check",
     "check:staged": "bun scripts/check-staged.ts",
-    "format": "oxfmt --write .",
-    "format:check": "oxfmt --check .",
-    "lint": "oxlint --disable-nested-config .",
-    "lint:type-aware": "oxlint --disable-nested-config --type-aware .",
+    "format": "vp fmt --write .",
+    "format:check": "vp fmt --check .",
+    "lint": "vp lint .",
+    "lint:type-aware": "vp lint --type-aware .",
     "pack:runtime": "bun run --cwd plugins/forgix pack:runtime",
-    "prepare": "lefthook install",
+    "prepare": "bun scripts/prepare-hooks.ts",
     "release": "bun run --cwd plugins/forgix release",
     "test:tools": "bun test test/*.test.ts",
-    "typecheck:tools": "tsc --noEmit -p tsconfig.json"
+    "typecheck:tools": "tsc --noEmit -p tsconfig.json",
+    "test:hooks": "bun test test/hooks"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.8.0",
-    "@commitlint/config-conventional": "^19.8.0",
     "@types/node": "24.13.3",
-    "lefthook": "^1.11.3",
-    "oxfmt": "0.61.0",
-    "oxlint": "1.76.0",
-    "oxlint-tsgolint": "7.0.2001",
     "typescript": "7.0.2",
+    "vite-plus": "1.6.0",
     "yaml": "2.9.0"
   }
 }

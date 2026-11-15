@@ -1,0 +1,3 @@
+#!/bin/sh
+set -eu
+exec fluidise-clint --config fluidise.toml --file "$1"

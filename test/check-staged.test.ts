@@ -117,23 +117,19 @@ describe("Fast Gate execution", () => {
     expect(status).toBe(0);
     expect(calls).toEqual([
       {
-        command: "oxfmt",
+        command: "vp",
         args: [
+          "fmt",
           "--check",
           "--no-error-on-unmatched-pattern",
-          "--disable-nested-config",
           "docs/space name.md",
           "plugins/forgix/src/a.ts",
         ],
         capture: false,
       },
       {
-        command: "oxlint",
-        args: [
-          "--disable-nested-config",
-          "--no-error-on-unmatched-pattern",
-          "plugins/forgix/src/a.ts",
-        ],
+        command: "vp",
+        args: ["lint", "--no-error-on-unmatched-pattern", "plugins/forgix/src/a.ts"],
         capture: false,
       },
     ]);
@@ -145,13 +141,13 @@ describe("Fast Gate execution", () => {
       cwd: "/repo",
       formatPaths: ["README.md"],
       lintPaths: ["src/a.ts"],
-      run(command) {
-        commands.push(command);
-        return { status: command === "oxfmt" ? 2 : 0 };
+      run(command, args) {
+        commands.push(`${command} ${args[0]}`);
+        return { status: args[0] === "fmt" ? 2 : 0 };
       },
     });
     expect(status).toBe(2);
-    expect(commands).toEqual(["oxfmt", "oxlint"]);
+    expect(commands).toEqual(["vp fmt", "vp lint"]);
   });
 
   test("treats a child spawn error as a gate failure", () => {
@@ -188,7 +184,10 @@ describe("Git adapter", () => {
       args: ["diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"],
       capture: true,
     });
-    expect(calls.slice(1).map(({ command }) => command)).toEqual(["oxfmt", "oxlint"]);
+    expect(calls.slice(1).map(({ command, args }) => `${command} ${args[0]}`)).toEqual([
+      "vp fmt",
+      "vp lint",
+    ]);
   });
 
   test("stops when Git cannot read the index", () => {
