@@ -1,5 +1,7 @@
 # Public Website: Approved Scope and Implementation Plan
 
+> **Extracted (Superseded in-repo):** The `site/` scaffold has been extracted to standalone `/Users/acrazie/Fluidise/forgix-site` per [ADR 0035](../adr/0035-require-node-26-and-extract-website.md). Ongoing website planning and implementation live in `/Users/acrazie/Fluidise/forgix-site/PLAN.md`.
+
 ## Approved Scope
 
 Build an English static showcase for experienced developers, with team benefits as a

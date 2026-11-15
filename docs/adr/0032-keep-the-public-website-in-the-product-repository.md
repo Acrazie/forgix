@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted as an architectural decision; implementation and deployment are pending.
+Superseded by [ADR 0035](0035-require-node-26-and-extract-website.md). The `site/` workspace was extracted to standalone `/Users/acrazie/Fluidise/forgix-site` without `.git/` or monorepo CI coupling.
 
 ## Decision
 

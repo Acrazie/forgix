@@ -40,7 +40,7 @@ export function projectProfileInput(
         ],
       },
       decisions: [
-        decision("stack", "stack", "Use TypeScript on Node.js 24 with Bun tooling."),
+        decision("stack", "stack", "Use TypeScript on Node.js 26 with Bun tooling."),
         decision("source-layout", "source_structure", "Runtime lives in src; tests mirror layers."),
         decision(
           "architecture-boundary",

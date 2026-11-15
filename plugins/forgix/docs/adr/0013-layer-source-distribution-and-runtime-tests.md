@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Accepted (Amended: the minimum runtime smoke target was raised from Node.js 24 to Node.js `>=26.0.0` per root `docs/adr/0035-require-node-26-and-extract-website.md`).
 
 ## Context
 

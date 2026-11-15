@@ -37,13 +37,13 @@ before(() => {
 
 after(() => rmSync(sandbox, { recursive: true, force: true }));
 
-test("packed npm artifact contains runtime-only files for Node 24", () => {
+test("packed npm artifact contains runtime-only files for Node 26", () => {
   const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
   assert.equal(manifest.name, "@acrasie/forgix");
   assert.deepEqual(manifest.bin, {
     forgix: "dist/forgix.mjs",
   });
-  assert.equal(manifest.engines.node, ">=24.0.0");
+  assert.equal(manifest.engines.node, ">=26.0.0");
   assert.ok(existsSync(join(packageRoot, "skills", "forgix", "SKILL.md")));
   assert.equal(existsSync(join(packageRoot, "skills", "dev-flow")), false);
   assert.equal(existsSync(join(packageRoot, "dist", "dev-flow.mjs")), false);

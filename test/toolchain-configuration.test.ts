@@ -18,8 +18,8 @@ test("one pinned Vite+ dependency owns quality and packaging", () => {
   expect(root.scripts["lint:type-aware"]).toBe("vp lint --type-aware .");
 });
 
-test("distribution retains a single bundled Node 24 ESM artifact", () => {
-  expect(distribution.target).toBe("node24.0");
+test("distribution retains a single bundled Node 26 ESM artifact", () => {
+  expect(distribution.target).toBe("node26.0");
   expect(distribution.format).toBe("esm");
   expect(distribution.outputOptions.codeSplitting).toBe(false);
   expect(distribution.deps.alwaysBundle[0].test("yaml")).toBe(true);

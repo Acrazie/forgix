@@ -13,7 +13,7 @@ Use it when a software change needs decisions, implementation, and evidence—no
 
 ## Requirements
 
-An agent host with plugin support, Node.js 24 or newer, Git, and Linux or macOS.
+An agent host with plugin support, Node.js 26 or newer, Git, and Linux or macOS.
 Windows is unsupported. Bun is not required to use the plugin.
 
 ## Start in your repository

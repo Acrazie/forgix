@@ -18,7 +18,6 @@ Thumbs.db
 # Build artifacts & caches
 .artifacts/
 dist/
-site/.astro/
 coverage/
 
 # Codex local files

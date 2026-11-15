@@ -10,7 +10,7 @@
   <a href="https://github.com/Acrazie/forgix/actions/workflows/ci.yml"><img src="https://github.com/Acrazie/forgix/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://www.npmjs.com/package/@acrasie/forgix"><img src="https://img.shields.io/npm/v/%40acrasie%2Fforgix" alt="npm version" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT" /></a>
-  <a href="#requirements"><img src="https://img.shields.io/badge/node-%3E%3D24-brightgreen" alt="Node.js >= 24" /></a>
+  <a href="#requirements"><img src="https://img.shields.io/badge/node-%3E%3D26-brightgreen" alt="Node.js >= 26" /></a>
 </p>
 
 > Turn a software objective into an approved, implemented, and verified change.
@@ -51,7 +51,7 @@ stage directly.
 ## Requirements
 
 - **Codex**, **Claude Code**, or **Antigravity** (with plugin support)
-- **Node.js 24** or newer
+- **Node.js 26** or newer
 - **Git**
 - **Linux or macOS** (Windows is unsupported)
 
@@ -209,8 +209,7 @@ Safety invariants enforced by the lifecycle:
 
 | Path                                            | Purpose                                                                     | Runtime                                 |
 | ----------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------- |
-| [`plugins/forgix/`](./plugins/forgix/README.md) | Publishable `@acrasie/forgix` CLI and multi-harness plugin.                 | Node.js `>=24` (`Bun 1.4.4` to develop) |
-| [`site/`](./site/README.md)                     | Private Astro website workspace (local build scaffold, excluded from npm).  | Node.js `>=26` (`<27`) + `Bun 1.4.4`    |
+| [`plugins/forgix/`](./plugins/forgix/README.md) | Publishable `@acrasie/forgix` CLI and multi-harness plugin.                 | Node.js `>=26` (`Bun 1.4.4` to develop) |
 | `scripts/`, `test/`                             | Repository quality checks, worktree helpers, and package-mirroring tooling. | `Bun 1.4.4`                             |
 
 Run the full contributor verification gate locally:
