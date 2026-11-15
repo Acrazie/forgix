@@ -1,904 +1,209 @@
 #!/usr/bin/env bun
-
-import {
-  cancel,
-  confirm,
-  intro,
-  isCancel,
-  log,
-  note,
-  outro,
-  select,
-  spinner,
-  text,
-} from "@clack/prompts";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { spawn } from "node:child_process";
+import { confirm, intro, isCancel, note, outro, select, text } from "@clack/prompts";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  compareVersions,
+  allowedReleasePaths,
+  validateVersions,
   captureFileSnapshots,
+  compareVersions,
   createReleasePlan,
-  existingNpmReleaseVersion,
   incrementVersion,
-  normalizeGitOutput,
   parsePorcelainPaths,
-  parseReleaseCommit,
   parseStableVersion,
   recommendBump,
   replaceJsonVersion,
   replaceMarketplacePluginVersion,
-  ReleaseError,
-  requireCommand,
   restoreFileSnapshots,
-  runCommand,
+  requireCommand,
   semanticBase,
-  unexpectedReleasePaths,
-  validateClaudeMarketplaceManifest,
-  validatePluginManifest,
-  type ReleaseMode,
-  type ReleasePlan,
+  ReleaseError,
   type ReleaseTarget,
   type VersionBump,
-  type PublicationState,
 } from "./release-lib.ts";
+import { git, notesMetadata, previousTag, renderNotes } from "./release-notes.ts";
 
 const pluginRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const repoRoot = requireCommand("git", ["rev-parse", "--show-toplevel"], {
+const root = requireCommand("git", ["rev-parse", "--show-toplevel"], {
   cwd: pluginRoot,
 }).stdout.trim();
-const packagePath = resolve(pluginRoot, "package.json");
-const manifestPath = resolve(pluginRoot, ".codex-plugin/plugin.json");
-const claudeManifestPath = resolve(pluginRoot, ".claude-plugin/plugin.json");
-const antigravityManifestPath = resolve(pluginRoot, "plugin.json");
-const claudeMarketplacePath = resolve(repoRoot, ".claude-plugin/marketplace.json");
-const releasePleaseManifestPath = resolve(repoRoot, ".release-please-manifest.json");
-const lockPath = resolve(repoRoot, "bun.lock");
-const bundlePath = resolve(pluginRoot, "dist/forgix.mjs");
-const marketplace = "acrazie";
-const packageName = "@acrasie/forgix";
-const pluginName = "forgix";
-
-let cleanup: (() => Promise<void>) | undefined;
-let externalPublicationStarted = false;
-let cleaning = false;
-
-function cancelled(value: unknown): value is symbol {
-  return isCancel(value);
-}
-
-async function abortFromPrompt(): Promise<never> {
-  cancel("Release cancelled.");
-  if (cleanup && !externalPublicationStarted) await cleanup();
-  process.exit(0);
-}
-
-function displayError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function runCheck(
-  label: string,
-  command: string,
-  args: readonly string[],
-  cwd = repoRoot,
-  interactive = false,
-): void {
-  if (interactive) {
-    log.step(label);
-    const result = runCommand(command, args, { cwd, stdio: "inherit" });
-    if (result.status !== 0) throw new ReleaseError(`${label} failed.`);
-    log.success(label);
-    return;
-  }
-  const progress = spinner();
-  progress.start(label);
-  const result = runCommand(command, args, { cwd });
-  if (result.status !== 0) {
-    progress.error(label);
-    const detail = (result.stderr || result.stdout).trim();
-    throw new ReleaseError(`${label} failed${detail ? `: ${detail}` : "."}`);
-  }
-  progress.stop(label);
-}
-
-function git(args: readonly string[]): string {
-  return normalizeGitOutput(requireCommand("git", args, { cwd: repoRoot }).stdout);
-}
-
-function assertSupportedPlatform(): void {
-  if (process.platform === "win32") {
-    throw new ReleaseError("Windows is not supported by release workflow V1. Use Linux or macOS.");
-  }
-}
-
-function assertCleanMain(): void {
-  const branch = git(["branch", "--show-current"]);
-  if (branch !== "main")
-    throw new ReleaseError(`Release requires branch "main"; current branch is "${branch}".`);
-  const status = git(["status", "--porcelain=v1", "--untracked-files=all"]);
-  if (status)
-    throw new ReleaseError(
-      "Release requires a clean worktree. Commit, stash, or remove local changes.",
-    );
-}
-
-function syncMain(mode: ReleaseMode): void {
-  const localHead = git(["rev-parse", "HEAD"]);
-  if (mode === "preview") {
-    const remote = requireCommand("git", ["ls-remote", "origin", "refs/heads/main"], {
-      cwd: repoRoot,
-    }).stdout;
-    const remoteHead = remote.split(/\s/)[0];
-    if (!remoteHead || remoteHead !== localHead) {
-      throw new ReleaseError(
-        "Preview requires local main to equal origin/main. Run `git pull --ff-only` first.",
-      );
-    }
-    return;
-  }
-
-  runCheck("Fetch origin/main", "git", ["fetch", "origin", "main"]);
-  const remoteHead = git(["rev-parse", "origin/main"]);
-  const mergeBase = git(["merge-base", "HEAD", "origin/main"]);
-  if (localHead === remoteHead) return;
-  if (mergeBase === localHead) {
-    runCheck("Fast-forward main", "git", ["merge", "--ff-only", "origin/main"]);
-    return;
-  }
-  if (mergeBase === remoteHead) {
-    throw new ReleaseError("Local main is ahead of origin/main. Push or reconcile it manually.");
-  }
-  throw new ReleaseError("Local main and origin/main have diverged. Reconcile them manually.");
-}
-
-function assertAuthentication(target: ReleaseTarget): void {
-  const gh = runCommand("gh", ["auth", "status"], { cwd: repoRoot });
-  if (gh.status !== 0)
-    throw new ReleaseError("GitHub authentication missing. Run `gh auth login`, then rerun.");
-  if (target !== "plugin") {
-    const npm = runCommand("bun", ["pm", "whoami"], { cwd: pluginRoot });
-    if (npm.status !== 0) {
-      throw new ReleaseError("npm authentication missing. Run `bunx npm login`, then rerun.");
-    }
-  }
-}
-
-async function npmVersionPublished(version: string): Promise<boolean> {
-  const response = await fetch(
-    `https://registry.npmjs.org/${encodeURIComponent(packageName)}/${version}`,
-    {
-      headers: { accept: "application/json" },
-    },
-  );
-  if (response.status === 404) return false;
-  if (!response.ok)
-    throw new ReleaseError(`npm registry check failed with HTTP ${response.status}.`);
-  return true;
-}
-
-function remoteTagCommit(tag: string): string | null {
-  const output = requireCommand(
-    "git",
-    ["ls-remote", "origin", `refs/tags/${tag}`, `refs/tags/${tag}^{}`],
-    {
-      cwd: repoRoot,
-    },
-  ).stdout.trim();
-  if (!output) return null;
-  const peeled = output.split("\n").find((line) => line.endsWith(`refs/tags/${tag}^{}`));
-  return (peeled ?? output.split("\n")[0]!).split(/\s/)[0] ?? null;
-}
-
-function githubReleaseExists(tag: string): boolean {
-  return (
-    runCommand("gh", ["release", "view", tag, "--json", "tagName"], { cwd: repoRoot }).status === 0
-  );
-}
-
-function remoteMainCommit(): string | null {
-  const output = requireCommand("git", ["ls-remote", "origin", "refs/heads/main"], {
-    cwd: repoRoot,
-  }).stdout.trim();
-  return output ? (output.split(/\s/)[0] ?? null) : null;
-}
-
-async function externalState(plan: ReleasePlan, head: string): Promise<PublicationState> {
-  const tagCommit = remoteTagCommit(plan.tag);
-  return {
-    pushed: remoteMainCommit() === head && tagCommit === head,
-    npmPublished: plan.target === "plugin" ? true : await npmVersionPublished(plan.packageVersion),
-    githubRelease: githubReleaseExists(plan.tag),
-  };
-}
-
-function repositorySlug(): string {
-  const url = git(["remote", "get-url", "origin"]);
-  const match =
-    /github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?$/.exec(url) ??
-    /^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/.exec(url);
-  if (!match) throw new ReleaseError(`Cannot derive GitHub repository from origin "${url}".`);
-  return `${match[1]}/${match[2]}`;
-}
-
-function generateNotes(tag: string): string {
-  const result = requireCommand(
-    "gh",
-    [
-      "api",
-      "--method",
-      "POST",
-      `repos/${repositorySlug()}/releases/generate-notes`,
-      "-f",
-      `tag_name=${tag}`,
-      "-f",
-      "target_commitish=main",
-      "--jq",
-      ".body",
-    ],
-    { cwd: repoRoot },
-  );
-  return result.stdout.trim() || `Release ${tag}`;
-}
-
-async function writeVersion(path: string, version: string): Promise<void> {
-  await writeFile(path, replaceJsonVersion(await readFile(path, "utf8"), version));
-}
-
-async function readJson(path: string): Promise<Record<string, unknown>> {
-  return JSON.parse(await readFile(path, "utf8")) as Record<string, unknown>;
-}
-
-async function validatePluginPlane(
-  sourceRoot = pluginRoot,
-  expectedBaseVersion?: string,
-): Promise<void> {
-  const codex = await readJson(resolve(sourceRoot, ".codex-plugin/plugin.json"));
-  validatePluginManifest(codex, "codex");
-  const claude = await readJson(resolve(sourceRoot, ".claude-plugin/plugin.json"));
-  validatePluginManifest(claude, "claude");
-  const antigravity = await readJson(resolve(sourceRoot, "plugin.json"));
-  validatePluginManifest(antigravity, "antigravity");
-  const claudeMarketplace = await readJson(
-    resolve(sourceRoot, "../../.claude-plugin/marketplace.json"),
-  );
-  validateClaudeMarketplaceManifest(claudeMarketplace);
-
-  const codexBase = semanticBase(String(codex.version));
-  const claudeVersion = String(claude.version);
-  const antigravityVersion = String(antigravity.version);
-  const marketplacePlugins = claudeMarketplace.plugins as Array<Record<string, unknown>>;
-  const forgixEntry = marketplacePlugins.find((entry) => entry.name === "forgix");
-  const marketplaceVersion = typeof forgixEntry?.version === "string" ? forgixEntry.version : "";
-
-  if (
-    claudeVersion !== codexBase ||
-    antigravityVersion !== codexBase ||
-    marketplaceVersion !== codexBase
-  ) {
-    throw new ReleaseError(
-      `Plugin manifest versions must share base SemVer (${codexBase}): claude=${claudeVersion}, antigravity=${antigravityVersion}, marketplace=${marketplaceVersion}.`,
-    );
-  }
-  if (expectedBaseVersion !== undefined && codexBase !== expectedBaseVersion) {
-    throw new ReleaseError(
-      `Plugin manifest base version (${codexBase}) does not match expected version (${expectedBaseVersion}).`,
-    );
-  }
-}
-
-function currentVersions(
-  packageJson: Record<string, unknown>,
-  manifest: Record<string, unknown>,
-): {
-  packageVersion: string;
-  pluginVersion: string;
-} {
-  if (typeof packageJson.version !== "string")
-    throw new ReleaseError("package.json version is missing.");
-  if (typeof manifest.version !== "string")
-    throw new ReleaseError("plugin.json version is missing.");
-  parseStableVersion(packageJson.version);
-  semanticBase(manifest.version);
-  return { packageVersion: packageJson.version, pluginVersion: manifest.version };
-}
-
-function commitsSinceLastTag(): string[] {
-  const latest = runCommand("git", ["describe", "--tags", "--abbrev=0"], { cwd: repoRoot });
-  const range = latest.status === 0 ? `${latest.stdout.trim()}..HEAD` : "HEAD";
-  const output = git(["log", range, "--format=%s%n%b%x00"]);
-  return output ? output.split("\0").filter(Boolean) : [];
-}
-
-async function chooseTarget(): Promise<ReleaseTarget> {
-  const answer = await select<ReleaseTarget>({
-    message: "Release target",
-    initialValue: "both",
-    options: [
-      { value: "both", label: "Plugin + npm", hint: "recommended" },
-      { value: "plugin", label: "Multi-harness plugins" },
-      { value: "npm", label: "npm package" },
-    ],
-  });
-  if (cancelled(answer)) return abortFromPrompt();
-  return answer;
-}
-
-async function chooseMode(): Promise<ReleaseMode> {
-  const answer = await select<ReleaseMode>({
-    message: "Action",
-    initialValue: "publish",
-    options: [
-      { value: "publish", label: "Prepare and publish" },
-      { value: "preview", label: "Preview only", hint: "read-only" },
-    ],
-  });
-  if (cancelled(answer)) return abortFromPrompt();
-  return answer;
-}
-
-async function chooseVersion(current: string, recommendation: VersionBump): Promise<string> {
-  const versions = {
-    patch: incrementVersion(current, "patch"),
-    minor: incrementVersion(current, "minor"),
-    major: incrementVersion(current, "major"),
-  };
-  const answer = await select<VersionBump | "custom">({
-    message: `Next npm version (recommended: ${recommendation})`,
-    initialValue: recommendation,
-    options: [
-      {
-        value: "patch",
-        label: `Patch — ${versions.patch}`,
-        ...(recommendation === "patch" ? { hint: "recommended" } : {}),
-      },
-      {
-        value: "minor",
-        label: `Minor — ${versions.minor}`,
-        ...(recommendation === "minor" ? { hint: "recommended" } : {}),
-      },
-      {
-        value: "major",
-        label: `Major — ${versions.major}`,
-        ...(recommendation === "major" ? { hint: "recommended" } : {}),
-      },
-      { value: "custom", label: "Custom stable version" },
-    ],
-  });
-  if (cancelled(answer)) return abortFromPrompt();
-  if (answer !== "custom") return versions[answer];
-
-  const custom = await text({
-    message: "Custom stable version",
-    placeholder: versions[recommendation],
-    validate(value) {
-      try {
-        if (!value) return "Version required.";
-        parseStableVersion(value);
-        if (compareVersions(value, current) <= 0) return `Version must be greater than ${current}.`;
-        return undefined;
-      } catch (error) {
-        return displayError(error);
-      }
-    },
-  });
-  if (cancelled(custom)) return abortFromPrompt();
-  return custom;
-}
-
-function planSummary(plan: ReleasePlan, mode: ReleaseMode): string {
-  const files = [
-    ...new Set([
-      ...(plan.target !== "npm"
-        ? [
-            ".codex-plugin/plugin.json",
-            ".claude-plugin/plugin.json",
-            "plugin.json",
-            "../../.claude-plugin/marketplace.json",
-          ]
-        : []),
-      ...(plan.target !== "plugin"
-        ? ["package.json", "../../.release-please-manifest.json", "../../bun.lock"]
-        : []),
-      "dist/forgix.mjs",
-    ]),
-  ];
-  return [
-    `Action: ${mode === "preview" ? "preview only" : "prepare and publish"}`,
-    `Target: ${plan.target}`,
-    `npm: ${plan.packageVersion}`,
-    `Plugin: ${plan.pluginVersion}`,
-    `Tag: ${plan.tag}`,
-    `Files: ${files.join(", ")}`,
-    "Checks: auth, Git sync, frozen install, typecheck, build, tests, manifest, package dry-run, availability",
-    `Order: push → ${plan.target === "plugin" ? "" : "bun publish → "}GitHub Release${plan.target === "npm" ? "" : " → optional local install"}`,
-  ].join("\n");
-}
-
-function validateChangedPaths(plan: ReleasePlan): string[] {
-  const output = git(["status", "--porcelain=v1", "--untracked-files=all"]);
-  const paths = parsePorcelainPaths(output);
-  const unexpected = unexpectedReleasePaths(paths, plan.target);
-  if (unexpected.length) {
-    throw new ReleaseError(`Unexpected generated files: ${unexpected.join(", ")}`);
-  }
-  return paths;
-}
-
-async function runPreflightValidations(
-  target: ReleaseTarget,
-  readOnly: boolean,
-  sourceRoot = pluginRoot,
-): Promise<void> {
-  runCheck(
-    "Frozen Bun install",
-    "bun",
-    ["install", "--frozen-lockfile", "--ignore-scripts", ...(readOnly ? ["--dry-run"] : [])],
-    resolve(sourceRoot, "../.."),
-  );
-  runCheck("Typecheck", "bun", ["run", "typecheck"], sourceRoot);
-  runCheck("Deterministic build", "bun", ["run", "build"], sourceRoot);
-  runCheck("Test suite", "bun", ["run", "test"], sourceRoot);
-  runCheck("Release tests", "bun", ["run", "release:test"], sourceRoot);
-
-  const manifest = await readJson(resolve(sourceRoot, ".codex-plugin/plugin.json"));
-  validatePluginManifest(manifest);
-  if (target !== "npm") {
-    await validatePluginPlane(sourceRoot);
-  }
-  if (target !== "plugin") {
-    runCheck(
-      "npm package content",
-      "bun",
-      ["pm", "pack", "--dry-run", "--ignore-scripts"],
-      sourceRoot,
-    );
-  }
-}
-
-async function publishExistingNpmRelease(tag: string): Promise<void> {
-  // Only the exact published Release Please identity may be resumed; never bump or retag it.
-  const match = /^forgix-v((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$/.exec(tag);
-  if (!match) throw new ReleaseError("Expected an existing forgix-v<stable-version> tag.");
-  assertAuthentication("npm");
-  runCheck("Fetch published release", "git", ["fetch", "origin", "main", "--tags"]);
-  const commit = git(["rev-parse", `refs/tags/${tag}^{commit}`]);
-  if (remoteTagCommit(tag) !== commit)
-    throw new ReleaseError("Local and remote release tags differ.");
-  requireCommand("git", ["merge-base", "--is-ancestor", commit, "origin/main"], { cwd: repoRoot });
-  const release = JSON.parse(
-    requireCommand("gh", ["release", "view", tag, "--json", "tagName,isDraft,isPrerelease"], {
-      cwd: repoRoot,
-    }).stdout,
-  );
-  if (release.tagName !== tag || release.isDraft || release.isPrerelease) {
-    throw new ReleaseError("Existing GitHub release must be published and stable.");
-  }
-  const directory = await mkdtemp(resolve(tmpdir(), "forgix-existing-release-"));
-  try {
-    const archive = resolve(directory, "source.tar");
-    runCheck("Archive exact release commit", "git", [
-      "archive",
-      "--format=tar",
-      `--output=${archive}`,
-      commit,
-    ]);
-    runCheck("Extract release source", "tar", ["-xf", archive, "-C", directory]);
-    await rm(archive);
-    const sourceRoot = resolve(directory, "plugins/forgix");
-    const sourcePackage = await readJson(resolve(sourceRoot, "package.json"));
-    const version = existingNpmReleaseVersion(
-      tag,
-      String(sourcePackage.name),
-      String(sourcePackage.version),
-    );
-    const rootPackage = await readJson(resolve(directory, "package.json"));
-    if (rootPackage.packageManager !== `bun@${process.versions.bun}`) {
-      throw new ReleaseError(`Existing release requires ${String(rootPackage.packageManager)}.`);
-    }
-    if (await npmVersionPublished(version)) {
-      outro(`${packageName}@${version} already published; no changes made.`);
-      return;
-    }
-    await runPreflightValidations("npm", false, sourceRoot);
-    runCheck("Full quality gate", "bun", ["run", "check"], directory);
-    runCheck(
-      "npm publication dry-run",
-      "bun",
-      ["publish", "--dry-run", "--ignore-scripts", "--access", "public"],
-      sourceRoot,
-    );
-    note(
-      `Package: ${packageName}@${version}\nTag: ${tag}\nSource commit: ${commit}\nOnly missing npm publication; no Git or plugin version changes.`,
-      "Existing release publication",
-    );
-    const approved = await confirm({
-      message: "Publish this existing npm release?",
-      initialValue: false,
+const readJson = async (path: string) => JSON.parse(await readFile(resolve(root, path), "utf8"));
+async function run(command: string, args: string[], signal: AbortSignal): Promise<void> {
+  await new Promise<void>((done, fail) => {
+    const child = spawn(command, args, { cwd: root, stdio: "inherit", shell: false, signal });
+    child.once("error", fail);
+    child.once("close", (code) => {
+      if (code === 0) done();
+      else fail(new ReleaseError(`${command} ${args.join(" ")} failed.`));
     });
-    if (cancelled(approved) || !approved) return;
-    if (remoteTagCommit(tag) !== commit)
-      throw new ReleaseError("Remote release tag changed during validation.");
-    if (!(await npmVersionPublished(version))) {
-      externalPublicationStarted = true;
-      runCheck(
-        "Publish existing npm package",
-        "bun",
-        ["publish", "--access", "public"],
-        sourceRoot,
-        true,
-      );
-    }
-    if (!(await npmVersionPublished(version)))
-      throw new ReleaseError("npm publication could not be verified.");
-    outro(`${packageName}@${version} published and verified. Existing GitHub release unchanged.`);
-  } finally {
-    await rm(directory, { recursive: true, force: true });
-  }
-}
-
-async function runPreparedValidations(plan: ReleasePlan): Promise<void> {
-  runCheck("Frozen Bun install", "bun", ["install", "--frozen-lockfile"], pluginRoot);
-  validatePluginManifest(await readJson(manifestPath));
-  if (plan.target !== "npm") {
-    await validatePluginPlane(pluginRoot, semanticBase(plan.pluginVersion));
-  }
-  if (plan.target !== "plugin") {
-    runCheck(
-      "npm package dry-run",
-      "bun",
-      ["publish", "--dry-run", "--ignore-scripts", "--access", "public"],
-      pluginRoot,
-    );
-  }
-}
-
-async function assertVersionsAvailable(plan: ReleasePlan): Promise<void> {
-  if (
-    runCommand("git", ["show-ref", "--verify", "--quiet", `refs/tags/${plan.tag}`], {
-      cwd: repoRoot,
-    }).status === 0
-  ) {
-    throw new ReleaseError(`Local Git tag "${plan.tag}" already exists.`);
-  }
-  if (remoteTagCommit(plan.tag))
-    throw new ReleaseError(`Git tag "${plan.tag}" already exists on origin.`);
-  if (githubReleaseExists(plan.tag))
-    throw new ReleaseError(`GitHub Release "${plan.tag}" already exists.`);
-  if (plan.target !== "plugin" && (await npmVersionPublished(plan.packageVersion))) {
-    throw new ReleaseError(`npm version ${packageName}@${plan.packageVersion} already exists.`);
-  }
-}
-
-async function optionalLocalInstall(target: ReleaseTarget): Promise<void> {
-  if (target === "npm") return;
-  const answer = await confirm({
-    message: "Refresh local Codex plugin now?",
-    initialValue: false,
-    active: "Yes",
-    inactive: "No",
   });
-  if (cancelled(answer) || !answer) {
-    log.info("Local plugin unchanged. Start a new Codex thread after installing this release.");
-    return;
-  }
-  runCheck(
-    "Upgrade marketplace",
-    "codex",
-    ["plugin", "marketplace", "upgrade", marketplace],
-    repoRoot,
-    true,
-  );
-  runCheck(
-    "Install plugin",
-    "codex",
-    ["plugin", "add", `${pluginName}@${marketplace}`],
-    repoRoot,
-    true,
-  );
-  log.info("Start a new Codex thread to load updated plugin.");
 }
-
-async function publishMissing(
-  plan: ReleasePlan,
-  notes: string,
-  state: PublicationState,
-): Promise<void> {
-  if (!state.pushed) {
-    const head = git(["rev-parse", "HEAD"]);
-    const remoteTag = remoteTagCommit(plan.tag);
-    if (remoteTag && remoteTag !== head) {
-      throw new ReleaseError(`Remote tag "${plan.tag}" does not point to release commit.`);
-    }
-    runCheck(
-      "Push release commit and tag",
-      "git",
-      ["push", "--atomic", "origin", "main", ...(remoteTag ? [] : [`refs/tags/${plan.tag}`])],
-      repoRoot,
-      true,
-    );
-    externalPublicationStarted = true;
-  }
-  if (!state.npmPublished && plan.target !== "plugin") {
-    externalPublicationStarted = true;
-    runCheck("Publish npm package", "bun", ["publish", "--access", "public"], pluginRoot, true);
-  }
-  if (!state.githubRelease) {
-    externalPublicationStarted = true;
-    runCheck("Create GitHub Release", "gh", [
-      "release",
-      "create",
-      plan.tag,
-      "--verify-tag",
-      "--title",
-      plan.tag,
-      "--notes",
-      notes,
-    ]);
-  }
-}
-
-async function maybeResumePartialRelease(): Promise<boolean> {
-  const subject = git(["log", "-1", "--pretty=%s"]);
-  const release = parseReleaseCommit(subject);
-  if (!release) return false;
-  const packageJson = await readJson(packagePath);
-  const manifest = await readJson(manifestPath);
-  const versions = currentVersions(packageJson, manifest);
-  if (release.target !== "plugin" && versions.packageVersion !== release.version) {
-    throw new ReleaseError("Release commit identity does not match package.json version.");
-  }
-  if (release.target !== "npm" && semanticBase(versions.pluginVersion) !== release.version) {
-    throw new ReleaseError("Release commit identity does not match plugin manifest version.");
-  }
-  if (release.target !== "npm") {
-    await validatePluginPlane(pluginRoot, release.version);
-  }
-  if (
-    release.target === "plugin" &&
-    release.identity !== `plugin-v${versions.pluginVersion.replace("+codex.", "-codex.")}`
-  ) {
-    throw new ReleaseError("Plugin release identity does not match manifest cachebuster.");
-  }
-  const plan: ReleasePlan = {
-    target: release.target,
-    identity: release.identity,
-    tag: release.identity,
-    commitMessage: subject,
-    packageVersion: versions.packageVersion,
-    pluginVersion: versions.pluginVersion,
-  };
-
-  const head = git(["rev-parse", "HEAD"]);
-  const localTag = runCommand("git", ["rev-parse", `${plan.tag}^{}`], { cwd: repoRoot });
-  if (localTag.status === 0 && localTag.stdout.trim() !== head) {
-    throw new ReleaseError(`Local tag "${plan.tag}" does not point to release commit.`);
-  }
-  const state = await externalState(plan, head);
-  if (state.pushed && state.npmPublished && state.githubRelease) return false;
-
-  assertAuthentication(plan.target);
-  note(
-    [
-      `Tag/identity: ${plan.tag}`,
-      `Push: ${state.pushed ? "complete" : "missing"}`,
-      `npm: ${state.npmPublished ? "complete/not applicable" : "missing"}`,
-      `GitHub Release: ${state.githubRelease ? "complete" : "missing"}`,
-    ].join("\n"),
-    "Partial release detected",
-  );
-  const answer = await confirm({
-    message: "Resume missing publication steps?",
-    initialValue: true,
-    active: "Yes",
-    inactive: "No",
-  });
-  if (cancelled(answer) || !answer) return abortFromPrompt();
-  if (!state.pushed && !remoteTagCommit(plan.tag) && localTag.status !== 0) {
-    requireCommand("git", ["tag", "-a", plan.tag, "-m", plan.commitMessage], {
-      cwd: repoRoot,
-      stdio: "inherit",
-    });
-  }
-  const notes = generateNotes(plan.tag);
-  note(notes, "Generated GitHub release notes");
-  await publishMissing(plan, notes, state);
-  await optionalLocalInstall(plan.target);
-  outro(`Release ${plan.tag} completed.`);
-  return true;
-}
-
-async function prepareAndPublish(plan: ReleasePlan): Promise<void> {
-  const originalHead = git(["rev-parse", "HEAD"]);
-  const paths = [
-    packagePath,
-    manifestPath,
-    claudeManifestPath,
-    antigravityManifestPath,
-    claudeMarketplacePath,
-    releasePleaseManifestPath,
-    lockPath,
-    bundlePath,
-  ];
-  const snapshots = await captureFileSnapshots(paths);
-  let indexTouched = false;
-  let localCommitCreated = false;
-  let localTagCreated = false;
-
-  cleanup = async () => {
-    if (cleaning || externalPublicationStarted) return;
-    cleaning = true;
-    try {
-      if (localTagCreated) runCommand("git", ["tag", "-d", plan.tag], { cwd: repoRoot });
-      if (localCommitCreated) {
-        requireCommand("git", ["update-ref", "refs/heads/main", originalHead], { cwd: repoRoot });
-      }
-      if (indexTouched) {
-        requireCommand("git", ["read-tree", originalHead], { cwd: repoRoot });
-      }
-      await restoreFileSnapshots(snapshots);
-    } finally {
-      cleaning = false;
-    }
-  };
-
-  try {
-    if (plan.target !== "plugin") {
-      await writeVersion(packagePath, plan.packageVersion);
-      await writeFile(
-        releasePleaseManifestPath,
-        `${JSON.stringify({ "plugins/forgix": plan.packageVersion }, null, 2)}\n`,
-        "utf8",
-      );
-      runCheck("Update Bun lock", "bun", ["install"], pluginRoot);
-    }
-    if (plan.target !== "npm") {
-      const basePluginVersion = semanticBase(plan.pluginVersion);
-      await writeVersion(manifestPath, plan.pluginVersion);
-      const claudeManifest = await readJson(claudeManifestPath);
-      if (claudeManifest.version !== basePluginVersion) {
-        await writeVersion(claudeManifestPath, basePluginVersion);
-      }
-      const antigravityManifest = await readJson(antigravityManifestPath);
-      if (antigravityManifest.version !== basePluginVersion) {
-        await writeVersion(antigravityManifestPath, basePluginVersion);
-      }
-      const marketplaceJson = await readJson(claudeMarketplacePath);
-      const forgixEntry = (marketplaceJson.plugins as Array<Record<string, unknown>>).find(
-        (entry) => entry.name === pluginName,
-      );
-      if (forgixEntry?.version !== basePluginVersion) {
-        await writeFile(
-          claudeMarketplacePath,
-          replaceMarketplacePluginVersion(
-            await readFile(claudeMarketplacePath, "utf8"),
-            pluginName,
-            basePluginVersion,
-          ),
-        );
-      }
-    }
-
-    await runPreparedValidations(plan);
-    const changedPaths = validateChangedPaths(plan);
-    if (changedPaths.length === 0) throw new ReleaseError("Release produced no file changes.");
-
-    requireCommand("git", ["add", "--", ...changedPaths], { cwd: repoRoot });
-    indexTouched = true;
-    requireCommand("git", ["commit", "-m", plan.commitMessage], {
-      cwd: repoRoot,
-      stdio: "inherit",
-    });
-    localCommitCreated = true;
-    requireCommand("git", ["tag", "-a", plan.tag, "-m", plan.commitMessage], {
-      cwd: repoRoot,
-      stdio: "inherit",
-    });
-    localTagCreated = true;
-
-    const notes = generateNotes(plan.tag);
-    note(notes, "Generated GitHub release notes");
-    note(planSummary(plan, "publish"), "Final release summary");
-    const approved = await confirm({
-      message: "Publish this release?",
-      initialValue: false,
-      active: "Yes",
-      inactive: "No",
-    });
-    if (cancelled(approved) || !approved) return abortFromPrompt();
-
-    const state: PublicationState = {
-      pushed: false,
-      npmPublished: plan.target === "plugin",
-      githubRelease: false,
-    };
-    await publishMissing(plan, notes, state);
-    cleanup = undefined;
-    await optionalLocalInstall(plan.target);
-    outro(`Release ${plan.tag} completed.`);
-  } catch (error) {
-    if (!externalPublicationStarted) await cleanup?.();
-    throw error;
-  }
+function answer<T>(value: T | symbol): T {
+  if (isCancel(value)) throw new ReleaseError("Preparation cancelled.");
+  return value;
 }
 
 async function main(): Promise<void> {
-  intro("Forgix release");
-  assertSupportedPlatform();
-  const args = process.argv.slice(2);
-  if (args.length) {
-    if (args.length !== 2 || args[0] !== "--publish-existing" || !args[1]) {
-      throw new ReleaseError("Usage: bun run release [--publish-existing forgix-v<version>]");
-    }
-    await publishExistingNpmRelease(args[1]);
-    return;
+  if (process.argv.length > 2)
+    throw new ReleaseError(
+      "Local publication has been retired. Use bun run release to prepare; resume CI with the existing tag as both workflow ref and input.",
+    );
+  if (process.platform === "win32")
+    throw new ReleaseError("Release preparation supports Linux and macOS.");
+  const branch = git(root, ["branch", "--show-current"]);
+  if (!branch || branch === "main")
+    throw new ReleaseError(
+      "Prepare on a clean work branch, not main or detached HEAD. Merge preparation through a PR before tagging.",
+    );
+  if (git(root, ["status", "--porcelain=v1", "--untracked-files=all"]))
+    throw new ReleaseError("Preparation requires a clean worktree.");
+  intro("Forgix release preparation (no publication)");
+  const target = answer(
+    await select<ReleaseTarget>({
+      message: "Release target",
+      initialValue: "both",
+      options: [
+        { value: "both", label: "npm + plugins" },
+        { value: "npm", label: "npm only" },
+        { value: "plugin", label: "Plugins only" },
+      ],
+    }),
+  );
+  const preview = answer(
+    await confirm({ message: "Preview only (restore every prepared file)?", initialValue: true }),
+  );
+  const pkg = await readJson("plugins/forgix/package.json");
+  const codex = await readJson("plugins/forgix/.codex-plugin/plugin.json");
+  let nextPackageVersion: string | undefined;
+  if (target !== "plugin") {
+    const base = previousTag(root, "npm");
+    const commits = git(root, [
+      "log",
+      base ? `${base}..HEAD` : "HEAD",
+      "--format=%s%n%b%x00",
+    ]).split("\0");
+    const recommended = pkg.version.startsWith("1.") ? "major" : recommendBump(commits);
+    const bump = answer(
+      await select<VersionBump | "custom">({
+        message: "npm version (Node >=26 requires a major for the first migration release)",
+        initialValue: recommended,
+        options: [
+          ...(["patch", "minor", "major"] as const).map((value) => ({
+            value,
+            label: `${value}: ${incrementVersion(pkg.version, value)}`,
+          })),
+          { value: "custom", label: "Custom stable version" },
+        ],
+      }),
+    );
+    nextPackageVersion =
+      bump === "custom"
+        ? answer(
+            await text({
+              message: "Next stable version",
+              validate(value) {
+                try {
+                  parseStableVersion(value ?? "");
+                  return compareVersions(value ?? "", pkg.version) > 0
+                    ? undefined
+                    : "Version must increase.";
+                } catch {
+                  return "Expected stable SemVer.";
+                }
+              },
+            }),
+          )
+        : incrementVersion(pkg.version, bump);
   }
-  assertCleanMain();
-
-  if (await maybeResumePartialRelease()) return;
-
-  const target = await chooseTarget();
-  const mode = await chooseMode();
-  assertAuthentication(target);
-  syncMain(mode);
-  assertCleanMain();
-  if (await maybeResumePartialRelease()) return;
-
-  const packageJson = await readJson(packagePath);
-  const manifest = await readJson(manifestPath);
-  validatePluginManifest(manifest);
-  if (target !== "npm") {
-    await validatePluginPlane(pluginRoot);
-  }
-  const current = currentVersions(packageJson, manifest);
-  const recommendation = recommendBump(commitsSinceLastTag());
-  const nextPackageVersion =
-    target === "plugin" ? undefined : await chooseVersion(current.packageVersion, recommendation);
   const plan = createReleasePlan({
     target,
-    currentPackageVersion: current.packageVersion,
-    currentPluginVersion: current.pluginVersion,
+    currentPackageVersion: pkg.version,
+    currentPluginVersion: codex.version,
     ...(nextPackageVersion ? { nextPackageVersion } : {}),
     now: new Date(),
   });
-  if (target !== "npm" && plan.pluginVersion === current.pluginVersion) {
-    throw new ReleaseError(
-      "Generated plugin cachebuster matches current version. Wait one second and rerun.",
-    );
-  }
-
-  await assertVersionsAvailable(plan);
-  note(planSummary(plan, mode), mode === "preview" ? "Read-only preview" : "Release preparation");
-
-  if (mode === "preview") {
-    const [bundleSnapshot] = await captureFileSnapshots([bundlePath]);
-    try {
-      await runPreflightValidations(target, true);
-    } finally {
-      if (bundleSnapshot) await restoreFileSnapshots([bundleSnapshot]);
+  if (git(root, ["tag", "--list", plan.tag]))
+    throw new ReleaseError("Release tag already exists; resume CI, do not prepare it again.");
+  const paths = [...allowedReleasePaths(target)].map((path) => resolve(root, path));
+  const snapshots = await captureFileSnapshots(paths);
+  const restore = () => restoreFileSnapshots(snapshots);
+  const controller = new AbortController();
+  const interrupted = () => controller.abort();
+  process.once("SIGINT", interrupted);
+  process.once("SIGTERM", interrupted);
+  let retained = false;
+  try {
+    if (target !== "plugin") {
+      const path = resolve(pluginRoot, "package.json");
+      await writeFile(path, replaceJsonVersion(await readFile(path, "utf8"), plan.packageVersion));
+      await run("bun", ["install", "--lockfile-only", "--ignore-scripts"], controller.signal);
     }
-    assertCleanMain();
-    outro("Preview complete. No files or remote systems changed.");
-    return;
+    if (target !== "npm") {
+      await Promise.all(
+        [
+          [".codex-plugin/plugin.json", plan.pluginVersion],
+          [".claude-plugin/plugin.json", semanticBase(plan.pluginVersion)],
+          ["plugin.json", semanticBase(plan.pluginVersion)],
+        ].map(async ([relative, version]) => {
+          const path = resolve(pluginRoot, relative!);
+          await writeFile(path, replaceJsonVersion(await readFile(path, "utf8"), version!));
+        }),
+      );
+      const path = resolve(root, ".claude-plugin/marketplace.json");
+      await writeFile(
+        path,
+        replaceMarketplacePluginVersion(
+          await readFile(path, "utf8"),
+          "forgix",
+          semanticBase(plan.pluginVersion),
+        ),
+      );
+    }
+    validateVersions(root, plan.tag);
+    const changelogPath = resolve(pluginRoot, "CHANGELOG.md");
+    const changelog = await readFile(changelogPath, "utf8");
+    if (changelog.includes(`## [${plan.tag}] - `))
+      throw new ReleaseError("Changelog already contains this release.");
+    const notes = renderNotes(
+      root,
+      notesMetadata(root, plan.tag, new Date().toISOString().slice(0, 10)),
+    );
+    if (!changelog.startsWith("# Changelog\n"))
+      throw new ReleaseError("Expected canonical changelog header.");
+    await writeFile(
+      changelogPath,
+      `# Changelog\n\n${notes}\n${changelog.slice("# Changelog\n".length).replace(/^\n+/, "")}`,
+    );
+    controller.signal.throwIfAborted();
+    await run("bun", ["run", "check"], controller.signal);
+    controller.signal.throwIfAborted();
+    const changes = parsePorcelainPaths(
+      git(root, ["status", "--porcelain=v1", "--untracked-files=all"]),
+    );
+    if (changes.some((path) => !allowedReleasePaths(target).has(path)))
+      throw new ReleaseError("Unexpected changed file during preparation; inspect worktree.");
+    note(notes, "Prepared git-cliff release notes");
+    note(
+      `Target: ${target}\nTag after PR merge: ${plan.tag}\nCommit title: ${plan.commitMessage}\nFiles: ${changes.join(", ")}\nNo commit, push, tag, publication or local installation performed.`,
+      "Preparation summary",
+    );
+    retained = !preview;
+    outro(
+      preview
+        ? "Preview complete; prepared files restored."
+        : "Prepared files retained. Review and ship the PR separately; tag only its validated main commit.",
+    );
+  } finally {
+    process.removeListener("SIGINT", interrupted);
+    process.removeListener("SIGTERM", interrupted);
+    if (!retained) await restore();
   }
-
-  await runPreflightValidations(target, false);
-  assertCleanMain();
-  await prepareAndPublish(plan);
 }
 
-process.once("SIGINT", () => {
-  void (async () => {
-    if (cleanup && !externalPublicationStarted) await cleanup();
-    process.exit(130);
-  })();
-});
-
-try {
-  await main();
-} catch (error) {
-  if (cleanup && !externalPublicationStarted) await cleanup();
-  log.error(displayError(error));
-  process.exitCode = 1;
-}
+if (import.meta.main)
+  await main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });

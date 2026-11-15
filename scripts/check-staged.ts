@@ -54,7 +54,7 @@ const EXCLUDED_PATHS = new Set([
   "docs/ROADMAP.md",
   "docs/roadmap.md",
   "bun.lock",
-  // Release Please owns this generated file's formatting.
+  // git-cliff owns this generated file's formatting.
   "plugins/forgix/CHANGELOG.md",
 ]);
 

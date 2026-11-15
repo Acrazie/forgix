@@ -53,9 +53,10 @@ describe("public documentation", () => {
     const runbook = read(
       fileURLToPath(new URL("../../docs/runbooks/maintainer-release.md", import.meta.url)),
     );
-    expect(runbook).toContain("public `@acrasie/forgix` package on npmjs");
+    expect(runbook).toContain("npmjs `@acrasie/forgix` remains canonical");
     expect(runbook).not.toContain("unscoped `forgix` publication was rejected");
-    expect(runbook).toContain("no former CLI alias is retained");
+    expect(runbook).toContain("No package is renamed.");
+    expect(runbook).toContain("GitHub Actions is the only publication authority");
   });
   test("root README and installation guide preserve the complete installation journey", () => {
     const documentation = [read(repositoryReadmePath), read(gettingStartedPath)];

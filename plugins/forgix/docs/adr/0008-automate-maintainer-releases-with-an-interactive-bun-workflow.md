@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Superseded for preparation/publication by the [tag-based CI release design](../../../../docs/forgix/2026-11-15-git-cliff-release.md) and current [maintainer runbook](../runbooks/maintainer-release.md). The historical decision below is retained; local publishing and resume are no longer supported.
 
 ## Context
 

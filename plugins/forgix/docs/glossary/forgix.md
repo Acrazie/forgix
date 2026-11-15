@@ -278,7 +278,7 @@ Discovery Target.
 
 ## Partial release
 
-A release whose Git, npm-registry, or GitHub Release actions have not all reached their
+A release whose npm-registry, GitHub Release, or mirror actions have not all reached their
 intended state. It is resumed by reconciling external state and performing only the
 missing idempotent action, never by rolling back published artifacts. Optional local
 Codex installation is not publication state; retry it directly when needed.
@@ -310,15 +310,15 @@ workflow evidence.
 
 ## Release preparation
 
-The reversible portion of an interactive release: discovery, version recommendation,
-preflight, temporary metadata generation, validation, package inspection, notes preview,
-and final maintainer confirmation.
+The local, non-publishing preparation of a release PR: version recommendation, targeted
+metadata and deterministic bundle generation, changelog notes, validation and preview.
+Preview restores prepared files; retained preparation must be reviewed and merged before tagging.
 
 ## Release publication
 
-The irreversible portion of an interactive release beginning with the first successful
-remote push and continuing through applicable npm publication, GitHub Release creation,
-and optional local Codex plugin refresh.
+The CI-only sequence authorized by an immutable maintainer-created release tag: applicable
+npm publication with OIDC/provenance verification, GitHub Release creation and explicit
+GitHub Packages mirroring. Local plugin installation is not a publication step.
 
 ## Release target
 

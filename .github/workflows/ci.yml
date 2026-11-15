@@ -1,6 +1,12 @@
 name: CI
 
 on:
+  workflow_call:
+    inputs:
+      release-tag:
+        required: false
+        default: ""
+        type: string
   pull_request:
   push:
     branches: [main]
@@ -21,6 +27,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
@@ -33,14 +40,42 @@ jobs:
           key: ${{ runner.os }}-bun-${{ hashFiles('.bun-version', 'bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
+      - name: Install pinned git-cliff
+        uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4
+        with:
+          version: v2.14.1
+          args: --strip all
+        env:
+          OUTPUT: ${{ runner.temp }}/git-cliff-bootstrap.md
+      - name: Expose git-cliff to release contract tests
+        run: echo "$RUNNER_TEMP/git-cliff/bin" >> "$GITHUB_PATH"
       - name: Run Full Gate
         run: bun scripts/observe-command.ts "Full Gate" bun run check
+      - name: Require committed deterministic bundle
+        if: inputs.release-tag != ''
+        run: git diff --exit-code -- plugins/forgix/dist/forgix.mjs
+      - name: Pin npm pack to the publisher toolchain
+        if: inputs.release-tag != ''
+        run: npm install --global npm@11.21.1 --ignore-scripts
+      - name: Prepare immutable release candidate
+        if: inputs.release-tag != ''
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+        run: |
+          export PATH="$RUNNER_TEMP/git-cliff/bin:$PATH"
+          node scripts/release-ci.ts candidate
       - name: Build shared runtime artifact
+        if: inputs.release-tag == '' || startsWith(inputs.release-tag, 'plugin-v')
         run: bun run pack:runtime
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: forgix-runtime
-          path: .artifacts/forgix.tgz
+          # .artifacts is hidden; allow only these audited release files.
+          path: |
+            .artifacts/forgix.tgz
+            .artifacts/RELEASE_NOTES.md
+            .artifacts/release.json
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
 
@@ -89,6 +124,15 @@ jobs:
           key: ${{ runner.os }}-bun-${{ hashFiles('.bun-version', 'bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
+      - name: Install pinned git-cliff
+        uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4
+        with:
+          version: v2.14.1
+          args: --strip all
+        env:
+          OUTPUT: ${{ runner.temp }}/git-cliff-bootstrap.md
+      - name: Expose git-cliff to release contract tests
+        run: echo "$RUNNER_TEMP/git-cliff/bin" >> "$GITHUB_PATH"
       - run: bun run --cwd plugins/forgix release:test
 
   full-gate:
