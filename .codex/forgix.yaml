@@ -14,3 +14,16 @@ integrations:
     - context-mode
   skills:
     - impeccable:frontend-design
+roadmap:
+  project:
+    owner: Acrazie
+    number: 6
+    title: Forgix Roadmap
+    url: https://github.com/users/Acrazie/projects/6
+    productVisionPath: docs/product-vision.md
+  fields:
+    status: Status
+    kind: Kind
+    risk: Risk
+    priority: Priority
+    wave: Wave
