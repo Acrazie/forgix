@@ -1,0 +1,437 @@
+approval:
+  actor: user
+  approvedAt: 2026-11-15T09:08:03.969Z
+  contentDigest: 06cad4b54164ce97bcf88947edf32fd571aed5dfb77840f48a9b942de06d7a03
+  profileId: forgix
+  receiptDigest: 544223cea9dc0649042be63de14805a2194a1e6aeccb23327aebe911447c0a6c
+  revision: 1
+  schemaVersion: 1
+content:
+  decisions:
+    - category: stack
+      dependsOn: []
+      key: stack
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - package.json
+          - plugins/forgix/package.json
+          - plugins/forgix/tsconfig.json
+          - bunfig.toml
+          - .bun-version
+          - .node-version
+      rationale: Pinned by manifests and accepted ADRs 0012/0022; Bun owns dev tooling while the shipped CLI stays a plain Node ESM bundle.
+      sourceFingerprints:
+        - sourceRef: package.json
+          value: sha256:1707dcfe119b5301e61b18b93734ec75f4d545d24a784d09dd4e9503386af2e0
+        - sourceRef: plugins/forgix/package.json
+          value: sha256:92bac781962f3c70a1ff4b57f389bf4d237f11579927e77eb6e777671bf5bee1
+        - sourceRef: plugins/forgix/tsconfig.json
+          value: sha256:9b9f1c0253a1d043156d735be7bb7c583b1cadc9c564d11175e7719478d86b83
+        - sourceRef: bunfig.toml
+          value: sha256:523d15aecca69de7d7055cea3f9c80552cdd54936ad939ede22dbc54852155a2
+        - sourceRef: .bun-version
+          value: sha256:d03d8b268b4171328ac2458ce8ca82d69a1fde38469d4e4faae4f8fa8d8a5e35
+        - sourceRef: .node-version
+          value: sha256:68ca3fba3b7e864770cb61aeb306d4bd4354b68ab4dd38450860c5d823e42a53
+      value: TypeScript 7 (strict, NodeNext, ES2024) on Node.js >=24 for the plugin runtime and tooling; Bun 1.4.4 is package manager, test runner and script host; one root Bun workspace (plugins/*, site) with an isolated linker and one lockfile.
+    - category: source_structure
+      dependsOn:
+        - stack
+      key: source-structure
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - CONTRIBUTING.md
+          - plugins/forgix/package.json
+      rationale: Documented layout in CONTRIBUTING and observed tree; keeps distribution artifacts limited to the plugin package files allowlist.
+      sourceFingerprints:
+        - sourceRef: CONTRIBUTING.md
+          value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+        - sourceRef: plugins/forgix/package.json
+          value: sha256:92bac781962f3c70a1ff4b57f389bf4d237f11579927e77eb6e777671bf5bee1
+      value: "plugins/forgix is the single publishable plugin root: src/ deterministic runtime (flat kebab-case modules), skills/ reasoning guidance, schemas/ JSON Schemas, docs/ contracts/ADRs/glossary/runbooks, test/{unit,integration,runtime,support,fixtures}, scripts/ build/release tooling, dist/forgix.mjs bundled CLI. Root scripts/ and test/ hold repository tooling; site/ holds the public website; docs/forgix/ holds dated Plan projections."
+    - category: architecture
+      dependsOn:
+        - source-structure
+      key: architecture-boundary
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - CONTRIBUTING.md
+          - plugins/forgix/docs/design.md
+      rationale: ADR 0001 and design.md split; prevents reasoning from bypassing deterministic guards.
+      sourceFingerprints:
+        - sourceRef: CONTRIBUTING.md
+          value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+        - sourceRef: plugins/forgix/docs/design.md
+          value: sha256:ed6e9dd6842e656cb7767e197408b5d9ab8074ba9fceddffcef467ce933dff37
+      value: "Hybrid portable workflow: TypeScript owns deterministic parsing, configuration, policy, routing, state transitions, fingerprints, validation and artifact handling; skills own discovery, planning, debugging, review and verification reasoning. Forgix is the only public workflow; internal stage skills are user-invocable: false. Delegated review/analysis stages stay read-only."
+    - category: dependency_direction
+      dependsOn:
+        - architecture-boundary
+      key: dependency-direction
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - plugins/forgix/src/cli.ts
+          - plugins/forgix/src/state.ts
+      rationale: Observed import graph in plugins/forgix/src; keeps the CLI bundle and skills decoupled.
+      sourceFingerprints:
+        - sourceRef: plugins/forgix/src/cli.ts
+          value: sha256:20c617177bae58819c2e0cb05a1799405d88607804962777d0aa1b3119d8d420
+        - sourceRef: plugins/forgix/src/state.ts
+          value: sha256:d2844299a1b88359fd9e8d8334ac7dd4761f3daae9f45fe7432378e9cf51d07b
+      value: src/cli.ts is the sole composition root and imports across modules; domain modules form an acyclic dependency graph toward leaf modules (types, exit-codes, config, routing, state-machine, shape-dependencies) and never import cli.ts; skills invoke the runtime only through the bundled CLI (dist/forgix.mjs), never by importing src. Relative imports use .js specifiers.
+    - category: naming
+      dependsOn:
+        - source-structure
+      key: naming
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - plugins/forgix/src/exit-codes.ts
+          - plugins/forgix/src/project-profile.ts
+      rationale: Consistent across src, schemas and docs.
+      sourceFingerprints:
+        - sourceRef: plugins/forgix/src/exit-codes.ts
+          value: sha256:d895967730ed70afadda65d9ed559dd39234cfe7cbb8d54d7747a397833dec6c
+        - sourceRef: plugins/forgix/src/project-profile.ts
+          value: sha256:bd2c8b0f8917ce0baa5b972f1090f9f0115557f5f76243c93e7974a9571607bf
+      value: kebab-case file names; camelCase functions and variables; PascalCase types, interfaces and Error subclasses; SCREAMING_SNAKE_CASE module constants; snake_case machine codes for CLI commands, statuses and error codes; ADRs named NNNN-kebab-title.md; Plan projections named YYYY-MM-DD-<slug>.md.
+    - category: error_handling
+      dependsOn:
+        - dependency-direction
+      key: error-handling
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - plugins/forgix/src/exit-codes.ts
+          - plugins/forgix/src/project-profile.ts
+          - plugins/forgix/src/cli.ts
+      rationale: Deterministic, machine-readable outputs and fixed exit codes are required by skills and resume logic.
+      sourceFingerprints:
+        - sourceRef: plugins/forgix/src/exit-codes.ts
+          value: sha256:d895967730ed70afadda65d9ed559dd39234cfe7cbb8d54d7747a397833dec6c
+        - sourceRef: plugins/forgix/src/project-profile.ts
+          value: sha256:bd2c8b0f8917ce0baa5b972f1090f9f0115557f5f76243c93e7974a9571607bf
+        - sourceRef: plugins/forgix/src/cli.ts
+          value: sha256:20c617177bae58819c2e0cb05a1799405d88607804962777d0aa1b3119d8d420
+      value: Modules throw typed Error subclasses (e.g. ProjectProfileError, StateStoreError, StateValidationError, PolicyError, ConfigValidationError, InvocationError) carrying fixed exit codes and/or stable snake_case machine codes; cli.ts maps errors to EXIT_CODES (0 success, 2 invalid invocation, 3 invalid configuration, 4 policy contradiction, 5 state conflict, 6 blocked, 10 internal), emits JSON {command,status,data} to stdout on success (except help/init), and writes error messages to stderr. Validation, digest, privacy, receipt and atomic-write errors are blocking and never bypassed.
+    - category: testing
+      dependsOn:
+        - stack
+      key: testing
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - plugins/forgix/bunfig.toml
+          - bunfig.toml
+          - plugins/forgix/test/README.md
+          - CONTRIBUTING.md
+      rationale: ADRs 0012/0013/0014/0021 and bunfig configuration.
+      sourceFingerprints:
+        - sourceRef: plugins/forgix/bunfig.toml
+          value: sha256:cc20fb3505e611eb121d447498c1cfb2cb5e4d1b5763d7b4992c19f8d28e51b4
+        - sourceRef: bunfig.toml
+          value: sha256:523d15aecca69de7d7055cea3f9c80552cdd54936ad939ede22dbc54852155a2
+        - sourceRef: plugins/forgix/test/README.md
+          value: sha256:ef22fc14099e22c179ef4ca2be0b4677990ab63925f756350e2045d06d1b8bb0
+        - sourceRef: CONTRIBUTING.md
+          value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+      value: bun:test with randomized order and zero retries; plugin tests split into test/unit (source behavior) and test/integration (filesystem, process, bundle, package boundaries), plus node --test runtime smoke on the packed artifact; shared builders live in test/support; coverage ratchet lines >=0.72 functions >=0.75; prefer public behavior and stable invariants over implementation details; add or update focused tests whenever behavior changes.
+    - category: quality
+      dependsOn:
+        - testing
+      key: quality-gate
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - package.json
+          - lefthook.yml
+          - .oxlintrc.json
+          - .github/workflows/ci.yml
+          - docs/git-workflow.md
+      rationale: Repository scripts, lefthook and CI workflow; ADR 0016 still mentions Husky but lefthook is the implemented hook adapter.
+      sourceFingerprints:
+        - sourceRef: package.json
+          value: sha256:1707dcfe119b5301e61b18b93734ec75f4d545d24a784d09dd4e9503386af2e0
+        - sourceRef: lefthook.yml
+          value: sha256:bcf6d1c126fdfb684d2ac2691b427e25fc8445cff9ac7d8fdf114f40411d4e7b
+        - sourceRef: .oxlintrc.json
+          value: sha256:0c74923bcb1504154abea51af4b33dc6962dc94ed70f08038d14eb2e80c4dbe2
+        - sourceRef: .github/workflows/ci.yml
+          value: sha256:461cb9e41777b88964d36fbc149ee4aff974ad5de02f557543abe38ae1f117dd
+        - sourceRef: docs/git-workflow.md
+          value: sha256:0b0a5b6d6daea5a8a4287bf406dcc236476e524df9252ebf5c05c60d88f96772
+      value: "Authoritative Full Gate is `bun run check`: oxfmt check, oxlint (high-signal categories, deny warnings) native and type-aware, tsc for tools and plugin, build, test randomization check, coverage and artifact size budget. Fast Gate is lefthook pre-commit `bun run check:staged` (check-only, never mutates the index) plus commitlint Conventional Commits on commit-msg. Never bypass hooks with --no-verify. CI requires every lane (Full Gate, runtime smoke Linux/macOS, maintainer release macOS, website build)."
+    - category: compatibility
+      dependsOn:
+        - stack
+      key: compatibility-platforms
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - CONTRIBUTING.md
+          - plugins/forgix/docs/design.md
+          - plugins/forgix/package.json
+      rationale: ADR 0020, design.md and CONTRIBUTING prerequisites.
+      sourceFingerprints:
+        - sourceRef: CONTRIBUTING.md
+          value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+        - sourceRef: plugins/forgix/docs/design.md
+          value: sha256:ed6e9dd6842e656cb7767e197408b5d9ab8074ba9fceddffcef467ce933dff37
+        - sourceRef: plugins/forgix/package.json
+          value: sha256:92bac781962f3c70a1ff4b57f389bf4d237f11579927e77eb6e777671bf5bee1
+      value: Supported platforms are Linux and macOS (Windows unsupported); plugin and CLI require Node.js >=24; one plugin root serves Codex, Claude Code and Antigravity through harness-specific manifests sharing .codex/ repository paths; TaskState V6 rejects V1-V5 without migration and renamed commands carry no aliases.
+    - category: security
+      dependsOn:
+        - architecture-boundary
+      key: security-privacy
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - CONTRIBUTING.md
+          - plugins/forgix/docs/project-profile-contract.md
+          - .gitignore
+      rationale: CONTRIBUTING design constraints and profile contract.
+      sourceFingerprints:
+        - sourceRef: CONTRIBUTING.md
+          value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+        - sourceRef: plugins/forgix/docs/project-profile-contract.md
+          value: sha256:62eeca2772efabbdcebc214a09572f4106c141e19907a3c87bd97dd4c4199b08
+        - sourceRef: .gitignore
+          value: sha256:5628bc11dcba576f182d253fc9910d09fdf4fc595f50b173061da51b37fe1524
+      value: Never persist credentials, raw codex app-server protocol payloads, transcripts or hidden reasoning; shared artifacts reject secret-like values and absolute local paths; local-only data stays in gitignored .codex/*.local.yaml, tasks, benchmarks and project-init; the distributed runtime is network-free.
+    - category: data
+      dependsOn:
+        - error-handling
+      key: data-state-integrity
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - plugins/forgix/src/project-profile.ts
+          - plugins/forgix/src/state-store.ts
+          - CONTRIBUTING.md
+      rationale: State store and project-profile implementation plus CONTRIBUTING invariants.
+      sourceFingerprints:
+        - sourceRef: plugins/forgix/src/project-profile.ts
+          value: sha256:bd2c8b0f8917ce0baa5b972f1090f9f0115557f5f76243c93e7974a9571607bf
+        - sourceRef: plugins/forgix/src/state-store.ts
+          value: sha256:596a3efc34d65dafbf7e24f0ede85dcfd5b88e9460f862b0f1df38211c3827d4
+        - sourceRef: CONTRIBUTING.md
+          value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+      value: "Durable state and profiles are schema-validated (JSON Schema under plugins/forgix/schemas), digest-bound and written atomically via temp file + rename; symlinked targets are rejected; state transitions stay resumable; merge: never is a non-bypassable invariant."
+    - category: performance
+      dependsOn:
+        - quality-gate
+      key: performance-budgets
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - plugins/forgix/test/artifact-budget.json
+          - plugins/forgix/package.json
+      rationale: ADR 0019 and check:size script.
+      sourceFingerprints:
+        - sourceRef: plugins/forgix/test/artifact-budget.json
+          value: sha256:9cd8448c876d35d4cb1382c7f7893e6da03a6ca62a01d6a332166dcaaa50d554
+        - sourceRef: plugins/forgix/package.json
+          value: sha256:92bac781962f3c70a1ff4b57f389bf4d237f11579927e77eb6e777671bf5bee1
+      value: Deterministic artifact budgets (bundle, packed and unpacked package) block growth beyond recorded headroom; Fast Gate, Full Gate and cold CLI-start timings are observed only and never change exit status.
+    - category: frontend
+      dependsOn:
+        - source-structure
+      key: frontend-site
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - site/package.json
+          - docs/adr/0032-keep-the-public-website-in-the-product-repository.md
+      rationale: ADR 0032 and site manifest.
+      sourceFingerprints:
+        - sourceRef: site/package.json
+          value: sha256:630966f26eb5a8b47dda504357998bfa3c2321c26c95f0ddd7ff123cdeb58607
+        - sourceRef: docs/adr/0032-keep-the-public-website-in-the-product-repository.md
+          value: sha256:852f5c2920eda3c901ee1b09c0d1a7ef18c98582f929d883a3c8e5e5bf164af5
+      value: Public English website lives in root site/ workspace (Astro 7, Tailwind CSS 4, motion, TypeScript 6, Node 26) outside the plugin distribution; it links to the canonical Getting Started guide instead of duplicating walkthroughs; its build is a required CI lane.
+    - category: deployment
+      dependsOn:
+        - quality-gate
+      key: delivery-release
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - docs/git-workflow.md
+          - CONTRIBUTING.md
+          - release-please-config.json
+      rationale: docs/git-workflow.md, CONTRIBUTING releases section and release workflows.
+      sourceFingerprints:
+        - sourceRef: docs/git-workflow.md
+          value: sha256:0b0a5b6d6daea5a8a4287bf406dcc236476e524df9252ebf5c05c60d88f96772
+        - sourceRef: CONTRIBUTING.md
+          value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+        - sourceRef: release-please-config.json
+          value: sha256:d941cbd1509a1ab4152e636421393dcae83995e66d83187a9bc36f8ead7a2483
+      value: Trunk is main; work happens on feat/fix/chore/docs/refactor branches in .worktrees/ via scripts/worktree.sh; Conventional Commits without co-author trailers; draft PRs squash-merged into main; push/PR/destructive git require explicit approval. Releases use release-please plus the interactive `bun run release` (plugin, npm @acrasie/forgix, or both) from clean synchronized main with resumable partial publication.
+    - category: operations
+      dependsOn:
+        - architecture-boundary
+      key: documentation-ownership
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: repository
+        sourceRefs:
+          - CONTRIBUTING.md
+          - plugins/forgix/docs/design.md
+      rationale: ADR 0028 and CONTRIBUTING.
+      sourceFingerprints:
+        - sourceRef: CONTRIBUTING.md
+          value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+        - sourceRef: plugins/forgix/docs/design.md
+          value: sha256:ed6e9dd6842e656cb7767e197408b5d9ab8074ba9fceddffcef467ce933dff37
+      value: README files teach current user behavior (root and packaged README aligned), Getting Started owns the walkthrough, contracts own normative details, target documents are labeled; architecture changes update plugins/forgix/docs/design.md; durable trade-offs get an ADR.
+    - category: compatibility
+      dependsOn:
+        - compatibility-platforms
+      key: harness-target
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: user
+        sourceRefs:
+          - .codex/forgix.yaml
+          - plugins/forgix/docs/design.md
+          - plugins/forgix/schemas/config.schema.json
+          - plugins/forgix/src/init.ts
+      rationale: User choice; the repository ships one plugin root for all three harnesses and maintainers dogfood each host.
+      sourceFingerprints:
+        - sourceRef: .codex/forgix.yaml
+          value: sha256:72d2c7b8f2363871fe9a2a1cca685b57eebd416c274fb6c066d09b9717963204
+        - sourceRef: plugins/forgix/docs/design.md
+          value: sha256:ed6e9dd6842e656cb7767e197408b5d9ab8074ba9fceddffcef467ce933dff37
+        - sourceRef: plugins/forgix/schemas/config.schema.json
+          value: sha256:0be79a1882cf9c83c05640f3bb7cb331ec3a261f68ab7f5c7fb40fb63358b3e3
+        - sourceRef: plugins/forgix/src/init.ts
+          value: sha256:6c649c7484335eae07f178e58a1a47656f7682701ec0d2fd60f65c3510741ff0
+      value: "Repository default harness is auto (omitted in .codex/forgix.yaml per init convention): Forgix detects the active host (Codex, Claude Code, or Antigravity) at runtime; Codex uses codex app-server routing with subscription plan plus (warning 50%, critical 80%, unknownPolicy conservative), while Claude Code and Antigravity use host-native routing. .codex/forgix.yaml also allows external integrations impeccable, context-mode, and impeccable:frontend-design."
+    - category: operations
+      dependsOn:
+        - documentation-ownership
+      key: domain-documentation-home
+      provenance:
+        capturedAt: 2026-11-15T09:05:53.000Z
+        kind: user
+        sourceRefs:
+          - CONTRIBUTING.md
+          - plugins/forgix/docs/glossary/forgix.md
+      rationale: User choice aligned with CONTRIBUTING policy; ADRs and glossary ship with the npm package.
+      sourceFingerprints:
+        - sourceRef: CONTRIBUTING.md
+          value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+        - sourceRef: plugins/forgix/docs/glossary/forgix.md
+          value: sha256:1107cc1e68d43ea6f0f7fff9f6933af06002cfdaa04100b6ac681fc0b7572db4
+      value: "Domain documentation lives in the plugin package: ADRs in plugins/forgix/docs/adr (NNNN-kebab-title.md, next number continues the global sequence), glossary in plugins/forgix/docs/glossary/forgix.md, business rules in plugins/forgix/docs/glossary/rules.md (created on demand). Root docs/adr 0032-0034 are outliers pending relocation in a separate task."
+  diagramRefs:
+    - .codex/forgix/diagrams/forgix-architecture-r1.mermaid.md
+  domainDocumentation:
+    adrDirectory: plugins/forgix/docs/adr
+    contextMode: single
+    glossaryPath: plugins/forgix/docs/glossary/forgix.md
+    identityConvention: "ADRs use a global four-digit sequence and kebab-case title (NNNN-kebab-title.md, heading '# ADR NNNN: Title'); glossary terms are Markdown level-2/level-3 headings grouped by lifecycle/feature section in plugins/forgix/docs/glossary/forgix.md; rules use stable kebab-case identifiers."
+    language: English
+    linkConvention: Relative Markdown links between repository documents; link to the owning contract or ADR instead of duplicating normative text.
+    rulesPath: plugins/forgix/docs/glossary/rules.md
+    sourceFingerprints:
+      - sourceRef: plugins/forgix/docs/glossary/forgix.md
+        value: sha256:1107cc1e68d43ea6f0f7fff9f6933af06002cfdaa04100b6ac681fc0b7572db4
+      - sourceRef: CONTRIBUTING.md
+        value: sha256:c889afa27d831e1cd625988a64efbe307dbe7816e0c020691f0aadbe8c2f8ff9
+  project:
+    id: forgix
+    name: Forgix
+  stack:
+    - id: typescript
+      role: plugin runtime, tooling and tests (strict)
+      sourceRefs:
+        - package.json
+        - plugins/forgix/package.json
+      version: 7.0.2
+    - id: nodejs
+      role: CLI runtime engine (>=24); website requires 26
+      sourceRefs:
+        - .node-version
+        - plugins/forgix/package.json
+        - site/.node-version
+      version: "24"
+    - id: bun
+      role: package manager, workspace, test runner and script host
+      sourceRefs:
+        - .bun-version
+        - package.json
+      version: 1.4.4
+    - id: esbuild
+      role: bundles src into dist/forgix.mjs
+      sourceRefs:
+        - plugins/forgix/package.json
+      version: 0.28.1
+    - id: oxc-toolchain
+      role: oxfmt formatting and oxlint (native + type-aware) linting
+      sourceRefs:
+        - package.json
+        - .oxlintrc.json
+      version: oxlint 1.76.0
+    - id: lefthook-commitlint
+      role: pre-commit Fast Gate and Conventional Commit enforcement
+      sourceRefs:
+        - lefthook.yml
+        - commitlint.config.js
+    - id: astro
+      role: public website framework with Tailwind CSS 4
+      sourceRefs:
+        - site/package.json
+      version: 7.3.5
+    - id: github-actions
+      role: CI, release-please and package publication
+      sourceRefs:
+        - .github/workflows/ci.yml
+        - release-please-config.json
+  topology:
+    rootServiceId: plugin
+    services:
+      - contracts:
+          - forgix CLI JSON envelope and exit codes
+          - Codex, Claude Code and Antigravity plugin manifests
+          - JSON Schemas in plugins/forgix/schemas
+          - lifecycle and project-profile contracts
+        dependencies: []
+        id: plugin
+        responsibility: Forgix deterministic runtime, bundled CLI, skills, schemas and normative docs; the only publishable package (npm @acrasie/forgix and Codex/Claude Code/Antigravity plugin).
+        sourceRefs:
+          - plugins/forgix/package.json
+          - plugins/forgix/docs/design.md
+      - contracts:
+          - links to plugins/forgix/docs/getting-started.md
+        dependencies:
+          - plugin
+        id: site
+        responsibility: Public English website presenting current capabilities and installation; links to canonical guides; outside plugin distribution.
+        sourceRefs:
+          - site/package.json
+          - docs/adr/0032-keep-the-public-website-in-the-product-repository.md
+contentDigest: 06cad4b54164ce97bcf88947edf32fd571aed5dfb77840f48a9b942de06d7a03
+profileId: forgix
+revision: 1
+schemaVersion: 1
