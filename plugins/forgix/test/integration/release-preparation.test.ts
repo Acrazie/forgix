@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { requireCommand } from "../../scripts/release-lib.ts";
+import { pinReleaseFixtureVersions } from "../support/release-fixtures.ts";
 
 // The real preparation code, prompts stubbed and child validation replaced by a
 // deterministic local executable. git-cliff and Git themselves are exercised.
@@ -31,6 +32,7 @@ function preparation() {
     mkdirSync(dirname(join(directory, path)), { recursive: true });
     cpSync(new URL(path, source), join(directory, path));
   }
+  pinReleaseFixtureVersions(directory);
   const initial = {
     "bun.lock": "original lock\n",
     "plugins/forgix/dist/forgix.mjs": "original bundle\n",

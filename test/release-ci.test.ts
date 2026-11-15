@@ -1,3 +1,4 @@
+import { pinReleaseFixtureVersions } from "../plugins/forgix/test/support/release-fixtures.ts";
 import { validateVersions } from "../plugins/forgix/scripts/release-lib.ts";
 import { readFileSync, cpSync, mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -156,6 +157,7 @@ describe("release trust and reconciliation contracts", () => {
         mkdirSync(join(root, path, ".."), { recursive: true });
         cpSync(new URL(`../${path}`, import.meta.url), join(root, path));
       }
+      pinReleaseFixtureVersions(root);
       expect(validateVersions(root, "npm-v1.0.1")).toMatch(/^1\.0\.1/);
       expect(() => validateVersions(root, "npm-v2.0.0")).toThrow(/npm manifest/);
       expect(() => validateVersions(root, "plugin-v1.0.1-codex.20261115120000")).toThrow(
