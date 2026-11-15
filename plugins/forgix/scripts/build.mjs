@@ -1,34 +1,33 @@
-import { build } from "esbuild";
+import { build } from "vite-plus/pack";
 import { chmod, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { distribution } from "../../../vite.config.ts";
 
-const OUTPUT_PATH = "dist/forgix.mjs";
+const OUTPUT_PATH = fileURLToPath(new URL("../dist/forgix.mjs", import.meta.url));
 
 export async function createDistributionBundle() {
-  const result = await build({
-    bundle: true,
-    entryPoints: ["src/cli.ts"],
-    format: "esm",
-    outfile: OUTPUT_PATH,
-    platform: "node",
-    // Strip layout-specific generated names/comments without changing module resolution.
-    minify: true,
-    sourcemap: false,
-    target: "node24.0",
+  const { bundles } = await build({
+    ...distribution,
+    config: false,
     write: false,
-    banner: {
-      js: '#!/usr/bin/env node\nimport { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
-    },
+    logLevel: "error",
   });
-  const output = result.outputFiles[0];
-  if (!output) throw new Error("esbuild did not produce the distribution bundle.");
-  return output.contents;
+  try {
+    const outputs = bundles.flatMap((bundle) => bundle.chunks);
+    if (outputs.length !== 1 || outputs[0].type !== "chunk") {
+      throw new Error("Vite+ must produce exactly one JavaScript distribution bundle.");
+    }
+    const code = outputs[0].code;
+    return Buffer.from(code.startsWith("#!") ? code : `#!/usr/bin/env node\n${code}`);
+  } finally {
+    await Promise.all(bundles.map((bundle) => bundle[Symbol.asyncDispose]()));
+  }
 }
 
 export async function writeDistributionBundle() {
   const contents = await createDistributionBundle();
-  await mkdir("dist", { recursive: true });
+  await mkdir(new URL("../dist/", import.meta.url), { recursive: true });
   await writeFile(OUTPUT_PATH, contents);
   await chmod(OUTPUT_PATH, 0o755);
 }

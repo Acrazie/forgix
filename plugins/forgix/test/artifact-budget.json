@@ -50,6 +50,7 @@
     "docs/adr/0029-make-build-a-native-execution-boundary.md",
     "docs/adr/0030-unify-product-domain-and-technical-design-interviews.md",
     "docs/adr/0031-make-assure-the-success-boundary.md",
+    "docs/adr/0032-consolidate-development-tooling-with-vite-plus.md",
     "docs/artifacts.md",
     "docs/baselines/2026-07-18-p0-lifecycle.json",
     "docs/design.md",

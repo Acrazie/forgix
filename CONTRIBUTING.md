@@ -129,8 +129,14 @@ bun run --cwd plugins/forgix release:test
 bun run check
 ```
 
+Quality and packaging configuration lives in root `vite.config.ts`. Vite+ 1.6.0
+provides Oxfmt, Oxlint, and tsdown/Rolldown through one pinned dependency. The
+plugin build uses its public `vite-plus/pack` API, retaining an in-memory rebuild
+for distribution tests. Bun remains the package manager and test runner; the site
+retains its independent Astro build and TypeScript 6 checker.
+
 The pre-commit hook runs `bun run check:staged`. Its small Bun adapter passes only staged,
-supported files to Oxfmt in check-only mode and native Oxlint. It never formats files or
+supported files to Vite+ `vp fmt --check` and native `vp lint`. It never formats files or
 mutates the index; the complete root check remains the authoritative gate.
 
 Artifact budgets block deterministic bundle, packed package, or unpacked package growth
