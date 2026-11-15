@@ -28,7 +28,7 @@ test("project-profile validate previews exact diff without writing; publish requ
     expect(validate.data.diff.addedDecisionKeys).toHaveLength(8);
     expect(validate.data.yaml).not.toContain("approval:");
     await expectRejected(
-      () => readFile(join(root, ".codex", "forgix.project.yaml")),
+      () => readFile(join(root, ".forgix", "project.yaml")),
       (error) => error instanceof Error && error.message.includes("ENOENT"),
     );
 
@@ -60,7 +60,7 @@ test("project-profile transaction carries exact generated projections", async ()
   const root = await workspace();
   try {
     const profile = projectProfileInput();
-    const path = ".codex/forgix/diagrams/project-r1.mermaid.md";
+    const path = ".forgix/diagrams/project-r1.mermaid.md";
     profile.content.diagramRefs = [path];
     const transaction = {
       profile,
@@ -100,9 +100,9 @@ test("project-profile local backend validates ignore and shared authority", asyn
           workspaceRoot: root,
           projectProfile: { input: stringify(local) },
         }),
-      (error) => error instanceof sourceApi.ProjectProfileError,
+      (error) => error instanceof sourceApi.profile.ProjectProfileError,
     );
-    await writeFile(join(root, ".gitignore"), ".codex/forgix.project.local.yaml\n");
+    await writeFile(join(root, ".gitignore"), ".forgix/project.local.yaml\n");
     const published = await sourceApi.runInvocation(["project-profile", "publish", "--local"], {
       workspaceRoot: root,
       projectProfile: { input: stringify(local) },
@@ -126,7 +126,7 @@ test("project-profile backend bounds stdin and rejects transaction extras", asyn
           workspaceRoot: root,
           projectProfile: { input: "x".repeat(2_000_001) },
         }),
-      (error) => error instanceof sourceApi.InvocationError && /exceeds/.test(error.message),
+      (error) => error instanceof sourceApi.schema.InvocationError && /exceeds/.test(error.message),
     );
     await expectRejected(
       () =>
@@ -137,7 +137,8 @@ test("project-profile backend bounds stdin and rejects transaction extras", asyn
           },
         }),
       (error) =>
-        error instanceof sourceApi.InvocationError && /unsupported fields/.test(error.message),
+        error instanceof sourceApi.schema.InvocationError &&
+        /unsupported fields/.test(error.message),
     );
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -174,7 +175,8 @@ test("Project INIT session binds publication to validated candidate digest", asy
           projectProfile: { input: stringify(changed) },
         }),
       (error) =>
-        error instanceof sourceApi.ProjectProfileError && error.code === "profile_session_conflict",
+        error instanceof sourceApi.profile.ProjectProfileError &&
+        error.code === "profile_session_conflict",
     );
     expect(
       (

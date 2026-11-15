@@ -10,8 +10,8 @@ import {
   validateProjectInitState,
   validateProjectProfile,
   validateProjectProfileProjections,
-} from "../../src/project-profile.ts";
-import { validateSchema } from "../../src/config.ts";
+} from "../../src/profile/index.ts";
+import { validateSchema } from "../../src/core/schema.ts";
 import { expectThrown } from "../support/expect-error.ts";
 import {
   localProfileInput,
@@ -34,7 +34,8 @@ test("project profile canonical digest and approval bind exact durable content",
   tampered.content.decisions[0]!.value = "silently changed";
   expectThrown(
     () => validateProjectProfile(tampered),
-    (error) => error instanceof ProjectProfileError && error.code === "profile_digest_mismatch",
+    (error: unknown) =>
+      error instanceof ProjectProfileError && error.code === "profile_digest_mismatch",
   );
 });
 
@@ -125,7 +126,7 @@ test("profile diff and generated projections describe exact proposed transaction
     category: "api",
     value: "HTTP JSON",
   });
-  changedInput.content.diagramRefs = [".codex/forgix/diagrams/forgix-r2.mermaid.md"];
+  changedInput.content.diagramRefs = [".forgix/diagrams/forgix-r2.mermaid.md"];
   const changed = prepareProjectProfile(changedInput);
   expect(diffProjectProfiles(approveProjectProfile(initial), changed)).toMatchObject({
     addedDecisionKeys: ["api-contract"],
@@ -151,7 +152,8 @@ test("profile diff and generated projections describe exact proposed transaction
   legacyDiagramInput.content.diagramRefs = [".codex/dev-flow/diagrams/legacy.mermaid.md"];
   expectThrown(
     () => prepareProjectProfile(legacyDiagramInput),
-    (error) => error instanceof ProjectProfileError && error.code === "profile_projection_invalid",
+    (error: unknown) =>
+      error instanceof ProjectProfileError && error.code === "profile_projection_invalid",
   );
 });
 

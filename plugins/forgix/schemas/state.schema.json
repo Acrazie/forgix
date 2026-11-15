@@ -94,12 +94,6 @@
         "type": "object"
       }
     },
-    "intake": {
-      "$ref": "#/$defs/intakeState"
-    },
-    "benchmarkEnabled": {
-      "type": "boolean"
-    },
     "resumeReason": {
       "$ref": "#/$defs/text"
     },
@@ -300,9 +294,7 @@
             "issue.recorded",
             "correction.recorded",
             "context.updated",
-            "intake.checkpoint",
             "advance.rejected",
-            "intake.reopened",
             "discovery.target_recorded",
             "discovery.evidence_recorded",
             "discovery.completed",
@@ -452,124 +444,6 @@
         }
       }
     },
-    "intakeState": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "schemaVersion",
-        "risk",
-        "provenance",
-        "technicalUnknowns",
-        "decisions",
-        "answeredDecisionKeys",
-        "invalidations",
-        "contradictions",
-        "semanticComplete",
-        "deterministicComplete",
-        "checkpointDue",
-        "semanticRetryCount",
-        "metrics"
-      ],
-      "properties": {
-        "schemaVersion": {
-          "const": 1
-        },
-        "decisions": {
-          "type": "array"
-        },
-        "answeredDecisionKeys": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "invalidations": {
-          "type": "array"
-        },
-        "contradictions": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "semanticComplete": {
-          "type": "boolean"
-        },
-        "deterministicComplete": {
-          "type": "boolean"
-        },
-        "checkpointDue": {
-          "type": "boolean"
-        },
-        "semanticRetryCount": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "blockedReason": {
-          "enum": ["semantic_output_invalid", "answer_required"]
-        },
-        "metrics": {
-          "$ref": "#/$defs/intakeMetrics"
-        },
-        "risk": {
-          "enum": ["low", "medium", "high", "critical"]
-        },
-        "provenance": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["sourceRefs", "capturedAt", "freshnessRefs"],
-          "properties": {
-            "sourceRefs": {
-              "type": "array",
-              "maxItems": 32,
-              "items": {
-                "type": "string"
-              }
-            },
-            "capturedAt": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
-            "freshnessRefs": {
-              "type": "array",
-              "maxItems": 32,
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "technicalUnknowns": {
-          "type": "array",
-          "maxItems": 32,
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["key", "kind", "description", "owner"],
-            "properties": {
-              "key": {
-                "type": "string"
-              },
-              "kind": {
-                "enum": ["code", "dependency", "architecture", "validation", "operations"]
-              },
-              "description": {
-                "type": "string"
-              },
-              "owner": {
-                "const": "shape"
-              }
-            }
-          }
-        },
-        "activeQuestionId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        }
-      }
-    },
     "shapeState": {
       "type": "object",
       "additionalProperties": false,
@@ -579,13 +453,7 @@
         "productBaselineRef",
         "discoveryTargets",
         "evidence",
-        "sourceFingerprints",
-        "technicalDecisions",
-        "dependencyGraph",
-        "invalidations",
-        "budget",
-        "semanticRetryCounts",
-        "evaluatorReceipts"
+        "dependencyGraph"
       ],
       "properties": {
         "schemaVersion": {
@@ -652,72 +520,6 @@
         },
         "semanticRetryCounts": {
           "type": "object"
-        },
-        "evaluatorReceipts": {
-          "type": "array",
-          "maxItems": 4096,
-          "items": {
-            "type": "object"
-          }
-        }
-      }
-    },
-    "intakeMetrics": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "modelCalls",
-        "questionsAsked",
-        "questionsAvoided",
-        "distinctQuestions",
-        "recommendationsAccepted",
-        "recommendationsModified",
-        "zeroQuestionPath",
-        "lateReopenings"
-      ],
-      "properties": {
-        "modelCalls": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "questionsAsked": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "questionsAvoided": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "distinctQuestions": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "recommendationsAccepted": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "recommendationsModified": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "lateReopenings": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "inputTokens": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "outputTokens": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "latencyMs": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "zeroQuestionPath": {
-          "type": "boolean"
         }
       }
     },

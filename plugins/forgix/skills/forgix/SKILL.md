@@ -7,9 +7,9 @@ description: Use when shaping, implementing, debugging, reviewing, or assuring a
 
 Follow [lifecycle contract](../../docs/lifecycle-contract.md): exactly INTAKE, SHAPE,
 GATE, BUILD, ASSURE. ASSURE is final phase; never invent or persist another phase or
-success status. Canonical registry, strict V6 state, durable state store, unified design protocol,
-and local benchmark store are available primitives. Never claim a durable transition,
-Approval binding, or Assurance Receipt without deterministic evidence.
+success status. Canonical state validation, durable TaskState store, unified design protocol,
+and deterministic CLI task/profile/roadmap commands are available primitives. Never claim a
+durable transition, Approval binding, or Assurance Receipt without deterministic evidence.
 
 Exact `$forgix init` (Codex), `/forgix:forgix init` (Claude Code), or `/forgix init`
 (Antigravity) follows Project INIT below. Exact `$forgix roadmap` follows Roadmap
@@ -55,7 +55,7 @@ subscription/quota questions only when targeting `codex` or `auto`.
 1. Run `forgix project-profile session-view`, then `project-profile inspect`.
    Resume exact persisted active question unless dependency evidence changed; otherwise
    invalidate affected closure and return to Discovery. Before first session save, ensure
-   `/.codex/project-init/` is ignored; if repository does not already cover it, request
+   `/.forgix/init/` is ignored; if repository does not already cover it, request
    one scoped approval to add exact ignore rule. Read applicable repository guidance,
    manifests, locks, architecture sources, tests, contracts, representative code, and
    configured accessible service roots before asking. Existing profile is authoritative
@@ -77,14 +77,14 @@ subscription/quota questions only when targeting `codex` or `auto`.
    architecture/state/sequence, isolated temporary HTML/CSS for material UI decisions,
    Excalidraw/image only when requested or necessary. YAML remains canonical; Mermaid
    is generated projection. Temporary prototypes never enter product source.
-5. Keep shared `.codex/forgix.project.yaml` durable and portable. It may contain only
+5. Keep shared `.forgix/project.yaml` durable and portable. It may contain only
    logical project/service identities, stack, topology/contracts, approved conventions,
    provenance, source fingerprints, relative diagram refs, revision, digest, and
    receipt. Keep volatile observations in temporary INIT registry. Never place absolute
    paths in shared profile.
-6. Keep `.codex/forgix.project.local.yaml` gitignored. It contains only absolute local
+6. Keep `.forgix/project.local.yaml` gitignored. It contains only absolute local
    service-path mappings and non-contractual preferences. Before local publication,
-   propose exact `/.codex/forgix.project.local.yaml` ignore rule if absent and obtain
+   propose exact `/.forgix/project.local.yaml` ignore rule if absent and obtain
    approval with profile diff. Local preferences cannot override shared decisions.
 7. Multi-service Discovery is progressive. Root shared profile owns logical topology,
    responsibilities, contracts, and external profile refs. Each repository owns own
@@ -122,7 +122,7 @@ business-context boundaries. SHAPE owns repository evidence and material technic
 decisions. Optimize tokens without weakening user authority, privacy, or truthful
 completion.
 
-1. Parse invocation; persist leading `--benchmark` only for new runs. Read cheap entry
+1. Parse invocation via the bundled CLI. Read cheap entry
    sources, approved Project Profile/domain conventions, and user-cited documents. Do
    not inspect implementation generally.
 2. In same initial model processing, return Product Baseline progress, domain deltas,
@@ -293,33 +293,17 @@ Commit, push, pull request, registry, release, and other delivery work is outsid
 lifecycle/state. The active host agent may perform it afterward under its own
 explicit authorization. GATE approval grants no authority for those actions.
 
-### Opt-in local benchmark
-
-Benchmark is out-of-band and never changes lifecycle outcome.
-
-- Offer only when persisted `benchmarkEnabled=true` and truthful outcome is `success`
-  or `failed`. Never offer for blocked or cancelled.
-- Ask exactly three deterministic, no-model questions: satisfaction 1–5; conformance
-  yes/partial/no; plugin value useful/neutral/counterproductive. Optional comment follows.
-- No response or incomplete three required answers means no record and total exclusion.
-- Compute deviation facts deterministically against canonical Shape contract for both
-  profiles. New file is deviation only when forbidden or unplanned by that authority.
-- Write complete allowlisted/redacted record atomically to
-  `.codex/benchmarks/<task-id>.json`. Never upload it. Write failure is non-fatal.
-- `npx @acrasie/forgix benchmark summary` aggregates complete local records without model
-  calls.
-
 ## Roadmap Ideation and Autonomous Execution
 
 ### Upstream `$forgix roadmap`
 
 Exact `$forgix roadmap` runs outside `TaskState` to build a GitHub Project v2 roadmap:
 
-1. **Preflight**: Read `.codex/forgix.project.yaml` and domain rules/glossary if present
+1. **Preflight**: Read `.forgix/project.yaml` and domain rules/glossary if present
    (suggest `$forgix init` without blocking if missing). Run lightweight codebase discovery
    on existing repos; start in Divergence on greenfield repos. Verify `gh auth status` has
    `project` scope before GitHub mutations.
-2. **3-phase session** in gitignored `.codex/roadmap/state.yaml` via
+2. **3-phase session** in gitignored `.forgix/roadmap/state.yaml` via
    `forgix roadmap session-view|session-save|session-clear`:
    - **Divergence**: explore themes, user outcomes, constraints, and initial risks.
    - **Convergence**: build a 2-level hierarchy of `Feature` parents and atomic `Work Item`
@@ -329,7 +313,7 @@ Exact `$forgix roadmap` runs outside `TaskState` to build a GitHub Project v2 ro
    - **Synthesis & approval**: run `forgix roadmap validate --session` and render ASCII
      `"tree"` or `"mermaid"` DAG (`renderRoadmapVisualSummary`). Wave 1 unblocked items
      default to `Ready`; later waves start `Backlog`.
-3. **Publication**: Commit `docs/product-vision.md`, domain docs, and `.codex/forgix.yaml`
+3. **Publication**: Commit `docs/product-vision.md`, domain docs, and `.forgix/config.yaml`
    `roadmap` binding in Git only when requested; run `forgix roadmap publish-plan`, create/attach
    the GitHub Project v2, publish `Feature` (`feature` label) and `Work Item` sub-issues with
    native `blocked-by` edges and Project fields (`Status`, `Kind`, `Risk`, `Priority`, `Wave`),
@@ -354,11 +338,20 @@ Exact `$forgix roadmap` runs outside `TaskState` to build a GitHub Project v2 ro
 
 ## Resume, evidence, and artifacts
 
-Target local state lives under `.codex/tasks/`; versioned artifact belongs to active
+Target local state lives under `.forgix/tasks/`; versioned artifact belongs to active
 worktree and follows repository retention policy. Reuse existing artifact
 identity; never duplicate task artifact. Plan projections default to
 `docs/forgix/YYYY-MM-DD-<slug>.md`; legacy paths such as `spec.md`, `plan.md`,
 `risk-and-rollback.md`, and `verification.md` are repository choices only.
+
+Use the deterministic task CLI for strict V6 validation, atomic state persistence, and
+gate transitions:
+
+- `forgix task validate [task-id]` validates persisted `.forgix/tasks/<task-id>.json` or
+  a JSON/YAML state payload on stdin against `schemas/state.schema.json` and invariants.
+- `forgix task save <task-id>` validates and atomically writes `.forgix/tasks/<task-id>.json`.
+- `forgix task gate <task-id> [--view | --approve | --reject | --change=<instruction> | --autonomous [--issue=<ref>]]`
+  renders gate preflight/card state (`--view`) or persists a digest-bound gate transition.
 
 Resume must validate strict V6 state, reconcile config/policy/routing/artifact/Git/evidence,
 selectively invalidate stale projections, then continue first unproved action. Never claim success without fresh evidence. Record commands, results, skipped checks,

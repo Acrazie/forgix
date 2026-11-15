@@ -1,7 +1,8 @@
-.codex/tasks/
-.codex/benchmarks/
-.codex/forgix.local.yaml
-.codex/forgix.project.local.yaml
-.codex/project-init/
+.forgix/tasks/
+.forgix/cache/
+.forgix/config.local.yaml
+.forgix/project.local.yaml
+.forgix/init/
+.forgix/roadmap/
 .worktrees/
 node_modules/

@@ -1,9 +1,12 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
-import * as sourceApi from "../../src/cli.ts";
+import * as cliApi from "../../src/cli.ts";
+import * as routingApi from "../../src/core/routing.ts";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
+
+const sourceApi = { ...cliApi, ...routingApi };
 
 test("renders stable CLI help without runtime routing", async () => {
   const result = await sourceApi.runInvocation(["--help"]);

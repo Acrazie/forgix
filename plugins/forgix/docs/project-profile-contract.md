@@ -36,7 +36,7 @@ appear exactly one at a time. Each carries evidence, recommendation and confiden
 cap, periodic progress checkpoint, or cost-estimation prompt. Greenfield INIT produces
 profile and optional generated diagram only, never product scaffold.
 
-Compact local `.codex/project-init/state.yaml` persists normalized decisions, stale
+Compact local `.forgix/init/state.yaml` persists normalized decisions, stale
 keys, status, candidate digest, and at most one exact active question. Schema:
 [project-init-state.schema.json](../schemas/project-init-state.schema.json). It contains
 no transcript or hidden reasoning and is gitignored. Every save preserves session/profile
@@ -54,7 +54,7 @@ validation and approval transaction.
 Canonical shared file is versioned:
 
 ```text
-.codex/forgix.project.yaml
+.forgix/project.yaml
 ```
 
 Schema: [project-profile.schema.json](../schemas/project-profile.schema.json).
@@ -68,7 +68,7 @@ Required content:
 - optional `domainDocumentation` conventions: single/multiple context mode, portable
   glossary/rules/ADR/context-map paths, language, stable identity/link conventions, and
   source fingerprints;
-- optional relative Markdown diagram refs below `.codex/forgix/diagrams/`; and
+- optional relative Markdown diagram refs below `.forgix/diagrams/`; and
 - monotonic revision, canonical content digest, and Profile Approval Receipt.
 
 Decision dependency graph is acyclic. `user_asserted` decisions cannot carry verified
@@ -86,7 +86,7 @@ digest binds those fields. Any mismatch makes profile invalid.
 Local file is gitignored:
 
 ```text
-.codex/forgix.project.local.yaml
+.forgix/project.local.yaml
 ```
 
 Schema: [project-profile-local.schema.json](../schemas/project-profile-local.schema.json).
@@ -130,7 +130,7 @@ Candidate stdin may be raw profile YAML/JSON or transaction object:
 ````yaml
 profile: # profile proposal without approval
 projections:
-  - path: .codex/forgix/diagrams/example-r1.mermaid.md
+  - path: .forgix/diagrams/example-r1.mermaid.md
     content: |-
       ```mermaid
       flowchart LR

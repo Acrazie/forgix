@@ -179,4 +179,4 @@ Keep pull requests focused and include:
 - Known limitations or deferred work.
 - Documentation changes for user-visible behavior.
 
-Do not include generated dependencies, credentials, local task state, or `.codex/forgix.local.yaml`.
+Do not include generated dependencies, credentials, local task state, or `.forgix/config.local.yaml`.

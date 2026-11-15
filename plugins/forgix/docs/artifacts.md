@@ -38,7 +38,9 @@ Projection is never second source of truth.
 - Resume reconciles fingerprints and continues first unproved targeted action.
 - Approval binds gate, actor evidence, state revision/fingerprint, artifact identity, and
   digest—not pathname or boolean.
-- Benchmark authority is canonical Shape contract for both Quick and Plan.
+- Durable task state lives at `.forgix/tasks/<task-id>.json` and is validated, saved,
+  and gated via `forgix task validate`, `forgix task save <task-id>`, and
+  `forgix task gate <task-id>`.
 
 ## Legacy layouts
 

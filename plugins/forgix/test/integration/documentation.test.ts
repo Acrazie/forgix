@@ -23,9 +23,9 @@ const installationJourneyMarkers = [
   "INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓",
   "Project INIT",
   "Configuration wizard",
-  ".codex/forgix.project.yaml",
-  ".codex/forgix.project.local.yaml",
-  ".codex/project-init/state.yaml",
+  ".forgix/project.yaml",
+  ".forgix/project.local.yaml",
+  ".forgix/init/state.yaml",
 ];
 
 function relativeLinks(markdown: string): string[] {

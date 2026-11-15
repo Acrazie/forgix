@@ -3,7 +3,7 @@ import {
   LOCAL_PROJECT_PROFILE_IGNORE_ENTRY,
   ProjectProfileError,
   createProjectProfileStore,
-} from "../../src/project-profile.ts";
+} from "../../src/profile/index.ts";
 import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -43,20 +43,23 @@ test("revision/no-change conflicts and failed atomic write preserve current prof
 
     await expectRejected(
       () => normal.prepareShared(projectProfileInput()),
-      (error) => error instanceof ProjectProfileError && error.code === "profile_revision_conflict",
+      (error: unknown) =>
+        error instanceof ProjectProfileError && error.code === "profile_revision_conflict",
     );
     await expectRejected(
       () => normal.prepareShared(projectProfileInput({ revision: 2 })),
-      (error) => error instanceof ProjectProfileError && error.code === "profile_no_change",
+      (error: unknown) =>
+        error instanceof ProjectProfileError && error.code === "profile_no_change",
     );
 
     const changed = projectProfileInput({ revision: 2 });
     changed.content.decisions[0]!.value = "Changed after explicit reconciliation.";
-    await writeFile(join(root, ".codex", ".profile.collision.tmp"), "occupied");
+    await writeFile(join(root, ".forgix", ".project.yaml.collision.tmp"), "occupied");
     const failing = createProjectProfileStore(root, { temporaryId: () => "collision" });
     await expectRejected(
       () => failing.publishShared(changed),
-      (error) => error instanceof ProjectProfileError && error.code === "profile_write_failed",
+      (error: unknown) =>
+        error instanceof ProjectProfileError && error.code === "profile_write_failed",
     );
     expect(await readFile(normal.sharedPath, "utf8")).toBe(before);
   } finally {
@@ -72,7 +75,8 @@ test("local overlay requires explicit ignore rule and remains local-only", async
     const local = localProfileInput(root);
     await expectRejected(
       () => store.publishLocal(local),
-      (error) => error instanceof ProjectProfileError && error.code === "profile_local_not_ignored",
+      (error: unknown) =>
+        error instanceof ProjectProfileError && error.code === "profile_local_not_ignored",
     );
     await writeFile(join(root, ".gitignore"), `${LOCAL_PROJECT_PROFILE_IGNORE_ENTRY}\n`);
     expect(await store.publishLocal(local)).toEqual(local);
@@ -88,7 +92,7 @@ test("diagram projections publish before canonical profile and never follow syml
   const outside = await workspace();
   try {
     const input = projectProfileInput();
-    const diagram = ".codex/forgix/diagrams/forgix-r1.mermaid.md";
+    const diagram = ".forgix/diagrams/forgix-r1.mermaid.md";
     input.content.diagramRefs = [diagram];
     const content = "```mermaid\nflowchart LR\nProfile --> Diagram\n```\n";
     const store = createProjectProfileStore(root);
@@ -97,8 +101,8 @@ test("diagram projections publish before canonical profile and never follow syml
 
     const linkedRoot = await workspace();
     try {
-      await mkdir(join(linkedRoot, ".codex"));
-      await symlink(outside, join(linkedRoot, ".codex", "forgix"));
+      await mkdir(join(linkedRoot, ".forgix"));
+      await symlink(outside, join(linkedRoot, ".forgix", "diagrams"));
       const linkedInput = projectProfileInput();
       linkedInput.content.diagramRefs = [diagram];
       await expectRejected(
@@ -106,11 +110,12 @@ test("diagram projections publish before canonical profile and never follow syml
           createProjectProfileStore(linkedRoot).publishShared(linkedInput, {
             projections: [{ path: diagram, content }],
           }),
-        (error) => error instanceof ProjectProfileError && error.code === "profile_path_invalid",
+        (error: unknown) =>
+          error instanceof ProjectProfileError && error.code === "profile_path_invalid",
       );
       await expectRejected(
-        () => readFile(join(outside, "diagrams", "forgix-r1.mermaid.md")),
-        (error) => error instanceof Error && error.message.includes("ENOENT"),
+        () => readFile(join(outside, "forgix-r1.mermaid.md")),
+        (error: unknown) => error instanceof Error && error.message.includes("ENOENT"),
       );
     } finally {
       await rm(linkedRoot, { recursive: true, force: true });
@@ -125,15 +130,16 @@ test("shared profile directory symlink is rejected before any write", async () =
   const root = await workspace();
   const outside = await workspace();
   try {
-    await symlink(outside, join(root, ".codex"));
+    await symlink(outside, join(root, ".forgix"));
     const store = createProjectProfileStore(root);
     await expectRejected(
       () => store.publishShared(projectProfileInput()),
-      (error) => error instanceof ProjectProfileError && error.code === "profile_path_invalid",
+      (error: unknown) =>
+        error instanceof ProjectProfileError && error.code === "profile_path_invalid",
     );
     await expectRejected(
-      () => readFile(join(outside, "forgix.project.yaml")),
-      (error) => error instanceof Error && error.message.includes("ENOENT"),
+      () => readFile(join(outside, "project.yaml")),
+      (error: unknown) => error instanceof Error && error.message.includes("ENOENT"),
     );
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -178,7 +184,8 @@ test("Project INIT session state resumes exact question and clears after publica
     expect(await store.loadInitState(false)).toEqual(awaiting);
     await expectRejected(
       () => store.saveInitState(awaiting),
-      (error) => error instanceof ProjectProfileError && error.code === "profile_session_conflict",
+      (error: unknown) =>
+        error instanceof ProjectProfileError && error.code === "profile_session_conflict",
     );
     expect(await store.clearInitState()).toBe(true);
     expect(await store.loadInitState(true)).toBeUndefined();

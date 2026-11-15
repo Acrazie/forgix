@@ -1,90 +1,146 @@
-// @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
-import * as sourceApi from "../../src/cli.ts";
-import { mkdtemp, mkdir, readFile, symlink, writeFile } from "node:fs/promises";
+import { expect, test } from "bun:test";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { stringify } from "yaml";
-import { expect, test } from "bun:test";
-import { taskInput } from "../support/helpers-v6.ts";
+import { StateStoreError } from "../../src/core/schema.ts";
+import { createTaskStateStore } from "../../src/task/index.ts";
 import { expectRejected } from "../support/expect-error.ts";
-const api = async () => sourceApi;
-const workspace = () => mkdtemp(join(tmpdir(), "forgix-v5-"));
+import { makeTaskState } from "../support/helpers-v6.ts";
 
-test("V6 state round-trips atomically through YAML", async () => {
-  const a = await api();
-  const root = await workspace();
-  const store = a.createTaskStateStore(root);
-  const state = a.createState(taskInput("roundtrip"));
-  await store.save("roundtrip", state);
-  expect(await store.load("roundtrip")).toEqual(state);
-  expect(
-    (await readFile(store.paths("roundtrip").statePath, "utf8")).includes("schemaVersion: 6"),
-  ).toBe(true);
-});
+const makeWorkspace = () => mkdtemp(join(tmpdir(), "forgix-v6-store-"));
 
-test("V1 through V4 load fail with explicit incompatible-schema code; no migration exists", async () => {
-  const a = await api();
-  for (const schemaVersion of [1, 2, 3, 4]) {
-    const root = await workspace();
-    const store = a.createTaskStateStore(root);
-    const paths = store.paths(`old-${schemaVersion}`);
-    await mkdir(paths.directory, { recursive: true });
-    await writeFile(paths.statePath, stringify({ schemaVersion, taskId: `old-${schemaVersion}` }));
-    await expectRejected(
-      () => store.load(`old-${schemaVersion}`),
-      (error) => error instanceof a.StateStoreError && error.code === "state_schema_incompatible",
-    );
-    expect("backupPath" in paths).toBe(false);
+test("V6 state round-trips atomically through .forgix/tasks/<taskId>.json", async () => {
+  const root = await makeWorkspace();
+  try {
+    const store = createTaskStateStore(root);
+    const state = makeTaskState({ taskId: "roundtrip" });
+    await store.save("roundtrip", state);
+    expect(await store.load("roundtrip")).toEqual(state);
+    const statePath = join(root, ".forgix", "tasks", "roundtrip.json");
+    const parsed = JSON.parse(await readFile(statePath, "utf8")) as { schemaVersion: number };
+    expect(parsed.schemaVersion).toBe(6);
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
-  expect(a.STATE_V1_BACKUP_FILENAME).toBe(undefined);
 });
 
-test("save rejects invalid or mismatched state before publication", async () => {
-  const a = await api();
-  const root = await workspace();
-  const store = a.createTaskStateStore(root);
-  await expectRejected(
-    () => store.save("bad", { schemaVersion: 2 }),
-    (error) =>
-      error instanceof Error && "code" in error && error.code === "state_schema_incompatible",
-  );
-  await expectRejected(
-    () => store.save("other", a.createState(taskInput("actual"))),
-    (error) => error instanceof Error && "code" in error && error.code === "state_task_mismatch",
-  );
+test("V1 through V5 load fails with explicit incompatible-schema code; no migration exists", async () => {
+  const checks = [1, 2, 3, 4, 5].map(async (schemaVersion) => {
+    const root = await makeWorkspace();
+    try {
+      const store = createTaskStateStore(root);
+      const tasksDir = join(root, ".forgix", "tasks");
+      const statePath = join(tasksDir, `old-${schemaVersion}.json`);
+      await mkdir(tasksDir, { recursive: true });
+      await writeFile(statePath, JSON.stringify({ schemaVersion, taskId: `old-${schemaVersion}` }));
+      await expectRejected(
+        () => store.load(`old-${schemaVersion}`),
+        (error) => error instanceof StateStoreError && error.code === "state_schema_incompatible",
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+  await Promise.all(checks);
+});
+
+test("save rejects invalid, mismatched, or revision-conflicting state before publication", async () => {
+  const root = await makeWorkspace();
+  try {
+    const store = createTaskStateStore(root);
+    await expectRejected(
+      () => store.save("bad", { schemaVersion: 2 }),
+      (error) => error instanceof StateStoreError && error.code === "state_schema_incompatible",
+    );
+    await expectRejected(
+      () => store.save("other", makeTaskState({ taskId: "actual" })),
+      (error) => error instanceof StateStoreError && error.code === "state_task_mismatch",
+    );
+
+    const saved = await store.save("conflict-task", makeTaskState({ taskId: "conflict-task" }));
+    await expectRejected(
+      () =>
+        store.save("conflict-task", saved, {
+          expectedRevision: saved.revision + 1,
+        }),
+      (error) => error instanceof StateStoreError && error.code === "state_conflict",
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("failed atomic rename preserves prior valid state", async () => {
-  const a = await api();
-  const root = await workspace();
-  const normal = a.createTaskStateStore(root);
-  const original = a.createState(taskInput("atomic"));
-  await normal.save("atomic", original);
-  const failing = a.createTaskStateStore(root, {
-    fileSystem: {
-      rename: async () => {
-        throw Object.assign(new Error("fail"), { code: "EIO" });
+  const root = await makeWorkspace();
+  try {
+    const normal = createTaskStateStore(root);
+    const original = makeTaskState({ taskId: "atomic" });
+    await normal.save("atomic", original);
+    const failing = createTaskStateStore(root, {
+      fileSystem: {
+        rename: async () => {
+          throw Object.assign(new Error("fail"), { code: "EIO" });
+        },
       },
-    },
-    temporaryId: () => "failed",
-  });
-  await expectRejected(
-    () => failing.save("atomic", { ...original, benchmarkEnabled: true }),
-    (error) => error instanceof Error && "code" in error && error.code === "state_write_failed",
-  );
-  expect(await normal.load("atomic")).toEqual(original);
+      temporaryId: () => "failed",
+    });
+    const updated = makeTaskState({ taskId: "atomic", status: "intaking" });
+    await expectRejected(
+      () => failing.save("atomic", updated),
+      (error) => error instanceof StateStoreError && error.code === "state_write_failed",
+    );
+    expect(await normal.load("atomic")).toEqual(original);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
-test("path traversal and symlinked task directory are rejected", async () => {
-  const a = await api();
-  const root = await workspace();
-  const store = a.createTaskStateStore(root);
-  for (const id of ["../escape", "a/b", "..", "a\\b"])
-    expect(() => store.paths(id)).toThrow(/one non-traversing|outside/);
-  await mkdir(join(root, ".codex", "tasks"), { recursive: true });
-  await symlink(root, join(root, ".codex", "tasks", "linked"));
-  await expectRejected(
-    () => store.save("linked", a.createState(taskInput("linked"))),
-    (error) => error instanceof Error && "code" in error && error.code === "state_path_invalid",
-  );
+test("path traversal and symlinked task path are rejected", async () => {
+  const root = await makeWorkspace();
+  try {
+    const store = createTaskStateStore(root);
+    await Promise.all(
+      ["../escape", "a/b", "..", "a\\b"].map((id) =>
+        expectRejected(
+          () => store.load(id),
+          (error) => error instanceof StateStoreError && error.code === "state_path_invalid",
+        ),
+      ),
+    );
+    await mkdir(join(root, ".forgix", "tasks"), { recursive: true });
+    await symlink(root, join(root, ".forgix", "tasks", "linked.json"));
+    await expectRejected(
+      () => store.save("linked", makeTaskState({ taskId: "linked" })),
+      (error) => error instanceof StateStoreError && error.code === "state_path_invalid",
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("store.gate views and applies approval atomically", async () => {
+  const root = await makeWorkspace();
+  try {
+    const store = createTaskStateStore(root);
+    const awaiting = makeTaskState({
+      taskId: "gate-store",
+      status: "awaiting_approval",
+      profile: "plan",
+    });
+    await store.save("gate-store", awaiting);
+
+    const viewed = await store.gate("gate-store");
+    expect(viewed.preflight.ready).toBe(true);
+    expect(viewed.state.status).toBe("awaiting_approval");
+
+    const approved = await store.gate("gate-store", {
+      decision: "approve",
+      decidedAt: "2026-08-02T00:00:00.000Z",
+    });
+    expect(approved.state.status).toBe("executing");
+    expect(approved.state.planApproval?.actor).toBe("user");
+    expect((await store.load("gate-store")).status).toBe("executing");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

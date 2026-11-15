@@ -44,7 +44,7 @@ Use Forgix for software changes that require product decisions, planning, or ver
 questions, read-only exploration, and standalone Git/PR delivery do not need a Forgix task.
 
 Routing adapts automatically to the active harness (`auto`, overridable with `--harness` or
-`.codex/forgix.yaml`): **Codex** runs quota-aware stage routing via `codex app-server`, while
+`.forgix/config.yaml`): **Codex** runs quota-aware stage routing via `codex app-server`, while
 **Claude Code** and **Antigravity** use `host-native` routing so your active session model runs each
 stage directly.
 
@@ -99,8 +99,10 @@ Run the bundled CLI directly with `npx`:
 npx @acrasie/forgix init
 npx @acrasie/forgix status
 npx @acrasie/forgix resume <task-id>
+npx @acrasie/forgix task validate [task-id]
+npx @acrasie/forgix task save <task-id>
+npx @acrasie/forgix task gate <task-id> [--view|--approve|--reject|--change=<instruction>|--autonomous [--issue=<ref>]]
 npx @acrasie/forgix config validate
-npx @acrasie/forgix benchmark summary
 npx @acrasie/forgix [--harness auto|codex|claude|antigravity] "<objective>"
 ```
 
@@ -156,7 +158,6 @@ Using `$forgix` (replace with `/forgix:forgix` on Claude Code or `/forgix` on An
 | `$forgix run-roadmap [flags]`      | Execute ready roadmap items (`--limit N`, `--parallel M`).  |
 | `$forgix resume <task-id>`         | Reconcile state and resume an interrupted task.             |
 | `$forgix status [task-id]`         | Inspect persisted task status.                              |
-| `$forgix --benchmark <objective>`  | Enable opt-in local benchmark recording for a run.          |
 | `$forgix config show [--explain]`  | Inspect effective configuration and optional provenance.    |
 | `$forgix config validate [--json]` | Validate effective configuration against schema and policy. |
 
@@ -174,26 +175,26 @@ control safeguards.
 
 ## Project INIT, configuration & safety
 
-All three harnesses share the same `.codex/` project paths:
+All three harnesses share the same `.forgix/` project paths:
 
-| File                                  | Role                                                   | Git policy                      |
-| ------------------------------------- | ------------------------------------------------------ | ------------------------------- |
-| `.codex/forgix.project.yaml`          | Shared architecture, stack, and conventions.           | Review and commit when desired. |
-| `.codex/forgix.project.local.yaml`    | Machine-local service paths and personal preferences.  | Gitignored.                     |
-| `.codex/project-init/state.yaml`      | Compact resumable **Project INIT** session state.      | Gitignored and temporary.       |
-| `.codex/forgix/diagrams/*.mermaid.md` | Optional projections of approved profile architecture. | Commit with shared profile.     |
+| File                            | Role                                                   | Git policy                      |
+| ------------------------------- | ------------------------------------------------------ | ------------------------------- |
+| `.forgix/project.yaml`          | Shared architecture, stack, and conventions.           | Review and commit when desired. |
+| `.forgix/project.local.yaml`    | Machine-local service paths and personal preferences.  | Gitignored.                     |
+| `.forgix/init/state.yaml`       | Compact resumable **Project INIT** session state.      | Gitignored and temporary.       |
+| `.forgix/diagrams/*.mermaid.md` | Optional projections of approved profile architecture. | Commit with shared profile.     |
 
 Configuration resolves in order of increasing precedence:
 
 ```text
-internal defaults < ~/.codex/forgix.yaml < .codex/forgix.yaml < .codex/forgix.local.yaml < invocation flags < repository policy
+internal defaults < ~/.forgix/config.yaml < .forgix/config.yaml < .forgix/config.local.yaml < invocation flags < repository policy
 ```
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/forgix-init-config-dark.svg" />
     <source media="(prefers-color-scheme: light)" srcset="./docs/assets/diagrams/forgix-init-config.svg" />
-    <img alt="Project INIT vs. configuration boundaries separating tracked .codex artifacts, gitignored local overlays, and the non-weakenable repository policy ceiling" src="./docs/assets/diagrams/forgix-init-config.svg" width="880" />
+    <img alt="Project INIT vs. configuration boundaries separating tracked .forgix artifacts, gitignored local overlays, and the non-weakenable repository policy ceiling" src="./docs/assets/diagrams/forgix-init-config.svg" width="880" />
   </picture>
 </p>
 
@@ -201,7 +202,7 @@ Safety invariants enforced by the lifecycle:
 
 - Implementation never starts before explicit **GATE** approval.
 - Completion requires fresh, command-backed **ASSURE** verification evidence.
-- Task state under `.codex/tasks/` is durable and resumable.
+- Task state under `.forgix/tasks/` is durable and resumable.
 - Local configuration and flags cannot weaken repository policy.
 - Commits, pushes, pull requests, registry publishes, and releases are never authorized implicitly.
 
@@ -228,7 +229,7 @@ Conventional Commits.
 ## Documentation
 
 - **Guides & reference**: [Getting Started](./plugins/forgix/docs/getting-started.md) · [Plugin README](./plugins/forgix/README.md) · [Glossary](./plugins/forgix/docs/glossary/forgix.md)
-- **Normative contracts**: [Lifecycle contract](./plugins/forgix/docs/lifecycle-contract.md) · [Project Engineering Profile contract](./plugins/forgix/docs/project-profile-contract.md) · [Artifact contract](./plugins/forgix/docs/artifacts.md) · [Measurement protocol](./plugins/forgix/docs/metrics-protocol.md)
+- **Normative contracts**: [Lifecycle contract](./plugins/forgix/docs/lifecycle-contract.md) · [Project Engineering Profile contract](./plugins/forgix/docs/project-profile-contract.md) · [Artifact contract](./plugins/forgix/docs/artifacts.md)
 - **Design, brand & releases**: [Design](./plugins/forgix/docs/design.md) · [ADRs](./plugins/forgix/docs/adr/) · [Maintainer release runbook](./plugins/forgix/docs/runbooks/maintainer-release.md) · [Brand kit](./docs/assets/brand/README.md)
 
 ## License & security

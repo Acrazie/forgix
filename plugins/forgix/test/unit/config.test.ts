@@ -1,7 +1,11 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
-import * as sourceApi from "../../src/cli.ts";
+import * as configApi from "../../src/core/config.ts";
+import * as routingApi from "../../src/core/routing.ts";
+import * as schemaApi from "../../src/core/schema.ts";
 import { expect, test } from "bun:test";
 import { expectThrown } from "../support/expect-error.ts";
+
+const sourceApi = { ...configApi, ...routingApi, ...schemaApi };
 
 test("resolves config in source order and records leaf provenance", async () => {
   const { resolveConfig } = sourceApi;
@@ -156,4 +160,32 @@ test("harness config option accepts supported harnesses and rejects unknown valu
     expect(validateSchema("config", { schemaVersion: 1, harness }).valid).toBe(true);
   }
   expect(validateSchema("config", { schemaVersion: 1, harness: "cursor" }).valid).toBe(false);
+});
+
+test("decideWorktree enforces critical risk and policy isolation", () => {
+  const { decideWorktree } = sourceApi;
+  expect(
+    decideWorktree({ risk: "critical", requested: false, concurrent: false, checkoutSafe: true }),
+  ).toEqual({ required: true, reason: "critical_risk" });
+  expect(
+    decideWorktree({
+      risk: "low",
+      policyRequired: true,
+      requested: false,
+      concurrent: false,
+      checkoutSafe: true,
+    }),
+  ).toEqual({ required: true, reason: "policy" });
+  expect(
+    decideWorktree({ risk: "low", requested: true, concurrent: false, checkoutSafe: true }),
+  ).toEqual({ required: true, reason: "requested" });
+  expect(
+    decideWorktree({ risk: "low", requested: false, concurrent: true, checkoutSafe: true }),
+  ).toEqual({ required: true, reason: "concurrent" });
+  expect(
+    decideWorktree({ risk: "low", requested: false, concurrent: false, checkoutSafe: false }),
+  ).toEqual({ required: true, reason: "unsafe" });
+  expect(
+    decideWorktree({ risk: "low", requested: false, concurrent: false, checkoutSafe: true }),
+  ).toEqual({ required: false, reason: "none" });
 });

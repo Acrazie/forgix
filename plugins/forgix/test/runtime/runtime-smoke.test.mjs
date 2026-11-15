@@ -104,8 +104,8 @@ test("packed CLI exposes help and validates configuration", () => {
   assert.equal(absentResult.command, "config_validate");
   assert.equal(absentResult.status, "valid");
 
-  mkdirSync(join(workspace, ".codex"), { recursive: true });
-  writeFileSync(join(workspace, ".codex", "forgix.yaml"), "harness: antigravity\n");
+  mkdirSync(join(workspace, ".forgix"), { recursive: true });
+  writeFileSync(join(workspace, ".forgix", "config.yaml"), "harness: antigravity\n");
   const presentValidate = runNodeCli(bundle, ["config", "validate", "--json"], {
     cwd: workspace,
     home,
@@ -113,6 +113,88 @@ test("packed CLI exposes help and validates configuration", () => {
   const presentResult = JSON.parse(presentValidate.stdout);
   assert.equal(presentResult.command, "config_validate");
   assert.equal(presentResult.status, "valid");
+});
+
+test("packed CLI validates, saves, views, and checks status for a V6 task under Node", () => {
+  const workspace = join(sandbox, "task-workspace");
+  const home = join(sandbox, "home");
+  mkdirSync(workspace, { recursive: true });
+  mkdirSync(home, { recursive: true });
+
+  const dimensions = ["objective", "users_value", "scope", "success", "risks_constraints"];
+  const taskState = {
+    schemaVersion: 6,
+    taskId: "smoke-task",
+    status: "new",
+    revision: 0,
+    risk: "low",
+    design: {
+      schemaVersion: 1,
+      graph: {
+        schemaVersion: 1,
+        nodes: dimensions.map((key) => ({
+          id: `product:${key}`,
+          kind: "product",
+          dependsOn: [],
+        })),
+      },
+      productBaseline: {
+        schemaVersion: 1,
+        dimensions: dimensions.map((key) => ({
+          key,
+          status: "resolved",
+          value: `baseline-${key}`,
+          provenance: { sourceRefs: ["request"], freshnessRefs: ["request:v1"] },
+          dependencyNodeId: `product:${key}`,
+        })),
+      },
+      glossaryDeltas: [],
+      domainRules: [],
+    },
+    configSnapshot: { schemaVersion: 1 },
+    policySnapshot: {
+      schemaVersion: 1,
+      requirements: {},
+      prohibitions: {},
+      bounds: {},
+      locks: [],
+    },
+    issues: [],
+    history: [
+      {
+        sequence: 1,
+        at: "2026-08-01T00:00:00.000Z",
+        type: "task.created",
+        refs: [{ kind: "task", ref: "smoke-task" }],
+      },
+    ],
+  };
+
+  const validated = spawnSync(process.execPath, [bundle, "task", "validate"], {
+    cwd: workspace,
+    env: { ...process.env, HOME: home },
+    input: JSON.stringify(taskState),
+    encoding: "utf8",
+    shell: false,
+  });
+  assert.equal(validated.status, 0, validated.stderr);
+  assert.equal(JSON.parse(validated.stdout).status, "valid");
+
+  const saved = spawnSync(process.execPath, [bundle, "task", "save", "smoke-task"], {
+    cwd: workspace,
+    env: { ...process.env, HOME: home },
+    input: JSON.stringify(taskState),
+    encoding: "utf8",
+    shell: false,
+  });
+  assert.equal(saved.status, 0, saved.stderr);
+  assert.equal(JSON.parse(saved.stdout).status, "saved");
+  assert.ok(existsSync(join(workspace, ".forgix", "tasks", "smoke-task.json")));
+
+  const statusResult = runNodeCli(bundle, ["status", "smoke-task"], { cwd: workspace, home });
+  const statusPayload = JSON.parse(statusResult.stdout);
+  assert.equal(statusPayload.status, "new");
+  assert.equal(statusPayload.data.macroPhase, "INTAKE");
 });
 
 for (const command of ["forgix"]) {

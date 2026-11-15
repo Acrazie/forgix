@@ -1,6 +1,3 @@
-import type { PreparationProfile, ShapeState } from "./shape.js";
-import type { DesignState } from "./design.js";
-
 export const ALLOWED_MODEL_IDS = ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] as const;
 export type ModelId = (typeof ALLOWED_MODEL_IDS)[number];
 
@@ -17,9 +14,50 @@ export type ResolvedSubscriptionPlan = Exclude<SubscriptionPlan, "auto"> | "unkn
 export type QuotaPressure = "normal" | "warning" | "critical" | "unknown";
 export type RoutingStage = "design" | "discover" | "plan" | "debug" | "review";
 export type RiskLevel = "low" | "medium" | "high" | "critical";
-export type { TaskStatus } from "./state-machine.js";
-import type { TaskStatus } from "./state-machine.js";
-import type { GuardId } from "./state-machine.js";
+
+export type TaskStatus =
+  | "new"
+  | "intaking"
+  | "discovering"
+  | "awaiting_shape_decision"
+  | "awaiting_profile_choice"
+  | "planning"
+  | "awaiting_intake_decision"
+  | "awaiting_approval"
+  | "executing"
+  | "assuring"
+  | "blocked"
+  | "cancelled"
+  | "failed";
+
+export type ResumeTargetStatus =
+  | "intaking"
+  | "discovering"
+  | "awaiting_shape_decision"
+  | "awaiting_profile_choice"
+  | "planning"
+  | "awaiting_intake_decision"
+  | "awaiting_approval"
+  | "executing"
+  | "assuring";
+
+export type MacroPhase = "INTAKE" | "SHAPE" | "GATE" | "BUILD" | "ASSURE";
+
+export type GuardId =
+  | "task_initialized"
+  | "effective_constraints_valid"
+  | "intake_complete"
+  | "intake_reopened"
+  | "routing_ready"
+  | "workspace_ready"
+  | "discovery_sufficient"
+  | "profile_selected"
+  | "contract_complete"
+  | "approval_current"
+  | "resume_metadata_valid"
+  | "resume_reconciled"
+  | "terminal_source_recorded"
+  | "gate_decision_valid";
 
 export interface ModelCapability {
   id: ModelId;
@@ -106,171 +144,414 @@ export interface Policy {
   locks: string[];
 }
 
-export interface TaskState {
-  schemaVersion: 6;
-  taskId: string;
-  status: TaskStatus;
-  revision: number;
-  risk: RiskLevel;
-  shape?: ShapeState;
-  contractDigest?: string;
-  planApproval?: PlanApprovalReceipt;
-  assurance?: AssuranceState;
-  resumeTo?: TaskStatus;
-  resumeReason?: string;
-  configSnapshot: Record<string, unknown>;
-  policySnapshot: Policy;
-  issues: unknown[];
-  history: DurableHistoryEvent[];
-  historySummary?: HistorySummary;
-  activeArtifact?: ActiveArtifactReference;
-  activeWorktree?: ActiveWorktreeReference;
-  contextCapsule?: ContextCapsule;
-  routingSnapshot?: RoutingSnapshot;
-  routingPolicyVersion?: string;
-  routingDecisions?: RoutingDecision[];
-  intake?: IntakeState;
-  design: DesignState;
-  benchmarkEnabled?: boolean;
-}
-
-export type IntakeDecisionSource = "user" | "repository";
-export type RecommendationDisposition = "accepted" | "modified" | "not_applicable";
-export type IntakeQuestionConfidence = "high" | "medium" | "low";
-export type TechnicalUnknownKind =
-  | "code"
-  | "dependency"
-  | "architecture"
+export type DependencyNodeKind =
+  | "decision"
+  | "product"
+  | "terminology"
+  | "domain_rule"
+  | "domain_scenario"
+  | "technical_decision"
+  | "source"
+  | "evidence"
+  | "criterion"
+  | "task"
+  | "risk"
   | "validation"
-  | "operations";
+  | "guide"
+  | "projection"
+  | "assurance_subject"
+  | "assurance_operation";
 
-export interface IntakeSuccessSignal {
-  description: string;
-  observationMethod: string;
-  validator?: string;
-  guardrails?: string[];
+export interface DependencyNode {
+  id: string;
+  kind: DependencyNodeKind;
+  dependsOn: string[];
 }
 
-export interface IntakeProvenance {
+export interface DependencyGraph {
+  schemaVersion: 1;
+  nodes: DependencyNode[];
+}
+
+export type DecisionGraph = DependencyGraph;
+
+export type DesignOwner = "intake" | "shape";
+export type DesignQuestionKind = "product" | "terminology" | "domain_rule" | "technical";
+export type DesignRecordStatus = "proposed" | "resolved" | "approved" | "projected" | "invalidated";
+export type DomainDisposition =
+  | "project"
+  | "already_documented"
+  | "task_local"
+  | "policy_forbidden";
+
+export interface DesignProvenance {
   sourceRefs: string[];
-  capturedAt: string;
   freshnessRefs: string[];
 }
 
-export interface ProductIntakeInput {
+export interface ProductBaselineDimension {
+  key: "objective" | "users_value" | "scope" | "success" | "risks_constraints";
+  status: "resolved" | "not_applicable" | "missing" | "unknown";
+  value?: string;
+  notApplicableReason?: string;
+  provenance: DesignProvenance;
+  dependencyNodeId: string;
+}
+
+export interface ProductBaseline {
   schemaVersion: 1;
-  objective?: string;
-  successSignal?: IntakeSuccessSignal;
-  risk: RiskLevel;
-  provenance: IntakeProvenance;
-  successValidator?: string;
-  successGuardrails?: string[];
-  determiningConstraints?: string[];
-  affectedUsers?: string[];
-  motivation?: string;
-  urgency?: string;
-  scopeBoundaries?: string[];
-  technicalUnknowns: TechnicalUnknown[];
+  dimensions: ProductBaselineDimension[];
 }
 
-export interface TechnicalUnknown {
-  key: string;
-  kind: TechnicalUnknownKind;
-  description: string;
-  owner: "shape";
-}
-
-export interface IntakeQuestionOption {
+export interface DesignQuestionOption {
   id: string;
   label: string;
-  impact: string;
+  consequences: string[];
 }
 
-export interface IntakeQuestionProjection {
+export interface ActiveDesignQuestion {
   schemaVersion: 1;
   id: string;
   decisionKey: string;
-  missingInformation: string;
-  determiningImpact: string;
+  kind: DesignQuestionKind;
+  owner: DesignOwner;
+  subjectIds: string[];
+  prerequisiteIds: string[];
   prompt: string;
-  options:
-    | [IntakeQuestionOption, IntakeQuestionOption]
-    | [IntakeQuestionOption, IntakeQuestionOption, IntakeQuestionOption];
-  recommendedOptionId: string;
-  recommendationBasis: string;
-  recommendationConfidence: IntakeQuestionConfidence;
+  mode: "choice" | "elicitation";
+  options?:
+    | [DesignQuestionOption, DesignQuestionOption]
+    | [DesignQuestionOption, DesignQuestionOption, DesignQuestionOption];
+  recommendedOptionId?: string;
+  recommendationBasis?: string;
+  confidence?: "low" | "medium" | "high";
+  priorRole: "intaking" | "discovering" | "planning";
+  selectionReason: string;
+  directConsequences: string[];
   freeFormAllowed: true;
   clarificationCount: number;
 }
 
-export interface NormalizedIntakeDecision {
-  key: string;
-  value: string;
-  source: IntakeDecisionSource;
-  provenanceRef: string;
-  recommendationDisposition: RecommendationDisposition;
-  dependsOn: string[];
+export interface DomainGlossaryDelta {
+  id: string;
+  context: string;
+  term: string;
+  definition: string;
+  aliases: string[];
+  rejectedTerms: Array<{ term: string; reason: string }>;
+  relatedTermIds: string[];
+  provenance: DesignProvenance;
+  dependencyNodeId: string;
+  status: DesignRecordStatus;
+  disposition?: DomainDisposition;
 }
 
-export interface IntakeInvalidation {
-  decisionKey: string;
+export interface DomainScenario {
+  id: string;
+  angle: "nominal" | "boundary" | "exception" | "contradiction";
+  startingSituation: string;
+  action: string;
+  expectedResult: string;
+}
+
+export interface DomainRule {
+  id: string;
+  context: string;
+  termIds: string[];
+  actors: string[];
+  conditions: string[];
+  outcome: string;
+  exceptions: string[];
+  scenarios: DomainScenario[];
+  provenance: DesignProvenance;
+  dependencyNodeId: string;
+  status: DesignRecordStatus;
+  disposition?: DomainDisposition;
+}
+
+export interface DecisionAlternative {
+  id: string;
+  label: string;
+  consequences: string[];
+  excludedReason?: string;
+}
+
+export interface DecisionCandidate {
+  id: string;
+  owner: DesignOwner;
+  context: string;
+  materialityReason: string;
+  alternatives: DecisionAlternative[];
+  evidenceRefs: string[];
+  recommendedOptionId?: string;
+  confidence: "low" | "medium" | "high";
+  selectedOptionId?: string;
+  dependencyNodeId: string;
+  priorRole: "intaking" | "discovering" | "planning";
+  status: DesignRecordStatus;
+  disposition?: DomainDisposition;
+}
+
+export interface DesignInvalidation {
+  rootIds: string[];
+  invalidatedNodeIds: string[];
   reason: string;
   at: string;
 }
 
-export interface IntakeMetrics {
-  modelCalls: number;
-  questionsAsked: number;
-  questionsAvoided: number;
-  distinctQuestions: number;
-  recommendationsAccepted: number;
-  recommendationsModified: number;
-  zeroQuestionPath: boolean;
-  lateReopenings: number;
-  inputTokens?: number;
-  outputTokens?: number;
-  latencyMs?: number;
+export interface DesignFrontierCandidate {
+  question: ActiveDesignQuestion;
+  scores: {
+    impact: number;
+    irreversibility: number;
+    risk: number;
+    uncertainty: number;
+    branchesUnlocked: number;
+  };
+  scoreReason: string;
 }
 
-export interface IntakeState {
+export interface ProductBaselineResolution {
+  key: ProductBaselineDimension["key"];
+  status: "resolved" | "not_applicable";
+  value?: string;
+  notApplicableReason?: string;
+  provenance: DesignProvenance;
+}
+
+export interface DesignState {
+  schemaVersion: 1;
+  graph: DecisionGraph;
+  productBaseline: ProductBaseline;
+  glossaryDeltas: DomainGlossaryDelta[];
+  domainRules: DomainRule[];
+  decisions?: DecisionCandidate[];
+  activeQuestion?: ActiveDesignQuestion;
+  invalidations?: DesignInvalidation[];
+  semanticComplete?: boolean;
+  digest?: string;
+}
+
+export type PreparationProfile = "quick" | "plan";
+export type ShapeRole = "discovering" | "planning";
+export type DiscoveryTargetStatus = "open" | "resolved" | "escalated" | "blocked" | "stale";
+export type DiscoveryMaterialImpact =
+  | "scope"
+  | "risk"
+  | "acceptance"
+  | "plan"
+  | "validation"
+  | "profile_recommendation";
+
+export interface DiscoveryTarget {
+  id: string;
+  question: string;
+  createdBecause: string;
+  createdAt: string;
+  materialImpacts: DiscoveryMaterialImpact[];
+  candidateSourceRefs: string[];
+  status: DiscoveryTargetStatus;
+  evidenceIds: string[];
+  dependencyNodeId: string;
+}
+
+export interface TechnicalDecisionOption {
+  id: string;
+  label: string;
+  impact: string;
+  excludedReason?: string;
+}
+
+export interface TechnicalDecision {
+  schemaVersion: 1;
+  id: string;
+  decisionKey: string;
+  targetId: string;
+  materialityReason: string;
+  evidenceIds: string[];
+  options:
+    | [TechnicalDecisionOption, TechnicalDecisionOption]
+    | [TechnicalDecisionOption, TechnicalDecisionOption, TechnicalDecisionOption];
+  recommendedOptionId: string;
+  recommendationBasis: string;
+  confidence: "low" | "medium" | "high";
+  adrQualified: boolean;
+  proposedDestination?: string;
+  affectedDependencyRootIds: string[];
+  priorRole: ShapeRole;
+  status: "active" | "resolved";
+  selectedOptionId?: string;
+  answerEvidenceRef?: string;
+}
+
+export type ShapeSourceFingerprintKind = "git_blob" | "content" | "command" | "external";
+
+export interface ShapeSourceFingerprint {
+  id: string;
+  kind: ShapeSourceFingerprintKind;
+  value: string;
+  provenanceRef: string;
+  dependencyNodeId: string;
+  inputDigest?: string;
+  observedAt?: string;
+  expiresAt?: string;
+}
+
+export interface ShapeEvidenceItem {
+  id: string;
+  fact: string;
+  provenanceRefs: string[];
+  sourceFingerprintIds: string[];
+  dependencyNodeId: string;
+}
+
+export interface EvidenceRecord extends ShapeEvidenceItem {
+  expectedValue?: string;
+  observedValue?: string;
+}
+
+export type ObservedFingerprintValue = string | { value: string; inputDigest?: string };
+
+export interface ContractAcceptanceCriterion {
+  id: string;
+  description: string;
+  validationIds: string[];
+  dependencyNodeId: string;
+}
+
+export interface ContractTask {
+  id: string;
+  description: string;
+  criterionIds: string[];
+  dependsOnTaskIds: string[];
+  dependencyNodeId: string;
+}
+
+export interface ContractValidation {
+  id: string;
+  description: string;
+  criterionIds: string[];
+  command?: string;
+  dependencyNodeId: string;
+}
+
+export interface ContractRisk {
+  id: string;
+  description: string;
+  control: string;
+  dependencyNodeId: string;
+}
+
+export type GuideReasonKind =
+  | "architectural_boundary"
+  | "compatibility_migration"
+  | "non_obvious_order"
+  | "security_concurrency_performance"
+  | "mandatory_repository_pattern"
+  | "complex_rollback_deployment";
+
+export interface ImplementationGuide {
+  dependencyNodeId: string;
+  content: string[];
+  requiredBecause: Array<{
+    kind: GuideReasonKind;
+    evidenceIds: string[];
+    riskIds: string[];
+  }>;
+}
+
+export interface CanonicalChangeContract {
+  schemaVersion: 1;
+  artifactId: string;
+  revision: number;
+  profile: PreparationProfile;
+  risk: RiskLevel;
+  productBaselineRef: string;
+  discoveryReceiptDigest?: string;
+  scope: string[];
+  nonGoals: string[];
+  acceptanceCriteria: ContractAcceptanceCriterion[];
+  tasks: ContractTask[];
+  validations: ContractValidation[];
+  risks: ContractRisk[];
+  assuranceContract?: AssuranceContract;
+  guide?: ImplementationGuide;
+  digest: string;
+}
+
+export interface PlanProjectionRecord {
+  schemaVersion: 1;
+  path: string;
+  status: "Proposed" | "Approved";
+  contractDigest: string;
+  contentFingerprint: string;
+}
+
+export interface PreparationCheckpoint {
+  changeShape: string;
+  surfaceCategories: string[];
+  materialFacts: string[];
+}
+
+export interface PreparationProfileChoice {
+  schemaVersion: 1;
+  status: "pending" | "selected";
+  recommendation: PreparationProfile;
+  recommendationBasis: string;
+  discoveryReceiptDigest?: string;
+  checkpoint: PreparationCheckpoint;
+  selectedProfile?: PreparationProfile;
+  selectionEvidenceRef?: string;
+}
+
+export interface ShapeUsage {
+  reasoningCalls: number;
+  inputTokens: number;
+  outputTokens: number;
+  contextBytes: number;
+}
+
+export interface ShapeBudgetLimits {
+  maxReasoningCalls?: number;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
+  maxContextBytes?: number;
+}
+
+export interface ShapeBudgetCheckpoint {
+  reason: "reasoning_calls" | "input_tokens" | "output_tokens" | "context_bytes";
+  actions: ["continue", "reduce_scope", "cancel"];
+}
+
+export interface ShapeBudget {
+  limits: ShapeBudgetLimits;
+  usage: ShapeUsage;
+  continuations: number;
+  checkpoint?: ShapeBudgetCheckpoint;
+}
+
+export interface ShapeInvalidation {
+  rootIds: string[];
+  invalidatedNodeIds: string[];
+  reason: string;
+}
+
+export interface ShapeState {
   schemaVersion: 1;
   risk: RiskLevel;
-  provenance: IntakeProvenance;
-  technicalUnknowns: TechnicalUnknown[];
-  activeQuestionId?: string;
-  decisions: NormalizedIntakeDecision[];
-  answeredDecisionKeys: string[];
-  invalidations: IntakeInvalidation[];
-  contradictions: string[];
-  semanticComplete: boolean;
-  deterministicComplete: boolean;
-  checkpointDue: boolean;
-  semanticRetryCount: number;
-  blockedReason?: "semantic_output_invalid" | "answer_required";
-  metrics: IntakeMetrics;
-}
-
-export interface BenchmarkSurveyAnswers {
-  satisfaction: 1 | 2 | 3 | 4 | 5;
-  conformance: "yes" | "partial" | "no";
-  pluginValue: "useful" | "neutral" | "counterproductive";
-  comment?: string;
-}
-
-export interface BenchmarkDeviationFact {
-  code: "unplanned_new_file" | "forbidden_new_file" | "missing_validation";
-  surfaceRef: string;
-}
-
-export interface BenchmarkRecord {
-  schemaVersion: 1;
-  taskId: string;
-  recordedAt: string;
-  preparationProfile: PreparationProfile | "unselected";
-  outcome: "success" | "failed";
-  authority: "canonical_change_contract";
-  survey: BenchmarkSurveyAnswers;
-  deviations: BenchmarkDeviationFact[];
+  productBaselineRef: string;
+  discoveryTargets: DiscoveryTarget[];
+  evidence: EvidenceRecord[];
+  sourceFingerprints?: ShapeSourceFingerprint[];
+  technicalDecisions?: TechnicalDecision[];
+  activeTechnicalDecisionId?: string;
+  preparationProfileChoice?: PreparationProfileChoice;
+  contract?: CanonicalChangeContract;
+  projection?: PlanProjectionRecord;
+  dependencyGraph: DependencyGraph;
+  invalidations?: ShapeInvalidation[];
+  budget?: ShapeBudget;
+  semanticRetryCounts?: { discovery: number; planning: number };
 }
 
 export interface HistorySummary {
@@ -333,9 +614,7 @@ export type WorkflowHistoryEventType =
   | "issue.recorded"
   | "correction.recorded"
   | "context.updated"
-  | "intake.checkpoint"
   | "advance.rejected"
-  | "intake.reopened"
   | "discovery.target_recorded"
   | "discovery.evidence_recorded"
   | "discovery.completed"
@@ -520,23 +799,6 @@ export interface ConsolidatedReviewResult {
   findings: readonly ReviewFinding[];
 }
 
-export interface StateHistoryEvent {
-  sequence: number;
-  at: string;
-  type: "state.transition";
-  from: TaskStatus;
-  to: TaskStatus;
-  revision: number;
-  sourceFingerprint: string;
-  terminalSource?: TaskStatus;
-  terminalResumeTo?: TaskStatus;
-  contractDigest?: string;
-  guardEvidence?: GuardEvidenceRecord[];
-  gateDecision?: GateDecisionRecord;
-}
-
-export type DurableHistoryEvent = StateHistoryEvent | WorkflowHistoryEvent;
-
 export interface GuardEvidenceRecord {
   schemaVersion: 1;
   guard: GuardId;
@@ -546,22 +808,6 @@ export interface GuardEvidenceRecord {
   evidenceRefs: readonly string[];
   provenance: "deterministic-check" | "human-approval" | "repository-observation";
   result: "passed" | "not_applicable";
-  evaluatorReceipt?: EvaluatorReceiptRecord;
-}
-
-export type TrustedEvaluator = "intake" | "discovery" | "planning";
-
-export interface EvaluatorReceiptRecord {
-  schemaVersion: 1;
-  evaluator: TrustedEvaluator;
-  outcome: "intake_complete" | "discovery_sufficient" | "contract_complete";
-  stateRevision: number;
-  stateFingerprint: string;
-  inputDigest: string;
-  evidenceRefs: readonly string[];
-  subjectIds: readonly string[];
-  completedIds: readonly string[];
-  receiptDigest: string;
 }
 
 export type GateActor = "user" | "autonomous_policy";
@@ -585,6 +831,23 @@ export interface PlanApprovalReceipt extends GateDecisionRecord {
   decision: "approved";
 }
 
+export interface StateHistoryEvent {
+  sequence: number;
+  at: string;
+  type: "state.transition";
+  from: TaskStatus;
+  to: TaskStatus;
+  revision: number;
+  sourceFingerprint: string;
+  terminalSource?: TaskStatus;
+  terminalResumeTo?: TaskStatus;
+  contractDigest?: string;
+  guardEvidence?: GuardEvidenceRecord[];
+  gateDecision?: GateDecisionRecord;
+}
+
+export type DurableHistoryEvent = StateHistoryEvent | WorkflowHistoryEvent;
+
 export interface AssuranceReceipt {
   schemaVersion: 1;
   taskId: string;
@@ -599,6 +862,32 @@ export interface IssueIdentity {
   issueId: string;
   occurrenceId: string;
   rootCauseId?: string;
+}
+
+export interface TaskState {
+  schemaVersion: 6;
+  taskId: string;
+  status: TaskStatus;
+  revision: number;
+  risk: RiskLevel;
+  design: DesignState;
+  shape?: ShapeState;
+  contractDigest?: string;
+  planApproval?: PlanApprovalReceipt;
+  assurance?: AssuranceState;
+  resumeTo?: TaskStatus;
+  resumeReason?: string;
+  configSnapshot: Record<string, unknown>;
+  policySnapshot: Policy;
+  issues: unknown[];
+  history: DurableHistoryEvent[];
+  historySummary?: HistorySummary;
+  activeArtifact?: ActiveArtifactReference;
+  activeWorktree?: ActiveWorktreeReference;
+  contextCapsule?: ContextCapsule;
+  routingSnapshot?: RoutingSnapshot;
+  routingPolicyVersion?: string;
+  routingDecisions?: RoutingDecision[];
 }
 
 export interface CliResult {

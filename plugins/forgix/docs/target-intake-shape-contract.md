@@ -390,7 +390,7 @@ Public activation must update together:
 - graph kinds, frontier ranking, invalidation, persistence, and resume;
 - `design-decisions`, `forgix`, `discover-change`, and `plan-change` skills;
 - Project Engineering Profile schema/runtime for `domain_documentation`;
-- lifecycle contract, glossary, public docs, metrics allowlist, and package artifacts;
+- lifecycle contract, glossary, public docs, and package artifacts;
 - deterministic tests, fixtures, model evals, integration tests, and runtime smoke tests.
 
 Acceptance requires:

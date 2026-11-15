@@ -4,10 +4,9 @@
 
 The software engineering package, CLI (`forgix`), multi-harness plugin (Codex, Claude Code,
 and Antigravity), and primary skill (`$forgix`, `/forgix:forgix`, `/forgix`).
-Shared `.codex/` internal state directories (`tasks/`, `benchmarks/`, `project-init/`,
-`roadmap/`) remain unchanged across all three harnesses, while configuration, project
-profiles, diagrams, owned domain markers, and Plan projections use `forgix` identifiers
-without backward compatibility. Former command names have no aliases.
+Shared `.forgix/` directories (`tasks/`, `cache/`, `init/`, `roadmap/`, `diagrams/`) and
+`.forgix/config.yaml` / `.forgix/project.yaml` apply consistently across all three
+harnesses without backward compatibility. Former command names have no aliases.
 
 ## Artifact
 
@@ -45,12 +44,6 @@ not the profile, determine safety controls.
 
 Legacy name for a file-based projection of a Change artifact. It is a supported
 repository choice, not a canonical Docs-profile convention.
-
-## Benchmark record
-
-An opt-in, local, gitignored post-task record containing a completed satisfaction
-survey, allowlisted execution metrics, and deterministic deviation facts. It is outside
-the lifecycle, never changes task outcome, and is never uploaded automatically.
 
 ## BUILD
 
@@ -293,8 +286,7 @@ Codex installation is not publication state; retry it directly when needed.
 ## Phase contract
 
 The uniform declaration of a macro-phase's intent, preconditions, consumed and produced
-capsule fields, ownership, events, proof, failures, resume rules, invalidation, and
-metrics.
+capsule fields, ownership, events, proof, failures, and resume/invalidation rules.
 
 ## Plan Approval Receipt
 
@@ -427,7 +419,7 @@ repository Discovery and is distinct from Project INIT.
 
 ### Local Profile Overlay
 
-The gitignored `.codex/forgix.project.local.yaml` file containing non-contractual
+The gitignored `.forgix/project.local.yaml` file containing non-contractual
 personal preferences and mappings from logical service identities to absolute local
 paths. It cannot weaken repository policy or shared project conventions.
 
@@ -445,7 +437,7 @@ affected updates. Rejection leaves shared profile byte-for-byte unchanged.
 
 ### Project Engineering Profile
 
-Versioned `.codex/forgix.project.yaml` record containing durable shared architecture,
+Versioned `.forgix/project.yaml` record containing durable shared architecture,
 project boundaries, stack, development conventions, logical topology, source
 fingerprints, revision, digest, and Profile Approval Receipt. Volatile task evidence
 and absolute local paths are forbidden.

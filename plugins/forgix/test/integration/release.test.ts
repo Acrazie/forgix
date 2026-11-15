@@ -26,7 +26,7 @@ import {
   unexpectedReleasePaths,
   validateClaudeMarketplaceManifest,
   validatePluginManifest,
-} from "../../src/release.ts";
+} from "../../scripts/release-lib.ts";
 
 describe("release versioning", () => {
   test("parses and compares stable versions only", () => {

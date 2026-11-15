@@ -42,7 +42,7 @@ import {
   type ReleaseTarget,
   type VersionBump,
   type PublicationState,
-} from "../src/release.ts";
+} from "./release-lib.ts";
 
 const pluginRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = requireCommand("git", ["rev-parse", "--show-toplevel"], {

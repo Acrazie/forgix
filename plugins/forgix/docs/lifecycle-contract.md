@@ -1,7 +1,7 @@
 # Forgix lifecycle contract
 
-This document is normative. `src/state-machine.ts` and generated
-`lifecycle-contract.projection.json` are executable projection.
+This document is normative. `src/task/index.ts` and `schemas/state.schema.json` enforce
+TaskState V6 lifecycle validation and gate transitions deterministically.
 
 ## Macro-phases
 
@@ -159,10 +159,10 @@ fails with `state_schema_incompatible`; no migration occurs.
 
 Shape boundary guards: `task_initialized`, `effective_constraints_valid`,
 `intake_complete`, `routing_ready`, `workspace_ready`, `discovery_sufficient`,
-`profile_selected`, `contract_complete`. Discovery and Planning guards require trusted
-state-bound evaluator receipts. Raw attestations cannot prove them.
+`profile_selected`, `contract_complete`. Discovery and Planning are validated
+deterministically against canonical state digests and source fingerprints.
 
-Downstream guards remain listed in generated projection. `gate_decision_valid` accepts
+Downstream guards follow canonical TaskState V6 rules. `gate_decision_valid` accepts
 only structurally valid decision receipt bound to current contract and target semantics.
 `approval_current` protects BUILD resume. ASSURE completion is not a transition guard;
 runtime validates exact evidence coverage in one atomic receipt/event transaction.
@@ -194,7 +194,7 @@ consume approved profile and domain-documentation conventions by digest-bound re
 ## Roadmap ideation and autonomous Work Items
 
 Exact `$forgix roadmap` also runs outside `TaskState`. It maintains a local gitignored
-3-phase session draft (`.codex/roadmap/state.yaml`) and publishes approved `Feature` and
+3-phase session draft (`.forgix/roadmap/state.yaml`) and publishes approved `Feature` and
 atomic `Work Item` issues with native `blocked-by` edges into a GitHub Project v2 while
 keeping durable vision/domain rules and light project binding in Git.
 
@@ -212,10 +212,3 @@ When `$forgix run-issue <#num>` or `$forgix run-roadmap` executes a pre-specifie
   still require explicit human `GATE` approval (`actor: "user"`).
 - On `ASSURE ✓` (or green automated checks with only `user-observation` pending), delivery
   opens a Draft PR (`Closes #<num>`) and moves the issue to `In Review` (`Done` only on merge).
-
-## Privacy and metrics
-
-Metrics allow only opaque run identity, preparation profile/unselected, macro-phase,
-allowlisted numeric counters, measurement/source enums, and allowlisted routing
-dimensions. Never objective, code, evidence prose, command output, raw model response, or
-user answer.

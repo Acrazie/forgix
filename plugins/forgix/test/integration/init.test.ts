@@ -1,5 +1,7 @@
 // @ts-nocheck -- migrated runtime fixtures preserve pre-existing dynamic boundary cases.
-import * as sourceApi from "../../src/cli.ts";
+import { runInvocation } from "../../src/cli.ts";
+import { buildRoutingPreview } from "../../src/core/config.ts";
+import { validateSchema } from "../../src/core/schema.ts";
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -30,7 +32,6 @@ function scriptedPrompts({ selects = [], texts = [], confirms = [] } = {}) {
 }
 
 test("init writes validated configuration and explains automatic skill routing", async () => {
-  const { runInvocation, validateSchema } = sourceApi;
   const root = await mkdtemp(join(tmpdir(), "forgix-init-"));
   const prompts = scriptedPrompts({
     selects: ["auto", "required", "plus", "write"],
@@ -39,7 +40,7 @@ test("init writes validated configuration and explains automatic skill routing",
   try {
     const result = await runInvocation(["init"], { init: { cwd: root, prompts } });
     expect(result.status).toBe("created");
-    const path = join(root, ".codex", "forgix.yaml");
+    const path = join(root, ".forgix", "config.yaml");
     const config = parseYaml(await readFile(path, "utf8"));
     expect(config.integrations).toEqual({
       plugins: ["impeccable"],
@@ -67,7 +68,6 @@ test("init writes validated configuration and explains automatic skill routing",
 });
 
 test("review can revisit subscription before one atomic write", async () => {
-  const { runInvocation } = sourceApi;
   const root = await mkdtemp(join(tmpdir(), "forgix-init-revisit-"));
   const prompts = scriptedPrompts({
     selects: ["auto", "auto", "plus", "subscription", "pro_20x", "write"],
@@ -89,7 +89,6 @@ test("review can revisit subscription before one atomic write", async () => {
 });
 
 test("cancellation preserves an existing configuration byte-for-byte", async () => {
-  const { runInvocation } = sourceApi;
   const root = await mkdtemp(join(tmpdir(), "forgix-init-cancel-"));
   try {
     const firstPrompts = scriptedPrompts({
@@ -112,14 +111,13 @@ test("cancellation preserves an existing configuration byte-for-byte", async () 
 });
 
 test("Ctrl+C cancellation symbol exits cleanly before file creation", async () => {
-  const { runInvocation } = sourceApi;
   const root = await mkdtemp(join(tmpdir(), "forgix-init-interrupt-"));
   const prompts = scriptedPrompts({ selects: [Symbol("cancel")] });
   try {
     const result = await runInvocation(["init"], { init: { cwd: root, prompts } });
     expect(result.status).toBe("cancelled");
     await expectRejected(
-      () => readFile(join(root, ".codex", "forgix.yaml")),
+      () => readFile(join(root, ".forgix", "config.yaml")),
       (error) => error instanceof Error && error.message.includes("ENOENT"),
     );
   } finally {
@@ -128,7 +126,6 @@ test("Ctrl+C cancellation symbol exits cleanly before file creation", async () =
 });
 
 test("routing preview applies Plus baseline for auto without model selection", async () => {
-  const { buildRoutingPreview } = sourceApi;
   const preview = buildRoutingPreview("auto");
   expect(preview.map(({ stage, model, effort }) => [stage, model, effort])).toEqual([
     ["design", "gpt-5.6-terra", "medium"],
@@ -140,7 +137,6 @@ test("routing preview applies Plus baseline for auto without model selection", a
 });
 
 test("claude harness init skips subscription prompts and returning to auto removes harness key", async () => {
-  const { runInvocation } = sourceApi;
   const root = await mkdtemp(join(tmpdir(), "forgix-init-harness-"));
   try {
     const firstPrompts = scriptedPrompts({
