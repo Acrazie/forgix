@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.0.0](https://github.com/Acrazie/forgix/compare/forgix-v1.0.1...forgix-v2.0.0) (2026-11-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* require Node.js 26 and extract public website ([#43](https://github.com/Acrazie/forgix/issues/43))
+* **branding:** rename Dev Flow to Forgix ([#29](https://github.com/Acrazie/forgix/issues/29))
+
+### Features
+
+* **forgix:** add multi-harness support for Codex, Claude Code, and Antigravity ([#33](https://github.com/Acrazie/forgix/issues/33)) ([687f023](https://github.com/Acrazie/forgix/commit/687f02306a68b478cafea589adbc259eaf0e7231))
+* require Node.js 26 and extract public website ([#43](https://github.com/Acrazie/forgix/issues/43)) ([50dfbd8](https://github.com/Acrazie/forgix/commit/50dfbd86c2e584fa92faca7b5cb611851a3c24a8))
+* **roadmap:** add upstream roadmap ideation and autonomous work-item execution ([#32](https://github.com/Acrazie/forgix/issues/32)) ([f237316](https://github.com/Acrazie/forgix/commit/f2373161339335551983576ec26083a40d784ef7))
+
+
+### Bug Fixes
+
+* **forgix:** remove remaining dev-flow references and fix init step titles ([#37](https://github.com/Acrazie/forgix/issues/37)) ([4781689](https://github.com/Acrazie/forgix/commit/4781689d08cf5734ce4d47c83b10ac30d0a88f3b))
+* **plugin:** add bundled branding and concise overview ([#42](https://github.com/Acrazie/forgix/issues/42)) ([c978a3a](https://github.com/Acrazie/forgix/commit/c978a3aeef44a5efdaf64871f6fcbe1e8298e3ab))
+
+
+### Code Refactoring
+
+* **branding:** rename Dev Flow to Forgix ([#29](https://github.com/Acrazie/forgix/issues/29)) ([c3846fc](https://github.com/Acrazie/forgix/commit/c3846fc9e221f4ecd0504971a2d77fee14575f1d))
+
 ## [1.0.1](https://github.com/Acrazie/codex-dev-flow/compare/dev-flow-v1.0.0...dev-flow-v1.0.1) (2026-10-06)
 
 
