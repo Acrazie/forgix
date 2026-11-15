@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .node-version
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
@@ -45,18 +45,19 @@ jobs:
           if-no-files-found: error
 
   runtime-smoke:
-    name: Runtime Smoke (${{ matrix.os }})
+    name: Runtime Smoke (${{ matrix.os }}, Node ${{ matrix.node }})
     needs: quality-gate
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        node: [24, 26]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ matrix.node }}
       - uses: actions/download-artifact@v4
         with:
           name: forgix-runtime
@@ -72,7 +73,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .node-version
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4

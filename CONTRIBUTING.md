@@ -4,7 +4,8 @@ Thanks for helping improve Forgix. This guide covers repository development; use
 
 ## Prerequisites
 
-- Node.js 24 or newer.
+- Node.js 26.8.1 for repository development, matching `.node-version`.
+- Published CLI compatibility remains Node.js 24 or newer.
 - Bun 1.4.4, matching `.bun-version` and `package.json`.
 - Git.
 - GitHub CLI (`gh`) for releases.
