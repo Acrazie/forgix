@@ -8,6 +8,9 @@ Thanks for helping improve Forgix. This guide covers repository development; use
 - Published CLI compatibility remains Node.js 24 or newer.
 - Bun 1.4.4, matching `.bun-version` and `package.json`.
 - Git.
+- `fluidise-clint` 0.1.0 on `PATH` for commit-message validation. Install it through
+  the [official CLINT distribution instructions](https://github.com/Fluidise/clint#installation).
+  Repository setup does not download or replace global binaries.
 - GitHub CLI (`gh`) for releases.
 - Linux or macOS. Windows is not supported.
 
@@ -37,9 +40,12 @@ forgix init
 
 End users should run `npx @acrasie/forgix init`; `npm link` is not part of the published installation flow.
 
-The setup script activates Lefthook git hooks (`pre-commit` and `commit-msg`). See [docs/git-workflow.md](./docs/git-workflow.md) for full branch, worktree, and Conventional Commit guidelines. `bun run check` verifies
+The setup script configures project-owned hooks (`pre-commit` and `commit-msg`).
+Standard clones use the Vite+ dispatcher; linked worktrees configure only their
+own Git hook scope and require an explicitly enabled `extensions.worktreeConfig`.
+Existing foreign hooks are preserved; setup never edits agent instructions. See [docs/git-workflow.md](./docs/git-workflow.md) for full branch, worktree, and Conventional Commit guidelines. `bun run check` verifies
 formatting, runs native and type-aware linting, checks tool scripts, builds the bundled
-ESM distribution, and executes every current test suite.
+ESM distribution, and executes the default tooling and plugin unit/integration suites.
 
 ## Repository layout
 
@@ -47,7 +53,9 @@ ESM distribution, and executes every current test suite.
 .agents/plugins/marketplace.json       Codex marketplace catalog
 .claude-plugin/marketplace.json        Claude Code marketplace catalog
 .github/workflows/                    Repository CI and release workflows
-lefthook.yml                          Git hooks (pre-commit & commit-msg)
+.vite-hooks/                          Project-owned pre-commit and commit-msg scripts
+fluidise.toml                         Explicit CLINT commit policy
+vite.config.ts                        Shared Vite+ quality and packaging configuration
 scripts/                              Repository quality & workflow tooling
 test/                                 Repository tooling tests
 plugins/forgix/
@@ -128,6 +136,12 @@ bun run --cwd plugins/forgix test:runtime
 bun run --cwd plugins/forgix release:test
 bun run check
 ```
+
+For hook or commit-policy changes, also run `bun run test:hooks`. This native
+integration suite requires CLINT 0.1.0 on `PATH`; it is not part of the default CI
+gate and does not install binaries. It tests the real Vite+ dispatcher in temporary
+repositories and the explicit policy differences documented in
+[the Git workflow](./docs/git-workflow.md).
 
 Quality and packaging configuration lives in root `vite.config.ts`. Vite+ 1.6.0
 provides Oxfmt, Oxlint, and tsdown/Rolldown through one pinned dependency. The

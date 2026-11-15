@@ -19,16 +19,14 @@
     "lint": "vp lint .",
     "lint:type-aware": "vp lint --type-aware .",
     "pack:runtime": "bun run --cwd plugins/forgix pack:runtime",
-    "prepare": "lefthook install",
+    "prepare": "bun scripts/prepare-hooks.ts",
     "release": "bun run --cwd plugins/forgix release",
     "test:tools": "bun test test/*.test.ts",
-    "typecheck:tools": "tsc --noEmit -p tsconfig.json"
+    "typecheck:tools": "tsc --noEmit -p tsconfig.json",
+    "test:hooks": "bun test test/hooks"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.8.0",
-    "@commitlint/config-conventional": "^19.8.0",
     "@types/node": "24.13.3",
-    "lefthook": "^1.11.3",
     "typescript": "7.0.2",
     "vite-plus": "1.6.0",
     "yaml": "2.9.0"

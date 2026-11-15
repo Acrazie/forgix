@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted for quality and packaging. Hook activation and replacement of Commitlint
-remain separately gated pending installation approval and policy parity evidence.
+Accepted. CLINT policy differences and worktree-only hook activation were
+explicitly approved after real-tool comparison.
 
 ## Context
 
@@ -34,12 +34,21 @@ without shell interpolation, fixes, stashing, or restaging. Keep this adapter
 rather than adding lint-staged's index-management behavior. Existing exclusion
 rules and lint severities remain authoritative.
 
-Vite+ hooks are the approved destination for hook orchestration. Remove Lefthook
-only after the replacement is verified and activation is separately approved.
-CLINT is the intended commit validator only if policy compatibility is established
-or exact policy changes are explicitly accepted. Do not silently remove current
-Commitlint protections: exploratory checks already show differences in terminal
-punctuation, header length, fixup messages, and body separation.
+Vite+ manages the hook dispatcher in standard clones and temporary integration
+repositories. Its installer writes Git's shared `--local` scope. In linked
+worktrees, the prepare adapter instead uses native `git config --worktree` to
+activate the same project-owned `.vite-hooks` scripts, without changing shared
+settings or installing a competing dispatcher. It requires worktree configuration
+to be enabled explicitly and preserves foreign hooks and disable preferences.
+
+Replace Commitlint with CLINT 0.1.0 using an explicit `fluidise.toml`. User-approved
+policy changes include a 100-Unicode-code-point title limit; accepted terminal
+punctuation and trailing title whitespace; no body/footer line cap; rejection of
+`fixup!`/`squash!`; mandatory body separation; and different merge/revert ignore
+recognition. This is an explicit policy migration, not rule-for-rule parity.
+CLINT remains a separately provisioned native developer prerequisite. A required
+opt-in native hook test suite checks real commands locally; default CI does not
+silently install this external binary or claim native-hook coverage.
 
 ## Consequences
 
