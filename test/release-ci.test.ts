@@ -199,6 +199,19 @@ describe("release workflow privilege boundaries", () => {
     expect(read(".github/workflows/release.yml")).not.toContain("NODE_AUTH_TOKEN");
     expect(read("plugins/forgix/scripts/release.ts")).not.toMatch(/run\("(?:git|gh)",/);
   });
+  test("uploads only the known candidate files from the hidden artifact directory", () => {
+    const upload = ci.jobs["quality-gate"].steps.find((step: { uses?: string }) =>
+      step.uses?.startsWith("actions/upload-artifact@"),
+    );
+    expect(upload.with["include-hidden-files"]).toBe(true);
+    expect(upload.with.path.trim().split("\n")).toEqual([
+      ".artifacts/forgix.tgz",
+      ".artifacts/RELEASE_NOTES.md",
+      ".artifacts/release.json",
+    ]);
+    expect(upload.with["if-no-files-found"]).toBe("error");
+    expect(upload.with.name).toBe("forgix-runtime");
+  });
   test("pins tools and promotes only the validated same-run artifact", () => {
     for (const job of Object.values(release.jobs) as { steps?: { uses?: string }[] }[])
       for (const step of job.steps ?? [])

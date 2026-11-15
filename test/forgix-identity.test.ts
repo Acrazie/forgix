@@ -44,7 +44,7 @@ test("active root tooling follows the renamed workspace and artifact", () => {
     expect(scripts[name]).toContain("plugins/forgix");
     expect(scripts[name]).not.toContain("plugins/codex-dev-flow");
   }
-  expect(read(".github/workflows/ci.yml")).toContain(".artifacts/*");
+  expect(read(".github/workflows/ci.yml")).toContain(".artifacts/forgix.tgz");
   expect(read("scripts/mirror-npm-to-github.ts")).toContain("forgix-v");
   expect(read("scripts/mirror-npm-to-github.ts")).toContain('SOURCE_PACKAGE = "@acrasie/forgix"');
   expect(read("scripts/mirror-npm-to-github.ts")).toContain(
