@@ -18,15 +18,35 @@ describe("GitHub package workflow", () => {
     );
   });
 
-  test("uses repository-scoped least privilege authentication", () => {
+  test("uses repository-scoped least privilege authentication and pinned actions", () => {
     expect(workflow.permissions).toEqual({ contents: "read" });
+    expect(workflow.concurrency).toEqual({
+      group: "publish-github-package",
+      queue: "max",
+    });
+    expect(workflow.concurrency["cancel-in-progress"]).not.toBe(true);
     expect(workflow.jobs.mirror.permissions).toEqual({ contents: "read", packages: "write" });
+    expect(workflow.jobs.mirror["timeout-minutes"]).toBeGreaterThan(0);
+
     const steps = workflow.jobs.mirror.steps;
-    expect(steps.find((step) => step.uses?.startsWith("actions/setup-node@")).with).toMatchObject({
+    const checkout = steps.find((step) => step.uses?.startsWith("actions/checkout@"));
+    expect(checkout.uses).toMatch(/^actions\/checkout@[0-9a-f]{40}$/);
+    expect(checkout.with).toEqual({ "persist-credentials": false });
+
+    const setupNode = steps.find((step) => step.uses?.startsWith("actions/setup-node@"));
+    expect(setupNode.uses).toMatch(/^actions\/setup-node@[0-9a-f]{40}$/);
+    expect(setupNode.with).toMatchObject({
       "node-version-file": ".node-version",
       "registry-url": "https://npm.pkg.github.com",
       scope: "@acrazie",
     });
+
+    const setupBun = steps.find((step) => step.uses?.startsWith("oven-sh/setup-bun@"));
+    expect(setupBun.uses).toMatch(/^oven-sh\/setup-bun@[0-9a-f]{40}$/);
+    expect(setupBun.with).toMatchObject({
+      "bun-version-file": ".bun-version",
+    });
+
     const mirror = steps.find((step) => step.name === "Mirror canonical npm package");
     expect(mirror.env.NODE_AUTH_TOKEN).toBe("${{ secrets.GITHUB_TOKEN }}");
     expect(mirror.run).toBe('bun scripts/mirror-npm-to-github.ts "$MIRROR_SELECTOR"');
