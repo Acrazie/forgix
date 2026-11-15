@@ -50,6 +50,8 @@ const EXCLUDED_PREFIXES = [
 ];
 
 const EXCLUDED_PATHS = new Set([
+  "docs/ROADMAP.md",
+  "docs/roadmap.md",
   "bun.lock",
   // Release Please owns this generated file's formatting.
   "plugins/forgix/CHANGELOG.md",
@@ -205,16 +207,16 @@ export function executeFastGate(
   const run = options.run ?? defaultRunner;
   const argumentLimit = options.argumentLimit ?? DEFAULT_ARGUMENT_LIMIT;
   const formatStatus = runToolBatches({
-    command: "oxfmt",
-    baseArgs: ["--check", "--no-error-on-unmatched-pattern", "--disable-nested-config"],
+    command: "vp",
+    baseArgs: ["fmt", "--check", "--no-error-on-unmatched-pattern"],
     paths: options.formatPaths,
     cwd: options.cwd,
     run,
     argumentLimit,
   });
   const lintStatus = runToolBatches({
-    command: "oxlint",
-    baseArgs: ["--disable-nested-config", "--no-error-on-unmatched-pattern"],
+    command: "vp",
+    baseArgs: ["lint", "--no-error-on-unmatched-pattern"],
     paths: options.lintPaths,
     cwd: options.cwd,
     run,

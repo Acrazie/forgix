@@ -22,8 +22,8 @@ describe("GitHub package workflow", () => {
     expect(workflow.permissions).toEqual({ contents: "read" });
     expect(workflow.jobs.mirror.permissions).toEqual({ contents: "read", packages: "write" });
     const steps = workflow.jobs.mirror.steps;
-    expect(steps.find((step) => step.uses === "actions/setup-node@v4").with).toMatchObject({
-      "node-version": 24,
+    expect(steps.find((step) => step.uses?.startsWith("actions/setup-node@")).with).toMatchObject({
+      "node-version-file": ".node-version",
       "registry-url": "https://npm.pkg.github.com",
       scope: "@acrazie",
     });

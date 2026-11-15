@@ -9,15 +9,14 @@ if [ -f ".env.example" ] && [ ! -f ".env" ]; then
   cp .env.example .env
 fi
 
-# Husky previously redirected hooks to .husky/_. Restore Git's default only
-# for that legacy repository-local setting; preserve unrelated custom paths.
-if [ "$(git config --local --get core.hooksPath || true)" = ".husky/_" ]; then
-  git config --local --unset core.hooksPath
-fi
-
-# Install dependencies reproducibly. The prepare script installs Lefthook.
+# Install dependencies reproducibly. The prepare script configures project hooks
+# without changing shared Git settings from a linked worktree.
 echo "--> Installing dependencies via bun..."
 bun install --frozen-lockfile
 
+if ! command -v fluidise-clint >/dev/null 2>&1; then
+  echo "fluidise-clint 0.1.0 is required for commit hooks; see CONTRIBUTING.md." >&2
+  exit 1
+fi
 
 echo "==> Setup completed successfully!"

@@ -35,7 +35,7 @@ When a pre-specified roadmap `Work Item` runs under explicit autonomous runner p
   repository vision/glossary/rules. Missing blocking product semantics or contradictions
   halt the run (`Blocked` with question/options commented on the Issue).
 - **`SHAPE`**: performs fresh repository Discovery. Under autonomous policy, `Profile
-choice` automatically follows Discovery's `Quick | Plan` recommendation
+  choice` automatically follows Discovery's `Quick | Plan` recommendation
   (`autonomous_policy` provenance), and reversible profile-conforming technical details
   stay agent-owned. If discovered risk escalates to `high` or `critical`, or an
   irreversible/material `TechnicalDecision` outside the `Project Engineering Profile`

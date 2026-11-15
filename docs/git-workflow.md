@@ -46,9 +46,22 @@ Before staging or committing any code:
 
 1. **Hygiene**: Ensure no secrets, `.env*` files, build caches, or temporary directories are staged.
 2. **Quality Verification**: Execute the repository quality checks:
-   - `bun run check:staged` (runs automatically on commit via Lefthook)
+   - `bun run check:staged` (runs automatically through the project pre-commit hook)
    - Full gate validation: `bun run check`
 3. Do not bypass hooks with `--no-verify`.
+4. For hook or commit-policy changes, also run `bun run test:hooks` with CLINT 0.1.0 installed.
+
+Project hooks live in `.vite-hooks/`: check-only staged quality on `pre-commit`,
+and CLINT with explicit `fluidise.toml` on `commit-msg`. Standard clones use the
+Vite+ dispatcher. Linked worktrees use native Git `--worktree` scope pointing at
+the same scripts; setup never changes shared hook settings from a linked worktree.
+
+The approved CLINT policy limits titles to 100 Unicode code points, allows terminal
+full stops and trailing title whitespace, and does not cap body/footer line length.
+It rejects temporary `fixup!`/`squash!` messages and requires a blank line before a
+body. Its exact merge/revert recognition is not equivalent to Commitlint's ignore
+patterns; some non-conventional revert messages are rejected. These are explicit
+policy changes, not claims of rule-for-rule parity.
 
 ---
 

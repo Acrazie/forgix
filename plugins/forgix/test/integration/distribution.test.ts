@@ -23,9 +23,13 @@ test("distribution bundle imports as ESM", async () => {
   expect(typeof module.main).toBe("function");
 });
 
-test("distribution bundle matches the current source build", async () => {
+test("distribution bundle matches an in-memory rebuild without modifying disk", async () => {
   const bundle = new URL("../../dist/forgix.mjs", import.meta.url);
-  expect(readFileSync(bundle)).toEqual(Buffer.from(await createDistributionBundle()));
+  const original = readFileSync(bundle);
+  const modifiedAt = statSync(bundle).mtimeMs;
+  expect(original).toEqual(Buffer.from(await createDistributionBundle()));
+  expect(readFileSync(bundle)).toEqual(original);
+  expect(statSync(bundle).mtimeMs).toBe(modifiedAt);
 });
 
 for (const command of ["forgix"]) {
