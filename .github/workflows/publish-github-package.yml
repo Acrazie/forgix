@@ -1,8 +1,12 @@
 name: Publish GitHub package mirror
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      versions:
+        description: Exact stable npm version to mirror
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       versions:
@@ -21,11 +25,6 @@ concurrency:
 jobs:
   mirror:
     name: Mirror npm package
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      startsWith(github.event.release.tag_name, 'v') ||
-      startsWith(github.event.release.tag_name, 'npm-v') ||
-      startsWith(github.event.release.tag_name, 'forgix-v')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -45,6 +44,6 @@ jobs:
           bun-version-file: .bun-version
       - name: Mirror canonical npm package
         env:
-          MIRROR_SELECTOR: ${{ github.event.inputs.versions || github.event.release.tag_name }}
+          MIRROR_SELECTOR: ${{ inputs.versions }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun scripts/mirror-npm-to-github.ts "$MIRROR_SELECTOR"

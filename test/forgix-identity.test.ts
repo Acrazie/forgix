@@ -28,17 +28,14 @@ test("Forgix has one package, plugin, marketplace and public skill identity", ()
   expect(existsSync(new URL("../plugins/forgix/dist/dev-flow.mjs", import.meta.url))).toBe(false);
 });
 
-test("release configuration preserves version under the new path and component", () => {
-  const manifest = json("plugins/forgix/package.json");
-  expect(json(".release-please-manifest.json")).toEqual({ "plugins/forgix": manifest.version });
-  expect(json("release-please-config.json").packages).toEqual({
-    "plugins/forgix": {
-      "release-type": "node",
-      "package-name": "@acrasie/forgix",
-      component: "forgix",
-      "changelog-path": "CHANGELOG.md",
-    },
-  });
+test("release automation replaces Release Please without changing package version", () => {
+  expect(existsSync(new URL("../.github/workflows/release-please.yml", import.meta.url))).toBe(
+    false,
+  );
+  expect(existsSync(new URL("../.release-please-manifest.json", import.meta.url))).toBe(false);
+  expect(existsSync(new URL("../release-please-config.json", import.meta.url))).toBe(false);
+  expect(json("plugins/forgix/package.json").version).toMatch(/^\d+\.\d+\.\d+$/);
+  expect(read("cliff.toml")).toContain("protect_breaking_commits = true");
 });
 
 test("active root tooling follows the renamed workspace and artifact", () => {
@@ -47,8 +44,8 @@ test("active root tooling follows the renamed workspace and artifact", () => {
     expect(scripts[name]).toContain("plugins/forgix");
     expect(scripts[name]).not.toContain("plugins/codex-dev-flow");
   }
-  expect(read(".github/workflows/ci.yml")).toContain(".artifacts/forgix.tgz");
-  expect(read(".github/workflows/publish-github-package.yml")).toContain("forgix-v");
+  expect(read(".github/workflows/ci.yml")).toContain(".artifacts/*");
+  expect(read("scripts/mirror-npm-to-github.ts")).toContain("forgix-v");
   expect(read("scripts/mirror-npm-to-github.ts")).toContain('SOURCE_PACKAGE = "@acrasie/forgix"');
   expect(read("scripts/mirror-npm-to-github.ts")).toContain(
     'DESTINATION_PACKAGE = "@acrazie/forgix"',

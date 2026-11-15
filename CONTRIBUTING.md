@@ -163,11 +163,17 @@ From repository root:
 bun run release
 ```
 
-Interactive flow selects multi-harness plugins (`plugin`), `npm`, or combined (`both`) release; previews without durable
-changes; checks GitHub/npm authentication; validates synchronized manifests; and asks before publishing.
-It requires clean, synchronized `main`. Missing auth prints corrective command. Partial
-publication is detected on next run and can resume without creating another version.
-Release automation is supported on Linux and macOS. Windows is unsupported.
+The command prepares npm, multi-harness plugins, or combined releases on a clean work
+branch. Preview restores prepared files. Retained preparation is reviewed and merged
+through a PR; the command never commits, pushes, tags, publishes, or installs a plugin.
+Install the pinned git-cliff 2.14.1 before preparation. GitHub Actions publishes only after
+an authorized maintainer pushes the exact validated release tag. npm uses Trusted
+Publishing OIDC and mandatory provenance, not a local npm token. Linux and macOS release
+preparation are supported; Windows is unsupported.
+
+Follow the [maintainer release runbook](plugins/forgix/docs/runbooks/maintainer-release.md)
+for one-time npm/tag-protection setup, supported tag identities, exact-source CI and
+partial-release recovery. Settings changes and publication require separate authorization.
 
 ## Pull requests
 

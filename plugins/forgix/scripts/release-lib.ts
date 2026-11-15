@@ -1,8 +1,10 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { spawnSync, type SpawnSyncOptionsWithStringEncoding } from "node:child_process";
 import { chmod, readFile, stat, unlink, writeFile } from "node:fs/promises";
 
 export type ReleaseTarget = "plugin" | "npm" | "both";
-export type ReleaseMode = "preview" | "publish";
+export type ReleaseMode = "preview" | "prepare";
 export type VersionBump = "patch" | "minor" | "major";
 
 export interface StableVersion {
@@ -33,14 +35,6 @@ export interface FileSnapshot {
   bytes?: Buffer;
   mode?: number;
 }
-
-export interface PublicationState {
-  pushed: boolean;
-  npmPublished: boolean;
-  githubRelease: boolean;
-}
-
-export type PublicationStep = "push" | "npm" | "github-release";
 
 export class ReleaseError extends Error {
   constructor(message: string) {
@@ -190,7 +184,7 @@ export function createReleasePlan(input: {
 }
 
 export function allowedReleasePaths(target: ReleaseTarget): ReadonlySet<string> {
-  const paths = new Set<string>(["plugins/forgix/dist/forgix.mjs"]);
+  const paths = new Set<string>(["plugins/forgix/dist/forgix.mjs", "plugins/forgix/CHANGELOG.md"]);
   if (target !== "npm") {
     paths.add("plugins/forgix/.codex-plugin/plugin.json");
     paths.add("plugins/forgix/.claude-plugin/plugin.json");
@@ -199,7 +193,6 @@ export function allowedReleasePaths(target: ReleaseTarget): ReadonlySet<string> 
   }
   if (target !== "plugin") {
     paths.add("plugins/forgix/package.json");
-    paths.add(".release-please-manifest.json");
     paths.add("bun.lock");
   }
   return paths;
@@ -382,44 +375,76 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function parseReleaseCommit(subject: string): {
+const VERSION = "(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)";
+const TAG = new RegExp(`^(v|npm-v|plugin-v)(${VERSION})(?:-codex\\.(\\d{14}))?$`);
+
+export function releaseIdentity(tag: string): {
   target: ReleaseTarget;
-  identity: string;
   version: string;
-} | null {
-  const match = /^chore\(release\): (v|npm-v|plugin-v)(\d+\.\d+\.\d+)(?:-codex\.\d{14})?$/.exec(
-    subject,
-  );
-  if (!match) return null;
-  const prefix = match[1];
-  const identity = subject.slice("chore(release): ".length);
+  pluginVersion?: string;
+} {
+  const match = TAG.exec(tag);
+  if (!match) throw new ReleaseError("Expected an exact stable release tag.");
+  const prefix = match[1]!;
+  const version = match[2]!;
+  const timestamp = match[6];
+  parseStableVersion(version);
+  if ((prefix === "plugin-v") !== Boolean(timestamp))
+    throw new ReleaseError("Invalid release tag suffix.");
+  if (timestamp) {
+    const iso = `${timestamp.slice(0, 4)}-${timestamp.slice(4, 6)}-${timestamp.slice(6, 8)}T${timestamp.slice(8, 10)}:${timestamp.slice(10, 12)}:${timestamp.slice(12, 14)}Z`;
+    if (formatCachebuster(new Date(iso)) !== timestamp)
+      throw new ReleaseError("Invalid UTC cachebuster.");
+  }
   return {
     target: prefix === "v" ? "both" : prefix === "npm-v" ? "npm" : "plugin",
-    identity,
-    version: match[2]!,
+    version,
+    ...(timestamp ? { pluginVersion: `${version}+codex.${timestamp}` } : {}),
   };
 }
 
-export function existingNpmReleaseVersion(tag: string, name: string, version: string): string {
-  if (name !== "@acrasie/forgix") {
-    throw new ReleaseError("Existing release must contain package @acrasie/forgix.");
-  }
-  parseStableVersion(version);
-  if (tag !== `forgix-v${version}`) {
-    throw new ReleaseError("Existing release tag does not match package name and version.");
-  }
-  return version;
-}
+const readReleaseJson = (path: string): unknown => JSON.parse(readFileSync(path, "utf8"));
 
-export function missingPublicationSteps(
-  target: ReleaseTarget,
-  state: PublicationState,
-): PublicationStep[] {
-  const steps: PublicationStep[] = [];
-  if (!state.pushed) steps.push("push");
-  if (target !== "plugin" && !state.npmPublished) steps.push("npm");
-  if (!state.githubRelease) steps.push("github-release");
-  return steps;
+export function validateVersions(directory: string, tag: string): string {
+  const identity = releaseIdentity(tag);
+  const pkg = readReleaseJson(join(directory, "plugins/forgix/package.json")) as {
+    name: string;
+    version: string;
+  };
+  if (
+    pkg.name !== "@acrasie/forgix" ||
+    (identity.target !== "plugin" && pkg.version !== identity.version)
+  )
+    throw new ReleaseError("Tag and npm manifest differ.");
+  const codex = readReleaseJson(join(directory, "plugins/forgix/.codex-plugin/plugin.json")) as {
+    version: string;
+  };
+  const claude = readReleaseJson(join(directory, "plugins/forgix/.claude-plugin/plugin.json")) as {
+    version: string;
+  };
+  const agy = readReleaseJson(join(directory, "plugins/forgix/plugin.json")) as { version: string };
+  const market = readReleaseJson(join(directory, ".claude-plugin/marketplace.json")) as {
+    plugins: { name: string; version: string }[];
+  };
+  validatePluginManifest(codex);
+  validatePluginManifest(claude, "claude");
+  validatePluginManifest(agy, "antigravity");
+  validateClaudeMarketplaceManifest(market);
+  const base = semanticBase(codex.version);
+  if (
+    claude.version !== base ||
+    agy.version !== base ||
+    market.plugins.find((p) => p.name === "forgix")?.version !== base
+  )
+    throw new ReleaseError("Plugin plane versions differ.");
+  if (
+    identity.target !== "npm" &&
+    (base !== identity.version ||
+      !/^\d+\.\d+\.\d+\+codex\.\d{14}$/.test(codex.version) ||
+      (identity.pluginVersion && identity.pluginVersion !== codex.version))
+  )
+    throw new ReleaseError("Tag and plugin manifests differ.");
+  return codex.version;
 }
 
 export async function captureFileSnapshots(paths: readonly string[]): Promise<FileSnapshot[]> {

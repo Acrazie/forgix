@@ -22,7 +22,7 @@ describe("staged path parsing", () => {
 });
 
 describe("staged path classification", () => {
-  test("excludes only the Release Please generated changelog, not other Markdown", () => {
+  test("excludes only the git-cliff generated changelog, not other Markdown", () => {
     expect(
       classifyStagedPaths([
         "plugins/forgix/CHANGELOG.md",

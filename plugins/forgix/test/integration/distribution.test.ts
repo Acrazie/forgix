@@ -188,7 +188,7 @@ test("npm package contains runtime assets and excludes development files", () =>
   }
 });
 
-test("plugin identity matches its marketplace entry and release configuration", () => {
+test("plugin identity matches its marketplace entry and canonical npm package", () => {
   const plugin = JSON.parse(
     readFileSync(new URL("../../.codex-plugin/plugin.json", import.meta.url), "utf8"),
   );
@@ -204,8 +204,8 @@ test("plugin identity matches its marketplace entry and release configuration", 
   const claudeMarketplace = JSON.parse(
     readFileSync(new URL("../../../../.claude-plugin/marketplace.json", import.meta.url), "utf8"),
   );
-  const release = JSON.parse(
-    readFileSync(new URL("../../../../release-please-config.json", import.meta.url), "utf8"),
+  const packageManifest = JSON.parse(
+    readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
   );
   const baseVersion = plugin.version.split("+")[0];
   expect(plugin.name).toBe("forgix");
@@ -223,8 +223,8 @@ test("plugin identity matches its marketplace entry and release configuration", 
   expect(claudeMarketplace.plugins[0].name).toBe("forgix");
   expect(claudeMarketplace.plugins[0].source).toBe("./plugins/forgix");
   expect(claudeMarketplace.plugins[0].version).toBe(baseVersion);
-  expect(release.packages["plugins/forgix"]["package-name"]).toBe("@acrasie/forgix");
-  expect(release.packages["plugins/forgix"].component).toBe(plugin.name);
+  expect(packageManifest.name).toBe("@acrasie/forgix");
+  expect(Object.keys(packageManifest.bin)).toEqual([plugin.name]);
 
   const publicSkill = readFileSync(
     new URL("../../skills/forgix/SKILL.md", import.meta.url),

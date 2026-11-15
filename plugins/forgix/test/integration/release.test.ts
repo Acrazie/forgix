@@ -8,13 +8,10 @@ import {
   captureFileSnapshots,
   compareVersions,
   createReleasePlan,
-  existingNpmReleaseVersion,
   formatCachebuster,
   incrementVersion,
-  missingPublicationSteps,
   normalizeGitOutput,
   parsePorcelainPaths,
-  parseReleaseCommit,
   parseStableVersion,
   recommendBump,
   replaceJsonVersion,
@@ -118,21 +115,6 @@ describe("release plans", () => {
 });
 
 describe("release safety", () => {
-  test("existing npm publication preserves the exact renamed release identity", () => {
-    expect(existingNpmReleaseVersion("forgix-v1.0.0", "@acrasie/forgix", "1.0.0")).toBe("1.0.0");
-    for (const tag of ["v1.0.0", "forgix-v1.0.1", "--help", "forgix-v1.0.0; echo unsafe"]) {
-      expect(() => existingNpmReleaseVersion(tag, "@acrasie/forgix", "1.0.0")).toThrow(
-        ReleaseError,
-      );
-    }
-    expect(() => existingNpmReleaseVersion("forgix-v1.0.0", "dev-flow", "1.0.0")).toThrow(
-      ReleaseError,
-    );
-    expect(() =>
-      existingNpmReleaseVersion("forgix-v1.0.0-beta.1", "@acrasie/forgix", "1.0.0-beta.1"),
-    ).toThrow(ReleaseError);
-  });
-
   test("updates only JSON version bytes and preserves formatter-owned layout", () => {
     const manifest = `{
   "name": "forgix",
@@ -204,54 +186,11 @@ describe("release safety", () => {
     expect(allowedReleasePaths("both").has("plugins/forgix/.claude-plugin/plugin.json")).toBe(true);
     expect(allowedReleasePaths("both").has("plugins/forgix/plugin.json")).toBe(true);
     expect(allowedReleasePaths("both").has(".claude-plugin/marketplace.json")).toBe(true);
-    expect(allowedReleasePaths("both").has(".release-please-manifest.json")).toBe(true);
-    expect(allowedReleasePaths("npm").has(".release-please-manifest.json")).toBe(true);
+    expect(allowedReleasePaths("both").has("plugins/forgix/CHANGELOG.md")).toBe(true);
+    expect(allowedReleasePaths("npm").has("plugins/forgix/CHANGELOG.md")).toBe(true);
     expect(allowedReleasePaths("plugin").has("plugins/forgix/package.json")).toBe(false);
     expect(allowedReleasePaths("plugin").has(".release-please-manifest.json")).toBe(false);
     expect(allowedReleasePaths("npm").has("plugins/forgix/.claude-plugin/plugin.json")).toBe(false);
-  });
-
-  test("recognizes target-specific release commits", () => {
-    expect(parseReleaseCommit("chore(release): v1.2.0")).toEqual({
-      target: "both",
-      identity: "v1.2.0",
-      version: "1.2.0",
-    });
-    expect(parseReleaseCommit("chore(release): npm-v1.2.1")).toEqual({
-      target: "npm",
-      identity: "npm-v1.2.1",
-      version: "1.2.1",
-    });
-    expect(parseReleaseCommit("chore(release): plugin-v1.2.1-codex.20260728140509")).toEqual({
-      target: "plugin",
-      identity: "plugin-v1.2.1-codex.20260728140509",
-      version: "1.2.1",
-    });
-    expect(parseReleaseCommit("feat: unrelated")).toBe(null);
-  });
-
-  test("derives target-aware idempotent recovery steps", () => {
-    expect(
-      missingPublicationSteps("both", {
-        pushed: true,
-        npmPublished: false,
-        githubRelease: false,
-      }),
-    ).toEqual(["npm", "github-release"]);
-    expect(
-      missingPublicationSteps("plugin", {
-        pushed: false,
-        npmPublished: false,
-        githubRelease: false,
-      }),
-    ).toEqual(["push", "github-release"]);
-    expect(
-      missingPublicationSteps("npm", {
-        pushed: true,
-        npmPublished: true,
-        githubRelease: true,
-      }),
-    ).toEqual([]);
   });
 
   test("restores original bytes, mode, and absence after cancellation", async () => {

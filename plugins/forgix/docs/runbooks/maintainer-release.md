@@ -1,290 +1,146 @@
 # Maintainer Release Runbook
 
-## Purpose and ownership
+## Ownership and release identities
 
-This runbook is the canonical production-release procedure for Forgix. A
-maintainer runs it from a trusted local workstation. CI validates releases but does not
-publish the canonical npm package or the Codex plugin. After an npm-bearing GitHub
-Release is published, a separate GitHub Actions workflow mirrors its canonical npmjs
-tarball to GitHub Packages as `@acrazie/forgix`.
+GitHub Actions is the only publication authority. `bun run release` prepares a PR;
+it never commits, pushes, creates a tag, publishes a package, or installs a plugin.
+Release Please and the former local publication/resume path are retired.
 
-Use the repository release program rather than invoking `npm publish`, creating tags,
-or editing release versions manually:
+| Target        | Tag                                  | Publication                                     |
+| ------------- | ------------------------------------ | ----------------------------------------------- |
+| npm + plugins | `vX.Y.Z`                             | npmjs, GitHub Release, GitHub Packages mirror   |
+| npm only      | `npm-vX.Y.Z`                         | npmjs, GitHub Release, GitHub Packages mirror   |
+| plugins only  | `plugin-vX.Y.Z-codex.YYYYMMDDhhmmss` | GitHub Release; plugin files are already in Git |
 
-```bash
-bun run release
-```
+Only stable npm versions are supported. Plugin-only preparation keeps the existing
+semantic base and rotates the Codex UTC cachebuster. It does not promise equivalent
+update notifications in Claude Code or Antigravity. npm-only preparation leaves plugin
+manifests unchanged. Combined preparation aligns all semantic bases.
 
-The release design and safety rationale are recorded in
-[ADR 0008](../adr/0008-automate-maintainer-releases-with-an-interactive-bun-workflow.md).
+npmjs `@acrasie/forgix` remains canonical. GitHub Packages `@acrazie/forgix` is a mirror
+of that npmjs tarball, with only the package name transformed. No package is renamed.
 
-## Supported release targets
+## One-time activation, before any new release tag
 
-| Target                | Version change                                                                               | Tag                                     | Publication                                                  |
-| --------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------ |
-| Plugin + npm          | Increment npm SemVer; sync base SemVer across all plugin/marketplace manifests + cachebuster | `v<version>`                            | Git push, npm, GitHub Release, optional local plugin refresh |
-| Multi-harness plugins | Keep semantic base across Codex/Claude/Antigravity/marketplace; replace Codex cachebuster    | `plugin-v<version>-codex.<cachebuster>` | Git push, GitHub Release, optional local plugin refresh      |
-| npm package           | Increment npm SemVer; leave plugin manifests unchanged                                       | `npm-v<version>`                        | Git push, npm, GitHub Release                                |
+A maintainer must verify these settings separately from merging this migration:
 
-Only stable npm versions are supported. The program recommends patch, minor, or major
-from Conventional Commits; maintainer retains final version authority.
+1. Keep `Acrazie/forgix` and the npmjs package public. Provenance is mandatory; a
+   private source repository must block publication rather than silently disabling it.
+2. On npmjs, configure the existing package's trusted publisher: GitHub user `Acrazie`,
+   repository `forgix`, workflow filename `release.yml`, direct `npm publish` allowed.
+   Set its environment name to `release`. Before tagging, create that GitHub environment
+   and restrict deployment branches/tags to the protected release tag patterns only;
+   branches, including `main`, must not be eligible. Do not rely on automatic environment
+   creation: a name without protection is not a security boundary. Verify only authorized
+   maintainers can modify these rules. No long-lived npm token is used.
+3. Confirm effective tag rules restrict creation of all three release families to
+   authorized maintainers and prevent updates/deletions. Protecting `main` alone is not
+   proof of tag protection. Do not weaken branch or tag rules to make a run succeed.
+4. Inventory tags, GitHub Releases and npm versions; reconcile any partial publication
+   before activation. Migration inspection found only `v1.0.0` and `v1.0.1` tags/releases,
+   npm stable versions `1.0.0`/`1.0.1`, and historical `0.0.0-stage`. Recheck live state.
+   No historical tags need alias configuration or automatic backfill.
+5. Confirm Actions can write GitHub Releases and GitHub Packages with repository-scoped
+   `GITHUB_TOKEN`. Set the mirror package's visibility separately if needed; this
+   workflow does not administer package or repository settings.
 
-## Preconditions
+Bun and Node use repository pins. Preparation requires `git-cliff 2.14.1` on PATH.
+CI installs that same version and npm `11.21.1` (OIDC requires npm >=11.5.1).
+`npm whoami` and a dry run do not establish that trusted publishing works.
 
-- Run on Linux or macOS. Windows is rejected.
-- Install Node.js 26 or newer.
-- Install repository-pinned Bun version from root `package.json`.
-- Install `git` and GitHub CLI `gh`.
-- Have push permission for `origin/main` and release creation permission on GitHub.
-- For npm or combined release, have publish permission for `@acrasie/forgix`.
-- Keep `main` clean, with no staged, unstaged, or untracked files.
-- Ensure local `main` can fast-forward to `origin/main`; release program never rebases,
-  resets, or creates a merge commit.
+## Prepare and approve
 
-Authenticate without placing credentials in repository files:
-
-```bash
-gh auth status
-cd plugins/forgix
-bun pm whoami
-cd ../..
-```
-
-`bun pm whoami` is unnecessary for a plugin-only release. OTP, when required, remains
-inside interactive `bun publish`.
-
-## Recommended procedure
-
-### 1. Prepare local `main`
-
-```bash
-git switch main
-git pull --ff-only
-git status --short
-```
-
-`git status --short` must produce no output. Do not stash unrelated work inside the
-release procedure; finish or move it before starting.
-
-### 2. Run read-only preview
+On a clean work branch based on current `main`, run from the repository root:
 
 ```bash
 bun run release
 ```
 
-Choose intended target, then **Preview only**. Preview still requires GitHub and, when
-applicable, npm authentication plus network access. It checks version availability and
-runs validation, but restores generated bundle bytes and changes no remote state.
+Choose target, preview or retained preparation, and the npm version when applicable.
+The first Node >=26 migration npm release must account for its breaking runtime floor;
+the tool recommends a major while the maintainer retains final version authority.
+The command prepares targeted manifests, lockfile when needed, deterministic committed
+bundle and a new `plugins/forgix/CHANGELOG.md` section. It runs the full local gate.
+Preview, failure or cancellation restores the prepared files; it never changes remotes.
+Unexpected generated files block preparation and must be inspected, not blindly deleted.
 
-Confirm preview shows expected:
+Notes use separate npm and plugin predecessor histories. A plugin-only tag never hides
+changes from subsequent npm notes. Combined notes share a section only when ranges are
+identical. The changelog stores the chosen date and predecessor tags; CI regenerates
+and compares notes without rewriting historical entries. Breaking changes are preserved.
 
-- target;
-- npm and plugin versions;
-- tag and release identity;
-- changed-file allowlist;
-- publication order.
+Review the diff and notes, then ship a preparation PR using the normal repository Git
+workflow. Squash-merge with the exact `chore(release): <tag>` title printed by preparation.
+No automatic release PR is created. If `main` advances with included changes, refresh
+preparation and rerun checks; CI rejects stale notes or a bundle differing from Git.
 
-Preview requires local `main` to equal `origin/main`. If it refuses, reconcile with
-`git pull --ff-only`, inspect result, then rerun preview.
-
-### 3. Publish
-
-Run same command again, choose same target, then **Prepare and publish**:
-
-```bash
-bun run release
-```
-
-Before any publication, program performs:
-
-1. Git branch, cleanliness, synchronization, authentication, and version-availability
-   checks;
-2. frozen dependency installation;
-3. typecheck and deterministic build;
-4. main and release test suites;
-5. plugin-manifest validation across `plugins/forgix/.codex-plugin/plugin.json`, `plugins/forgix/.claude-plugin/plugin.json`, `plugins/forgix/plugin.json`, and `.claude-plugin/marketplace.json` (plus `claude plugin validate --strict` and `agy plugin validate plugins/forgix --strict --json` when locally installed);
-6. npm package inspection and publish dry-run when applicable;
-7. generated-file allowlist validation;
-8. release commit, annotated tag, and generated GitHub release-note preview.
-
-Review final summary. Final publication confirmation defaults to **No**. Approval starts
-publication in this order:
-
-1. atomically push release commit and tag;
-2. run `bun publish --access public` when target includes npm;
-3. create GitHub Release from generated notes;
-4. optionally refresh locally installed Codex plugin.
-
-Publishing the GitHub Release asynchronously starts `Publish GitHub package mirror`
-for combined `v<version>` and npm-only `npm-v<version>` tags. Plugin-only tags have no
-npm artifact and do not start the mirror. The release program does not wait for or
-include this asynchronous mirror in its partial-release state.
-
-Start a new Codex thread after local plugin refresh so new plugin version loads.
-
-## Verification
-
-Use tag printed by release program:
+After merge and validation, verify the exact main commit and the printed tag. Creation
+and push of that tag explicitly authorize publication; do not tag an unreviewed branch.
+Use the reviewed literal tag and commit, never a guessed version:
 
 ```bash
-git show --no-patch <tag>
-gh release view <tag>
+git fetch origin main --tags
+git tag -a <printed-tag> <validated-main-sha> -m "chore(release): <printed-tag>"
+git push origin refs/tags/<printed-tag>
 ```
 
-For npm or combined target, use npm version printed by release program:
+These are operator steps, not authorization for an agent to execute a release. Do not
+reuse old `forgix-v*` tags, move tags, push commits directly to `main`, or publish locally.
+
+## CI and evidence
+
+The release workflow resolves the tag to an immutable SHA, checks its integration into
+`main`, validates target manifests and version ownership, and runs the full Ubuntu/macOS
+CI on that source. Release validation compares the committed bundle and prepared notes.
+For npm, it packs once with lifecycle scripts disabled, tests that exact tarball on
+Ubuntu/macOS, then promotes it without rebuilding or installing project dependencies.
+
+The npm job alone receives OIDC permission and must pass the protected `release`
+environment. Binding the npm trusted publisher to that environment prevents a modified
+workflow dispatched from an unmerged branch from acquiring publication authority. After publish, native npm signature and
+provenance verification must establish package integrity, repository, workflow, tag and
+source SHA. Verification installs the published package only in an empty temporary
+sandbox, with lifecycle scripts and bin links disabled. The GitHub job then publishes
+or reconciles the stable Release and calls the mirror explicitly. No reliance on a
+`release: published` event generated by `GITHUB_TOKEN` remains.
+
+Read the separate source, validation, npm, GitHub and mirror results in the Actions run
+summary. A failed mirror does not undo npm or GitHub publication. Actions artifacts
+include release metadata, notes and, for npm, the tested tarball with SHA-512 integrity.
+Successful local tests or workflow parsing are not evidence of actual OIDC publication.
+
+## Retry and failure handling
+
+Prefer rerunning the original run for the same immutable tag. A manual retry must use
+that tag as **both** the workflow reference and the `tag` input:
 
 ```bash
-npm view @acrasie/forgix@<version> version
+gh workflow run release.yml --ref <existing-tag> -f tag=<existing-tag>
 ```
 
-After the mirror workflow succeeds, an authenticated GitHub Packages client can verify
-the scoped alias:
+The workflow must exist on default branch for dispatch availability. Dispatching from
+`main` with only a tag input is rejected: checking out a tag does not fix the workflow's
+source SHA used in provenance. A moved tag, incompatible manifests, different tarball
+integrity, conflicting tag ownership or missing provenance blocks automatic recovery.
+
+If npm accepted a version before a timeout, rerun reconciles registry state and verifies
+its exact bytes and provenance before skipping publication. Never retry a raw publish
+blindly. If GitHub Release is missing, the workflow creates only that missing step after
+reverification. Existing incompatible notes/releases are not overwritten. Old retries
+cannot regress npm `latest` or promote an old/plugin-only GitHub Release to latest.
+
+If only the mirror failed, rerun its job or dispatch the exact stable npm version:
 
 ```bash
-npm view @acrazie/forgix@<version> version \
-  --registry=https://npm.pkg.github.com
+gh workflow run publish-github-package.yml -f versions=<exact-stable-version>
 ```
 
-Expected final state:
+Manual `versions=all` remains available only for separately authorized historical
+backfill. Plugin-only release never calls the mirror. Release runs share a serialization
+queue across tag families; up to 100 runs can wait, surplus runs are cancelled. Dispatch
+order is not guaranteed. Recover a cancelled tag explicitly rather than recreating it.
 
-- local and remote `main` point to release commit;
-- annotated tag points to same commit;
-- GitHub Release exists for tag;
-- selected npm version exists when applicable;
-- matching `@acrazie/forgix` version exists after the asynchronous mirror;
-- worktree is clean.
-
-The release commit, tag, npm registry entry, and GitHub Release are durable audit
-records. No separate local release-state file exists.
-
-## Package rename
-
-New releases target `@acrasie/forgix` on npmjs and `@acrazie/forgix` on GitHub Packages.
-Historical `codex-dev-flow` and `@acrasie/dev-flow` packages remain separate; this
-workflow does not republish, remove or migrate them. The `all` selector backfills
-only versions published as `@acrasie/forgix`. The CLI and Codex plugin are also named `forgix`;
-no former CLI alias is retained.
-
-Before the first Forgix release, verify npm name availability and publication rights.
-Set the GitHub package visibility after its first publication. No package is published
-by the rename itself, and a registry 404 does not guarantee npm will accept the name.
-
-## Initial GitHub Packages publication and historical backfill
-
-The canonical release target is the public `@acrasie/forgix` package on npmjs.
-GitHub Packages contains a scoped mirror because its npm registry accepts only scoped
-names. Mirror input always comes from the already-published npmjs tarball; the workflow
-validates source name, version, and repository, then changes only the package name.
-
-Because this repository is private, the first linked GitHub package initially inherits
-private visibility. After separate approval, create a public mirror without racing the complete
-backfill:
-
-1. Merge the mirror workflow to the default branch.
-2. Obtain separate authorization for package publication, then publish only the oldest
-   version:
-
-   ```bash
-   gh workflow run publish-github-package.yml -f versions="<oldest-published-forgix-version>"
-   ```
-
-3. Wait for success. Open the new `@acrazie/forgix` package settings and change
-   visibility to **Public**. This UI operation is deliberately manual.
-4. Obtain confirmation immediately before the visibility change: making a GitHub
-   package public cannot be reversed.
-5. Backfill every stable npmjs version:
-
-   ```bash
-   gh workflow run publish-github-package.yml -f versions=all
-   ```
-
-The `all` selector discovers stable npmjs versions, skips exact versions already present
-in GitHub Packages, and publishes missing versions oldest first. A precise stable
-version, `v<version>`, or `npm-v<version>` may also be dispatched for targeted recovery.
-Publishing the public package exposes only content already present in the public npmjs
-tarball; it does not make the private source repository readable.
-
-## Cancellation and failure recovery
-
-### Complete npm publication for an existing Release Please release
-
-When Release Please has already merged a release PR and published its GitHub release,
-but the corresponding npm version is missing, use:
-
-```bash
-bun run release --publish-existing forgix-v1.0.1
-```
-
-This mode verifies the published stable GitHub release, the local and remote tag commit,
-and ancestry on `origin/main`. It exports that exact commit into a temporary directory,
-requires its pinned Bun version, installs frozen workspace dependencies, runs release
-validations and the full quality gate, and previews npm publication before confirmation.
-The invoking checkout is not published, so it may contain the recovery-tool correction
-on a dedicated branch. No version, plugin manifest, tag, or GitHub release is changed.
-An already-published npm version is skipped. Only the missing npm publication is performed.
-
-The existing GitHub release event is not emitted again. If a GitHub Packages mirror is
-required, dispatch the repository mirror workflow for the exact npm version after npm
-publication is verified; do not create another release.
-
-### Before first successful push
-
-Cancellation, `Ctrl+C`, or validation failure restores original release files and
-removes only commit or tag objects created by program. Inspect:
-
-```bash
-git status --short
-git log -1 --oneline
-```
-
-Fix cause, ensure clean `main`, then restart with `bun run release`.
-
-### After push, npm publication, or GitHub publication begins
-
-Do not delete remote tag, rewrite `main`, unpublish package, or create replacement
-release manually. Published systems are not one atomic transaction and program never
-attempts remote rollback.
-
-Keep checkout on clean release commit and rerun:
-
-```bash
-bun run release
-```
-
-Program recognizes release commit, reconciles Git, npm, and GitHub state, displays
-missing steps, then asks whether to resume. Already completed publication steps are
-skipped. This also handles case where npm accepted package but local command lost its
-response.
-
-If all remote publication steps succeeded and only optional local plugin refresh
-failed, do **not** rerun release solely for that refresh. Run it directly:
-
-```bash
-codex plugin marketplace upgrade acrazie
-codex plugin add forgix@acrazie
-```
-
-Then start a new Codex thread.
-
-If the asynchronous GitHub Packages mirror fails, do not create another npm or GitHub
-Release. Rerun the failed Actions job or dispatch its exact stable version. Existing
-destination versions are verified and skipped, so recovery is idempotent. Authentication,
-network, malformed metadata, and unexpected registry responses block instead of being
-treated as a missing version.
-
-### Bad release discovered after completion
-
-Prefer forward correction: fix defect and publish a new patch or plugin-cachebuster
-release. Published npm versions are immutable release identities and must never be
-reused.
-
-## Forbidden shortcuts
-
-- No validation bypass or force-publish path.
-- No manual version edits followed by direct publish.
-- No direct `npm publish` or `bun publish` of the canonical npmjs package outside the
-  release program. The repository-owned GitHub Packages mirror workflow is the only
-  scoped-alias exception.
-- No manual tag or GitHub Release for a new release.
-- No automatic or manual merge/rebase/reset inside release procedure.
-- Never commit npm tokens, GitHub tokens, OTP values, or generated credential files.
+Before any publication, revert the migration through a normal reviewed PR if needed.
+After publication, prefer forward correction with a new stable version or plugin
+cachebuster. Never unpublish, rewrite `main`, retag or attempt automatic remote rollback.
+The former `--publish-existing` option cannot publish locally anymore.

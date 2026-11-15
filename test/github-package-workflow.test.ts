@@ -7,15 +7,11 @@ const workflowSource = readFileSync(workflowPath, "utf8");
 const workflow = parse(workflowSource);
 
 describe("GitHub package workflow", () => {
-  test("supports future npm releases and explicit backfill", () => {
-    expect(workflow.on.release.types).toEqual(["published"]);
+  test("supports explicit release calls and manual backfill, not recursive release events", () => {
+    expect(workflow.on.release).toBeUndefined();
+    expect(workflow.on.workflow_call.inputs.versions.required).toBe(true);
     expect(workflow.on.workflow_dispatch.inputs.versions.default).toBe("all");
-    expect(workflow.jobs.mirror.if).toContain("github.event_name == 'workflow_dispatch'");
-    expect(workflow.jobs.mirror.if).toContain("startsWith(github.event.release.tag_name, 'v')");
-    expect(workflow.jobs.mirror.if).toContain("startsWith(github.event.release.tag_name, 'npm-v')");
-    expect(workflow.jobs.mirror.if).toContain(
-      "startsWith(github.event.release.tag_name, 'forgix-v')",
-    );
+    expect(workflow.jobs.mirror.if).toBeUndefined();
   });
 
   test("uses repository-scoped least privilege authentication and pinned actions", () => {
