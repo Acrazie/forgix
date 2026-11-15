@@ -1,301 +1,219 @@
-# Forgix
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/brand/svg/lockup-ivory.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="./docs/assets/brand/svg/lockup-ink.svg" />
+    <img alt="Forgix" src="./docs/assets/brand/svg/lockup-ink.svg" width="320" />
+  </picture>
+</h1>
 
 <p align="center">
-  <img
-    src="./docs/assets/brand/svg/symbol-color.svg"
-    alt="Forgix"
-    width="128"
-  />
+  <a href="https://github.com/Acrazie/forgix/actions/workflows/ci.yml"><img src="https://github.com/Acrazie/forgix/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://www.npmjs.com/package/@acrasie/forgix"><img src="https://img.shields.io/npm/v/%40acrasie%2Fforgix" alt="npm version" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT" /></a>
+  <a href="#requirements"><img src="https://img.shields.io/badge/node-%3E%3D24-brightgreen" alt="Node.js >= 24" /></a>
 </p>
 
 > Turn a software objective into an approved, implemented, and verified change.
 
 Forgix is a portable plugin and workflow CLI for **Codex**, **Claude Code**, and **Antigravity**.
-It combines product clarification, repository discovery, explicit approval, implementation,
-and fresh verification without treating a plausible answer as completed work.
+It pairs product clarification, repository discovery, and one explicit plan approval with native
+host execution and fresh, command-backed verification.
+
+## Why Forgix
+
+```text
+INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
+```
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/forgix-lifecycle-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="./docs/assets/diagrams/forgix-lifecycle.svg" />
+    <img alt="Forgix execution lifecycle: INTAKE, SHAPE, GATE approval barrier, BUILD, ASSURE, selective rework, and harness adapters" src="./docs/assets/diagrams/forgix-lifecycle.svg" width="880" />
+  </picture>
+</p>
+
+- **INTAKE**: Clarifies the objective, observable success, constraints, and risk.
+- **SHAPE**: Inspects the codebase and produces a verified Quick or Plan implementation contract.
+- **GATE**: Validates that contract and waits for one explicit human approval before any edit.
+- **BUILD**: Lets the active host agent (**Codex**, **Claude Code**, or **Antigravity**) implement
+  the approved plan without an extra orchestration loop.
+- **ASSURE**: Reviews and verifies the change with fresh command-backed evidence.
+
+Use Forgix for software changes that require product decisions, planning, or verified proof. Plain
+questions, read-only exploration, and standalone Git/PR delivery do not need a Forgix task.
+
+Routing adapts automatically to the active harness (`auto`, overridable with `--harness` or
+`.codex/forgix.yaml`): **Codex** runs quota-aware stage routing via `codex app-server`, while
+**Claude Code** and **Antigravity** use `host-native` routing so your active session model runs each
+stage directly.
 
 ## Requirements
 
-For plugin or CLI use:
-
 - **Codex**, **Claude Code**, or **Antigravity** (with plugin support)
-- Node.js 24 or newer
-- Git
-- Linux or macOS. Windows is unsupported.
+- **Node.js 24** or newer
+- **Git**
+- **Linux or macOS** (Windows is unsupported)
 
-The distributed ESM runtime installs no dependencies and performs no network access by
-itself. Bun is required only for repository development.
-
-## Existing projects
-
-Use `forgix` (`$forgix` on Codex, `/forgix:forgix` on Claude Code, `/forgix` on Antigravity);
-former commands have no aliases. Internal `.codex/` state directories (`tasks/`,
-`benchmarks/`, `project-init/`, `roadmap/`) keep their paths across all three harnesses,
-while configuration, profiles, diagrams, owned domain markers, and Plan projections use
-`forgix` names without fallback:
-
-1. **CLI configuration**: rename `~/.codex/dev-flow.yaml`, `.codex/dev-flow.yaml`, and
-   `.codex/dev-flow.local.yaml` to `forgix.yaml` / `forgix.local.yaml`, or re-run
-   `npx @acrasie/forgix init` (legacy filenames are ignored silently).
-2. **Project Engineering Profile**: re-run `$forgix init` (`/forgix:forgix init` or
-   `/forgix init`) and re-approve rather than hand-renaming signed
-   `.codex/dev-flow.project.yaml` files (especially when `diagramRefs` point below
-   `.codex/forgix/diagrams/`), and rename `.codex/dev-flow.project.local.yaml` to
-   `.codex/forgix.project.local.yaml`.
-3. **Plan projections and domain markers**: move retained `docs/dev-flow/` plan files to
-   `docs/forgix/`, and replace or remove legacy `<!-- dev-flow:... -->` markers in domain
-   documents so the next projection does not append a second `<!-- forgix:... -->` block.
+The distributed ESM CLI ships with zero runtime dependencies and makes no network requests on its
+own. **Bun 1.4.4** is only required for repository development.
 
 ## Install
 
-Install Forgix for your harness, or run the standalone CLI directly with `npx @acrasie/forgix init`.
-
 ### Codex
-
-Add the marketplace and install the plugin:
 
 ```bash
 codex plugin marketplace add Acrazie/forgix
 codex plugin add forgix@acrazie
 ```
 
-Alternatively, open `/plugins`, select **Acrazie**, and install **Forgix**.
-Start a new Codex session after installation or upgrade.
+Alternatively, open `/plugins`, select **Acrazie**, and install **Forgix**, then start a new Codex
+session.
 
 ### Claude Code
 
-Add the marketplace and install the plugin from inside Claude Code:
+From inside Claude Code:
 
 ```text
 /plugin marketplace add Acrazie/forgix
 /plugin install forgix@acrazie
 ```
 
-Or via the `claude` CLI:
-
-```bash
-claude plugin marketplace add Acrazie/forgix
-claude plugin install forgix@acrazie
-```
+Or via CLI: `claude plugin marketplace add Acrazie/forgix && claude plugin install forgix@acrazie`.
 
 ### Antigravity
-
-Clone the repository and install the plugin directory with `agy`:
 
 ```bash
 git clone https://github.com/Acrazie/forgix.git
 agy plugin install ./forgix/plugins/forgix
 ```
 
-Alternatives on Antigravity:
-
-- If Forgix is already installed in Claude Code, import it directly with `agy plugin import claude`.
-- Or copy `./forgix/plugins/forgix/` into `~/.gemini/config/plugins/forgix/`.
+Alternatives: import an existing Claude Code installation with `agy plugin import claude`, or copy
+`./forgix/plugins/forgix/` into `~/.gemini/config/plugins/forgix/`.
 
 ### Standalone CLI
 
+Run the bundled CLI directly with `npx`:
+
 ```bash
 npx @acrasie/forgix init
-npx @acrasie/forgix "<objective>"
+npx @acrasie/forgix status
+npx @acrasie/forgix resume <task-id>
+npx @acrasie/forgix config validate
+npx @acrasie/forgix benchmark summary
+npx @acrasie/forgix [--harness auto|codex|claude|antigravity] "<objective>"
 ```
 
 ## Quick start
 
-Open your repository in Codex (`$forgix`), Claude Code (`/forgix:forgix`), or Antigravity (`/forgix`).
-First, create or reconcile durable engineering conventions with Project INIT:
+Invoke Forgix using your harness command prefix:
 
-```text
-# Codex
-$forgix init
+| Harness         | Prefix           | Example (`init`)      |
+| --------------- | ---------------- | --------------------- |
+| **Codex**       | `$forgix`        | `$forgix init`        |
+| **Claude Code** | `/forgix:forgix` | `/forgix:forgix init` |
+| **Antigravity** | `/forgix`        | `/forgix init`        |
 
-# Claude Code
-/forgix:forgix init
+1. **Initialize shared project conventions (`Project INIT`)**:
 
-# Antigravity
-/forgix init
-```
+   ```text
+   $forgix init
+   ```
 
-Project INIT inspects the repository before asking questions. It asks one material
-question at a time, recommends an answer, and publishes nothing until explicit Profile
-Approval.
+   Forgix inspects the repository before asking one unresolved engineering decision at a time and
+   publishes nothing until explicit approval.
 
-Then run a real objective:
+2. **Run your first objective**:
 
-```text
-# Codex
-$forgix Add rate limiting to the public authentication endpoints
+   ```text
+   $forgix Add rate limiting to the public authentication endpoints
+   ```
 
-# Claude Code
-/forgix:forgix Add rate limiting to the public authentication endpoints
+   Forgix takes the objective through clarification, discovery, one contract approval, native
+   implementation, and verification.
 
-# Antigravity
-/forgix Add rate limiting to the public authentication endpoints
-```
+3. **Optional plugin preferences (`Configuration wizard`)**:
 
-Forgix carries the objective through product decisions, technical shaping, one plan
-approval, implementation, and fresh assurance.
+   ```bash
+   npx @acrasie/forgix init
+   ```
 
-The optional Configuration wizard customizes plugin operation such as target harness,
-worktree isolation, Codex subscription/quota thresholds (when targeting `auto` or `codex`),
-and integrations:
-
-```bash
-npx @acrasie/forgix init
-```
-
-The npm package is named `@acrasie/forgix` and the installed command is named `forgix`; the primary skill is `$forgix`
-(Codex), `/forgix:forgix` (Claude Code), or `/forgix` (Antigravity).
-Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.
-Existing installations of the old npm package, marketplace source, or `dev-flow` files are
-not automatically migrated. Replace or re-add the Acrazie marketplace source as
-`Acrazie/forgix`, install `forgix@acrazie`, and replace the old plugin installation rather
-than installing both plugin identities side by side. Rename existing CLI configuration files
-to `~/.codex/forgix.yaml`, `.codex/forgix.yaml`, and `.codex/forgix.local.yaml` (or re-run
-`npx @acrasie/forgix init`), regenerate and re-approve shared project profiles with
-`$forgix init` (`/forgix:forgix init` or `/forgix init`), and update retained `docs/forgix/`
-paths and `<!-- forgix:... -->` domain markers; `.codex/tasks/`, `benchmarks/`,
-`project-init/`, and `roadmap/` remain unchanged.
-
-Project INIT and the Configuration wizard are separate interfaces; neither aliases the
-other. See the [Getting Started guide](./plugins/forgix/docs/getting-started.md)
-for a complete walkthrough.
-
-## How Forgix works
-
-```text
-INTAKE -> SHAPE -> GATE -> BUILD -> ASSURE ✓
-```
-
-- **INTAKE** resolves the product objective, observable success, constraints, and risk.
-- **SHAPE** discovers repository facts, resolves technical uncertainty, and prepares a
-  Quick or Plan implementation contract.
-- **GATE** validates that exact contract and asks for one explicit approval.
-- **BUILD** lets the active host agent (Codex, Claude Code, or Antigravity) implement the
-  complete approved plan. Forgix adds no execution skill, checkpoint, progress tracker, or
-  validation loop.
-- **ASSURE** reviews and verifies the change with fresh command-backed evidence.
-
-### Harness-aware routing
-
-Forgix detects the active harness automatically (`auto`, overridable via `--harness` or
-`harness` in `.codex/forgix.yaml`):
-
-- **Codex (`codex`)**: captures account/quota/model capabilities once via `codex app-server`
-  and applies quota-aware `gpt-5.6-luna` / `gpt-5.6-terra` / `gpt-5.6-sol` stage routing
-  (`mode: "codex-app-server"`). Failures return structured `routing_unavailable` or
-  `routing_permission_required` diagnostics without silent fallback.
-- **Claude Code (`claude`) and Antigravity (`antigravity`)**: use host-native routing
-  (`mode: "host-native"`, `model: null`, `effort: null`, `reason: "host-native:<harness>"`),
-  bypassing `codex app-server` and quota caches so your active host model/session runs
-  every stage directly.
-
-Use Forgix when a change needs product or technical decisions, implementation, or
-proof. Plain questions, read-only exploration, and Git/GitHub delivery do not need a Forgix task.
+   Use the interactive **Configuration wizard** for harness defaults, worktree mode, Codex quota
+   thresholds, and skill allowlists. **Project INIT** and the **Configuration wizard** are separate
+   interfaces—see the [Getting Started guide](./plugins/forgix/docs/getting-started.md) for the full
+   walkthrough.
 
 ## Commands
 
-| Codex                              | Claude Code                               | Antigravity                        | Purpose                                                         |
-| ---------------------------------- | ----------------------------------------- | ---------------------------------- | --------------------------------------------------------------- |
-| `$forgix <objective>`              | `/forgix:forgix <objective>`              | `/forgix <objective>`              | Start a software change.                                        |
-| `$forgix init`                     | `/forgix:forgix init`                     | `/forgix init`                     | Discover and approve durable project engineering conventions.   |
-| `$forgix roadmap`                  | `/forgix:forgix roadmap`                  | `/forgix roadmap`                  | Ideate and publish a GitHub Project v2 feature roadmap.         |
-| `$forgix run-issue <#num>`         | `/forgix:forgix run-issue <#num>`         | `/forgix run-issue <#num>`         | Run one ready roadmap Work Item in an isolated worktree.        |
-| `$forgix run-roadmap [flags]`      | `/forgix:forgix run-roadmap [flags]`      | `/forgix run-roadmap [flags]`      | Execute ready roadmap Work Items (`--limit N`, `--parallel M`). |
-| `$forgix resume <task-id>`         | `/forgix:forgix resume <task-id>`         | `/forgix resume <task-id>`         | Resume an interrupted task.                                     |
-| `$forgix status [task-id]`         | `/forgix:forgix status [task-id]`         | `/forgix status [task-id]`         | Inspect task status.                                            |
-| `$forgix --benchmark <objective>`  | `/forgix:forgix --benchmark <objective>`  | `/forgix --benchmark <objective>`  | Run a task with local benchmark measurement enabled.            |
-| `$forgix config show [--explain]`  | `/forgix:forgix config show [--explain]`  | `/forgix config show [--explain]`  | Show effective configuration and optional provenance.           |
-| `$forgix config validate [--json]` | `/forgix:forgix config validate [--json]` | `/forgix config validate [--json]` | Validate effective configuration.                               |
+Using `$forgix` (replace with `/forgix:forgix` on Claude Code or `/forgix` on Antigravity):
 
-Standalone CLI commands:
+| Command                            | Purpose                                                     |
+| ---------------------------------- | ----------------------------------------------------------- |
+| `$forgix <objective>`              | Start a software change through the five-phase lifecycle.   |
+| `$forgix init`                     | Run **Project INIT** to establish shared engineering rules. |
+| `$forgix roadmap`                  | Ideate and publish a GitHub Project v2 feature roadmap.     |
+| `$forgix run-issue <#num>`         | Run one ready roadmap work item in an isolated worktree.    |
+| `$forgix run-roadmap [flags]`      | Execute ready roadmap items (`--limit N`, `--parallel M`).  |
+| `$forgix resume <task-id>`         | Reconcile state and resume an interrupted task.             |
+| `$forgix status [task-id]`         | Inspect persisted task status.                              |
+| `$forgix --benchmark <objective>`  | Enable opt-in local benchmark recording for a run.          |
+| `$forgix config show [--explain]`  | Inspect effective configuration and optional provenance.    |
+| `$forgix config validate [--json]` | Validate effective configuration against schema and policy. |
 
-| Command                                                                        | Purpose                                                         |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| `npx @acrasie/forgix init`                                                     | Run the optional Configuration wizard.                          |
-| `npx @acrasie/forgix benchmark summary`                                        | Summarize allowlisted local benchmark data.                     |
-| `npx @acrasie/forgix [--harness auto\|codex\|claude\|antigravity] <objective>` | Invoke the bundled CLI directly with optional harness override. |
+Words like `quick`, `standard`, and `critical` at the start of an objective are plain text, not
+modes. **Quick** vs. **Plan** preparation is chosen only after Discovery, while risk and policy
+control safeguards.
 
-`quick`, `standard`, and `critical` at objective start are plain objective text, not
-modes or aliases. Quick or Plan is selected only after Discovery. Risk and policy—not
-that preparation profile—control safety safeguards.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/forgix-roadmap-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="./docs/assets/diagrams/forgix-roadmap.svg" />
+    <img alt="Forgix roadmap ideation and execution flow from upstream $forgix roadmap to GitHub Project v2 and isolated worktree runs via run-issue and run-roadmap" src="./docs/assets/diagrams/forgix-roadmap.svg" width="880" />
+  </picture>
+</p>
 
-## Project INIT
+## Project INIT, configuration & safety
 
-Project INIT separates portable team conventions from private machine details:
+All three harnesses share the same `.codex/` project paths:
 
-```text
-repository evidence + user decisions
-                 |
-                 v
-       validation + Profile Approval
-                 |
-       +---------+----------+
-       |                    |
-       v                    v
-shared engineering     local overlay
-profile                and session state
-```
+| File                                  | Role                                                   | Git policy                      |
+| ------------------------------------- | ------------------------------------------------------ | ------------------------------- |
+| `.codex/forgix.project.yaml`          | Shared architecture, stack, and conventions.           | Review and commit when desired. |
+| `.codex/forgix.project.local.yaml`    | Machine-local service paths and personal preferences.  | Gitignored.                     |
+| `.codex/project-init/state.yaml`      | Compact resumable **Project INIT** session state.      | Gitignored and temporary.       |
+| `.codex/forgix/diagrams/*.mermaid.md` | Optional projections of approved profile architecture. | Commit with shared profile.     |
 
-| File                                  | Role                                                        | Git policy                      |
-| ------------------------------------- | ----------------------------------------------------------- | ------------------------------- |
-| `.codex/forgix.project.yaml`          | Shared architecture, topology, stack, and conventions.      | Review and commit when desired. |
-| `.codex/forgix.project.local.yaml`    | Absolute service paths and personal, non-contractual prefs. | Gitignored.                     |
-| `.codex/project-init/state.yaml`      | Compact resumable INIT session.                             | Gitignored and temporary.       |
-| `.codex/forgix/diagrams/*.mermaid.md` | Optional projection of approved profile architecture.       | Commit with shared profile.     |
-
-Shared profiles reject secret-like values and absolute local paths. Project INIT creates
-no product scaffold and no task state. Full schema, authority, reconciliation, and
-atomic publication rules live in the
-[Project Engineering Profile contract](./plugins/forgix/docs/project-profile-contract.md).
-
-## Configuration
-
-Configuration resolves from broad defaults to invocation-specific values:
+Configuration resolves in order of increasing precedence:
 
 ```text
-internal defaults
-  < ~/.codex/forgix.yaml
-  < .codex/forgix.yaml
-  < .codex/forgix.local.yaml
-  < invocation flags
+internal defaults < ~/.codex/forgix.yaml < .codex/forgix.yaml < .codex/forgix.local.yaml < invocation flags < repository policy
 ```
 
-Repository policy applies afterward and cannot be weakened by local configuration or
-flags. Use the optional Configuration wizard for guided setup, or validate existing
-configuration directly:
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/forgix-init-config-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="./docs/assets/diagrams/forgix-init-config.svg" />
+    <img alt="Project INIT vs. configuration boundaries separating tracked .codex artifacts, gitignored local overlays, and the non-weakenable repository policy ceiling" src="./docs/assets/diagrams/forgix-init-config.svg" width="880" />
+  </picture>
+</p>
 
-```text
-$forgix config show --explain
-$forgix config validate --json
-```
+Safety invariants enforced by the lifecycle:
 
-## Safety guarantees
+- Implementation never starts before explicit **GATE** approval.
+- Completion requires fresh, command-backed **ASSURE** verification evidence.
+- Task state under `.codex/tasks/` is durable and resumable.
+- Local configuration and flags cannot weaken repository policy.
+- Commits, pushes, pull requests, registry publishes, and releases are never authorized implicitly.
 
-- Implementation never starts before explicit GATE approval.
-- Success requires fresh verification evidence.
-- Task state is durable and resumable.
-- Local configuration cannot weaken repository policy.
-- Commit, push, pull request, registry, and release operations are never authorized
-  implicitly by Forgix approval.
+## Repository & development
 
-Normative details live in the [Lifecycle contract](./plugins/forgix/docs/lifecycle-contract.md).
+| Path                                            | Purpose                                                                     | Runtime                                 |
+| ----------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------- |
+| [`plugins/forgix/`](./plugins/forgix/README.md) | Publishable `@acrasie/forgix` CLI and multi-harness plugin.                 | Node.js `>=24` (`Bun 1.4.4` to develop) |
+| [`site/`](./site/README.md)                     | Private Astro website workspace (local build scaffold, excluded from npm).  | Node.js `>=26` (`<27`) + `Bun 1.4.4`    |
+| `scripts/`, `test/`                             | Repository quality checks, worktree helpers, and package-mirroring tooling. | `Bun 1.4.4`                             |
 
-## Documentation
-
-- [Getting Started](./plugins/forgix/docs/getting-started.md)
-- [Lifecycle contract](./plugins/forgix/docs/lifecycle-contract.md)
-- [Project Engineering Profile contract](./plugins/forgix/docs/project-profile-contract.md)
-- [Design](./plugins/forgix/docs/design.md)
-- [Artifact contract](./plugins/forgix/docs/artifacts.md)
-- [Measurement protocol](./plugins/forgix/docs/metrics-protocol.md)
-- [Maintainer release runbook](./plugins/forgix/docs/runbooks/maintainer-release.md)
-- [ADR directory](./plugins/forgix/docs/adr/)
-- [Glossary](./plugins/forgix/docs/glossary/forgix.md)
-
-## Development and quality
-
-Contributors need the Bun version pinned in `package.json` in addition to user runtime
-requirements:
+Run the full contributor verification gate locally:
 
 ```bash
 git clone https://github.com/Acrazie/forgix.git
@@ -304,10 +222,18 @@ bun install --frozen-lockfile
 bun run check
 ```
 
-The full gate runs formatting, native and type-aware linting, tool typechecking, tests,
-plugin typechecking/build, randomized test-order verification, coverage, and deterministic
-artifact size checks. The lightweight Lefthook pre-commit hook runs the staged-file Bun
-adapter; CI remains authoritative.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for focused test commands, Lefthook hooks, and release
+automation, and [docs/git-workflow.md](./docs/git-workflow.md) for branching, worktrees, and
+Conventional Commits.
 
-See [Contributing](./CONTRIBUTING.md) for repository structure, focused commands, design
-constraints, and release workflow.
+## Documentation
+
+- **Guides & reference**: [Getting Started](./plugins/forgix/docs/getting-started.md) · [Plugin README](./plugins/forgix/README.md) · [Glossary](./plugins/forgix/docs/glossary/forgix.md)
+- **Normative contracts**: [Lifecycle contract](./plugins/forgix/docs/lifecycle-contract.md) · [Project Engineering Profile contract](./plugins/forgix/docs/project-profile-contract.md) · [Artifact contract](./plugins/forgix/docs/artifacts.md) · [Measurement protocol](./plugins/forgix/docs/metrics-protocol.md)
+- **Design, brand & releases**: [Design](./plugins/forgix/docs/design.md) · [ADRs](./plugins/forgix/docs/adr/) · [Maintainer release runbook](./plugins/forgix/docs/runbooks/maintainer-release.md) · [Brand kit](./docs/assets/brand/README.md)
+
+## License & security
+
+- Released under the [MIT License](./LICENSE).
+- Report vulnerabilities privately per [SECURITY.md](./SECURITY.md).
+- View release history in [CHANGELOG.md](./plugins/forgix/CHANGELOG.md).

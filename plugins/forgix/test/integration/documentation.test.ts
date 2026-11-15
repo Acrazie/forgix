@@ -40,11 +40,14 @@ function relativeLinks(markdown: string): string[] {
 
 describe("public documentation", () => {
   test("current installation documentation describes the rename without old CLI aliases", () => {
+    expect(read(repositoryReadmePath)).not.toMatch(/dev-flow/i);
     for (const path of [repositoryReadmePath, pluginReadmePath, gettingStartedPath]) {
       const documentation = read(path);
-      expect(documentation).toContain(
-        "Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.",
-      );
+      if (path !== repositoryReadmePath) {
+        expect(documentation).toContain(
+          "Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.",
+        );
+      }
       expect(documentation).not.toContain("npm rejects the unscoped");
       expect(documentation).not.toContain("remains an alias of the same executable");
     }

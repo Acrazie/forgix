@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="forgix-roadmap-dark-title forgix-roadmap-dark-desc" id="forgix-roadmap-dark-root">
+        <title id="forgix-roadmap-dark-title">Forgix roadmap ideation and execution architecture</title>
+        <desc id="forgix-roadmap-dark-desc">Dark architecture diagram showing upstream $forgix roadmap ideation in three phases gated before publishing Feature parents and Work Item sub-issues to GitHub Project v2, followed by isolated main-branch worktree execution via run-issue and run-roadmap.</desc>
+        <defs>
+      <style>#forgix-roadmap-dark-root { --color-paper:  #161318;
+      --color-ink:    #f4eee9;
+      --color-muted:  #c2b8bf;
+      --color-accent: #ff5e68;
+      --font-sans:    system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --font-serif:   Georgia, 'Times New Roman', serif;
+      --font-mono:    ui-monospace, 'SFMono-Regular', Menlo, monospace; }
+      #forgix-roadmap-dark-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #forgix-roadmap-dark-root .diagram-container { width: 100%; overflow-x: auto; }
+      #forgix-roadmap-dark-root text { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      @media print {
+#forgix-roadmap-dark-root .diagram-container { overflow-x: visible; }
+}</style>
+          <marker id="forgix-roadmap-dark-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#c2b8bf"/>
+          </marker>
+          <marker id="forgix-roadmap-dark-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#ff5e68"/>
+          </marker>
+          <marker id="forgix-roadmap-dark-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#7da8ea"/>
+          </marker>
+        </defs>
+
+        <!-- Encre background -->
+        <rect width="100%" height="100%" fill="#161318"/>
+
+        <!-- Three stage zones (drawn before arrows and nodes) -->
+        <rect x="40" y="40" width="232" height="520" rx="8" fill="#211d24" fill-opacity="0.72" stroke="#f4eee9" stroke-width="1" stroke-opacity="0.14"/>
+        <rect x="56" y="44" width="136" height="12" rx="2" fill="#161318"/>
+        <text x="124" y="53" fill="#9f949d" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" text-anchor="middle" letter-spacing="0.14em">1 · IDEATION SESSION</text>
+
+        <rect x="364" y="40" width="232" height="520" rx="8" fill="rgba(244,238,233,0.03)" stroke="#f4eee9" stroke-width="1" stroke-opacity="0.14"/>
+        <rect x="380" y="44" width="136" height="12" rx="2" fill="#161318"/>
+        <text x="448" y="53" fill="#9f949d" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" text-anchor="middle" letter-spacing="0.14em">2 · GITHUB PROJECT v2</text>
+
+        <rect x="688" y="40" width="232" height="520" rx="8" fill="rgba(125,168,234,0.04)" stroke="#f4eee9" stroke-width="1" stroke-opacity="0.14"/>
+        <rect x="704" y="44" width="144" height="12" rx="2" fill="#161318"/>
+        <text x="776" y="53" fill="#9f949d" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" text-anchor="middle" letter-spacing="0.14em">3 · AUTONOMOUS RUNNER</text>
+
+        <!-- Seven connectors -->
+        <line x1="156" y1="164" x2="156" y2="228" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-roadmap-dark-arrow)"/>
+        <line x1="156" y1="308" x2="156" y2="372" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-roadmap-dark-arrow)"/>
+        <path d="M 256,412 H 292 Q 300,412 300,404 V 196 Q 300,188 308,188 H 380" fill="none" stroke="#ff5e68" stroke-width="1.6" marker-end="url(#forgix-roadmap-dark-arrow-accent)"/>
+        <line x1="480" y1="228" x2="480" y2="292" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-roadmap-dark-arrow)"/>
+        <path d="M 580,332 H 616 Q 624,332 624,324 V 132 Q 624,124 632,124 H 704" fill="none" stroke="#7da8ea" stroke-width="1.2" marker-end="url(#forgix-roadmap-dark-arrow-link)"/>
+        <line x1="804" y1="164" x2="804" y2="228" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-roadmap-dark-arrow)"/>
+        <line x1="804" y1="308" x2="804" y2="372" stroke="#c2b8bf" stroke-width="1.2" marker-end="url(#forgix-roadmap-dark-arrow)"/>
+
+        <!-- Arrow labels -->
+        <g font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="7" letter-spacing="0.06em" fill="#c2b8bf">
+          <text x="166" y="199" text-anchor="start">THEMES</text>
+          <text x="166" y="343" text-anchor="start">VALIDATE</text>
+          <text x="310" y="303" text-anchor="start" fill="#ff5e68">PUBLISH</text>
+          <text x="490" y="263" text-anchor="start">SUB-ISSUES</text>
+          <text x="634" y="231" text-anchor="start" fill="#7da8ea">UNBLOCKED</text>
+          <text x="814" y="199" text-anchor="start">BRANCH</text>
+          <text x="814" y="343" text-anchor="start">LIFECYCLE</text>
+        </g>
+
+        <!-- Zone 1 nodes: Upstream Ideation Session -->
+        <g text-anchor="middle">
+          <g>
+            <rect x="56" y="84" width="200" height="80" rx="8" fill="#161318"/>
+            <rect x="56" y="84" width="200" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+            <rect x="64" y="90" width="48" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="88" y="99" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">PHASE 1</text>
+            <text x="156" y="126" fill="#f4eee9" font-size="12" font-weight="600">Preflight &amp; Diverge</text>
+            <text x="156" y="144" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">themes · risks · gh scope</text>
+          </g>
+
+          <g>
+            <rect x="56" y="228" width="200" height="80" rx="8" fill="#161318"/>
+            <rect x="56" y="228" width="200" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+            <rect x="64" y="234" width="48" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="88" y="243" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">PHASE 2</text>
+            <text x="156" y="270" fill="#f4eee9" font-size="12" font-weight="600">Converge Backlog</text>
+            <text x="156" y="288" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">Feature → Work Item DAG</text>
+          </g>
+
+          <!-- Focal accent node: Approval Gate -->
+          <g>
+            <rect x="56" y="372" width="200" height="80" rx="8" fill="#161318"/>
+            <rect x="56" y="372" width="200" height="80" rx="8" fill="rgba(255,94,104,0.12)" stroke="#ff5e68" stroke-width="1.5"/>
+            <rect x="64" y="378" width="48" height="12" rx="2" fill="none" stroke="#ff5e68" stroke-width="0.8"/>
+            <text x="88" y="387" fill="#ff5e68" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">BARRIER</text>
+            <text x="156" y="414" fill="#f4eee9" font-size="12" font-weight="600">Approval Gate</text>
+            <text x="156" y="432" fill="#ff5e68" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">validate &amp; DAG preview</text>
+          </g>
+        </g>
+
+        <!-- Zone 2 nodes: Published GitHub Project v2 -->
+        <g text-anchor="middle">
+          <g>
+            <rect x="380" y="148" width="200" height="80" rx="8" fill="#161318"/>
+            <rect x="380" y="148" width="200" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+            <rect x="388" y="154" width="52" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="414" y="163" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">PROJECT</text>
+            <text x="480" y="190" fill="#f4eee9" font-size="12" font-weight="600">Feature Parents</text>
+            <text x="480" y="208" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">capability outcome</text>
+          </g>
+
+          <g>
+            <rect x="380" y="292" width="200" height="80" rx="8" fill="#161318"/>
+            <rect x="380" y="292" width="200" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+            <rect x="388" y="298" width="60" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="418" y="307" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">WORK ITEM</text>
+            <text x="480" y="334" fill="#f4eee9" font-size="12" font-weight="600">Work Item Sub-Issues</text>
+            <text x="480" y="352" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">P0–P3 · blockedBy · Wave</text>
+          </g>
+        </g>
+
+        <!-- Zone 3 nodes: Autonomous Runner (run-issue / run-roadmap) -->
+        <g text-anchor="middle">
+          <g>
+            <rect x="704" y="84" width="200" height="80" rx="8" fill="#161318"/>
+            <rect x="704" y="84" width="200" height="80" rx="8" fill="rgba(125,168,234,0.08)" stroke="#7da8ea" stroke-width="1"/>
+            <rect x="712" y="90" width="48" height="12" rx="2" fill="none" stroke="#7da8ea" stroke-width="0.8"/>
+            <text x="736" y="99" fill="#7da8ea" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">SELECT</text>
+            <text x="804" y="126" fill="#f4eee9" font-size="12" font-weight="600">Ready Queue</text>
+            <text x="804" y="144" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">select-ready (deps Done)</text>
+          </g>
+
+          <g>
+            <rect x="704" y="228" width="200" height="80" rx="8" fill="#161318"/>
+            <rect x="704" y="228" width="200" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1"/>
+            <rect x="712" y="234" width="56" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="740" y="243" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">WORKTREE</text>
+            <text x="804" y="270" fill="#f4eee9" font-size="12" font-weight="600">Isolated Worktree</text>
+            <text x="804" y="288" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">fresh main branch / item</text>
+          </g>
+
+          <g>
+            <rect x="704" y="372" width="200" height="80" rx="8" fill="#161318"/>
+            <rect x="704" y="372" width="200" height="80" rx="8" fill="#211d24" stroke="#f4eee9" stroke-width="1.2"/>
+            <rect x="712" y="378" width="48" height="12" rx="2" fill="none" stroke="#f4eee9" stroke-width="0.8" stroke-opacity="0.35"/>
+            <text x="736" y="387" fill="#c2b8bf" font-size="7" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" letter-spacing="0.06em">RUNNER</text>
+            <text x="804" y="414" fill="#f4eee9" font-size="12" font-weight="600">Risk-Tiered Runner</text>
+            <text x="804" y="432" fill="#c2b8bf" font-size="9" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">lifecycle → Draft PR</text>
+          </g>
+        </g>
+
+        <!-- Concise bottom notes inside each zone -->
+        <g font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="8" fill="#c2b8bf">
+          <text x="56" y="492">Runs outside TaskState</text>
+          <text x="56" y="510" fill="#9f949d">.codex/roadmap/state.yaml</text>
+          <text x="56" y="528" fill="#9f949d">resumable session checkpoint</text>
+
+          <text x="380" y="424">Wave 1 unblocked → Ready</text>
+          <text x="380" y="442" fill="#9f949d">Wave 2+ or blocked → Backlog</text>
+          <text x="380" y="460" fill="#9f949d">native blocked-by DAG edges</text>
+
+          <text x="704" y="492">$forgix run-issue / run-roadmap</text>
+          <text x="704" y="510" fill="#9f949d">low/med → auto Gate receipt</text>
+          <text x="704" y="528" fill="#9f949d">high/crit → human Gate pause</text>
+        </g>
+      </svg>
