@@ -1,4 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { isAbsolute, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "bun:test";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
@@ -51,4 +53,42 @@ test("active root tooling follows the renamed workspace and artifact", () => {
   expect(read("scripts/mirror-npm-to-github.ts")).toContain(
     'DESTINATION_PACKAGE = "@acrazie/forgix"',
   );
+});
+
+const pluginRoot = fileURLToPath(new URL("../plugins/forgix/", import.meta.url));
+
+function pluginAsset(path: string): string {
+  if (isAbsolute(path) || /^[a-z]+:/i.test(path)) throw new Error("Asset must be local");
+  const target = realpathSync(resolve(pluginRoot, path));
+  const withinRoot = relative(realpathSync(pluginRoot), target);
+  if (withinRoot === ".." || withinRoot.startsWith(`..${sep}`) || isAbsolute(withinRoot)) {
+    throw new Error("Asset must remain inside the plugin");
+  }
+  return target;
+}
+
+test("plugin branding uses the bundled brand master without changing Claude compatibility", () => {
+  const codex = json("plugins/forgix/.codex-plugin/plugin.json");
+  const antigravity = json("plugins/forgix/plugin.json");
+  const claude = json("plugins/forgix/.claude-plugin/plugin.json");
+  for (const field of ["logo", "logoDark", "composerIcon"]) {
+    expect(codex.interface[field]).toBe("./assets/logo.svg");
+    expect(pluginAsset(codex.interface[field])).toBe(resolve(pluginRoot, "assets/logo.svg"));
+  }
+  expect(antigravity.logo).toBe("assets/logo.svg");
+  expect(pluginAsset(antigravity.logo)).toBe(resolve(pluginRoot, "assets/logo.svg"));
+  expect(claude).not.toHaveProperty("icon");
+  expect(claude).not.toHaveProperty("interface");
+  const logo = read("plugins/forgix/assets/logo.svg");
+  expect(logo).toBe(read("docs/assets/brand/svg/symbol-color.svg"));
+  expect(logo).not.toMatch(/<script\b|<foreignObject\b|\bon\w+\s*=|(?:href|src)\s*=/i);
+});
+
+test("plugin asset checks reject missing, remote and out-of-root files", () => {
+  expect(() => pluginAsset("assets/missing.svg")).toThrow();
+  expect(() => pluginAsset("../../docs/assets/brand/svg/symbol-color.svg")).toThrow(
+    "Asset must remain inside the plugin",
+  );
+  expect(() => pluginAsset("https://example.com/logo.svg")).toThrow("Asset must be local");
+  expect(() => pluginAsset(resolve(pluginRoot, "assets/logo.svg"))).toThrow("Asset must be local");
 });

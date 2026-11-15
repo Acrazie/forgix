@@ -12,7 +12,7 @@ Plugin and CLI users need:
 - **Codex**, **Claude Code**, or **Antigravity** (with plugin support);
 - Node.js 24 or newer;
 - Git; and
-- Linux or macOS.
+- Linux or macOS. Windows is unsupported.
 
 Check the runtime before installation:
 
@@ -20,7 +20,8 @@ Check the runtime before installation:
 node --version
 ```
 
-Bun is not required to use the published plugin. It is a contributor dependency only.
+The distributed ESM runtime installs no dependencies and performs no network access by
+itself. Bun is not required to use the published plugin. It is a contributor dependency only.
 
 ## 2. Install the plugin
 
@@ -54,6 +55,15 @@ agy plugin install ./forgix/plugins/forgix
 
 You can also import an existing Claude Code installation (`agy plugin import claude`) or
 copy `./forgix/plugins/forgix/` into `~/.gemini/config/plugins/forgix/`.
+
+### Standalone CLI
+
+```bash
+npx @acrasie/forgix init
+npx @acrasie/forgix status
+npx @acrasie/forgix resume <task-id>
+npx @acrasie/forgix config validate
+```
 
 ## 3. Run Project INIT
 
@@ -241,6 +251,59 @@ previously displayed but changed implementation contract.
 
 Run `node --version` and install Node.js 24 or newer. Node.js 22 and older are outside the
 supported runtime contract.
+
+## Existing projects
+
+Use `forgix` (`$forgix` on Codex, `/forgix:forgix` on Claude Code, `/forgix` on Antigravity);
+former commands have no aliases. Internal `.codex/` state directories (`tasks/`,
+`benchmarks/`, `project-init/`, `roadmap/`) keep their paths across all three harnesses,
+while configuration, profiles, diagrams, owned domain markers, and Plan projections use
+`forgix` names without fallback:
+
+1. **CLI configuration**: rename `~/.codex/dev-flow.yaml`, `.codex/dev-flow.yaml`, and
+   `.codex/dev-flow.local.yaml` to `forgix.yaml` / `forgix.local.yaml`, or re-run
+   `npx @acrasie/forgix init` (legacy filenames are ignored silently).
+2. **Project Engineering Profile**: re-run `$forgix init` (`/forgix:forgix init` or
+   `/forgix init`) and re-approve rather than hand-renaming signed
+   `.codex/dev-flow.project.yaml` files (especially when `diagramRefs` point below
+   `.codex/forgix/diagrams/`), and rename `.codex/dev-flow.project.local.yaml` to
+   `.codex/forgix.project.local.yaml`.
+3. **Plan projections and domain markers**: move retained `docs/dev-flow/` plan files to
+   `docs/forgix/`, and replace or remove legacy `<!-- dev-flow:... -->` markers in domain
+   documents so the next projection does not append a second `<!-- forgix:... -->` block.
+
+## Command reference
+
+| Codex                              | Claude Code                               | Antigravity                        | Purpose                                                         |
+| ---------------------------------- | ----------------------------------------- | ---------------------------------- | --------------------------------------------------------------- |
+| `$forgix <objective>`              | `/forgix:forgix <objective>`              | `/forgix <objective>`              | Start a software change.                                        |
+| `$forgix init`                     | `/forgix:forgix init`                     | `/forgix init`                     | Discover and approve durable project engineering conventions.   |
+| `$forgix roadmap`                  | `/forgix:forgix roadmap`                  | `/forgix roadmap`                  | Ideate and publish a GitHub Project v2 feature roadmap.         |
+| `$forgix run-issue <#num>`         | `/forgix:forgix run-issue <#num>`         | `/forgix run-issue <#num>`         | Run one ready roadmap Work Item in an isolated worktree.        |
+| `$forgix run-roadmap [flags]`      | `/forgix:forgix run-roadmap [flags]`      | `/forgix run-roadmap [flags]`      | Execute ready roadmap Work Items (`--limit N`, `--parallel M`). |
+| `$forgix resume <task-id>`         | `/forgix:forgix resume <task-id>`         | `/forgix resume <task-id>`         | Resume an interrupted task.                                     |
+| `$forgix status [task-id]`         | `/forgix:forgix status [task-id]`         | `/forgix status [task-id]`         | Inspect task status.                                            |
+| `$forgix --benchmark <objective>`  | `/forgix:forgix --benchmark <objective>`  | `/forgix --benchmark <objective>`  | Run a task with local benchmark measurement enabled.            |
+| `$forgix config show [--explain]`  | `/forgix:forgix config show [--explain]`  | `/forgix config show [--explain]`  | Show effective configuration and optional provenance.           |
+| `$forgix config validate [--json]` | `/forgix:forgix config validate [--json]` | `/forgix config validate [--json]` | Validate effective configuration.                               |
+
+Standalone CLI: `npx @acrasie/forgix init`, `npx @acrasie/forgix status`, `npx @acrasie/forgix resume <task-id>`,
+`npx @acrasie/forgix config validate`, and `npx @acrasie/forgix benchmark summary`. Durable task state
+is stored under `.codex/tasks/<task-id>.yaml` and `.codex/tasks/<task-id>.events.jsonl`.
+
+`quick`, `standard`, and `critical` at objective start are plain objective text, not
+modes or aliases. Quick or Plan is selected only after Discovery. Risk and policy—not
+that preparation profile—control safety safeguards.
+
+### Harness routing and scope
+
+On **Codex**, Forgix captures quota/model telemetry once via `codex app-server`
+(`mode: "codex-app-server"`). On **Claude Code** and **Antigravity**, Forgix uses
+host-native routing (`mode: "host-native"`, `model: null`, `effort: null`), skipping
+`codex app-server` and quota caches so the host harness executes each stage directly.
+
+Use Forgix when a change needs product or technical decisions, implementation, or
+proof. Plain questions, read-only exploration, and Git/GitHub delivery do not need a Forgix task.
 
 ## Next references
 

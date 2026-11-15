@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 136 136" role="img" aria-label="Forgix">
+  <title>Forgix — avatar Seuil carmin</title>
+  <desc>Le symbole Seuil ivoire sur un disque carmin, avec sa réserve préservée.</desc>
+  <circle cx="68" cy="68" r="68" fill="#AE123D"/>
+  <g transform="translate(12 12) scale(1.12)">
+    <path fill="#F4EEE9" fill-rule="evenodd" d="M12 12H72L88 28V88H28L12 72ZM36 32V68H54V50H64V32Z"/>
+  </g>
+</svg>

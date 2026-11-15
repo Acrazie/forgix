@@ -6,5 +6,6 @@
   "author": "forgix contributors",
   "license": "MIT",
   "homepage": "https://github.com/Acrazie/forgix#readme",
-  "repository": "https://github.com/Acrazie/forgix"
+  "repository": "https://github.com/Acrazie/forgix",
+  "logo": "assets/logo.svg"
 }

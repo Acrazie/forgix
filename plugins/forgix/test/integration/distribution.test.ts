@@ -124,6 +124,7 @@ test("package exposes the standalone forgix binary", () => {
   expect(manifest.files).toEqual([
     ".claude-plugin/",
     ".codex-plugin/",
+    "assets/",
     "dist/",
     "docs/",
     "schemas/",
@@ -157,6 +158,7 @@ test("npm package contains runtime assets and excludes development files", () =>
       ".claude-plugin/plugin.json",
       ".codex-plugin/plugin.json",
       "plugin.json",
+      "assets/logo.svg",
       "dist/forgix.mjs",
       "schemas/config.schema.json",
       "schemas/project-profile.schema.json",

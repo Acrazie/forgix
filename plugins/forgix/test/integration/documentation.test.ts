@@ -9,8 +9,7 @@ const gettingStartedPath = fileURLToPath(new URL("../../docs/getting-started.md"
 
 const read = (path: string) => readFileSync(path, "utf8");
 
-const sharedJourneyMarkers = [
-  "Turn a software objective into an approved, implemented, and verified change.",
+const installationJourneyMarkers = [
   "codex plugin marketplace add Acrazie/forgix",
   "codex plugin add forgix@acrazie",
   "/plugin marketplace add Acrazie/forgix",
@@ -43,7 +42,7 @@ describe("public documentation", () => {
     expect(read(repositoryReadmePath)).not.toMatch(/dev-flow/i);
     for (const path of [repositoryReadmePath, pluginReadmePath, gettingStartedPath]) {
       const documentation = read(path);
-      if (path !== repositoryReadmePath) {
+      if (path === gettingStartedPath) {
         expect(documentation).toContain(
           "Neither `dev-flow` nor `codex-dev-flow` is shipped as a CLI alias.",
         );
@@ -58,16 +57,42 @@ describe("public documentation", () => {
     expect(runbook).not.toContain("unscoped `forgix` publication was rejected");
     expect(runbook).toContain("no former CLI alias is retained");
   });
-  test("root and packaged README share the current user journey", () => {
-    const readmes = [read(repositoryReadmePath), read(pluginReadmePath)];
-    for (const marker of sharedJourneyMarkers) {
-      for (const readme of readmes) expect(readme).toContain(marker);
+  test("root README and installation guide preserve the complete installation journey", () => {
+    const documentation = [read(repositoryReadmePath), read(gettingStartedPath)];
+    for (const marker of installationJourneyMarkers) {
+      for (const entry of documentation) expect(entry).toContain(marker);
     }
-    for (const readme of readmes) {
+    for (const readme of [...documentation, read(pluginReadmePath)]) {
       expect(readme).not.toMatch(
         /accepted next target|implementation pending|not yet implemented/i,
       );
     }
+  });
+
+  test("plugin overview stays concise and supports all three installed hosts", () => {
+    const overview = read(pluginReadmePath);
+    expect(overview).toContain("![Forgix](assets/logo.svg)");
+    expect(overview.split(/\s+/).length).toBeLessThan(600);
+    for (const prefix of ["$forgix", "/forgix:forgix", "/forgix"]) {
+      expect(overview).toContain(`${prefix} init`);
+      expect(overview).toContain(
+        `${prefix} Add rate limiting to the public authentication endpoints`,
+      );
+    }
+    for (const marker of [
+      "Node.js 24 or newer",
+      "Git",
+      "Linux or macOS",
+      "Windows is unsupported",
+      "explicit GATE approval",
+      "fresh verification evidence",
+      "Commit, push, pull request, registry publication, and release",
+      "docs/getting-started.md",
+      "docs/lifecycle-contract.md",
+      "https://github.com/Acrazie/forgix#readme",
+    ])
+      expect(overview).toContain(marker);
+    expect(overview).not.toMatch(/plugin (?:install|add)|marketplace add|dev-flow/);
   });
 
   test("entry-point documentation has no broken relative links", () => {
