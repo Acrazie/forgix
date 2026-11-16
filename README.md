@@ -1,9 +1,5 @@
 <h1 align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/brand/svg/lockup-ivory.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="./docs/assets/brand/svg/lockup-ink.svg" />
-    <img alt="Forgix" src="./docs/assets/brand/svg/lockup-ink.svg" width="320" />
-  </picture>
+  <img alt="Forgix" src="./docs/assets/forgix-readme-banner.png" width="100%" />
 </h1>
 
 <p align="center">
