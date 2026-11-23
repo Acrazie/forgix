@@ -1,5 +1,31 @@
 # Maintainer Release Runbook
 
+## Entire migration: read-only preflight
+
+The new `publish-entire-npm.yml` workflow is currently a manual connectivity and
+evidence check, not a publisher. After its reviewed PR is merged into GitHub
+`main`, launch a new run from Actions on `main`. Native reruns are rejected;
+start a fresh manual run instead. The `entire-release-read` environment must
+allow only `main` and contain `BUILDKITE_READ_TOKEN` with only `read_builds` and
+`read_artifacts`, with a future expiry.
+
+The first job uses the pinned official Entire action and the repository-scoped
+reader identity to resolve the annotated `npm-v4.0.0` witness tag. The second,
+without OIDC permissions, inspects Buildkite builds 81 and 82 and the tag build's
+artifact metadata. It checks the distinction between a branch commit and an
+annotated tag object. Build 82's overall failure is recorded, not treated as
+permission to publish. No candidate scripts run, source objects are not exported,
+artifacts are not downloaded, and no npm publication or mirror write is possible.
+
+A successful preflight establishes only these read paths and witness identities.
+It does not prove tag immutability, mirror write restrictions, smoke-to-artifact
+binding, npm OIDC, or recovery after publication. These remain prerequisites for
+the later publisher implementation and cutover. Do not enable a schedule or
+create a new npm release tag as part of this check.
+
+The sections below describe the legacy GitHub-only release path. Do not use
+their activation instructions to re-enable the old publisher during this migration.
+
 ## Ownership and release identities
 
 GitHub Actions is the only publication authority. `bun run release` prepares a PR;
