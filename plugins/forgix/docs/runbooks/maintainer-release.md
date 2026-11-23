@@ -42,10 +42,19 @@ separate job records confirmation. No candidate scripts run in privileged jobs.
 2. Create the `npm-release-intents` branch without intent records. Protect
    its history against deletion, force-pushes and merges that rewrite its
    history. Restrict its updates and creation of `entire-source/*` tags to
-   the trusted writer; prohibit updates/deletion of the mirror tags even by
-   the writer. Verify other workflows cannot exercise the writer's exception.
+   the dedicated release-writer GitHub App. Use separate rules with no bypass
+   to prevent mirror-tag updates/deletion and ledger rewrites or deletion,
+   including by the App. Do not give the shared Actions identity a bypass.
 3. Restrict `entire-release-write` and `npm-release` to protected GitHub
-   `main`. Configure npm Trusted Publishing for `Acrazie/forgix`,
+   `main` (branches only). Install the private release-writer App only on
+   `Acrazie/forgix`, with repository Contents read/write and no webhooks.
+   In `entire-release-write`, set the environment variable
+   `ENTIRE_RELEASE_APP_CLIENT_ID` and the environment secret
+   `ENTIRE_RELEASE_APP_PRIVATE_KEY`. A manual run on GitHub `main` with
+   `verify_writer=true` mints a short-lived token limited to Forgix, checks
+   its installation with GET only, and skips all release jobs. It proves the
+   App can authenticate, not that the ref rules enforce the write boundary.
+   Configure npm Trusted Publishing for `Acrazie/forgix`,
    `publish-entire-npm.yml`, environment `npm-release`. Confirm the registry
    disallows publication via bypass-2FA tokens.
 4. Review the effective access and record a successful controlled release

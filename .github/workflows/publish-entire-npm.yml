@@ -2,6 +2,11 @@ name: Entire npm release
 
 on:
   workflow_dispatch:
+    inputs:
+      verify_writer:
+        description: Verify the GitHub App without writing refs or publishing
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [release/entire-npm.json]
@@ -14,9 +19,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify-writer:
+    name: Verify the dedicated GitHub App without writes
+    if: github.event_name == 'workflow_dispatch' && inputs.verify_writer && github.ref == 'refs/heads/main' && github.ref_protected && github.run_attempt == 1
+    environment: entire-release-write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        id: writer
+        with:
+          client-id: ${{ vars.ENTIRE_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.ENTIRE_RELEASE_APP_PRIVATE_KEY }}
+          owner: Acrazie
+          repositories: forgix
+          permission-contents: write
+      - name: Verify the installation token is scoped to Forgix
+        env:
+          GH_TOKEN: ${{ steps.writer.outputs.token }}
+        run: |
+          gh api --method GET /installation/repositories |
+            jq -e '(.total_count == 1) and (.repositories[0].full_name == "Acrazie/forgix")'
+
   source:
     name: Verify canonical Entire read access
-    if: github.ref == 'refs/heads/main' && github.ref_protected && github.run_attempt == 1
+    if: github.ref == 'refs/heads/main' && github.ref_protected && github.run_attempt == 1 && !inputs.verify_writer
     environment: entire-release-read
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -126,7 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -143,9 +171,17 @@ jobs:
         with:
           name: release-handoff
           path: ${{ runner.temp }}/handoff
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        id: writer
+        with:
+          client-id: ${{ vars.ENTIRE_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.ENTIRE_RELEASE_APP_PRIVATE_KEY }}
+          owner: Acrazie
+          repositories: forgix
+          permission-contents: write
       - name: Record intent without calling npm or running release code
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.writer.outputs.token }}
           PUBLISH_ENABLED: ${{ vars.ENTIRE_NPM_PUBLISH_ENABLED }}
           RELEASE_HANDOFF: ${{ runner.temp }}/handoff
           RELEASE_BUNDLE: ${{ runner.temp }}/source/entire-source.bundle
@@ -236,7 +272,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -249,9 +285,17 @@ jobs:
         with:
           name: release-handoff
           path: ${{ runner.temp }}/handoff
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        id: writer
+        with:
+          client-id: ${{ vars.ENTIRE_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.ENTIRE_RELEASE_APP_PRIVATE_KEY }}
+          owner: Acrazie
+          repositories: forgix
+          permission-contents: write
       - name: Append durable confirmation
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.writer.outputs.token }}
           PUBLISH_ENABLED: ${{ vars.ENTIRE_NPM_PUBLISH_ENABLED }}
           RELEASE_HANDOFF: ${{ runner.temp }}/handoff
           VERIFIED_INVOCATION: ${{ needs.npm.outputs.invocation }}

@@ -178,16 +178,63 @@ describe("Entire release control preflight", () => {
     expect(workflow.jobs.recheck.needs).toBe("record");
     expect(workflow.jobs.npm.needs).toBe("recheck");
     expect(workflow.jobs.confirm.needs).toBe("npm");
-    expect(workflow.jobs.record.permissions).toEqual({ contents: "write" });
-    expect(workflow.jobs.confirm.permissions).toEqual({ contents: "write" });
+    for (const job of [workflow.jobs.record, workflow.jobs.confirm]) {
+      expect(job.permissions).toEqual({ contents: "read" });
+      expect(job.environment).toBe("entire-release-write");
+    }
+    expect(raw).not.toContain("${{ github.token }}");
     expect(workflow.jobs.npm.permissions).toEqual({ contents: "read", "id-token": "write" });
     expect(workflow.jobs.npm.environment).toBe("npm-release");
     const publisher = JSON.stringify(workflow.jobs.npm);
-    expect(publisher).not.toMatch(/secrets|NPM_TOKEN|ENTIRE_TOKEN|BUILDKITE_READ_TOKEN/);
+    expect(publisher).not.toMatch(
+      /secrets|NPM_TOKEN|ENTIRE_TOKEN|BUILDKITE_READ_TOKEN|ENTIRE_RELEASE_APP/,
+    );
     const source = readFileSync(
       new URL("../scripts/entire-release-preflight.ts", import.meta.url),
       "utf8",
     );
     expect(source).not.toMatch(/"POST"|"PUT"|"DELETE"|"PATCH"/);
+  });
+
+  test("mints scoped GitHub App tokens only in writer jobs and an isolated no-write probe", () => {
+    const workflow = parse(
+      readFileSync(new URL("../.github/workflows/publish-entire-npm.yml", import.meta.url), "utf8"),
+    );
+    const appJobs = Object.entries(workflow.jobs).flatMap(([name, job]) => {
+      const typedJob = job as {
+        environment?: string;
+        steps?: { uses?: string; id?: string; with?: object }[];
+      };
+      const app =
+        typedJob.steps?.filter((step) =>
+          step.uses?.startsWith("actions/create-github-app-token@"),
+        ) ?? [];
+      if (app.length === 0) return [];
+      expect(typedJob.environment).toBe("entire-release-write");
+      expect(app).toHaveLength(1);
+      expect(app[0]?.uses).toMatch(/@\w{40}$/);
+      expect(app[0]?.id).toBe("writer");
+      expect(app[0]?.with).toEqual({
+        "client-id": "${{ vars.ENTIRE_RELEASE_APP_CLIENT_ID }}",
+        "private-key": "${{ secrets.ENTIRE_RELEASE_APP_PRIVATE_KEY }}",
+        owner: "Acrazie",
+        repositories: "forgix",
+        "permission-contents": "write",
+      });
+      return [name];
+    });
+    expect(appJobs).toEqual(["verify-writer", "record", "confirm"]);
+    expect(workflow.on.workflow_dispatch.inputs.verify_writer).toMatchObject({
+      type: "boolean",
+      default: false,
+    });
+    expect(workflow.jobs.source.if).toContain("!inputs.verify_writer");
+    const probe = workflow.jobs["verify-writer"];
+    expect(probe.permissions).toEqual({});
+    expect(probe.if).toContain("github.ref_protected");
+    expect(probe.if).toContain("github.run_attempt == 1");
+    expect(probe.if).toContain("inputs.verify_writer");
+    expect(JSON.stringify(probe)).toContain("gh api --method GET /installation/repositories");
+    expect(JSON.stringify(probe)).not.toMatch(/git push|npm publish|actions\/checkout/);
   });
 });
