@@ -1,0 +1,63 @@
+name: Entire npm release preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: entire-npm-control
+  cancel-in-progress: false
+
+jobs:
+  source:
+    name: Verify canonical Entire read access
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    environment: entire-release-read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      tag-object: ${{ steps.source.outputs.tag-object }}
+      commit: ${{ steps.source.outputs.commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.8.1"
+          package-manager-cache: false
+      - uses: entireio/setup-entire@582928eebdf6f44f2e8239dd170c82fdbac88dbd
+        with:
+          version: v0.13.4
+          auth-url: https://eu.auth.entire.io
+          service-account: svc_01M848ZSTWF3WD18A16EF08PRS
+      - id: source
+        run: node scripts/entire-release-preflight.ts source
+
+  buildkite:
+    name: Inspect Buildkite tag and artifact witnesses
+    needs: source
+    environment: entire-release-read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.8.1"
+          package-manager-cache: false
+      - name: Read API witnesses without publishing or exporting sources
+        env:
+          BUILDKITE_READ_TOKEN: ${{ secrets.BUILDKITE_READ_TOKEN }}
+          WITNESS_TAG_OBJECT: ${{ needs.source.outputs.tag-object }}
+          WITNESS_COMMIT: ${{ needs.source.outputs.commit }}
+        run: node scripts/entire-release-preflight.ts buildkite
