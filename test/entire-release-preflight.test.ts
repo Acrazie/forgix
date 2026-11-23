@@ -141,21 +141,49 @@ describe("Entire release control preflight", () => {
     );
   });
 
-  test("keeps the installed workflow manual, read-only, and separate from npm", () => {
+  test("requires protected main for a fresh approval run, not arbitrary pushes or reruns", () => {
+    const approved = { ...context, GITHUB_EVENT_NAME: "push", GITHUB_REF_PROTECTED: "true" };
+    expect(() => assertControlContext(approved, true)).not.toThrow();
+    expect(() =>
+      assertControlContext({ ...approved, GITHUB_REF_PROTECTED: "false" }, true),
+    ).toThrow(/protected main/);
+    expect(() => assertControlContext({ ...approved, GITHUB_RUN_ATTEMPT: "2" }, true)).toThrow(
+      /protected main/,
+    );
+    expect(() =>
+      assertControlContext({ ...approved, GITHUB_REF: "refs/heads/feature" }, true),
+    ).toThrow(/protected main/);
+    expect(() => assertControlContext(approved)).toThrow(/manual run/);
+  });
+
+  test("separates release writers from npm OIDC and keeps mutations disabled by default", () => {
     const raw = readFileSync(
       new URL("../.github/workflows/publish-entire-npm.yml", import.meta.url),
       "utf8",
     );
     const workflow = parse(raw);
-    expect(Object.keys(workflow.on)).toEqual(["workflow_dispatch"]);
+    expect(Object.keys(workflow.on)).toEqual(["workflow_dispatch", "push"]);
+    expect(workflow.on.push).toEqual({ branches: ["main"], paths: ["release/entire-npm.json"] });
+    expect(workflow.jobs.source.if).toContain("github.ref_protected");
     expect(workflow.permissions).toEqual({ contents: "read" });
-    expect(Object.keys(workflow.jobs)).toEqual(["source", "buildkite"]);
     expect(workflow.jobs.source.permissions).toEqual({ contents: "read", "id-token": "write" });
     expect(workflow.jobs.buildkite.permissions).toEqual({ contents: "read" });
     expect(workflow.jobs.source.environment).toBe("entire-release-read");
     expect(workflow.jobs.buildkite.environment).toBe("entire-release-read");
-    expect(raw).not.toMatch(/npm publish|git push|contents: write|environment: npm-release/);
-    expect(raw).not.toMatch(/upload-artifact|download-artifact/);
+    for (const name of ["export-source", "record", "npm"]) {
+      expect(workflow.jobs[name].if).toContain("vars.ENTIRE_NPM_PUBLISH_ENABLED == 'true'");
+    }
+    expect(workflow.jobs["export-source"].needs).toEqual(["source", "buildkite"]);
+    expect(workflow.jobs.record.needs).toEqual(["source", "export-source"]);
+    expect(workflow.jobs.recheck.needs).toBe("record");
+    expect(workflow.jobs.npm.needs).toBe("recheck");
+    expect(workflow.jobs.confirm.needs).toBe("npm");
+    expect(workflow.jobs.record.permissions).toEqual({ contents: "write" });
+    expect(workflow.jobs.confirm.permissions).toEqual({ contents: "write" });
+    expect(workflow.jobs.npm.permissions).toEqual({ contents: "read", "id-token": "write" });
+    expect(workflow.jobs.npm.environment).toBe("npm-release");
+    const publisher = JSON.stringify(workflow.jobs.npm);
+    expect(publisher).not.toMatch(/secrets|NPM_TOKEN|ENTIRE_TOKEN|BUILDKITE_READ_TOKEN/);
     const source = readFileSync(
       new URL("../scripts/entire-release-preflight.ts", import.meta.url),
       "utf8",

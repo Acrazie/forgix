@@ -1,7 +1,10 @@
-name: Entire npm release preflight
+name: Entire npm release
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [release/entire-npm.json]
 
 permissions:
   contents: read
@@ -13,7 +16,7 @@ concurrency:
 jobs:
   source:
     name: Verify canonical Entire read access
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    if: github.ref == 'refs/heads/main' && github.ref_protected && github.run_attempt == 1
     environment: entire-release-read
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -23,6 +26,7 @@ jobs:
     outputs:
       tag-object: ${{ steps.source.outputs.tag-object }}
       commit: ${{ steps.source.outputs.commit }}
+      candidate: ${{ steps.candidate.outputs.candidate }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -37,7 +41,11 @@ jobs:
           auth-url: https://eu.auth.entire.io
           service-account: svc_01M848ZSTWF3WD18A16EF08PRS
       - id: source
+        if: github.event_name == 'workflow_dispatch'
         run: node scripts/entire-release-preflight.ts source
+      - name: Verify the approved canonical source without exporting it
+        id: candidate
+        run: node scripts/entire-release-source.ts
 
   buildkite:
     name: Inspect Buildkite tag and artifact witnesses
@@ -56,8 +64,197 @@ jobs:
           node-version: "26.8.1"
           package-manager-cache: false
       - name: Read API witnesses without publishing or exporting sources
+        if: github.event_name == 'workflow_dispatch' && needs.source.outputs.candidate == ''
         env:
           BUILDKITE_READ_TOKEN: ${{ secrets.BUILDKITE_READ_TOKEN }}
           WITNESS_TAG_OBJECT: ${{ needs.source.outputs.tag-object }}
           WITNESS_COMMIT: ${{ needs.source.outputs.commit }}
         run: node scripts/entire-release-preflight.ts buildkite
+      - name: Verify the approved candidate's exact tested tarball without publishing
+        if: needs.source.outputs.candidate != ''
+        env:
+          BUILDKITE_READ_TOKEN: ${{ secrets.BUILDKITE_READ_TOKEN }}
+          RELEASE_SOURCE: ${{ needs.source.outputs.candidate }}
+          RELEASE_OUTPUT: ${{ vars.ENTIRE_NPM_PUBLISH_ENABLED == 'true' && format('{0}/handoff', runner.temp) || '' }}
+        run: node scripts/entire-release-fetch.ts
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: vars.ENTIRE_NPM_PUBLISH_ENABLED == 'true' && needs.source.outputs.candidate != ''
+        with:
+          name: release-handoff
+          path: ${{ runner.temp }}/handoff
+          if-no-files-found: error
+          retention-days: 1
+
+  export-source:
+    name: Transfer only the approved source after Buildkite passes
+    if: vars.ENTIRE_NPM_PUBLISH_ENABLED == 'true' && needs.source.outputs.candidate != ''
+    needs: [source, buildkite]
+    environment: entire-release-read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.8.1"
+          package-manager-cache: false
+      - uses: entireio/setup-entire@582928eebdf6f44f2e8239dd170c82fdbac88dbd
+        with:
+          version: v0.13.4
+          auth-url: https://eu.auth.entire.io
+          service-account: svc_01M848ZSTWF3WD18A16EF08PRS
+      - env:
+          RELEASE_BUNDLE: ${{ runner.temp }}/entire-source.bundle
+        run: node scripts/entire-release-source.ts
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: entire-source
+          path: ${{ runner.temp }}/entire-source.bundle
+          if-no-files-found: error
+          retention-days: 1
+
+  record:
+    name: Write exact mirror ref and durable intent
+    if: vars.ENTIRE_NPM_PUBLISH_ENABLED == 'true' && needs.source.outputs.candidate != ''
+    needs: [source, export-source]
+    environment: entire-release-write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.8.1"
+          package-manager-cache: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: entire-source
+          path: ${{ runner.temp }}/source
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-handoff
+          path: ${{ runner.temp }}/handoff
+      - name: Record intent without calling npm or running release code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_ENABLED: ${{ vars.ENTIRE_NPM_PUBLISH_ENABLED }}
+          RELEASE_HANDOFF: ${{ runner.temp }}/handoff
+          RELEASE_BUNDLE: ${{ runner.temp }}/source/entire-source.bundle
+        run: |
+          test "$(gh api repos/Acrazie/forgix --jq .private)" = false
+          gh auth setup-git --hostname github.com
+          node scripts/entire-release-write.ts
+
+  recheck:
+    name: Revalidate Entire and Buildkite after durable intent
+    needs: record
+    environment: entire-release-read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.8.1"
+          package-manager-cache: false
+      - uses: entireio/setup-entire@582928eebdf6f44f2e8239dd170c82fdbac88dbd
+        with:
+          version: v0.13.4
+          auth-url: https://eu.auth.entire.io
+          service-account: svc_01M848ZSTWF3WD18A16EF08PRS
+          export-env: "false"
+        id: entire
+      - id: canonical
+        env:
+          ENTIRE_TOKEN: ${{ steps.entire.outputs.token }}
+        run: node scripts/entire-release-source.ts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-handoff
+          path: ${{ runner.temp }}/handoff
+      - name: Match the latest eligible jobs and bytes to the intent inputs
+        env:
+          BUILDKITE_READ_TOKEN: ${{ secrets.BUILDKITE_READ_TOKEN }}
+          RELEASE_SOURCE: ${{ steps.canonical.outputs.candidate }}
+          RELEASE_OUTPUT: ${{ runner.temp }}/rechecked
+        run: |
+          test -n "$RELEASE_SOURCE"
+          node scripts/entire-release-fetch.ts
+          cmp "$RUNNER_TEMP/handoff/evidence.json" "$RELEASE_OUTPUT/evidence.json"
+          cmp "$RUNNER_TEMP/handoff/forgix.tgz" "$RELEASE_OUTPUT/forgix.tgz"
+
+  npm:
+    name: Publish verified tarball through npm OIDC
+    if: vars.ENTIRE_NPM_PUBLISH_ENABLED == 'true'
+    needs: recheck
+    environment: npm-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      invocation: ${{ steps.publish.outputs.invocation }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.8.1"
+          package-manager-cache: false
+      - run: npm install --global npm@11.21.1 --ignore-scripts --registry=https://registry.npmjs.org
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-handoff
+          path: ${{ runner.temp }}/handoff
+      - name: Publish or verify from recorded intent
+        id: publish
+        env:
+          PUBLISH_ENABLED: ${{ vars.ENTIRE_NPM_PUBLISH_ENABLED }}
+          RELEASE_HANDOFF: ${{ runner.temp }}/handoff
+        run: node scripts/entire-release-publish.ts
+
+  confirm:
+    name: Record verified npm provenance
+    needs: npm
+    environment: entire-release-write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.8.1"
+          package-manager-cache: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-handoff
+          path: ${{ runner.temp }}/handoff
+      - name: Append durable confirmation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_ENABLED: ${{ vars.ENTIRE_NPM_PUBLISH_ENABLED }}
+          RELEASE_HANDOFF: ${{ runner.temp }}/handoff
+          VERIFIED_INVOCATION: ${{ needs.npm.outputs.invocation }}
+        run: |
+          gh auth setup-git --hostname github.com
+          node scripts/entire-release-write.ts confirm

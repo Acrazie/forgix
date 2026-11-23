@@ -1,11 +1,11 @@
 # Maintainer Release Runbook
 
-## Entire migration: read-only preflight
+## Entire migration: approval and publishing
 
-The new `publish-entire-npm.yml` workflow is currently a manual connectivity and
-evidence check, not a publisher. After its reviewed PR is merged into GitHub
-`main`, launch a new run from Actions on `main`. Native reruns are rejected;
-start a fresh manual run instead. The `entire-release-read` environment must
+The `publish-entire-npm.yml` workflow defaults to read-only. Without a
+release approval on GitHub `main`, run it manually
+on `main` to verify connectivity. Native reruns are rejected; start a fresh
+manual run instead. The `entire-release-read` environment must
 allow only `main` and contain `BUILDKITE_READ_TOKEN` with only `read_builds` and
 `read_artifacts`, with a future expiry.
 
@@ -14,14 +14,48 @@ reader identity to resolve the annotated `npm-v4.0.0` witness tag. The second,
 without OIDC permissions, inspects Buildkite builds 81 and 82 and the tag build's
 artifact metadata. It checks the distinction between a branch commit and an
 annotated tag object. Build 82's overall failure is recorded, not treated as
-permission to publish. No candidate scripts run, source objects are not exported,
-artifacts are not downloaded, and no npm publication or mirror write is possible.
+permission to publish. A tag on Entire alone does not select a release.
 
-A successful preflight establishes only these read paths and witness identities.
-It does not prove tag immutability, mirror write restrictions, smoke-to-artifact
-binding, npm OIDC, or recovery after publication. These remain prerequisites for
-the later publisher implementation and cutover. Do not enable a schedule or
-create a new npm release tag as part of this check.
+Use one reviewed GitHub PR per release to add or update
+`release/entire-npm.json` on protected `main`. The file has exactly four
+fields: `version`, `tag`, `tagObject` (the annotated tag object's full SHA),
+and `commit` (the peeled commit's full SHA). Review the exact commit and all
+ancestry to be exported before merging. Do not commit an example approval.
+The workflow reads the file from the triggering GitHub commit, not the
+working tree, and rejects a missing, retargeted, or conflicting Entire tag.
+
+After that PR merges, the workflow checks the tag's export attestation,
+first-parent release commit, npm manifest, Buildkite jobs and smoke receipt.
+If enabled, it exports only the approved tag's reachable Git objects, writes
+`entire-source/<tag>` without updating an existing ref, and records the
+artifact digest and invocation on `npm-release-intents` before publishing.
+It rechecks Entire and Buildkite before the npm job. The npm job has no GitHub
+write permission, Entire identity or Buildkite secret. It publishes only the
+verified tarball, with scripts disabled, and verifies provenance before a
+separate job records confirmation. No candidate scripts run in privileged jobs.
+
+**Keep `ENTIRE_NPM_PUBLISH_ENABLED` unset until cutover.** Before setting it:
+
+1. Merge the companion Entire change that removes the legacy Buildkite
+   publisher and emits the smoke receipt. Verify the legacy npm token remains
+   revoked and that the old GitHub workflow cannot publish npm.
+2. Create the `npm-release-intents` branch without intent records. Protect
+   its history against deletion, force-pushes and merges that rewrite its
+   history. Restrict its updates and creation of `entire-source/*` tags to
+   the trusted writer; prohibit updates/deletion of the mirror tags even by
+   the writer. Verify other workflows cannot exercise the writer's exception.
+3. Restrict `entire-release-write` and `npm-release` to protected GitHub
+   `main`. Configure npm Trusted Publishing for `Acrazie/forgix`,
+   `publish-entire-npm.yml`, environment `npm-release`. Confirm the registry
+   disallows publication via bypass-2FA tokens.
+4. Review the effective access and record a successful controlled release
+   trial. Approval of this workflow is not approval of a release version.
+
+An unresolved intent blocks newer versions. For an interrupted release, start
+a new manual run on the same approved source. If npm already accepted the
+tarball, the workflow can confirm only the exact recorded invocation. If
+npm still lacks that version or the original evidence is no longer available,
+escalate to a maintainer; never overwrite the intent or retry blindly.
 
 The sections below describe the legacy GitHub-only release path. Do not use
 their activation instructions to re-enable the old publisher during this migration.

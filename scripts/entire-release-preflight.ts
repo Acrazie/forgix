@@ -4,9 +4,9 @@ import { appendFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const REMOTE = "entire://aws-eu-central-1.entire.io/et/forgix/forgix";
-const API = "https://api.buildkite.com/v2";
-const PIPELINE = "/organizations/acrazie/pipelines/forgix";
+export const REMOTE = "entire://aws-eu-central-1.entire.io/et/forgix/forgix";
+export const API = "https://api.buildkite.com/v2";
+export const PIPELINE = "/organizations/acrazie/pipelines/forgix";
 const TAG = "npm-v4.0.0";
 const SHA = /^[0-9a-f]{40}$/;
 
@@ -16,40 +16,46 @@ interface TagIdentity {
   tagObject: string;
   commit: string;
 }
-interface Build {
+export interface Build {
   id: string;
   number: number;
   source: string;
   branch: string;
   commit: string;
   state: string;
+  blocked?: boolean;
   pipeline: { repository: string };
   pull_request?: { id?: number | null };
   jobs: {
     id: string;
     step_key?: string;
     state: string;
+    exit_status?: number | null;
     soft_failed?: boolean;
     retried?: boolean;
   }[];
 }
-interface Artifact {
+export interface Artifact {
   id: string;
   job_id: string;
   path: string;
 }
 
-export function assertControlContext(env: NodeJS.ProcessEnv): void {
+export function assertControlContext(env: NodeJS.ProcessEnv, approval = false): void {
+  const event = env.GITHUB_EVENT_NAME;
   if (
     env.GITHUB_REPOSITORY !== "Acrazie/forgix" ||
     env.GITHUB_REF !== "refs/heads/main" ||
     env.GITHUB_WORKFLOW_REF !==
       "Acrazie/forgix/.github/workflows/publish-entire-npm.yml@refs/heads/main" ||
-    env.GITHUB_EVENT_NAME !== "workflow_dispatch" ||
+    (event !== "workflow_dispatch" && !(approval && event === "push")) ||
+    (approval && env.GITHUB_REF_PROTECTED !== "true") ||
     env.GITHUB_RUN_ATTEMPT !== "1"
   ) {
     throw new PreflightError(
-      "Preflight requires a new manual run of the control workflow on main.",
+      approval
+        ? "Release approval requires a new run of the control workflow on protected main."
+        : "Preflight requires a new manual run of the control workflow on main.",
     );
   }
 }
@@ -113,12 +119,7 @@ export async function readBuildkite(
 
 export function assertWitnesses(branch: Build, tag: Build, identity: TagIdentity): void {
   for (const build of [branch, tag]) {
-    if (
-      build.source !== "webhook" ||
-      build.pull_request?.id ||
-      ![REMOTE, "https://entire.com/et/forgix/forgix"].includes(build.pipeline?.repository) ||
-      !Array.isArray(build.jobs)
-    ) {
+    if (!isEntireWebhookBuild(build)) {
       throw new PreflightError("Witness is not a canonical Entire webhook build.");
     }
   }
@@ -134,6 +135,15 @@ export function assertWitnesses(branch: Build, tag: Build, identity: TagIdentity
       "Buildkite witnesses do not bind the branch and exact annotated tag object.",
     );
   }
+}
+
+export function isEntireWebhookBuild(build: Build): boolean {
+  return (
+    build.source === "webhook" &&
+    !build.pull_request?.id &&
+    [REMOTE, "https://entire.com/et/forgix/forgix"].includes(build.pipeline?.repository) &&
+    Array.isArray(build.jobs)
+  );
 }
 
 async function inspectBuildkite(identity: TagIdentity): Promise<void> {
