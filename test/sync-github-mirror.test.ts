@@ -1,6 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readlinkSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseMirrorArgs, syncGithubMirror } from "../scripts/sync-github-mirror.ts";
@@ -40,6 +49,8 @@ function createFixtureRepos(): {
   writeFileSync(join(sourceDir, "plugin.json"), JSON.stringify({ name: "forgix" }) + "\n");
   writeFileSync(join(sourceDir, "dist", "forgix.mjs"), "#!/usr/bin/env node\n");
   writeFileSync(join(sourceDir, "skills", "forgix", "SKILL.md"), "# Forgix\n");
+  writeFileSync(join(sourceDir, "AGENTS.md"), "# Agents\n");
+  symlinkSync("AGENTS.md", join(sourceDir, "CLAUDE.md"));
   git(sourceDir, ["add", "-A"]);
   git(sourceDir, ["commit", "-m", "feat: root layout"]);
 
@@ -130,6 +141,7 @@ describe("sync-github-mirror", () => {
       expect(existsSync(join(verifyClone, "plugin.json"))).toBe(true);
       expect(existsSync(join(verifyClone, "dist", "forgix.mjs"))).toBe(true);
       expect(existsSync(join(verifyClone, "plugins"))).toBe(false);
+      expect(readlinkSync(join(verifyClone, "CLAUDE.md"))).toBe("AGENTS.md");
       expect(
         readFileSync(join(verifyClone, ".github", "workflows", "publish-entire-npm.yml"), "utf8"),
       ).toBe("name: Publish npm\n");

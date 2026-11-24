@@ -71,7 +71,7 @@ function replaceMirrorTree(mirrorDir: string, exportDir: string, githubBackupDir
   const targetGithubDir = join(mirrorDir, ".github");
   const preservedGithub = existsSync(targetGithubDir);
   if (preservedGithub) {
-    cpSync(targetGithubDir, githubBackupDir, { recursive: true });
+    cpSync(targetGithubDir, githubBackupDir, { recursive: true, verbatimSymlinks: true });
   }
   for (const entry of readdirSync(mirrorDir)) {
     if (entry === ".git") continue;
@@ -79,10 +79,13 @@ function replaceMirrorTree(mirrorDir: string, exportDir: string, githubBackupDir
   }
   for (const entry of readdirSync(exportDir)) {
     if (entry === ".github" && preservedGithub) continue;
-    cpSync(join(exportDir, entry), join(mirrorDir, entry), { recursive: true });
+    cpSync(join(exportDir, entry), join(mirrorDir, entry), {
+      recursive: true,
+      verbatimSymlinks: true,
+    });
   }
   if (preservedGithub) {
-    cpSync(githubBackupDir, targetGithubDir, { recursive: true });
+    cpSync(githubBackupDir, targetGithubDir, { recursive: true, verbatimSymlinks: true });
   }
   return preservedGithub;
 }
