@@ -11,9 +11,8 @@ Only the latest release receives active security updates and patches.
 
 ## Reporting a Vulnerability
 
-We take the security of this project seriously. If you discover a security vulnerability, please do **NOT** open a public issue.
+We take the security of this project seriously. If you discover a security vulnerability, please do **NOT** open a public Trail or issue.
 
 Instead, please report it privately:
 
-1. **GitHub Security Advisory** (Recommended): Go to the **Security** tab of this repository, select **Advisories**, and click **Report a vulnerability**.
-2. **Contact Maintainer**: Alternatively, report privately through GitHub maintainer contact.
+1. **Private Maintainer Contact**: Report the vulnerability privately to the repository maintainers via [Entire](https://entire.com/et/forgix/forgix) (`/et/forgix/forgix`) without creating a public Trail.

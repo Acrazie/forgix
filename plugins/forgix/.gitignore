@@ -1,8 +1,0 @@
-.forgix/tasks/
-.forgix/cache/
-.forgix/config.local.yaml
-.forgix/project.local.yaml
-.forgix/init/
-.forgix/roadmap/
-.worktrees/
-node_modules/

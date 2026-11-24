@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  checkStagedEscapeHatches,
   chunkPaths,
   classifyStagedPaths,
   executeFastGate,
@@ -25,13 +26,13 @@ describe("staged path classification", () => {
   test("excludes only the git-cliff generated changelog, not other Markdown", () => {
     expect(
       classifyStagedPaths([
-        "plugins/forgix/CHANGELOG.md",
-        "plugins/forgix/README.md",
+        "CHANGELOG.md",
+        "README.md",
         "docs/CHANGELOG.md",
         "plugins/other/CHANGELOG.md",
       ]),
     ).toEqual({
-      formatPaths: ["plugins/forgix/README.md", "docs/CHANGELOG.md", "plugins/other/CHANGELOG.md"],
+      formatPaths: ["README.md", "docs/CHANGELOG.md", "plugins/other/CHANGELOG.md"],
       lintPaths: [],
     });
   });
@@ -40,20 +41,15 @@ describe("staged path classification", () => {
     expect(
       classifyStagedPaths([
         "README.md",
-        "plugins/forgix/src/cli.ts",
-        "plugins/forgix/src/cli.ts",
-        "plugins/forgix/test/copy name.mjs",
-        "plugins/forgix/.github/workflows/ci.yml",
+        "src/cli.ts",
+        "src/cli.ts",
+        "test/copy name.mjs",
+        ".github/workflows/ci.yml",
         ".gitignore",
       ]),
     ).toEqual({
-      formatPaths: [
-        "README.md",
-        "plugins/forgix/src/cli.ts",
-        "plugins/forgix/test/copy name.mjs",
-        "plugins/forgix/.github/workflows/ci.yml",
-      ],
-      lintPaths: ["plugins/forgix/src/cli.ts", "plugins/forgix/test/copy name.mjs"],
+      formatPaths: ["README.md", "src/cli.ts", "test/copy name.mjs", ".github/workflows/ci.yml"],
+      lintPaths: ["src/cli.ts", "test/copy name.mjs"],
     });
   });
 
@@ -66,14 +62,14 @@ describe("staged path classification", () => {
         ".forgix/cache/five-hour-quota-reset.json",
         ".forgix/init/state.yaml",
         ".forgix/roadmap/state.yaml",
-        "plugins/forgix/dist/forgix.mjs",
-        "plugins/forgix/coverage/lcov.info",
-        "plugins/forgix/test/fixtures/app-server-error.mjs",
-        "plugins/forgix/src/cli.ts",
+        "dist/forgix.mjs",
+        "coverage/lcov.info",
+        "test/fixtures/app-server-error.mjs",
+        "src/cli.ts",
       ]),
     ).toEqual({
-      formatPaths: ["plugins/forgix/src/cli.ts"],
-      lintPaths: ["plugins/forgix/src/cli.ts"],
+      formatPaths: ["src/cli.ts"],
+      lintPaths: ["src/cli.ts"],
     });
   });
 });
@@ -108,8 +104,8 @@ describe("Fast Gate execution", () => {
     const calls: Array<{ command: string; args: string[]; capture: boolean }> = [];
     const status = executeFastGate({
       cwd: "/repo",
-      formatPaths: ["docs/space name.md", "plugins/forgix/src/a.ts"],
-      lintPaths: ["plugins/forgix/src/a.ts"],
+      formatPaths: ["docs/space name.md", "src/a.ts"],
+      lintPaths: ["src/a.ts"],
       run(command, args, options) {
         calls.push({ command, args, capture: options.capture });
         return { status: 0 };
@@ -125,13 +121,13 @@ describe("Fast Gate execution", () => {
           "--check",
           "--no-error-on-unmatched-pattern",
           "docs/space name.md",
-          "plugins/forgix/src/a.ts",
+          "src/a.ts",
         ],
         capture: false,
       },
       {
         command: "vp",
-        args: ["lint", "--no-error-on-unmatched-pattern", "plugins/forgix/src/a.ts"],
+        args: ["lint", "--no-error-on-unmatched-pattern", "src/a.ts"],
         capture: false,
       },
     ]);
@@ -167,14 +163,20 @@ describe("Fast Gate execution", () => {
 });
 
 describe("Git adapter", () => {
-  test("requests added, copied, modified, and renamed staged paths", () => {
+  test("requests added, copied, modified, and renamed staged paths and scans staged src blobs", () => {
     const calls: Array<{ command: string; args: string[]; capture: boolean }> = [];
     const run: CommandRunner = (command, args, options) => {
       calls.push({ command, args, capture: options.capture });
-      if (command === "git") {
+      if (command === "git" && args[0] === "diff") {
         return {
           status: 0,
-          stdout: Buffer.from("README.md\0plugins/forgix/src/renamed.ts\0"),
+          stdout: Buffer.from("README.md\0src/renamed.ts\0"),
+        };
+      }
+      if (command === "git" && args[0] === "show") {
+        return {
+          status: 0,
+          stdout: Buffer.from("export const ok = true;\n"),
         };
       }
       return { status: 0 };
@@ -186,10 +188,46 @@ describe("Git adapter", () => {
       args: ["diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"],
       capture: true,
     });
-    expect(calls.slice(1).map(({ command, args }) => `${command} ${args[0]}`)).toEqual([
+    expect(calls[1]).toEqual({
+      command: "git",
+      args: ["show", ":src/renamed.ts"],
+      capture: true,
+    });
+    expect(calls.slice(2).map(({ command, args }) => `${command} ${args[0]}`)).toEqual([
       "vp fmt",
       "vp lint",
     ]);
+  });
+
+  test("fails fast before fmt/lint when a staged src blob contains an Escape Hatch", () => {
+    const calls: string[] = [];
+    const run: CommandRunner = (command, args) => {
+      calls.push(`${command} ${args[0] ?? ""}`);
+      if (command === "git" && args[0] === "diff") {
+        return { status: 0, stdout: Buffer.from("src/bad.ts\0") };
+      }
+      if (command === "git" && args[0] === "show") {
+        return { status: 0, stdout: Buffer.from("// @ts-ignore\nexport const bad = 1;\n") };
+      }
+      return { status: 0 };
+    };
+
+    expect(runCheckStaged({ cwd: "/repo", run })).toBe(1);
+    expect(calls).toEqual(["git diff", "git show"]);
+  });
+
+  test("ignores non-src paths during staged Escape Hatch scanning", () => {
+    const calls: string[] = [];
+    const status = checkStagedEscapeHatches(
+      ["scripts/helper.ts", "test/unit/a.test.ts"],
+      "/repo",
+      (command, args) => {
+        calls.push(`${command} ${args.join(" ")}`);
+        return { status: 0 };
+      },
+    );
+    expect(status).toBe(0);
+    expect(calls).toEqual([]);
   });
 
   test("stops when Git cannot read the index", () => {

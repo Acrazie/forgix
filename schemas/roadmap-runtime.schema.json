@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgix.dev/schemas/roadmap-runtime.schema.json",
+  "title": "Forgix Roadmap Runtime State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "roadmapDigest",
+    "updatedAt",
+    "workItemStates",
+    "checkpointReceipts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "roadmapDigest": {
+      "type": "string",
+      "minLength": 8
+    },
+    "updatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workItemStates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/workItemState" }
+    },
+    "checkpointReceipts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/checkpointReceipt" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "boardStatus": {
+      "enum": ["Backlog", "Ready", "In Progress", "Blocked", "In Review", "Done"]
+    },
+    "workItemState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "updatedAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "status": { "$ref": "#/$defs/boardStatus" },
+        "branch": { "type": "string", "minLength": 1 },
+        "worktreePath": { "type": "string", "minLength": 1 },
+        "reservation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["taskId", "roadmapDigest", "baseBranch"],
+          "properties": {
+            "taskId": { "$ref": "#/$defs/id" },
+            "roadmapDigest": { "type": "string", "minLength": 8 },
+            "baseBranch": { "type": "string", "minLength": 1 },
+            "handoffPending": { "const": true },
+            "worktreeIdentity": { "type": "string", "minLength": 1 }
+          }
+        },
+        "externalIssueNumber": { "type": "integer", "minimum": 1 },
+        "externalIssueUrl": { "type": "string", "minLength": 1 },
+        "externalTrailId": { "type": "string", "minLength": 1 },
+        "updatedAt": { "type": "string", "minLength": 1 },
+        "blockerReason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "checkpointReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpointId",
+        "roadmapDigest",
+        "status",
+        "verifiedAt",
+        "verifierContext",
+        "checksRun",
+        "summary"
+      ],
+      "properties": {
+        "checkpointId": { "$ref": "#/$defs/id" },
+        "roadmapDigest": { "type": "string", "minLength": 8 },
+        "observedRoadmapDigest": { "type": "string", "minLength": 8 },
+        "status": {
+          "enum": ["Passed", "Failed"]
+        },
+        "verifiedAt": { "type": "string", "minLength": 1 },
+        "verifierContext": { "type": "string", "minLength": 1 },
+        "checksRun": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "summary": { "type": "string", "minLength": 1 },
+        "offendingIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    }
+  }
+}

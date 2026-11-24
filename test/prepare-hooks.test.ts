@@ -9,7 +9,12 @@ const script = fileURLToPath(new URL("../scripts/prepare-hooks.ts", import.meta.
 
 test("linked-worktree hook setup never changes shared settings and preserves foreign hooks", () => {
   const directory = mkdtempSync(join(tmpdir(), "forgix-hook-scope-"));
-  const env = { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" };
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    GIT_CONFIG_GLOBAL: "/dev/null",
+    GIT_CONFIG_NOSYSTEM: "1",
+  };
+  delete env.VP_GIT_HOOKS;
   const git = (args: string[]) =>
     execFileSync("git", ["-C", directory, ...args], { env, encoding: "utf8" }).trim();
   try {

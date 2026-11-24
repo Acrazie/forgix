@@ -158,9 +158,9 @@ content:
           - package.json
           - lefthook.yml
           - .oxlintrc.json
-          - .github/workflows/ci.yml
+          - .buildkite/pipeline.yml
           - docs/git-workflow.md
-      rationale: Repository scripts, lefthook and CI workflow; ADR 0016 still mentions Husky but lefthook is the implemented hook adapter.
+      rationale: Repository scripts, lefthook and CI pipeline; ADR 0016 still mentions Husky but lefthook is the implemented hook adapter.
       sourceFingerprints:
         - sourceRef: package.json
           value: sha256:1707dcfe119b5301e61b18b93734ec75f4d545d24a784d09dd4e9503386af2e0
@@ -168,8 +168,6 @@ content:
           value: sha256:bcf6d1c126fdfb684d2ac2691b427e25fc8445cff9ac7d8fdf114f40411d4e7b
         - sourceRef: .oxlintrc.json
           value: sha256:0c74923bcb1504154abea51af4b33dc6962dc94ed70f08038d14eb2e80c4dbe2
-        - sourceRef: .github/workflows/ci.yml
-          value: sha256:461cb9e41777b88964d36fbc149ee4aff974ad5de02f557543abe38ae1f117dd
         - sourceRef: docs/git-workflow.md
           value: sha256:0b0a5b6d6daea5a8a4287bf406dcc236476e524df9252ebf5c05c60d88f96772
       value: "Authoritative Full Gate is `bun run check`: oxfmt check, oxlint (high-signal categories, deny warnings) native and type-aware, tsc for tools and plugin, build, test randomization check, coverage and artifact size budget. Fast Gate is lefthook pre-commit `bun run check:staged` (check-only, never mutates the index) plus commitlint Conventional Commits on commit-msg. Never bypass hooks with --no-verify. CI requires every lane (Full Gate, runtime smoke Linux/macOS, maintainer release macOS, website build)."
@@ -403,11 +401,10 @@ content:
       sourceRefs:
         - site/package.json
       version: 7.3.5
-    - id: github-actions
-      role: CI, release-please and package publication
+    - id: buildkite
+      role: CI and tag-based package publication
       sourceRefs:
-        - .github/workflows/ci.yml
-        - release-please-config.json
+        - .buildkite/pipeline.yml
   topology:
     rootServiceId: plugin
     services:

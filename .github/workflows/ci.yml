@@ -53,7 +53,7 @@ jobs:
         run: bun scripts/observe-command.ts "Full Gate" bun run check
       - name: Require committed deterministic bundle
         if: inputs.release-tag != ''
-        run: git diff --exit-code -- plugins/forgix/dist/forgix.mjs
+        run: git diff --exit-code -- dist/forgix.mjs
       - name: Pin npm pack to the publisher toolchain
         if: inputs.release-tag != ''
         run: npm install --global npm@11.21.1 --ignore-scripts
@@ -101,7 +101,7 @@ jobs:
           name: forgix-runtime
           path: .artifacts
       - name: Run packed runtime smoke
-        run: node --test plugins/forgix/test/runtime/runtime-smoke.test.mjs
+        run: node --test test/runtime/runtime-smoke.test.mjs
 
   maintainer-release-macos:
     name: Maintainer Release (macOS)
@@ -133,7 +133,7 @@ jobs:
           OUTPUT: ${{ runner.temp }}/git-cliff-bootstrap.md
       - name: Expose git-cliff to release contract tests
         run: echo "$RUNNER_TEMP/git-cliff/bin" >> "$GITHUB_PATH"
-      - run: bun run --cwd plugins/forgix release:test
+      - run: bun run release:test
 
   full-gate:
     name: Full Gate

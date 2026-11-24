@@ -2,6 +2,8 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
+import { isSrcSourcePath, scanContentForEscapeHatches } from "./check-golden-rules.ts";
+
 const DEFAULT_ARGUMENT_LIMIT = 64 * 1024;
 
 const FORMAT_EXTENSIONS = new Set([
@@ -47,7 +49,7 @@ const EXCLUDED_PREFIXES = [
   ".forgix/cache/",
   ".forgix/init/",
   ".forgix/roadmap/",
-  "plugins/forgix/test/fixtures/",
+  "test/fixtures/",
 ];
 
 const EXCLUDED_PATHS = new Set([
@@ -55,7 +57,7 @@ const EXCLUDED_PATHS = new Set([
   "docs/roadmap.md",
   "bun.lock",
   // git-cliff owns this generated file's formatting.
-  "plugins/forgix/CHANGELOG.md",
+  "CHANGELOG.md",
 ]);
 
 export type CommandResult = {
@@ -114,7 +116,12 @@ function extension(path: string): string {
 function isExcluded(path: string): boolean {
   if (EXCLUDED_PATHS.has(path)) return true;
   if (EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix))) return true;
-  return path.includes("/dist/") || path.includes("/coverage/");
+  return (
+    path.startsWith("dist/") ||
+    path.startsWith("coverage/") ||
+    path.includes("/dist/") ||
+    path.includes("/coverage/")
+  );
 }
 
 export function classifyStagedPaths(paths: string[]): ClassifiedPaths {
@@ -225,6 +232,31 @@ export function executeFastGate(
   return formatStatus === 0 ? lintStatus : formatStatus;
 }
 
+export function checkStagedEscapeHatches(
+  paths: string[],
+  cwd: string,
+  run: CommandRunner = defaultRunner,
+): number {
+  const srcPaths = paths.filter((path) => !isExcluded(path) && isSrcSourcePath(path));
+  let violations = 0;
+
+  for (const path of srcPaths) {
+    const blobResult = run("git", ["show", `:${path}`], { cwd, capture: true });
+    if (blobResult.status !== 0) {
+      reportCommandFailure("git", blobResult);
+      return blobResult.status ?? 1;
+    }
+    const matches = scanContentForEscapeHatches(path, outputText(blobResult.stdout));
+    for (const match of matches) {
+      violations += 1;
+      console.error(
+        `[check:staged] Escape Hatch forbidden in staged ${match.path}:${match.line} [${match.rule}]: ${match.snippet}`,
+      );
+    }
+  }
+  return violations > 0 ? 1 : 0;
+}
+
 export function runCheckStaged(options: {
   cwd: string;
   run?: CommandRunner;
@@ -240,6 +272,8 @@ export function runCheckStaged(options: {
     return gitResult.status ?? 1;
   }
   const paths = parseNulPaths(gitResult.stdout ?? "");
+  const escapeHatchStatus = checkStagedEscapeHatches(paths, options.cwd, run);
+  if (escapeHatchStatus !== 0) return escapeHatchStatus;
   return executeFastGate({
     cwd: options.cwd,
     ...classifyStagedPaths(paths),

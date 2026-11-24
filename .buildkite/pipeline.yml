@@ -1,0 +1,136 @@
+# Buildkite pipeline for /et/forgix/forgix (Entire-native repository).
+# Orchestrates CI/CD execution via the Dagger module in .dagger/.
+
+env:
+  DAGGER_VERSION: "0.21.11"
+  RENOVATE_VERSION: "44.247.1"
+
+steps:
+  - key: renovate-sync
+    label: ":renovate: Weekly Dependency Sync"
+    if: build.source == "schedule"
+    concurrency: 1
+    concurrency_group: forgix-renovate
+    timeout_in_minutes: 20
+    env:
+      GIT_AUTHOR_NAME: "renovate[bot]"
+      GIT_AUTHOR_EMAIL: "renovate[bot]@users.noreply.entire.io"
+      GIT_COMMITTER_NAME: "renovate[bot]"
+      GIT_COMMITTER_EMAIL: "renovate[bot]@users.noreply.entire.io"
+    commands:
+      - git fetch origin
+      - |
+        export PATH="$${HOME}/.bun/bin:$${PATH}"
+        expected_bun="$$(tr -d '[:space:]' < .bun-version)"
+        if ! command -v bun >/dev/null 2>&1 || [ "$$(bun --version)" != "$${expected_bun}" ]; then
+          curl -fsSL https://bun.sh/install | bash -s "bun-v$${expected_bun}"
+        fi
+        report_path="$$(mktemp /tmp/renovate-report-XXXXXX.json)"
+        trap 'rm -f "$${report_path}"' EXIT
+        bunx renovate@"$${RENOVATE_VERSION}" --platform=local --report-type=file --report-path="$${report_path}"
+        bun scripts/renovate-sync.ts --report-path "$${report_path}"
+
+  - key: quality-gate
+    label: ":dagger: Full Gate"
+    if: build.source != "schedule"
+    timeout_in_minutes: 15
+    artifact_paths:
+      - ".fallow/dead-code.json"
+      - ".artifacts/forgix.tgz"
+      - ".artifacts/RELEASE_NOTES.md"
+      - ".artifacts/release.json"
+    commands:
+      - |
+        export PATH="$${HOME}/.local/bin:$${PATH}"
+        if ! command -v dagger >/dev/null 2>&1 || [ "$$(dagger version | awk '{print $$2}')" != "v$${DAGGER_VERSION}" ]; then
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION="$${DAGGER_VERSION}" BIN_DIR="$${HOME}/.local/bin" sh
+        fi
+        dagger call dead-code-report --source=. --output=.fallow/dead-code.json &&
+          dagger call check --source=.
+      - |
+        export PATH="$${HOME}/.local/bin:$${PATH}"
+        if [ -z "$${BUILDKITE_TAG:-}" ]; then
+          if [ -f "$$(git rev-parse --git-dir)/shallow" ]; then git fetch --unshallow; fi
+          git fetch origin "+refs/heads/main:refs/remotes/origin/main"
+          dagger call diff-gate --source=.
+        fi
+      - |
+        export PATH="$${HOME}/.local/bin:$${PATH}"
+        if [ -n "$${BUILDKITE_TAG:-}" ]; then
+          if [ -f "$$(git rev-parse --git-dir)/shallow" ]; then git fetch --unshallow; fi
+          git fetch --tags origin "+refs/heads/main:refs/remotes/origin/main"
+          dagger call release-candidate \
+            --source=. \
+            --tag="$${BUILDKITE_TAG}" \
+            --buildkite="$${BUILDKITE}" \
+            --buildkite-repo="$${BUILDKITE_REPO}" \
+            --buildkite-commit="$${BUILDKITE_COMMIT}" \
+            --buildkite-pull-request="$${BUILDKITE_PULL_REQUEST:-}" \
+            --cache-buster="$${BUILDKITE_BUILD_ID}-$${BUILDKITE_RETRY_COUNT:-0}" \
+            --output=.artifacts
+        fi
+      - |
+        export PATH="$${HOME}/.local/bin:$${PATH}"
+        if [ -z "$${BUILDKITE_TAG:-}" ] || [ "$${BUILDKITE_TAG#plugin-v}" != "$${BUILDKITE_TAG}" ]; then
+          dagger call pack-runtime --source=. --output=.artifacts/forgix.tgz
+        fi
+
+  - key: formal-lean
+    label: ":dagger: Lean Workflow Pilots"
+    if: build.source != "schedule" && build.tag == null
+    soft_fail: true
+    timeout_in_minutes: 15
+    commands:
+      - |
+        export PATH="$${HOME}/.local/bin:$${PATH}"
+        if ! command -v dagger >/dev/null 2>&1 || [ "$$(dagger version | awk '{print $$2}')" != "v$${DAGGER_VERSION}" ]; then
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION="$${DAGGER_VERSION}" BIN_DIR="$${HOME}/.local/bin" sh
+        fi
+        dagger call formal-lean --source=.
+
+  - key: formal-tla
+    label: ":dagger: TLA+ Model Checks"
+    if: build.source != "schedule" && build.tag == null
+    soft_fail: true
+    timeout_in_minutes: 5
+    commands:
+      - |
+        timeout --verbose --kill-after=10s 4m bash -e -o pipefail -c '
+          export PATH="$${HOME}/.local/bin:$${PATH}"
+          if ! command -v dagger >/dev/null 2>&1 || [ "$$(dagger version | awk "{print \$$2}")" != "v$${DAGGER_VERSION}" ]; then
+            curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION="$${DAGGER_VERSION}" BIN_DIR="$${HOME}/.local/bin" sh
+          fi
+          exec dagger call formal-tla --source=.
+        '
+
+  - key: runtime-smoke
+    label: ":node: Runtime Smoke (Node 26)"
+    if: build.source != "schedule"
+    depends_on:
+      - quality-gate
+    timeout_in_minutes: 10
+    commands:
+      - |
+        export PATH="$${HOME}/.local/bin:$${PATH}"
+        if ! command -v dagger >/dev/null 2>&1 || [ "$$(dagger version | awk '{print $$2}')" != "v$${DAGGER_VERSION}" ]; then
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION="$${DAGGER_VERSION}" BIN_DIR="$${HOME}/.local/bin" sh
+        fi
+        case "$${BUILDKITE_TAG:-}" in
+          v*|npm-v*) bash scripts/release-smoke.sh ;;
+          *)
+            buildkite-agent artifact download ".artifacts/forgix.tgz" . &&
+              dagger call runtime-smoke --source=. --tarball=.artifacts/forgix.tgz
+            ;;
+        esac
+
+  - key: release-contract
+    label: ":package: Release Contract Tests"
+    if: build.source != "schedule"
+    timeout_in_minutes: 15
+    commands:
+      - |
+        export PATH="$${HOME}/.local/bin:$${PATH}"
+        if ! command -v dagger >/dev/null 2>&1 || [ "$$(dagger version | awk '{print $$2}')" != "v$${DAGGER_VERSION}" ]; then
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION="$${DAGGER_VERSION}" BIN_DIR="$${HOME}/.local/bin" sh
+        fi
+        dagger call release-contract --source=.

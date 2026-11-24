@@ -1,0 +1,80 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "supportEntry": [
+    ".dagger/src/index.ts",
+    "scripts/check-diff.ts",
+    "scripts/check-golden-rules.ts",
+    "scripts/observe-command.ts",
+    "scripts/release-ci.ts",
+    "scripts/renovate-sync.ts",
+    "scripts/resolve-worktree-base.ts",
+    "scripts/verify-assure-lean.ts",
+    "scripts/verify-gate-lean.ts",
+    "scripts/verify-preparation-lean.ts"
+  ],
+  "ignorePatterns": ["!.dagger/**"],
+  "rulePacks": ["fallow-rules/no-network.json"],
+  "rules": {
+    "policy-violation": "error",
+    "re-export-cycle": "error"
+  },
+  "boundaries": {
+    "zones": [
+      { "name": "types", "patterns": ["src/types.ts"] },
+      { "name": "core", "patterns": ["src/core/**"] },
+      { "name": "profile", "patterns": ["src/profile/**"] },
+      { "name": "task", "patterns": ["src/task/**"] },
+      { "name": "roadmap", "patterns": ["src/roadmap/**"] },
+      { "name": "hooks", "patterns": ["src/hooks/**"] },
+      { "name": "init", "patterns": ["src/init/**"] },
+      { "name": "cli", "patterns": ["src/cli.ts"] },
+      {
+        "name": "tooling",
+        "patterns": ["scripts/**", "test/**", ".dagger/**", "vite.config.ts"]
+      }
+    ],
+    "coverage": {
+      "requireAllFiles": true
+    },
+    "rules": [
+      { "from": "types", "allow": [] },
+      { "from": "core", "allow": ["types"] },
+      { "from": "profile", "allow": ["types", "core"] },
+      { "from": "task", "allow": ["types", "core"] },
+      { "from": "roadmap", "allow": ["types", "core"] },
+      { "from": "hooks", "allow": ["types", "core"] },
+      { "from": "init", "allow": ["types", "core", "hooks"] },
+      { "from": "cli", "allow": ["types", "core", "profile", "task", "roadmap", "hooks", "init"] },
+      {
+        "from": "tooling",
+        "allow": ["types", "core", "profile", "task", "roadmap", "hooks", "init", "cli"]
+      }
+    ]
+  },
+  "health": {
+    "maxFileLines": 300,
+    "maxCyclomatic": 15,
+    "maxCognitive": 15,
+    "maxCrap": 0,
+    "ignore": ["test/**", ".dagger/**", "vite.config.ts"],
+    "thresholdOverrides": [
+      {
+        "files": ["scripts/**"],
+        "maxFileLines": 400,
+        "reason": "Scripts are bounded at 400 physical lines per docs/golden-rules.md Section 2.1."
+      }
+    ]
+  },
+  "duplicates": {
+    "mode": "mild",
+    "minLines": 6,
+    "minTokens": 50,
+    "ignoreImports": true,
+    "ignore": ["test/**", ".dagger/**", "vite.config.ts"]
+  },
+  "audit": {
+    "deadCodeBaseline": "fallow-baselines/dead-code.json",
+    "healthBaseline": "fallow-baselines/health.json",
+    "dupesBaseline": "fallow-baselines/dupes.json"
+  }
+}

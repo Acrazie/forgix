@@ -7,7 +7,7 @@ const manifest = (path: string) =>
 
 test("one pinned Vite+ dependency owns quality and packaging", () => {
   const root = manifest("package.json");
-  const plugin = manifest("plugins/forgix/package.json");
+  const plugin = manifest("package.json");
   expect(root.devDependencies["vite-plus"]).toBe("1.6.0");
   expect(plugin.devDependencies["vite-plus"]).toBe(root.devDependencies["vite-plus"]);
   for (const name of ["oxfmt", "oxlint", "oxlint-tsgolint", "esbuild", "tsdown", "rolldown"]) {

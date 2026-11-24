@@ -1,0 +1,120 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": null,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks codex post-tool-use'",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '_p=\"${FORGIX_CLI_PATH:-}\"; if [ -z \"$_p\" ]; then _d=\"${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}\"; case \"$_d\" in /*) [ -f \"$_d/forgix/cli-path.codex\" ] && IFS= read -r _p < \"$_d/forgix/cli-path.codex\" ;; esac; fi; case \"$_p\" in /*) if [ -f \"$_p\" ] && command -v node >/dev/null 2>&1; then exec node \"$_p\" hook codex post-tool-use; fi ;; esac; printf \"%s\\n\" \"{}\"; exit 0'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": null,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks codex session-end'",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": null,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then printf \"%s\\n\" \"{\\\"systemMessage\\\":\\\"Entire CLI is enabled but not installed or not on PATH. Installation guide: https://docs.entire.io/cli/installation#installation-methods\\\"}\"; exit 0; fi; if ! entire --version </dev/null >/dev/null 2>&1; then printf \"%s\\n\" \"{\\\"systemMessage\\\":\\\"Entire CLI is enabled, but the entire command on PATH failed to run, so this session may not be captured. Check that entire --version works in this shell. Installation guide: https://docs.entire.io/cli/installation#installation-methods\\\"}\"; exit 0; fi; exec entire hooks codex session-start'",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '_p=\"${FORGIX_CLI_PATH:-}\"; if [ -z \"$_p\" ]; then _d=\"${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}\"; case \"$_d\" in /*) [ -f \"$_d/forgix/cli-path.codex\" ] && IFS= read -r _p < \"$_d/forgix/cli-path.codex\" ;; esac; fi; case \"$_p\" in /*) if [ -f \"$_p\" ] && command -v node >/dev/null 2>&1; then exec node \"$_p\" hook codex session-start; fi ;; esac; printf \"%s\\n\" \"{\\\"systemMessage\\\":\\\"Forgix lifecycle hooks require Node and a pinned installed skill bundle (v2). Run Forgix init (or set FORGIX_CLI_PATH) and reload before BUILD.\\\"}\"; exit 0'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": null,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks codex stop'",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": null,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks codex subagent-start'",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": null,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks codex subagent-stop'",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": null,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks codex user-prompt-submit'",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '_p=\"${FORGIX_CLI_PATH:-}\"; if [ -z \"$_p\" ]; then _d=\"${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}\"; case \"$_d\" in /*) [ -f \"$_d/forgix/cli-path.codex\" ] && IFS= read -r _p < \"$_d/forgix/cli-path.codex\" ;; esac; fi; case \"$_p\" in /*) if [ -f \"$_p\" ] && command -v node >/dev/null 2>&1; then exec node \"$_p\" hook codex pre-tool-use; fi ;; esac; printf \"%s\\n\" \"{}\"; exit 0'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

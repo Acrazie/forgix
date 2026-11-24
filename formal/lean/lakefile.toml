@@ -1,0 +1,12 @@
+name = "forgix-kernel"
+version = "0.1.0"
+defaultTargets = ["ForgixKernel"]
+
+[[lean_lib]]
+name = "ForgixKernel"
+roots = [
+  "ForgixKernel.Invariants",
+  "ForgixKernel.Assure",
+  "ForgixKernel.Gate",
+  "ForgixKernel.Preparation",
+]

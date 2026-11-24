@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgix.dev/schemas/roadmap.schema.json",
+  "title": "Forgix Canonical Published Roadmap",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "roadmapId",
+    "publishedAt",
+    "contentDigest",
+    "productVisionPath",
+    "productVisionSummary",
+    "adapter",
+    "features",
+    "sharedContracts",
+    "workItems",
+    "verificationCheckpoints",
+    "auditReceipt",
+    "approvalReceipt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "roadmapId": {
+      "$ref": "#/$defs/id"
+    },
+    "publishedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contentDigest": {
+      "type": "string",
+      "minLength": 8
+    },
+    "productVisionPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "productVisionSummary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "adapter": {
+      "enum": ["local", "github", "entire"]
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner"],
+      "properties": {
+        "owner": { "type": "string", "minLength": 1 },
+        "number": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "minLength": 1 }
+      }
+    },
+    "features": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/feature" }
+    },
+    "sharedContracts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sharedContract" }
+    },
+    "workItems": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/workItem" }
+    },
+    "verificationCheckpoints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/verificationCheckpoint" }
+    },
+    "auditReceipt": {
+      "$ref": "#/$defs/auditReceipt"
+    },
+    "approvalReceipt": {
+      "$ref": "#/$defs/approvalReceipt"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "risk": {
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "priority": {
+      "enum": ["P0", "P1", "P2", "P3"]
+    },
+    "feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "summary", "priority", "risk", "scopeIn", "scopeOut"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "priority": { "$ref": "#/$defs/priority" },
+        "risk": { "$ref": "#/$defs/risk" },
+        "wave": { "type": "integer", "minimum": 1 },
+        "scopeIn": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "scopeOut": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "sharedContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "kind", "status", "summary", "invariants", "verificationHint"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "kind": {
+          "enum": [
+            "interface",
+            "schema",
+            "api",
+            "domain-invariant",
+            "module-boundary",
+            "formal-spec"
+          ]
+        },
+        "status": {
+          "enum": ["planned", "existing", "verified"]
+        },
+        "summary": { "type": "string", "minLength": 1 },
+        "invariants": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "verificationHint": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "minLength": 8 }
+      }
+    },
+    "workItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "featureId",
+        "title",
+        "objective",
+        "scopeIn",
+        "scopeOut",
+        "acceptanceCriteria",
+        "risk",
+        "priority",
+        "blockedBy",
+        "providesContractIds",
+        "consumesContractIds"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "featureId": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "objective": { "type": "string", "minLength": 1 },
+        "scopeIn": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "scopeOut": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "linkedRuleIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "risk": { "$ref": "#/$defs/risk" },
+        "priority": { "$ref": "#/$defs/priority" },
+        "wave": { "type": "integer", "minimum": 1 },
+        "blockedBy": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "providesContractIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "consumesContractIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "verificationCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "scopeType",
+        "targetIds",
+        "dependsOnWorkItemIds",
+        "checks",
+        "independentVerifierRequired"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "scopeType": {
+          "enum": ["feature", "wave"]
+        },
+        "targetIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "dependsOnWorkItemIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "independentVerifierRequired": { "type": "boolean" }
+      }
+    },
+    "auditFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "dimension", "severity", "targetId", "message", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "dimension": {
+          "enum": [
+            "slicing_atomicity",
+            "contract_completeness",
+            "dag_soundness",
+            "verifiability",
+            "scope_alignment"
+          ]
+        },
+        "severity": {
+          "enum": ["blocking", "warning"]
+        },
+        "targetId": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "status": {
+          "enum": ["open", "resolved", "waived"]
+        },
+        "waiverReason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "auditReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidateDigest", "auditedAt", "auditorContext", "findings", "passed"],
+      "properties": {
+        "candidateDigest": { "type": "string", "minLength": 8 },
+        "auditedAt": { "type": "string", "minLength": 1 },
+        "auditorContext": { "type": "string", "minLength": 1 },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/auditFinding" }
+        },
+        "passed": { "type": "boolean" }
+      }
+    },
+    "approvalReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved", "approvedAt", "digest"],
+      "properties": {
+        "approved": { "const": true },
+        "approvedAt": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "minLength": 8 },
+        "actor": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
