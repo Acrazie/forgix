@@ -148,6 +148,7 @@ export function syncGithubMirror(options: MirrorSyncOptions): MirrorSyncResult {
     );
     const preservedGithub = replaceMirrorTree(mirrorDir, exportDir, githubBackupDir);
     runCommand("git", ["add", "-A"], mirrorDir);
+    runCommand("git", ["add", "-f", ...REQUIRED_ROOT_FILES], mirrorDir);
     const changedFiles = runCommand("git", ["status", "--porcelain"], mirrorDir)
       .split("\n")
       .filter(Boolean).length;

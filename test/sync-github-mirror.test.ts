@@ -46,12 +46,14 @@ function createFixtureRepos(): {
   initRepo(sourceDir);
   mkdirSync(join(sourceDir, "dist"), { recursive: true });
   mkdirSync(join(sourceDir, "skills", "forgix"), { recursive: true });
+  writeFileSync(join(sourceDir, ".gitignore"), "dist\n");
   writeFileSync(join(sourceDir, "plugin.json"), JSON.stringify({ name: "forgix" }) + "\n");
   writeFileSync(join(sourceDir, "dist", "forgix.mjs"), "#!/usr/bin/env node\n");
   writeFileSync(join(sourceDir, "skills", "forgix", "SKILL.md"), "# Forgix\n");
   writeFileSync(join(sourceDir, "AGENTS.md"), "# Agents\n");
   symlinkSync("AGENTS.md", join(sourceDir, "CLAUDE.md"));
   git(sourceDir, ["add", "-A"]);
+  git(sourceDir, ["add", "-f", "dist/forgix.mjs"]);
   git(sourceDir, ["commit", "-m", "feat: root layout"]);
 
   // Target bare repo: legacy plugins/ layout WITH .github/workflows/publish-entire-npm.yml
