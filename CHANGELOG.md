@@ -1,5 +1,56 @@
 # Changelog
 
+## [v4.2.0] - 2026-11-24
+
+<!-- forgix-release: {"tag":"v4.2.0","date":"2026-11-24","npmBase":"v4.1.0","pluginBase":"v4.1.0"} -->
+
+### npm + plugins (since v4.1.0)
+
+
+### Bug fixes
+
+- **formal:** align verify-assure-lean with ADR 0041 ([b526709](https://entire.com/et/forgix/forgix/commit/b526709a642e0bc082b26ef8898e618eb404446f))
+
+- **scripts:** preserve relative symlinks verbatim during GitHub mirror sync ([f1789aa](https://entire.com/et/forgix/forgix/commit/f1789aa75b8e3420e5f281a0508a90f6c1ebbac0))
+
+- **scripts:** force-stage gitignored dist/forgix.mjs in GitHub mirror sync ([c072820](https://entire.com/et/forgix/forgix/commit/c0728202cf219f1f3ea67c560b9497462bd70348))
+
+
+### Documentation
+
+- **diagrams:** update workflow SVGs for Factory as Code, Contract Review, and retro ([3007e7f](https://entire.com/et/forgix/forgix/commit/3007e7f38e7bdf5fb6824fc93512c339a8c1eea5))
+
+- **install:** simplify Antigravity URL install and managed BUILD setup ([378ea15](https://entire.com/et/forgix/forgix/commit/378ea15a27e2667183e08f1f3bb31c6f087cb9bc))
+
+
+### Features
+
+- **init:** add Factory as Code setup for rules, agents, skills, and policies ([eded14d](https://entire.com/et/forgix/forgix/commit/eded14d8b6e621a2db553c014e3990e29f76e441))
+
+- **review:** rename Goldfish to Contract Review with review-contract skill and multi-host ([54ac5de](https://entire.com/et/forgix/forgix/commit/54ac5de0760f6d418eb22bd904e5d78bff29f894))
+
+- **retro:** add retro-factory self-improvement loop and ASSURE reminder ([ae5cb90](https://entire.com/et/forgix/forgix/commit/ae5cb90d58025c2875ef07b9de4d2078aab9a7e8))
+
+- **hooks:** auto-pin installed CLI bundle without manual FORGIX_CLI_PATH ([7f730fc](https://entire.com/et/forgix/forgix/commit/7f730fc52b46176b3d45ec717f9e3cbabaf8cb9a))
+
+- **scripts:** add GitHub mirror sync script preserving .github workflows ([27cffe2](https://entire.com/et/forgix/forgix/commit/27cffe22818981a62143990ced3b84833030a832))
+
+- **scripts:** support --push-branch for protected GitHub mirror branches ([9b7de64](https://entire.com/et/forgix/forgix/commit/9b7de64cec156a58c61b3f452899da5447f202a4))
+
+
+### Maintenance
+
+- **hooks:** run check:dupes in pre-push hook ([23533a1](https://entire.com/et/forgix/forgix/commit/23533a19385812c21313d3baeaa967316be1ffe2))
+
+- **init:** reconcile forgix bootstrap hooks and config ([3ab3e4e](https://entire.com/et/forgix/forgix/commit/3ab3e4e851b36c36907a7edd134239185b17c5d4))
+
+
+### Refactoring
+
+- **formal:** share Plan v2 seeding helper across Lean verifiers ([9273fca](https://entire.com/et/forgix/forgix/commit/9273fca6db4f2f68a43ddd639efbf99fa50d744c))
+
+- **scripts:** simplify parseMirrorArgs flag lookup ([650a743](https://entire.com/et/forgix/forgix/commit/650a7435f3d43c855e79ce80359ba5ccde867e86))
+
 ## [v4.1.0] - 2026-11-23
 
 <!-- forgix-release: {"tag":"v4.1.0","date":"2026-11-23","npmBase":"npm-v4.0.0","pluginBase":"plugin-v3.0.3-codex.20261122085011"} -->

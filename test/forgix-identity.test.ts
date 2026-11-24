@@ -34,9 +34,7 @@ test("Forgix has one package, plugin, marketplace and public skill identity", ()
 });
 
 test("release automation replaces Release Please without changing package version", () => {
-  expect(existsSync(new URL("../.github/workflows/release-please.yml", import.meta.url))).toBe(
-    false,
-  );
+  expect(existsSync(new URL("../.github", import.meta.url))).toBe(false);
   expect(existsSync(new URL("../.release-please-manifest.json", import.meta.url))).toBe(false);
   expect(existsSync(new URL("../release-please-config.json", import.meta.url))).toBe(false);
   expect(json("package.json").version).toMatch(/^\d+\.\d+\.\d+$/);
