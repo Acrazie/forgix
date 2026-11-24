@@ -5,7 +5,7 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group }}
 {% for commit in commits %}
-- {% if commit.breaking %}**BREAKING:** {% endif %}{% if commit.scope %}**{{ commit.scope }}:** {% endif %}{{ commit.message | split(pat="\n") | first }} ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/Acrazie/forgix/commit/{{ commit.id }}))
+- {% if commit.breaking %}**BREAKING:** {% endif %}{% if commit.scope %}**{{ commit.scope }}:** {% endif %}{{ commit.message | split(pat="\n") | first }} ([{{ commit.id | truncate(length=7, end="") }}](https://entire.com/et/forgix/forgix/commit/{{ commit.id }}))
 {% endfor %}
 {% endfor %}
 """
@@ -21,7 +21,7 @@ filter_commits = false
 tag_pattern = "^$"
 sort_commits = "oldest"
 commit_preprocessors = [
-  { pattern = '\(#([0-9]+)\)', replace = "([#${1}](https://github.com/Acrazie/forgix/pull/${1}))" },
+  { pattern = '\(#([0-9]+)\)', replace = "([#${1}](https://entire.com/et/forgix/forgix/trails/${1}))" },
 ]
 commit_parsers = [
   { message = '^chore\(release\):', skip = true },

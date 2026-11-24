@@ -8,7 +8,7 @@
       "name": "forgix",
       "source": {
         "source": "local",
-        "path": "./plugins/forgix"
+        "path": "./"
       },
       "policy": {
         "installation": "AVAILABLE",

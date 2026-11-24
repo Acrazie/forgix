@@ -1,0 +1,704 @@
+{
+  "kind": "health",
+  "finding_counts": {
+    "scripts/check-size-budget.ts": {
+      "complexity_moderate": {
+        "count": 2
+      }
+    },
+    "scripts/release-lib.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 2
+      }
+    },
+    "scripts/release.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/renovate-sync.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_moderate": {
+        "count": 2
+      }
+    },
+    "scripts/verify-formal-kernel.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 3
+      },
+      "complexity_moderate": {
+        "count": 2
+      }
+    },
+    "src/cli.ts": {
+      "complexity_critical": {
+        "count": 5
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "complexity_moderate": {
+        "count": 3
+      }
+    },
+    "src/core/autonomous-gate.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/config.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 2
+      }
+    },
+    "src/core/digest.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/routing.ts": {
+      "complexity_moderate": {
+        "count": 6
+      }
+    },
+    "src/core/store.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 4
+      }
+    },
+    "src/hooks/context.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 3
+      }
+    },
+    "src/hooks/guards.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 5
+      }
+    },
+    "src/hooks/index.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/io.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/init/hooks-config.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 2
+      }
+    },
+    "src/init/index.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_moderate": {
+        "count": 3
+      }
+    },
+    "src/profile/index.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 3
+      }
+    },
+    "src/roadmap/index.ts": {
+      "complexity_critical": {
+        "count": 3
+      },
+      "complexity_high": {
+        "count": 3
+      },
+      "complexity_moderate": {
+        "count": 7
+      }
+    },
+    "src/task/goldfish.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 2
+      }
+    },
+    "src/task/index.ts": {
+      "complexity_critical": {
+        "count": 4
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 7
+      }
+    },
+    "src/task/plan.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/types.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    }
+  },
+  "identity_finding_counts": {
+    "scripts/check-size-budget.ts\u0000evaluatePromptBudget": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/check-size-budget.ts\u0000evaluateSizeBudget": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/release-lib.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/release-lib.ts\u0000validateClaudeMarketplaceManifest": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/release-lib.ts\u0000validatePluginManifest": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "scripts/release.ts\u0000main": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/renovate-sync.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/renovate-sync.ts\u0000applyUpdatesToWorkingTree": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "scripts/renovate-sync.ts\u0000extractPlannedUpdates": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/renovate-sync.ts\u0000validateRenovateReport": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "scripts/verify-formal-kernel.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/verify-formal-kernel.ts\u0000formalCheckExecutionSafety": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/verify-formal-kernel.ts\u0000formalCheckSharedContractCoverage": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "scripts/verify-formal-kernel.ts\u0000formalSelectiveContractInvalidation": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "scripts/verify-formal-kernel.ts\u0000runDifferentialConformanceOracle": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "scripts/verify-formal-kernel.ts\u0000verifyFormalKernelFiles": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000<arrow>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000parseInvocation": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000parseRoadmapInvocation": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000parseTaskInvocation": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000runGuardrailsCheckInvocation": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000runInvocation": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000runProjectProfileInvocation": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000runRoadmapInvocation": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/cli.ts\u0000runTaskInvocation": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/core/autonomous-gate.ts\u0000evaluatePredicateGate": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/config.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/config.ts\u0000evaluateSurfaceVerificationRules": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/config.ts\u0000scanDiffForEscapeHatches": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/core/digest.ts\u0000scanHygieneViolations": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/digest.ts\u0000validateDependencyGraph": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/core/routing.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/routing.ts\u0000buildRoutingSnapshot": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/routing.ts\u0000chooseRoute": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/routing.ts\u0000normalizeModels": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/routing.ts\u0000resolveHarness": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/routing.ts\u0000resolveRoutingReport": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/store.ts\u0000#assertEntry": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/store.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/store.ts\u0000globToRegex": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/store.ts\u0000proposeFactoryEvolution": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/store.ts\u0000sanitizeTelemetryEvent": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/core/store.ts\u0000summarizeFactoryTelemetry": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/hooks/context.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/context.ts\u0000loadHookProjectSummary": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/context.ts\u0000loadHookRuntimeConfig": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/context.ts\u0000resolveActiveTask": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/hooks/guards.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/guards.ts\u0000detectBootstrapDrift": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/hooks/guards.ts\u0000evaluateDestructiveShellCommand": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/guards.ts\u0000hasCommitNoVerify": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/guards.ts\u0000hasPushForce": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/guards.ts\u0000parseGitSegment": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/guards.ts\u0000splitShellSegments": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/hooks/index.ts\u0000runHook": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/io.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/io.ts\u0000extractToolCall": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/init/hooks-config.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/init/hooks-config.ts\u0000checkHarnessHooksConfig": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/init/hooks-config.ts\u0000mergeGroupedHarnessHooks": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/init/index.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/init/index.ts\u0000buildMergedConfig": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/init/index.ts\u0000computePlan": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/init/index.ts\u0000parseManifest": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/init/index.ts\u0000runCheck": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/profile/index.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/profile/index.ts\u0000validateLocalProjectProfile": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/profile/index.ts\u0000validateProfileContent": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/profile/index.ts\u0000validateProjectInitState": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000invalidateDependentsOnContractChange": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000publishRoadmap": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000recordCheckpointResult": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000recordExternalSyncBatch": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000recordPublishedRoadmapBatch": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000renderRoadmapMarkdown": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000selectEligibleWorkItems": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000topologicalWorkItems": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000validateExecutionReadiness": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000validateGraphEntities": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000validateRoadmapState": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/roadmap/index.ts\u0000verifyCheckpointVerification": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/task/goldfish.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/task/goldfish.ts\u0000prepare": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/task/goldfish.ts\u0000updateGoldfish": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000<arrow>": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000applyTaskGateDecision": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000computeTaskNextActionEnvelope": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000deriveMacroPhase": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000preflightGate": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000renderGateCard": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000validateAndComputeAssurance": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000validateAndNormalizeShape": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000validateDesignState": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/task/index.ts\u0000validateHistory": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/task/plan.ts\u0000normalizeDesignContract": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/types.ts\u0000<file>": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    }
+  },
+  "runtime_coverage_findings": [],
+  "target_keys": [
+    "src/task/index.ts:high impact",
+    "src/cli.ts:complexity",
+    "src/task/goldfish.ts:complexity",
+    "src/core/store.ts:complexity",
+    "src/roadmap/index.ts:complexity",
+    "src/core/digest.ts:high impact",
+    "src/core/config.ts:complexity",
+    "src/init/index.ts:complexity",
+    "scripts/check-golden-rules.ts:high impact",
+    "src/profile/index.ts:complexity",
+    "src/init/hooks-config.ts:complexity",
+    "src/hooks/guards.ts:complexity",
+    "src/hooks/io.ts:complexity",
+    "scripts/verify-formal-kernel.ts:complexity",
+    "scripts/renovate-sync.ts:complexity"
+  ]
+}

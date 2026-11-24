@@ -1,0 +1,12 @@
+{
+  "name": "forgix-ci",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@dagger.io/dagger": "0.21.11"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

@@ -70,7 +70,7 @@ test("Vite+ dispatcher blocks invalid messages and bad staged formatting in a re
     copyFileSync(join(root, "vite.config.ts"), join(directory, "vite.config.ts"));
     copyFileSync(join(root, "fluidise.toml"), join(directory, "fluidise.toml"));
     mkdirSync(join(directory, ".vite-hooks"));
-    for (const hook of ["pre-commit", "commit-msg"]) {
+    for (const hook of ["pre-commit", "commit-msg", "commit-msg.pre-entire"]) {
       const path = join(directory, ".vite-hooks", hook);
       copyFileSync(join(root, ".vite-hooks", hook), path);
       chmodSync(path, 0o755);

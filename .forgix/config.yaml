@@ -14,3 +14,14 @@ integrations:
     - context-mode
   skills:
     - impeccable:frontend-design
+harnesses:
+  - codex
+  - claude
+  - antigravity
+hooks:
+  enforcement: balanced
+bootstrap:
+  rules: false
+  hooks: true
+  gitignore: true
+  worktreeInclude: false

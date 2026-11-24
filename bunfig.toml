@@ -1,3 +1,8 @@
 [test]
 randomize = true
 retry = 0
+coverageReporter = ["text"]
+coverageThreshold = { lines = 0.72, functions = 0.90 }
+coverageSkipTestFiles = true
+pathIgnorePatterns = ["test/fixtures/**"]
+coveragePathIgnorePatterns = ["test/**", "dist/**", "scripts/**"]

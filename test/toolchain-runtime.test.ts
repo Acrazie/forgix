@@ -6,24 +6,28 @@ const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.ur
 
 test("development and published CLI minimum both require Node 26", () => {
   expect(read(".node-version").trim()).toMatch(/^26\./);
-  expect(JSON.parse(read("plugins/forgix/package.json")).engines.node).toBe(">=26.0.0");
+  expect(JSON.parse(read("package.json")).engines.node).toBe(">=26.0.0");
 });
 
-test("CI builds on Node 26 and checks packed runtime on Node 26", () => {
-  const { jobs } = parse(read(".github/workflows/ci.yml"));
-  expect(jobs.website).toBeUndefined();
-  for (const name of ["quality-gate", "maintainer-release-macos"]) {
-    const setup = jobs[name].steps.find((step: { uses?: string }) =>
-      step.uses?.startsWith("actions/setup-node@"),
-    );
-    expect(setup.with["node-version-file"]).toBe(".node-version");
-  }
-  expect(jobs["runtime-smoke"].strategy.matrix).toEqual({
-    os: ["ubuntu-latest", "macos-latest"],
-    node: [26],
-  });
-  const setup = jobs["runtime-smoke"].steps.find((step: { uses?: string }) =>
-    step.uses?.startsWith("actions/setup-node@"),
+test("CI builds on Node 26 and checks packed runtime on Node 26 via Dagger", () => {
+  const pipeline = parse(read(".buildkite/pipeline.yml")) as {
+    steps: { key: string; commands: string[] }[];
+  };
+  const stepByKey = (key: string) => pipeline.steps.find((s) => s.key === key);
+  const quality = stepByKey("quality-gate");
+  const smoke = stepByKey("runtime-smoke");
+  expect(quality).toBeDefined();
+  expect(smoke).toBeDefined();
+  expect(quality!.commands.join("\n")).toContain("dagger call check --source=.");
+  expect(quality!.commands.join("\n")).toContain("dagger call pack-runtime");
+  expect(smoke!.commands.join("\n")).toContain(
+    "dagger call runtime-smoke --source=. --tarball=.artifacts/forgix.tgz",
   );
-  expect(setup.with["node-version"]).toBe("${{ matrix.node }}");
+
+  const daggerSource = read(".dagger/src/index.ts");
+  const nodeVersion = read(".node-version").trim();
+  expect(nodeVersion).toMatch(/^26\./);
+  expect(daggerSource).toContain(`const NODE_VERSION = "${nodeVersion}"`);
+  expect(daggerSource).toContain("const NODE_IMAGE = `node:${NODE_VERSION}-bookworm-slim`");
+  expect(daggerSource).toContain("test/runtime/runtime-smoke.test.mjs");
 });

@@ -1,0 +1,250 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forgix configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "harness": {
+      "type": "string",
+      "enum": ["auto", "codex", "claude", "antigravity"]
+    },
+    "harnesses": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["codex", "claude", "antigravity"]
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enforcement": {
+          "type": "string",
+          "enum": ["balanced", "strict", "warn"]
+        }
+      }
+    },
+    "bootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rules": { "type": "boolean" },
+        "agents": { "type": "boolean" },
+        "skills": { "type": "boolean" },
+        "hooks": { "type": "boolean" },
+        "gitignore": { "type": "boolean" },
+        "worktreeInclude": { "type": "boolean" },
+        "managedPaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(?:\\.forgix/factory/(?:rules/[a-z0-9][a-z0-9-]{0,62}\\.md|agents/[a-z0-9][a-z0-9-]{0,62}\\.md|skills/[a-z0-9][a-z0-9-]{0,62}/SKILL\\.md)|\\.(?:claude|agents)/(?:rules|agents)/forgix-[a-z0-9][a-z0-9-]{0,62}\\.md|\\.(?:claude|agents)/skills/forgix-[a-z0-9][a-z0-9-]{0,62}/SKILL\\.md|\\.codex/agents/forgix-[a-z0-9][a-z0-9-]{0,62}\\.md)$"
+          }
+        }
+      }
+    },
+    "factoryPolicies": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "protectedSurfaces": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\r\\n\\u0000]+$"
+          }
+        },
+        "blockedCommands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pattern", "reason"],
+            "properties": {
+              "pattern": { "type": "string", "minLength": 1, "maxLength": 200 },
+              "reason": { "type": "string", "minLength": 1, "maxLength": 300 }
+            }
+          }
+        },
+        "escapeHatchPatterns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "pattern"],
+            "properties": {
+              "kind": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "pattern": { "type": "string", "minLength": 1, "maxLength": 200 }
+            }
+          }
+        }
+      }
+    },
+    "worktree": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["auto", "required"]
+        }
+      }
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["worktree", "dagger", "auto"]
+        },
+        "assureRunner": {
+          "type": "string",
+          "enum": ["worktree", "dagger", "auto"]
+        }
+      }
+    },
+    "merge": {
+      "type": "string",
+      "const": "never"
+    },
+    "integrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plugins": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/integrationId" }
+        },
+        "skills": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/integrationId" }
+        }
+      }
+    },
+    "subscription": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plan": {
+          "type": "string",
+          "enum": ["auto", "plus", "pro_5x", "pro_20x"]
+        },
+        "planOverride": {
+          "type": "string",
+          "enum": ["plus", "pro_5x", "pro_20x"]
+        },
+        "multiplierOverride": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "quota": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "warningPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "criticalPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "unknownPolicy": { "type": "string", "const": "conservative" }
+          }
+        },
+        "modelAllowlist": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"]
+          }
+        },
+        "modelCosts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "gpt-5.6-luna": { "$ref": "#/$defs/modelCost" },
+            "gpt-5.6-terra": { "$ref": "#/$defs/modelCost" },
+            "gpt-5.6-sol": { "$ref": "#/$defs/modelCost" }
+          }
+        }
+      }
+    },
+    "roadmap": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "adapter": {
+          "type": "string",
+          "enum": ["local", "github", "entire"]
+        },
+        "requirePlanAudit": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["local", "github"]
+        },
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "owner": { "type": "string", "minLength": 1 },
+            "number": { "type": "integer", "minimum": 1 },
+            "title": { "type": "string", "minLength": 1 },
+            "url": { "type": "string", "minLength": 1 },
+            "productVisionPath": { "type": "string", "minLength": 1 }
+          }
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": { "type": "string", "minLength": 1 },
+            "kind": { "type": "string", "minLength": 1 },
+            "risk": { "type": "string", "minLength": 1 },
+            "priority": { "type": "string", "minLength": 1 },
+            "wave": { "type": "string", "minLength": 1 }
+          }
+        },
+        "autonomous": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "maxRisk": { "enum": ["low", "medium"] },
+            "defaultParallel": { "type": "integer", "minimum": 1, "maximum": 8 },
+            "worktreeBaseBranch": { "type": "string", "minLength": 1 },
+            "requireExistingWorktree": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "integrationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*(?::[A-Za-z0-9][A-Za-z0-9._/-]*)?$"
+    },
+    "modelCost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "multiplier": { "type": "number", "exclusiveMinimum": 0 },
+        "rateVersion": { "type": "string", "minLength": 1 },
+        "inputCreditsPerMillion": { "type": "number", "minimum": 0 },
+        "cachedInputCreditsPerMillion": { "type": "number", "minimum": 0 },
+        "outputCreditsPerMillion": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

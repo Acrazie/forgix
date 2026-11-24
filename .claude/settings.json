@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "sh -c 'if command -v entire-brain >/dev/null 2>&1; then exec entire-brain hook pre-edit --claude-hook; fi; if command -v entire >/dev/null 2>&1; then exec entire brain hook pre-edit --claude-hook; fi; exit 0'",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '_p=\"${FORGIX_CLI_PATH:-}\"; if [ -z \"$_p\" ]; then _d=\"${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}\"; case \"$_d\" in /*) [ -f \"$_d/forgix/cli-path.claude\" ] && IFS= read -r _p < \"$_d/forgix/cli-path.claude\" ;; esac; fi; case \"$_p\" in /*) if [ -f \"$_p\" ] && command -v node >/dev/null 2>&1; then exec node \"$_p\" hook claude pre-tool-use; fi ;; esac; printf \"%s\\n\" \"{}\"; exit 0'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '_p=\"${FORGIX_CLI_PATH:-}\"; if [ -z \"$_p\" ]; then _d=\"${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}\"; case \"$_d\" in /*) [ -f \"$_d/forgix/cli-path.claude\" ] && IFS= read -r _p < \"$_d/forgix/cli-path.claude\" ;; esac; fi; case \"$_p\" in /*) if [ -f \"$_p\" ] && command -v node >/dev/null 2>&1; then exec node \"$_p\" hook claude session-start; fi ;; esac; printf \"%s\\n\" \"{\\\"systemMessage\\\":\\\"Forgix lifecycle hooks require Node and a pinned installed skill bundle (v2). Run Forgix init (or set FORGIX_CLI_PATH) and reload before BUILD.\\\"}\"; exit 0'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '_p=\"${FORGIX_CLI_PATH:-}\"; if [ -z \"$_p\" ]; then _d=\"${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}\"; case \"$_d\" in /*) [ -f \"$_d/forgix/cli-path.claude\" ] && IFS= read -r _p < \"$_d/forgix/cli-path.claude\" ;; esac; fi; case \"$_p\" in /*) if [ -f \"$_p\" ] && command -v node >/dev/null 2>&1; then exec node \"$_p\" hook claude post-tool-use; fi ;; esac; printf \"%s\\n\" \"{}\"; exit 0'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

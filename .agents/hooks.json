@@ -1,0 +1,62 @@
+{
+  "entire": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks antigravity session-start'"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks antigravity pre-tool-use'"
+          }
+        ]
+      }
+    ],
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks antigravity pre-invocation'"
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks antigravity stop'",
+        "timeout": 300
+      }
+    ]
+  },
+  "forgix": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "sh -c '_p=\"${FORGIX_CLI_PATH:-}\"; if [ -z \"$_p\" ]; then _d=\"${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}\"; case \"$_d\" in /*) [ -f \"$_d/forgix/cli-path.antigravity\" ] && IFS= read -r _p < \"$_d/forgix/cli-path.antigravity\" ;; esac; fi; if [ -z \"$_p\" ]; then case \"${HOME:-}\" in /*) _p=\"$HOME/.gemini/config/plugins/forgix/dist/forgix.mjs\" ;; esac; fi; case \"$_p\" in /*) if [ -f \"$_p\" ] && command -v node >/dev/null 2>&1; then exec node \"$_p\" hook antigravity session-start; fi ;; esac; printf \"%s\\n\" \"{\\\"injectSteps\\\":[{\\\"systemMessage\\\":{\\\"systemMessage\\\":\\\"Forgix lifecycle hooks require Node and a pinned installed skill bundle (v2). Run Forgix init (or set FORGIX_CLI_PATH) and reload before BUILD.\\\"}}]}\"; exit 0'",
+        "timeout": 5
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '_p=\"${FORGIX_CLI_PATH:-}\"; if [ -z \"$_p\" ]; then _d=\"${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}\"; case \"$_d\" in /*) [ -f \"$_d/forgix/cli-path.antigravity\" ] && IFS= read -r _p < \"$_d/forgix/cli-path.antigravity\" ;; esac; fi; if [ -z \"$_p\" ]; then case \"${HOME:-}\" in /*) _p=\"$HOME/.gemini/config/plugins/forgix/dist/forgix.mjs\" ;; esac; fi; case \"$_p\" in /*) if [ -f \"$_p\" ] && command -v node >/dev/null 2>&1; then exec node \"$_p\" hook antigravity pre-tool-use; fi ;; esac; printf \"%s\\n\" \"{}\"; exit 0'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "sh -c '_p=\"${FORGIX_CLI_PATH:-}\"; if [ -z \"$_p\" ]; then _d=\"${XDG_CONFIG_HOME:-${HOME:+$HOME/.config}}\"; case \"$_d\" in /*) [ -f \"$_d/forgix/cli-path.antigravity\" ] && IFS= read -r _p < \"$_d/forgix/cli-path.antigravity\" ;; esac; fi; if [ -z \"$_p\" ]; then case \"${HOME:-}\" in /*) _p=\"$HOME/.gemini/config/plugins/forgix/dist/forgix.mjs\" ;; esac; fi; case \"$_p\" in /*) if [ -f \"$_p\" ] && command -v node >/dev/null 2>&1; then exec node \"$_p\" hook antigravity post-invocation; fi ;; esac; printf \"%s\\n\" \"{}\"; exit 0'",
+        "timeout": 5
+      }
+    ]
+  }
+}
