@@ -1,5 +1,13 @@
 # Changelog
 
+## [v4.3.2] - 2026-11-25
+
+<!-- forgix-release: {"tag":"v4.3.2","date":"2026-11-25","base":"v4.3.1"} -->
+
+### Changes (since v4.3.1)
+
+No user-facing changes.
+
 ## [v4.3.1] - 2026-11-25
 
 <!-- forgix-release: {"tag":"v4.3.1","date":"2026-11-25","base":"v4.2.0"} -->
