@@ -2,140 +2,52 @@ name: Release
 
 on:
   push:
-    tags: ["v*", "npm-v*", "plugin-v*"]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Existing stable tag (select the SAME tag as workflow ref)
-        required: true
-        type: string
+    tags: ["v*"]
 
 permissions:
   contents: read
 
 concurrency:
   group: forgix-release
-  queue: max
   cancel-in-progress: false
 
-env:
-  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
-
 jobs:
-  source:
-    name: Resolve trusted release source
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      sha: ${{ steps.source.outputs.sha }}
-      tag: ${{ steps.source.outputs.tag }}
-      target: ${{ steps.source.outputs.target }}
-      version: ${{ steps.source.outputs.version }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .node-version
-      - id: source
-        run: node scripts/release-ci.ts source
-
-  validate:
-    name: Validate exact release candidate
-    needs: source
-    uses: ./.github/workflows/ci.yml
-    with:
-      release-tag: ${{ needs.source.outputs.tag }}
-
-  npm:
-    name: Publish and verify canonical npm package
+  publish:
+    name: Smoke test and publish @acrasie/forgix (OIDC)
     environment: release
-    needs: [source, validate]
-    if: needs.source.outputs.target != 'plugin'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.source.outputs.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .node-version
-      - name: Install pinned native npm verifier and publisher
-        run: npm install --global npm@11.21.1 --ignore-scripts
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: forgix-runtime
-          path: .artifacts
-      - name: Publish immutable tested tarball with OIDC
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/release-ci.ts npm
-
-  github:
-    name: Publish or reconcile GitHub Release
-    needs: [source, validate, npm]
-    if: >-
-      always() && needs.source.result == 'success' && needs.validate.result == 'success' &&
-      (needs.npm.result == 'success' || needs.source.outputs.target == 'plugin')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.source.outputs.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
-      - name: Install pinned native npm verifier
-        if: needs.source.outputs.target != 'plugin'
-        run: npm install --global npm@11.21.1 --ignore-scripts
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: forgix-runtime
-          path: .artifacts
-      - name: Reconcile immutable GitHub Release
+          registry-url: https://registry.npmjs.org
+      - name: Install pinned npm for OIDC Trusted Publishing
+        run: npm install --global npm@11.21.1 --ignore-scripts --registry=https://registry.npmjs.org
+      - name: Verify version matches tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VER="${TAG#v}"
+          node -e "
+            const p = require('./package.json');
+            if (p.version !== '${VER}') process.exit(1);
+          "
+      - name: Pack and run runtime smoke test
+        run: |
+          mkdir -p .artifacts
+          TARBALL="$(npm pack --ignore-scripts --pack-destination .artifacts | tail -n 1)"
+          mv ".artifacts/${TARBALL}" .artifacts/forgix.tgz
+          node --test test/runtime/runtime-smoke.test.mjs
+      - name: Publish to npm via Trusted Publishing (OIDC)
+        run: npm publish .artifacts/forgix.tgz --provenance --access public
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/release-ci.ts github
-
-  mirror:
-    name: Mirror verified npm release
-    needs: [source, github]
-    if: needs.source.outputs.target != 'plugin'
-    permissions:
-      contents: read
-      packages: write
-    uses: ./.github/workflows/publish-github-package.yml
-    with:
-      versions: ${{ needs.source.outputs.version }}
-
-  summary:
-    name: Record partial release state
-    needs: [source, validate, npm, github, mirror]
-    if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: {}
-    steps:
-      - name: Report independent publication results
-        env:
-          SOURCE: ${{ needs.source.result }}
-          VALIDATION: ${{ needs.validate.result }}
-          NPM: ${{ needs.npm.result }}
-          GITHUB: ${{ needs.github.result }}
-          MIRROR: ${{ needs.mirror.result }}
-        run: |
-          printf '### Release state\n\nSource: %s\n\nValidation: %s\n\nnpm: %s\n\nGitHub: %s\n\nMirror: %s\n' "$SOURCE" "$VALIDATION" "$NPM" "$GITHUB" "$MIRROR" >> "$GITHUB_STEP_SUMMARY"
-          printf '\nAn npm failure can occur after registry acceptance. Reconcile the same tag; never retag or unpublish. A mirror failure does not undo npm or GitHub publication.\n' >> "$GITHUB_STEP_SUMMARY"
+        run: gh release create "${GITHUB_REF_NAME}" --generate-notes --verify-tag

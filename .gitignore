@@ -19,6 +19,7 @@ Thumbs.db
 .artifacts/
 dist/
 coverage/
+.fallow/
 
 # Forgix local files
 .forgix/tasks/
@@ -27,6 +28,18 @@ coverage/
 .forgix/project.local.yaml
 .forgix/init/
 .forgix/roadmap/
+.forgix/telemetry/
 
 # Vite+ recreates its dispatcher; project hook scripts remain tracked.
 .vite-hooks/_/
+
+# forgix:start
+.forgix/init/
+.forgix/tasks/
+.forgix/project.local.yaml
+.forgix/config.local.yaml
+.forgix/cache/
+.forgix/telemetry/
+.forgix/roadmap/session.yaml
+.forgix/roadmap/runtime.yaml
+# forgix:end

@@ -1,0 +1,36 @@
+{
+  "kind": "dupes",
+  "clone_groups": [
+    "scripts/verify-formal-kernel.ts:1591-1605|scripts/verify-formal-kernel.ts:1626-1640|scripts/verify-formal-kernel.ts:1668-1682",
+    "scripts/verify-formal-kernel.ts:446-503|src/task/index.ts:107-164",
+    "scripts/verify-formal-kernel.ts:1591-1610|scripts/verify-formal-kernel.ts:1626-1645",
+    "scripts/check-diff.ts:310-316|scripts/check-golden-rules.ts:354-360",
+    "scripts/verify-assure-lean.ts:63-73|scripts/verify-gate-lean.ts:42-50",
+    "src/roadmap/index.ts:127-141|src/roadmap/index.ts:250-264",
+    "scripts/check-diff.ts:319-325|scripts/check-golden-rules.ts:369-375",
+    "scripts/release-lib.ts:105-109|scripts/release-lib.ts:359-364",
+    "scripts/release-lib.ts:245-251|scripts/release-lib.ts:252-258"
+  ],
+  "clone_fingerprints": [
+    "dup:360a5256:3",
+    "dup:823fc95d:2",
+    "dup:b7b84d60:2",
+    "dup:226a6edc:2",
+    "dup:cf2bfa84:2",
+    "dup:bfa099d8:2",
+    "dup:dd1aacc6:2",
+    "dup:3478e92a:2",
+    "dup:b4f44ab4:2"
+  ],
+  "normalized_clone_fingerprints": [
+    "dup:b24c4ddb:3",
+    "dup:e6dac204:2",
+    "dup:185ea85f:2",
+    "dup:631f7281:2",
+    "dup:dfa0dbf5:2",
+    "dup:03d2eff3:2",
+    "dup:52dc1ee0:2",
+    "dup:b7cbbfca:2",
+    "dup:9f7d77d5:2"
+  ]
+}

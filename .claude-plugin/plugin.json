@@ -1,0 +1,12 @@
+{
+  "name": "forgix",
+  "version": "4.3.2",
+  "description": "Portable, evidence-based development workflow.",
+  "author": {
+    "name": "forgix contributors"
+  },
+  "license": "MIT",
+  "repository": "https://entire.com/et/forgix/forgix",
+  "keywords": ["workflow", "testing", "review"],
+  "skills": "./skills/"
+}

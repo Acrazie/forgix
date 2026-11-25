@@ -3,7 +3,7 @@ import { defineConfig } from "vite-plus";
 import type { PackUserConfig } from "vite-plus/pack";
 
 export const distribution = {
-  cwd: fileURLToPath(new URL("./plugins/forgix/", import.meta.url)),
+  cwd: fileURLToPath(new URL("./", import.meta.url)),
   entry: { forgix: "src/cli.ts" },
   outDir: "dist",
   format: "esm",
@@ -36,9 +36,11 @@ export default defineConfig({
       ".forgix/roadmap/**",
       "docs/roadmap.md",
       "bun.lock",
-      "plugins/forgix/CHANGELOG.md",
-      "plugins/forgix/test/fixtures/**",
+      "CHANGELOG.md",
+      "docs/forgix/2026-11-18-fallow-factory-guardrails.md",
+      "test/fixtures/**",
       "docs/ROADMAP.md",
+      ".dagger/**",
     ],
   },
   lint: {
@@ -60,6 +62,7 @@ export default defineConfig({
       typeCheck: false,
     },
     rules: {
+      // TypeScript strict mode + Ajv runtime schemas validate external inputs; targeted narrow casts remain explicit.
       "typescript/no-unsafe-type-assertion": "off",
     },
     ignorePatterns: [
@@ -70,20 +73,58 @@ export default defineConfig({
       ".forgix/cache/**",
       ".forgix/init/**",
       ".forgix/roadmap/**",
-      "plugins/forgix/test/fixtures/**",
+      "test/fixtures/**",
       "docs/ROADMAP.md",
+      ".dagger/**",
     ],
     overrides: [
       {
+        // Golden Rule 2.2: bound function length to <= 60 physical lines across runtime and repo scripts.
+        files: ["src/**/*.{js,mjs,cjs,ts,mts,cts}", "scripts/**/*.{js,mjs,cjs,ts,mts,cts}"],
+        rules: {
+          "eslint/max-lines-per-function": [
+            "error",
+            { max: 60, skipBlankLines: false, skipComments: false },
+          ],
+        },
+      },
+      {
+        // Legacy monoliths with pre-existing functions > 60 lines; retire entries as modules are split.
         files: [
-          "plugins/forgix/scripts/release-lib.ts",
-          "plugins/forgix/src/core/config.ts",
-          "plugins/forgix/src/core/store.ts",
-          "plugins/forgix/src/task/index.ts",
-          "plugins/forgix/src/profile/index.ts",
-          "plugins/forgix/src/roadmap/index.ts",
-          "plugins/forgix/test/integration/lifecycle-paths.test.ts",
-          "plugins/forgix/test/integration/state-store.test.ts",
+          "scripts/release.ts",
+          "scripts/renovate-sync.ts",
+          "scripts/verify-formal-kernel.ts",
+          "src/cli.ts",
+          "src/core/config.ts",
+          "src/core/digest.ts",
+          "src/core/routing.ts",
+          "src/core/store.ts",
+          "src/hooks/context.ts",
+          "src/hooks/guards.ts",
+          "src/hooks/index.ts",
+          "src/hooks/io.ts",
+          "src/init/hooks-config.ts",
+          "src/init/index.ts",
+          "src/profile/index.ts",
+          "src/roadmap/index.ts",
+          "src/task/index.ts",
+          "src/task/plan.ts",
+        ],
+        rules: {
+          "eslint/max-lines-per-function": "off",
+        },
+      },
+      {
+        // Sequential I/O and ordered filesystem/state operations intentionally await inside loops.
+        files: [
+          "scripts/release-lib.ts",
+          "src/core/config.ts",
+          "src/core/store.ts",
+          "src/task/index.ts",
+          "src/profile/index.ts",
+          "src/roadmap/index.ts",
+          "test/integration/lifecycle-paths.test.ts",
+          "test/integration/state-store.test.ts",
         ],
         rules: {
           "eslint/no-await-in-loop": "off",

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "files": {
+    "src/cli.ts": 2144,
+    "src/core/config.ts": 524,
+    "src/core/routing.ts": 924,
+    "src/core/store.ts": 858,
+    "src/hooks/context.ts": 358,
+    "src/hooks/guards.ts": 567,
+    "src/hooks/io.ts": 348,
+    "src/init/hooks-config.ts": 381,
+    "src/init/index.ts": 1079,
+    "src/profile/index.ts": 1162,
+    "src/roadmap/index.ts": 2822,
+    "src/task/index.ts": 1587,
+    "src/types.ts": 1092,
+    "scripts/release-lib.ts": 503,
+    "scripts/renovate-sync.ts": 679,
+    "scripts/verify-formal-kernel.ts": 1809
+  }
+}

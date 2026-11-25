@@ -1,0 +1,389 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgix.dev/schemas/roadmap-state.schema.json",
+  "title": "Forgix Roadmap Ideation Session State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sessionId",
+    "phase",
+    "codebaseKind",
+    "projectMode",
+    "visualFormat",
+    "updatedAt",
+    "themes",
+    "features",
+    "workItems"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "sessionId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "phase": {
+      "enum": ["divergence", "convergence", "audit", "synthesis", "published"]
+    },
+    "codebaseKind": {
+      "enum": ["greenfield", "existing"]
+    },
+    "projectMode": {
+      "enum": ["create", "attach"]
+    },
+    "visualFormat": {
+      "enum": ["tree", "mermaid"]
+    },
+    "updatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "productVisionPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "productVisionSummary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner"],
+      "properties": {
+        "owner": { "type": "string", "minLength": 1 },
+        "number": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "minLength": 1 }
+      }
+    },
+    "activeQuestion": { "$ref": "#/$defs/activeQuestion" },
+    "themes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "summary"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "title": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 },
+          "notes": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "sharedContracts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sharedContract" }
+    },
+    "features": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/featureCandidate" }
+    },
+    "workItems": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/workItemCandidate" }
+    },
+    "verificationCheckpoints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/verificationCheckpoint" }
+    },
+    "candidateDigest": {
+      "type": "string",
+      "minLength": 8
+    },
+    "audit": { "$ref": "#/$defs/auditReceipt" },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved"],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvedAt": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "minLength": 8 },
+        "actor": { "type": "string", "minLength": 1 }
+      }
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["pending", "partial", "completed"] },
+        "projectNumber": { "type": "integer", "minimum": 1 },
+        "projectUrl": { "type": "string", "minLength": 1 },
+        "publishedAt": { "type": "string", "minLength": 1 },
+        "batchHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["batchId", "recordedAt", "createdIssues", "updatedIssues"],
+            "properties": {
+              "batchId": { "type": "string", "minLength": 1 },
+              "recordedAt": { "type": "string", "minLength": 1 },
+              "createdIssues": { "type": "integer", "minimum": 0 },
+              "updatedIssues": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "risk": {
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "priority": {
+      "enum": ["P0", "P1", "P2", "P3"]
+    },
+    "boardStatus": {
+      "enum": ["Backlog", "Ready", "In Progress", "Blocked", "In Review", "Done"]
+    },
+    "activeQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "phase",
+        "prompt",
+        "reason",
+        "options",
+        "recommendedOptionId",
+        "consequences"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "phase": {
+          "enum": ["divergence", "convergence", "audit", "synthesis"]
+        },
+        "prompt": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label", "impact"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "type": "string", "minLength": 1 },
+              "impact": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "recommendedOptionId": { "$ref": "#/$defs/id" },
+        "consequences": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "sharedContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "kind", "status", "summary", "invariants", "verificationHint"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "kind": {
+          "enum": [
+            "interface",
+            "schema",
+            "api",
+            "domain-invariant",
+            "module-boundary",
+            "formal-spec"
+          ]
+        },
+        "status": {
+          "enum": ["planned", "existing", "verified"]
+        },
+        "summary": { "type": "string", "minLength": 1 },
+        "invariants": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "verificationHint": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "minLength": 8 }
+      }
+    },
+    "verificationCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "scopeType",
+        "targetIds",
+        "dependsOnWorkItemIds",
+        "checks",
+        "independentVerifierRequired"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "scopeType": {
+          "enum": ["feature", "wave"]
+        },
+        "targetIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "dependsOnWorkItemIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "independentVerifierRequired": { "type": "boolean" },
+        "status": {
+          "enum": ["pending", "ready", "passed", "failed"]
+        }
+      }
+    },
+    "auditFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "dimension", "severity", "targetId", "message", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "dimension": {
+          "enum": [
+            "slicing_atomicity",
+            "contract_completeness",
+            "dag_soundness",
+            "verifiability",
+            "scope_alignment"
+          ]
+        },
+        "severity": {
+          "enum": ["blocking", "warning"]
+        },
+        "targetId": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "status": {
+          "enum": ["open", "resolved", "waived"]
+        },
+        "waiverReason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "auditReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidateDigest", "auditedAt", "auditorContext", "findings", "passed"],
+      "properties": {
+        "candidateDigest": { "type": "string", "minLength": 8 },
+        "auditedAt": { "type": "string", "minLength": 1 },
+        "auditorContext": { "type": "string", "minLength": 1 },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/auditFinding" }
+        },
+        "passed": { "type": "boolean" }
+      }
+    },
+    "featureCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "summary", "priority", "risk", "scopeIn", "scopeOut"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "priority": { "$ref": "#/$defs/priority" },
+        "risk": { "$ref": "#/$defs/risk" },
+        "wave": { "type": "integer", "minimum": 1 },
+        "scopeIn": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "scopeOut": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "issueNumber": { "type": "integer", "minimum": 1 },
+        "issueUrl": { "type": "string", "minLength": 1 },
+        "projectItemId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "workItemCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "featureId",
+        "title",
+        "objective",
+        "scopeIn",
+        "scopeOut",
+        "acceptanceCriteria",
+        "risk",
+        "priority",
+        "blockedBy"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "featureId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "objective": { "type": "string", "minLength": 1 },
+        "scopeIn": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "scopeOut": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "linkedRuleIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "risk": { "$ref": "#/$defs/risk" },
+        "priority": { "$ref": "#/$defs/priority" },
+        "wave": { "type": "integer", "minimum": 1 },
+        "blockedBy": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "providesContractIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "consumesContractIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "initialStatus": { "$ref": "#/$defs/boardStatus" },
+        "status": { "$ref": "#/$defs/boardStatus" },
+        "issueNumber": { "type": "integer", "minimum": 1 },
+        "issueUrl": { "type": "string", "minLength": 1 },
+        "projectItemId": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

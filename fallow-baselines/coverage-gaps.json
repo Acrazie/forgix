@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "files": [],
+  "exports": ["src/core/worktree-base.ts::resolveRemoteBase"]
+}

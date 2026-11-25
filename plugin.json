@@ -1,0 +1,11 @@
+{
+  "name": "forgix",
+  "displayName": "Forgix",
+  "version": "4.3.2",
+  "description": "Portable, evidence-based development workflow.",
+  "author": "forgix contributors",
+  "license": "MIT",
+  "homepage": "https://entire.com/et/forgix/forgix",
+  "repository": "https://entire.com/et/forgix/forgix",
+  "logo": "assets/logo.svg"
+}

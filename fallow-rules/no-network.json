@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/rule-pack-schema.json",
+  "version": 1,
+  "name": "forgix-no-network",
+  "description": "Ban network imports, calls, and side effects in runtime source under src/**.",
+  "rules": [
+    {
+      "id": "no-network-imports",
+      "kind": "banned-import",
+      "files": ["src/**"],
+      "specifiers": [
+        "node:http",
+        "http",
+        "node:https",
+        "https",
+        "node:net",
+        "net",
+        "node:tls",
+        "tls",
+        "node:http2",
+        "http2",
+        "node:dgram",
+        "dgram",
+        "node:dns",
+        "dns"
+      ],
+      "message": "Runtime source under src/** must not import Node network modules.",
+      "severity": "error"
+    },
+    {
+      "id": "no-network-calls",
+      "kind": "banned-call",
+      "files": ["src/**"],
+      "callees": ["fetch", "globalThis.fetch", "WebSocket"],
+      "message": "Runtime source under src/** must not invoke network APIs.",
+      "severity": "error"
+    },
+    {
+      "id": "no-network-effects",
+      "kind": "banned-effect",
+      "files": ["src/**"],
+      "effects": ["network"],
+      "message": "Runtime source under src/** must remain free of network side effects.",
+      "severity": "error"
+    }
+  ]
+}

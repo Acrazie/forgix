@@ -8,8 +8,14 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": ["node", "bun"]
   },
-  "include": ["scripts/**/*.ts", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "scripts/**/*.ts",
+    "test/unit/**/*.test.ts",
+    "test/integration/**/*.test.ts"
+  ]
 }
