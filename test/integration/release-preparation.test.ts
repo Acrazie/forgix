@@ -1,5 +1,6 @@
 import {
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -13,16 +14,28 @@ import { describe, expect, test } from "bun:test";
 import { requireCommand } from "../../scripts/release-lib.ts";
 import { pinReleaseFixtureVersions } from "../support/release-fixtures.ts";
 
-// The real preparation code, prompts stubbed and child validation replaced by a
-// deterministic local executable. git-cliff and Git themselves are exercised.
-function preparation() {
-  const directory = mkdtempSync(join(tmpdir(), "forgix-prepare-contract-"));
+function gitIn(cwd: string, args: string[]): string {
+  return requireCommand("git", args, { cwd }).stdout.trimEnd();
+}
+
+// Exercises the real one-step scripts/release.ts against local bare origin and
+// mirror repos, stubbing only `bun` (lockfile/check) and `@clack/prompts`.
+function releaseFixture() {
+  const sandbox = mkdtempSync(join(tmpdir(), "forgix-one-step-release-"));
+  const directory = join(sandbox, "repo");
+  const originBare = join(sandbox, "origin.git");
+  const mirrorBare = join(sandbox, "mirror.git");
+  const mirrorSeed = join(sandbox, "mirror-seed");
+  mkdirSync(directory, { recursive: true });
+  mkdirSync(mirrorSeed, { recursive: true });
+
   const source = new URL("../../", import.meta.url);
   for (const path of [
     "cliff.toml",
     "scripts/release.ts",
     "scripts/release-lib.ts",
     "scripts/release-notes.ts",
+    "scripts/sync-github-mirror.ts",
     "package.json",
     ".codex-plugin/plugin.json",
     ".claude-plugin/plugin.json",
@@ -43,6 +56,7 @@ function preparation() {
     writeFileSync(join(directory, path), contents);
   }
   writeFileSync(join(directory, ".gitignore"), "node_modules/\n.mock/\n");
+
   const prompt = join(directory, "node_modules/@clack/prompts");
   mkdirSync(prompt, { recursive: true });
   writeFileSync(join(prompt, "package.json"), '{"type":"module","exports":"./index.js"}');
@@ -50,10 +64,10 @@ function preparation() {
     join(prompt, "index.js"),
     `
 export const intro=()=>{};export const note=()=>{};export const outro=()=>{};export const text=async()=>"2.0.0";
-export const isCancel=()=>false;export const select=async(options)=>options.message==='Release target'?process.env.TEST_TARGET:'major';
-export const confirm=async()=>process.env.TEST_PREVIEW==='true';
+export const isCancel=()=>false;export const select=async()=>'major';
 `,
   );
+
   const fake = join(directory, ".mock");
   mkdirSync(fake);
   const bun = join(fake, "bun");
@@ -71,124 +85,179 @@ else if(args.join(' ')==='run check'){
 `,
   );
   chmodSync(bun, 0o755);
-  const git = (args: string[]) => requireCommand("git", args, { cwd: directory }).stdout.trimEnd();
-  git(["init", "-b", "release-preparation-test"]);
+
+  // Stub `entire` CLI to simulate server-side Trail merge into origin/main.
+  const entire = join(fake, "entire");
+  writeFileSync(
+    entire,
+    `#!/usr/bin/env node
+import { spawnSync } from 'node:child_process';
+const args = process.argv.slice(2);
+if (args[0] === 'trail' && args[1] === 'create') {
+  console.log(JSON.stringify({ id: 'trail-test', status: 'open' }));
+  process.exit(0);
+}
+if (args[0] === 'trail' && args[1] === 'merge') {
+  const idx = args.indexOf('--branch');
+  const branch = idx >= 0 ? args[idx + 1] : '';
+  const origin = process.env.TEST_ORIGIN_BARE;
+  const sha = spawnSync('git', ['rev-parse', 'refs/heads/' + branch], { cwd: origin, encoding: 'utf8' }).stdout.trim();
+  const upd = spawnSync('git', ['update-ref', 'refs/heads/main', sha], { cwd: origin, encoding: 'utf8' });
+  if (upd.status !== 0) process.exit(1);
+  spawnSync('git', ['branch', '-D', branch], { cwd: origin, encoding: 'utf8' });
+  process.exit(0);
+}
+throw new Error('Unexpected entire command: ' + args.join(' '));
+`,
+  );
+  chmodSync(entire, 0o755);
+
+  const git = (args: string[]) => gitIn(directory, args);
+
+  // Bare origin repo
+  gitIn(sandbox, ["init", "--bare", originBare]);
+  git(["init", "-b", "main"]);
   git(["config", "user.name", "Release test"]);
   git(["config", "user.email", "release@example.invalid"]);
+  git(["config", "commit.gpgsign", "false"]);
+  git(["config", "tag.gpgSign", "false"]);
   git(["add", "."]);
-  git(["-c", "commit.gpgsign=false", "commit", "-m", "feat: fixture"]);
+  git(["commit", "-m", "feat: fixture"]);
   git(["tag", "v1.0.1"]);
+  git(["remote", "add", "origin", originBare]);
+  git(["push", "-u", "origin", "main", "--tags"]);
+  gitIn(originBare, ["symbolic-ref", "HEAD", "refs/heads/main"]);
+
+  // Bare GitHub mirror repo with .github/workflows/release.yml
+  gitIn(sandbox, ["init", "--bare", mirrorBare]);
+  gitIn(mirrorSeed, ["init", "-b", "main"]);
+  gitIn(mirrorSeed, ["config", "user.name", "Mirror test"]);
+  gitIn(mirrorSeed, ["config", "user.email", "mirror@example.invalid"]);
+  gitIn(mirrorSeed, ["config", "commit.gpgsign", "false"]);
+  mkdirSync(join(mirrorSeed, ".github", "workflows"), { recursive: true });
+  writeFileSync(join(mirrorSeed, ".github", "workflows", "release.yml"), "name: Release\n");
+  gitIn(mirrorSeed, ["add", "."]);
+  gitIn(mirrorSeed, ["commit", "-m", "init mirror"]);
+  gitIn(mirrorSeed, ["remote", "add", "origin", mirrorBare]);
+  gitIn(mirrorSeed, ["push", "-u", "origin", "main"]);
+  gitIn(mirrorBare, ["symbolic-ref", "HEAD", "refs/heads/main"]);
+
   const before = git(["rev-parse", "HEAD"]);
-  const run = (target: string, preview: boolean, failure = false, signal = false) =>
-    Bun.spawnSync(["node", "scripts/release.ts"], {
+  const run = (args: string[], options?: { failure?: boolean; signal?: boolean }) =>
+    Bun.spawnSync(["node", "scripts/release.ts", ...args], {
       cwd: directory,
       env: {
         ...process.env,
         PATH: `${fake}:${process.env.PATH}`,
-        TEST_TARGET: target,
-        TEST_PREVIEW: String(preview),
-        TEST_FAILURE: String(failure),
-        TEST_SIGNAL: String(signal),
+        FORGIX_MIRROR_TARGET: mirrorBare,
+        TEST_ORIGIN_BARE: originBare,
+        TEST_FAILURE: String(options?.failure ?? false),
+        TEST_SIGNAL: String(options?.signal ?? false),
       },
     });
   return {
+    sandbox,
     directory,
+    originBare,
+    mirrorBare,
     git,
+    gitIn,
     before,
     run,
     initial,
     read: (path: string) => readFileSync(join(directory, path), "utf8"),
-    close: () => rmSync(directory, { recursive: true, force: true }),
+    close: () => rmSync(sandbox, { recursive: true, force: true }),
   };
 }
 
-describe("release preparation does not publish", () => {
-  test("retired local publication option preserves the fixture worktree from a non-repository cwd", () => {
-    const p = preparation();
-    const cwd = mkdtempSync(join(tmpdir(), "forgix-release-cwd-"));
+describe("one-step release command", () => {
+  test("dry-run validates and restores exact original bytes, Git history and remotes", () => {
+    const f = releaseFixture();
     try {
-      writeFileSync(join(p.directory, "sentinel"), "staged bytes\n");
-      p.git(["add", "sentinel"]);
-      writeFileSync(join(p.directory, "sentinel"), "unstaged bytes\n");
-      const status = p.git(["status", "--porcelain=v1"]);
-      const index = p.git(["diff", "--cached"]);
-      const result = Bun.spawnSync(
-        [
-          process.execPath,
-          join(p.directory, "scripts/release.ts"),
-          "--publish-existing",
-          "forgix-v1.0.1",
-        ],
-        { cwd },
-      );
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr.toString()).toContain("Local publication has been retired");
-      expect(p.git(["status", "--porcelain=v1"])).toBe(status);
-      expect(p.git(["diff", "--cached"])).toBe(index);
-      expect(p.git(["rev-parse", "HEAD"])).toBe(p.before);
-      expect(p.git(["tag", "--list"])).toBe("v1.0.1");
-      expect(p.read("sentinel")).toBe("unstaged bytes\n");
-      for (const [path, contents] of Object.entries(p.initial)) expect(p.read(path)).toBe(contents);
+      const result = f.run(["major", "--dry-run"]);
+      expect(result.exitCode, result.stderr.toString()).toBe(0);
+      expect(f.git(["status", "--porcelain=v1"])).toBe("");
+      expect(f.git(["rev-parse", "HEAD"])).toBe(f.before);
+      for (const [path, contents] of Object.entries(f.initial)) expect(f.read(path)).toBe(contents);
+      expect(f.git(["tag", "--list"])).toBe("v1.0.1");
+      expect(f.gitIn(f.mirrorBare, ["tag", "--list"])).toBe("");
     } finally {
-      p.close();
-      rmSync(cwd, { recursive: true, force: true });
+      f.close();
     }
   });
 
-  test("preview restores exact original bytes, Git history and index", () => {
-    const p = preparation();
+  test("commits, tags, pushes Entire main + tag, and syncs GitHub mirror + tag while preserving .github/", () => {
+    const f = releaseFixture();
     try {
-      const result = p.run("both", true);
+      const result = f.run(["major"]);
       expect(result.exitCode, result.stderr.toString()).toBe(0);
-      expect(p.git(["status", "--porcelain=v1"])).toBe("");
-      expect(p.git(["rev-parse", "HEAD"])).toBe(p.before);
-      for (const [path, contents] of Object.entries(p.initial)) expect(p.read(path)).toBe(contents);
-      expect(p.git(["tag", "--list"])).toBe("v1.0.1");
+      expect(JSON.parse(f.read("package.json")).version).toBe("2.0.0");
+      expect(JSON.parse(f.read(".codex-plugin/plugin.json")).version).toMatch(
+        /^2\.0\.0\+codex\.\d{14}$/,
+      );
+      expect(JSON.parse(f.read(".claude-plugin/plugin.json")).version).toBe("2.0.0");
+      expect(JSON.parse(f.read("plugin.json")).version).toBe("2.0.0");
+      expect(f.read("CHANGELOG.md")).toContain("## [v2.0.0] - ");
+      expect(f.read("CHANGELOG.md")).toEndWith("Historical bytes.\n");
+      expect(f.git(["status", "--porcelain=v1"])).toBe("");
+      expect(f.git(["log", "-1", "--format=%s"])).toBe("chore(release): v2.0.0");
+      expect(f.gitIn(f.originBare, ["tag", "--list", "v2.0.0"])).toBe("v2.0.0");
+      expect(f.gitIn(f.mirrorBare, ["tag", "--list", "v2.0.0"])).toBe("v2.0.0");
+
+      const verifyClone = join(f.sandbox, "verify-mirror");
+      f.gitIn(f.sandbox, ["clone", "--branch", "main", f.mirrorBare, verifyClone]);
+      expect(JSON.parse(readFileSync(join(verifyClone, "package.json"), "utf8")).version).toBe(
+        "2.0.0",
+      );
+      expect(existsSync(join(verifyClone, "dist", "forgix.mjs"))).toBe(true);
+      expect(readFileSync(join(verifyClone, ".github", "workflows", "release.yml"), "utf8")).toBe(
+        "name: Release\n",
+      );
     } finally {
-      p.close();
+      f.close();
     }
   });
-  test("retained npm preparation leaves every plugin manifest unchanged", () => {
-    const p = preparation();
+
+  test("refuses non-main branch without modifying worktree or remotes", () => {
+    const f = releaseFixture();
     try {
-      const codex = p.read(".codex-plugin/plugin.json");
-      const result = p.run("npm", false);
-      expect(result.exitCode, result.stderr.toString()).toBe(0);
-      expect(JSON.parse(p.read("package.json")).version).toBe("2.0.0");
-      expect(p.read(".codex-plugin/plugin.json")).toBe(codex);
-      expect(p.read("CHANGELOG.md")).toContain("## [npm-v2.0.0]");
-      expect(p.read("CHANGELOG.md")).toEndWith("Historical bytes.\n");
-      expect(p.git(["rev-parse", "HEAD"])).toBe(p.before);
-      expect(p.git(["diff", "--cached", "--name-only"])).toBe("");
+      f.git(["checkout", "-b", "feat/not-main"]);
+      const result = f.run(["patch"]);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr.toString()).toContain("synchronized main branch");
+      expect(f.git(["rev-parse", "HEAD"])).toBe(f.before);
     } finally {
-      p.close();
+      f.close();
     }
   });
-  test("plugin-only preparation leaves npm and lockfile unchanged", () => {
-    const p = preparation();
-    try {
-      const pkg = p.read("package.json");
-      const result = p.run("plugin", false);
-      expect(result.exitCode, result.stderr.toString()).toBe(0);
-      expect(p.read("package.json")).toBe(pkg);
-      expect(p.read("bun.lock")).toBe(p.initial["bun.lock"]);
-      expect(p.read("CHANGELOG.md")).toContain("## [plugin-v1.0.1-codex.");
-    } finally {
-      p.close();
-    }
-  });
-  test("failed or interrupted validation restores preparation, without commits or tags", () => {
+
+  test("failed or interrupted validation restores files with zero commits or tags", () => {
     for (const signal of [false, true]) {
-      const p = preparation();
+      const f = releaseFixture();
       try {
-        const result = p.run("both", false, !signal, signal);
+        const result = f.run(["patch"], { failure: !signal, signal });
         expect(result.exitCode).not.toBe(0);
-        expect(p.git(["status", "--porcelain=v1"])).toBe("");
-        expect(p.git(["rev-parse", "HEAD"])).toBe(p.before);
-        expect(p.git(["tag", "--list"])).toBe("v1.0.1");
+        expect(f.git(["status", "--porcelain=v1"])).toBe("");
+        expect(f.git(["rev-parse", "HEAD"])).toBe(f.before);
+        expect(f.git(["tag", "--list"])).toBe("v1.0.1");
       } finally {
-        p.close();
+        f.close();
       }
+    }
+  });
+
+  test("prints idempotent mirror retry command if mirror push fails after Entire push", () => {
+    const f = releaseFixture();
+    try {
+      const result = f.run(["patch", "--mirror-target", join(f.sandbox, "missing.git")]);
+      expect(result.exitCode).toBe(1);
+      const stderr = result.stderr.toString();
+      expect(stderr).toContain("Entire push succeeded for v1.0.2");
+      expect(stderr).toContain("bun scripts/sync-github-mirror.ts --target");
+      expect(stderr).toContain("--source-ref v1.0.2 --tag v1.0.2 --apply");
+      expect(f.gitIn(f.originBare, ["tag", "--list", "v1.0.2"])).toBe("v1.0.2");
+    } finally {
+      f.close();
     }
   });
 });

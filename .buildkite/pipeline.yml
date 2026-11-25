@@ -71,7 +71,7 @@ steps:
         fi
       - |
         export PATH="$${HOME}/.local/bin:$${PATH}"
-        if [ -z "$${BUILDKITE_TAG:-}" ] || [ "$${BUILDKITE_TAG#plugin-v}" != "$${BUILDKITE_TAG}" ]; then
+        if [ -z "$${BUILDKITE_TAG:-}" ]; then
           dagger call pack-runtime --source=. --output=.artifacts/forgix.tgz
         fi
 
@@ -116,7 +116,7 @@ steps:
           curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION="$${DAGGER_VERSION}" BIN_DIR="$${HOME}/.local/bin" sh
         fi
         case "$${BUILDKITE_TAG:-}" in
-          v*|npm-v*) bash scripts/release-smoke.sh ;;
+          v*) bash scripts/release-smoke.sh ;;
           *)
             buildkite-agent artifact download ".artifacts/forgix.tgz" . &&
               dagger call runtime-smoke --source=. --tarball=.artifacts/forgix.tgz

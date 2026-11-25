@@ -15,6 +15,7 @@ export interface MirrorSyncOptions {
   branch: string;
   pushBranch?: string;
   sourceRef: string;
+  tag?: string;
   apply: boolean;
 }
 
@@ -28,6 +29,8 @@ export interface MirrorSyncResult {
   changedFiles: number;
   pushed: boolean;
   mirrorCommit?: string;
+  tag?: string;
+  tagPushed?: boolean;
 }
 
 function runCommand(program: string, args: readonly string[], cwd: string): string {
@@ -104,6 +107,49 @@ function ensureCommitIdentity(mirrorDir: string, sourceRepoDir: string): void {
   runCommand("git", ["config", "user.email", email], mirrorDir);
 }
 
+function pushMirrorTag(mirrorDir: string, tag: string): boolean {
+  const existing = runCommand(
+    "git",
+    ["ls-remote", "--tags", "origin", `refs/tags/${tag}`],
+    mirrorDir,
+  );
+  if (existing) return false;
+  runCommand(
+    "git",
+    ["-c", "tag.gpgSign=false", "tag", "-a", tag, "-m", `chore(release): ${tag}`],
+    mirrorDir,
+  );
+  runCommand("git", ["push", "origin", `refs/tags/${tag}`], mirrorDir);
+  return true;
+}
+
+function finalizeUnchangedMirror(
+  options: MirrorSyncOptions,
+  mirrorDir: string,
+  base: Omit<MirrorSyncResult, "status" | "changedFiles" | "pushed">,
+): MirrorSyncResult {
+  if (options.apply && options.tag) {
+    ensureCommitIdentity(mirrorDir, options.sourceRepoDir);
+    const tagPushed = pushMirrorTag(mirrorDir, options.tag);
+    const mirrorCommit = runCommand("git", ["rev-parse", "HEAD"], mirrorDir);
+    return {
+      status: tagPushed ? "pushed" : "up_to_date",
+      ...base,
+      changedFiles: 0,
+      pushed: tagPushed,
+      tagPushed,
+      mirrorCommit,
+    };
+  }
+  return {
+    status: "up_to_date",
+    ...base,
+    changedFiles: 0,
+    pushed: false,
+    ...(options.tag ? { tagPushed: false } : {}),
+  };
+}
+
 function finalizeMirror(
   options: MirrorSyncOptions,
   mirrorDir: string,
@@ -118,19 +164,35 @@ function finalizeMirror(
     pushBranch,
     sourceSha,
     preservedGithub,
+    ...(options.tag ? { tag: options.tag } : {}),
   };
-  if (changedFiles === 0) {
-    return { status: "up_to_date", ...base, changedFiles: 0, pushed: false };
-  }
+  if (changedFiles === 0) return finalizeUnchangedMirror(options, mirrorDir, base);
   ensureCommitIdentity(mirrorDir, options.sourceRepoDir);
-  const message = `chore(mirror): sync root layout from ${sourceSha.slice(0, 12)}`;
-  runCommand("git", ["commit", "-m", message], mirrorDir);
+  const message = options.tag
+    ? `chore(release): ${options.tag}`
+    : `chore(mirror): sync root layout from ${sourceSha.slice(0, 12)}`;
+  runCommand("git", ["-c", "commit.gpgsign=false", "commit", "-m", message], mirrorDir);
   const mirrorCommit = runCommand("git", ["rev-parse", "HEAD"], mirrorDir);
   if (!options.apply) {
-    return { status: "dry_run", ...base, changedFiles, pushed: false, mirrorCommit };
+    return {
+      status: "dry_run",
+      ...base,
+      changedFiles,
+      pushed: false,
+      mirrorCommit,
+      ...(options.tag ? { tagPushed: false } : {}),
+    };
   }
   runCommand("git", ["push", "origin", `HEAD:refs/heads/${pushBranch}`], mirrorDir);
-  return { status: "pushed", ...base, changedFiles, pushed: true, mirrorCommit };
+  const tagPushed = options.tag ? pushMirrorTag(mirrorDir, options.tag) : undefined;
+  return {
+    status: "pushed",
+    ...base,
+    changedFiles,
+    pushed: true,
+    mirrorCommit,
+    ...(tagPushed !== undefined ? { tagPushed } : {}),
+  };
 }
 
 export function syncGithubMirror(options: MirrorSyncOptions): MirrorSyncResult {
@@ -158,15 +220,24 @@ export function syncGithubMirror(options: MirrorSyncOptions): MirrorSyncResult {
   }
 }
 
-const VALUE_FLAGS: Readonly<Record<string, "target" | "branch" | "pushBranch" | "sourceRef">> = {
+const VALUE_FLAGS: Readonly<
+  Record<string, "target" | "branch" | "pushBranch" | "sourceRef" | "tag">
+> = {
   "--target": "target",
   "--branch": "branch",
   "--push-branch": "pushBranch",
   "--source-ref": "sourceRef",
+  "--tag": "tag",
 };
 
 export function parseMirrorArgs(argv: readonly string[], sourceRepoDir: string): MirrorSyncOptions {
-  const values: { target: string; branch: string; pushBranch?: string; sourceRef: string } = {
+  const values: {
+    target: string;
+    branch: string;
+    pushBranch?: string;
+    sourceRef: string;
+    tag?: string;
+  } = {
     target: DEFAULT_TARGET,
     branch: DEFAULT_BRANCH,
     sourceRef: DEFAULT_SOURCE_REF,
@@ -186,7 +257,7 @@ export function parseMirrorArgs(argv: readonly string[], sourceRepoDir: string):
       continue;
     }
     throw new Error(
-      `Unknown argument "${arg}". Usage: bun scripts/sync-github-mirror.ts [--target <url>] [--branch <name>] [--push-branch <name>] [--source-ref <ref>] [--dry-run|--apply]`,
+      `Unknown argument "${arg}". Usage: bun scripts/sync-github-mirror.ts [--target <url>] [--branch <name>] [--push-branch <name>] [--source-ref <ref>] [--tag <vX.Y.Z>] [--dry-run|--apply]`,
     );
   }
   return { sourceRepoDir, ...values, apply };

@@ -1,5 +1,23 @@
 # Changelog
 
+## [v4.3.1] - 2026-11-25
+
+<!-- forgix-release: {"tag":"v4.3.1","date":"2026-11-25","base":"v4.2.0"} -->
+
+### Changes (since v4.2.0)
+
+
+### Bug fixes
+
+- **release:** land release commit via Entire Trail merge before tagging ([28877f4](https://entire.com/et/forgix/forgix/commit/28877f49fd167bf1916553d9fb6b4ecb5ea80cfc))
+
+- **release:** wait for Buildkite CI before merging release Trail ([d870578](https://entire.com/et/forgix/forgix/commit/d870578c85167a73fbb6ae78d0515b2064d9056f))
+
+
+### Features
+
+- **release:** simplify plugin and npm release to one step ([220730c](https://entire.com/et/forgix/forgix/commit/220730c3378b16349bba343c9c17ea80ec5def20))
+
 ## [v4.2.0] - 2026-11-24
 
 <!-- forgix-release: {"tag":"v4.2.0","date":"2026-11-24","npmBase":"v4.1.0","pluginBase":"v4.1.0"} -->

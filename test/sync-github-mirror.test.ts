@@ -95,6 +95,8 @@ describe("sync-github-mirror", () => {
           "mirror/dev",
           "--source-ref",
           "v1",
+          "--tag",
+          "v1.0.0",
           "--apply",
         ],
         "/repo",
@@ -105,6 +107,7 @@ describe("sync-github-mirror", () => {
       branch: "dev",
       pushBranch: "mirror/dev",
       sourceRef: "v1",
+      tag: "v1.0.0",
       apply: true,
     });
     expect(() => parseMirrorArgs(["--bogus"], "/repo")).toThrow(/Unknown argument/);
@@ -158,6 +161,29 @@ describe("sync-github-mirror", () => {
       expect(rerun.status).toBe("up_to_date");
       expect(rerun.pushed).toBe(false);
       expect(rerun.changedFiles).toBe(0);
+
+      const tagged = syncGithubMirror({
+        sourceRepoDir: sourceDir,
+        target: targetBare,
+        branch: "main",
+        sourceRef: "HEAD",
+        tag: "v2.0.0",
+        apply: true,
+      });
+      expect(tagged.status).toBe("pushed");
+      expect(tagged.tagPushed).toBe(true);
+      expect(git(targetBare, ["tag", "--list", "v2.0.0"])).toBe("v2.0.0");
+
+      const retagged = syncGithubMirror({
+        sourceRepoDir: sourceDir,
+        target: targetBare,
+        branch: "main",
+        sourceRef: "HEAD",
+        tag: "v2.0.0",
+        apply: true,
+      });
+      expect(retagged.status).toBe("up_to_date");
+      expect(retagged.tagPushed).toBe(false);
     } finally {
       rmSync(sandbox, { recursive: true, force: true });
     }

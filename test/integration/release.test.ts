@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { expectRejected } from "../support/expect-error.ts";
 import {
-  allowedReleasePaths,
+  ALLOWED_RELEASE_PATHS,
   captureFileSnapshots,
   compareVersions,
   createReleasePlan,
@@ -24,6 +24,7 @@ import {
   validateClaudeMarketplaceManifest,
   validatePluginManifest,
 } from "../../scripts/release-lib.ts";
+import { parseReleaseArgs } from "../../scripts/release.ts";
 
 describe("release versioning", () => {
   test("parses and compares stable versions only", () => {
@@ -53,64 +54,56 @@ describe("release versioning", () => {
   });
 });
 
-describe("release plans", () => {
+describe("release plans and CLI arguments", () => {
   const now = new Date("2026-07-28T14:05:09.000Z");
 
-  test("combined release aligns semantic versions", () => {
+  test("creates unified plugin + npm plan with aligned versions", () => {
     expect(
       createReleasePlan({
-        target: "both",
         currentPackageVersion: "0.1.0",
-        currentPluginVersion: "0.1.0+codex.20260712195921",
-        nextPackageVersion: "0.2.0",
+        nextVersion: "0.2.0",
         now,
       }),
     ).toEqual({
-      target: "both",
-      packageVersion: "0.2.0",
+      version: "0.2.0",
       pluginVersion: "0.2.0+codex.20260728140509",
       cachebuster: "20260728140509",
-      identity: "v0.2.0",
       tag: "v0.2.0",
       commitMessage: "chore(release): v0.2.0",
     });
   });
 
-  test("npm-only release leaves plugin version unchanged", () => {
-    const plan = createReleasePlan({
-      target: "npm",
-      currentPackageVersion: "0.1.0",
-      currentPluginVersion: "0.1.0+codex.20260712195921",
-      nextPackageVersion: "0.1.1",
-      now,
-    });
-    expect(plan.packageVersion).toBe("0.1.1");
-    expect(plan.pluginVersion).toBe("0.1.0+codex.20260712195921");
-    expect(plan.tag).toBe("npm-v0.1.1");
-  });
-
-  test("plugin-only release rotates cachebuster without semantic bump", () => {
-    const plan = createReleasePlan({
-      target: "plugin",
-      currentPackageVersion: "0.1.0",
-      currentPluginVersion: "0.1.0+codex.20260712195921",
-      now,
-    });
-    expect(plan.packageVersion).toBe("0.1.0");
-    expect(plan.pluginVersion).toBe("0.1.0+codex.20260728140509");
-    expect(plan.tag).toBe("plugin-v0.1.0-codex.20260728140509");
-  });
-
-  test("rejects npm versions that do not advance", () => {
+  test("rejects versions that do not advance", () => {
     expect(() =>
       createReleasePlan({
-        target: "npm",
         currentPackageVersion: "1.0.0",
-        currentPluginVersion: "1.0.0+codex.20260712195921",
-        nextPackageVersion: "1.0.0",
+        nextVersion: "1.0.0",
         now,
       }),
     ).toThrow(/must be greater/);
+  });
+
+  test("parses CLI flags and positional version arguments", () => {
+    expect(parseReleaseArgs([], {})).toEqual({
+      dryRun: false,
+      noMirror: false,
+      mirrorTarget: "git@github.com:Acrazie/forgix.git",
+    });
+    expect(
+      parseReleaseArgs(["minor", "--dry-run", "--no-mirror", "--mirror-target", "/tmp/m.git"], {}),
+    ).toEqual({
+      versionArg: "minor",
+      dryRun: true,
+      noMirror: true,
+      mirrorTarget: "/tmp/m.git",
+    });
+    expect(parseReleaseArgs(["2.0.0"], { FORGIX_MIRROR_TARGET: "/env/m.git" })).toEqual({
+      versionArg: "2.0.0",
+      dryRun: false,
+      noMirror: false,
+      mirrorTarget: "/env/m.git",
+    });
+    expect(() => parseReleaseArgs(["--unknown"], {})).toThrow(/Unknown argument/);
   });
 });
 
@@ -136,10 +129,10 @@ describe("release safety", () => {
     expect(parsePorcelainPaths(output)).toEqual([".codex-plugin/plugin.json"]);
   });
 
-  test("parses porcelain output and rejects paths outside target allowlist", () => {
+  test("parses porcelain output and rejects paths outside allowlist", () => {
     const paths = parsePorcelainPaths(" M package.json\n M bun.lock\n M README.md\n");
     expect(paths).toEqual(["package.json", "bun.lock", "README.md"]);
-    expect(unexpectedReleasePaths(paths, "npm")).toEqual(["README.md"]);
+    expect(unexpectedReleasePaths(paths)).toEqual(["README.md"]);
   });
 
   test("validates minimum plugin manifest contract", () => {
@@ -162,7 +155,7 @@ describe("release safety", () => {
     expect(() => validatePluginManifest(antigravity, "antigravity")).not.toThrow();
   });
 
-  test("validates and updates Claude marketplace manifest and release path allowlists", () => {
+  test("validates and updates Claude marketplace manifest and allowlist", () => {
     const marketplaceJson = `{
   "name": "acrazie",
   "owner": { "name": "Acrazie" },
@@ -181,14 +174,18 @@ describe("release safety", () => {
     expect(replaceMarketplacePluginVersion(marketplaceJson, "forgix", "0.5.0")).toBe(
       marketplaceJson.replace("0.4.0", "0.5.0"),
     );
-    expect(allowedReleasePaths("both").has(".claude-plugin/plugin.json")).toBe(true);
-    expect(allowedReleasePaths("both").has("plugin.json")).toBe(true);
-    expect(allowedReleasePaths("both").has(".claude-plugin/marketplace.json")).toBe(true);
-    expect(allowedReleasePaths("both").has("CHANGELOG.md")).toBe(true);
-    expect(allowedReleasePaths("npm").has("CHANGELOG.md")).toBe(true);
-    expect(allowedReleasePaths("plugin").has("package.json")).toBe(false);
-    expect(allowedReleasePaths("plugin").has(".release-please-manifest.json")).toBe(false);
-    expect(allowedReleasePaths("npm").has(".claude-plugin/plugin.json")).toBe(false);
+    for (const path of [
+      "package.json",
+      "bun.lock",
+      ".codex-plugin/plugin.json",
+      ".claude-plugin/plugin.json",
+      "plugin.json",
+      ".claude-plugin/marketplace.json",
+      "dist/forgix.mjs",
+      "CHANGELOG.md",
+    ]) {
+      expect(ALLOWED_RELEASE_PATHS.has(path)).toBe(true);
+    }
   });
 
   test("restores original bytes, mode, and absence after cancellation", async () => {

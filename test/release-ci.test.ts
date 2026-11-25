@@ -65,10 +65,11 @@ describe("release trust and reconciliation contracts", () => {
   test("refuses another family's ownership even if publication bytes would match", () => {
     expect(() => assertUniqueNpmTag("v2.0.0", ["v1.0.0", "v2.0.0"])).not.toThrow();
     expect(() => assertUniqueNpmTag("v2.0.0", ["npm-v2.0.0"])).toThrow(/owns/);
-    expect(() => assertUniqueNpmTag("npm-v2.0.0", ["forgix-v2.0.0"])).toThrow(/owns/);
+    expect(() => assertUniqueNpmTag("v2.0.0", ["forgix-v2.0.0"])).toThrow(/owns/);
+    expect(() => assertUniqueNpmTag("npm-v2.0.0", [])).toThrow(/vX\.Y\.Z/);
   });
 
-  test("validates all plugin manifests even for npm-only releases", () => {
+  test("validates all npm and plugin manifests together for vX.Y.Z tags", () => {
     const root = mkdtempSync(join(tmpdir(), "forgix-release-manifests-"));
     try {
       for (const path of [
@@ -82,11 +83,9 @@ describe("release trust and reconciliation contracts", () => {
         cpSync(new URL(`../${path}`, import.meta.url), join(root, path));
       }
       pinReleaseFixtureVersions(root);
-      expect(validateVersions(root, "npm-v1.0.1")).toMatch(/^1\.0\.1/);
-      expect(() => validateVersions(root, "npm-v2.0.0")).toThrow(/npm manifest/);
-      expect(() => validateVersions(root, "plugin-v1.0.1-codex.20261115120000")).toThrow(
-        /plugin manifests/,
-      );
+      expect(validateVersions(root, "v1.0.1")).toMatch(/^1\.0\.1\+codex\.\d{14}$/);
+      expect(() => validateVersions(root, "v2.0.0")).toThrow(/npm manifest/);
+      expect(() => validateVersions(root, "npm-v1.0.1")).toThrow(/vX\.Y\.Z/);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -130,10 +129,10 @@ describe("Buildkite pipeline privilege and release boundaries", () => {
     );
   });
 
-  test("routes only npm tag builds through the smoke receipt producer", () => {
+  test("routes v* release tag builds through the smoke receipt producer", () => {
     const smoke = stepByKey("runtime-smoke");
     expect(smoke.depends_on).toEqual(["quality-gate"]);
-    expect(smoke.commands.join("\n")).toContain("v*|npm-v*) bash scripts/release-smoke.sh ;;");
+    expect(smoke.commands.join("\n")).toContain("v*) bash scripts/release-smoke.sh ;;");
     expect(smoke.commands.join("\n")).toContain(
       "dagger call runtime-smoke --source=. --tarball=.artifacts/forgix.tgz",
     );
