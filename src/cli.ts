@@ -12,7 +12,7 @@ import { prepareRoadmapRun } from "./roadmap/prepare-run.js";
 import { persistRoadmapPublication } from "./roadmap/persist-publication.js";
 import { normalizeCheckpointPatch } from "./roadmap/runtime-coherence.js";
 import { runHook } from "./hooks/index.js";
-import { runInitBootstrap } from "./init/index.js";
+import { runInitBootstrap, runInitSync } from "./init/index.js";
 import { checkBuildInstallation } from "./init/build-installation.js";
 import { parseInitInvocation, type ParsedInitInvocation } from "./init/invocation.js";
 import * as profileModule from "./profile/index.js";
@@ -126,7 +126,8 @@ export const HELP_TEXT = `Usage: forgix [--harness auto|codex|claude|antigravity
 Commands:
   --help
   init plan|apply [--adopt]
-  init check
+  init check [--strict]
+  init sync --plan|--apply [--adopt]
   init check-build <codex|claude|antigravity>
   hook <codex|claude|antigravity> <session-start|pre-tool-use|post-tool-use|post-invocation>
   config show [--explain]
@@ -825,6 +826,17 @@ export async function runInvocation(
   if (invocation.command === "init_check_build") {
     return checkBuildInstallation(invocation.targetHarness, workspaceRoot, entrypointPath, env);
   }
+  if (invocation.command === "init_sync_plan" || invocation.command === "init_sync_apply") {
+    const mode = invocation.command === "init_sync_plan" ? "plan" : "apply";
+    return runInitSync(mode, {
+      workspaceRoot,
+      ...(invocation.adopt ? { adopt: true } : {}),
+      ...(invocation.adoptPaths ? { adoptPaths: invocation.adoptPaths } : {}),
+      ...(invocation.harness ? { harness: invocation.harness } : {}),
+      env,
+      entrypointPath: options.entrypointPath ?? entrypointPath,
+    });
+  }
   if (
     invocation.command === "init_plan" ||
     invocation.command === "init_apply" ||
@@ -842,12 +854,15 @@ export async function runInvocation(
       invocation.command === "init_plan" || invocation.command === "init_apply"
         ? invocation.adopt
         : undefined;
+    const strict = invocation.command === "init_check" ? invocation.strict : undefined;
     return runInitBootstrap(action, {
       workspaceRoot,
       ...(input !== undefined ? { input } : {}),
       ...(adopt ? { adopt } : {}),
+      ...(strict ? { strict } : {}),
+      ...(invocation.harness ? { harness: invocation.harness } : {}),
       env,
-      entrypointPath,
+      entrypointPath: options.entrypointPath ?? entrypointPath,
     });
   }
   if (invocation.command === "hook") {
@@ -2038,11 +2053,17 @@ export function main(argv = process.argv.slice(2)): void {
         process.stdout.write(JSON.stringify(result) + "\n");
       }
       if (
-        result.status === "blocked" &&
-        (result.command === "init_check_build" ||
-          (result.command === "task_gate" &&
-            isRecord(result.data) &&
-            (result.data.action === "approve" || result.data.action === "autonomous")))
+        (result.status === "blocked" &&
+          (result.command === "init_check_build" ||
+            result.command === "init_sync_plan" ||
+            (result.command === "task_gate" &&
+              isRecord(result.data) &&
+              (result.data.action === "approve" || result.data.action === "autonomous")))) ||
+        (result.command === "init_check" &&
+          result.status === "drift" &&
+          isRecord(result.data) &&
+          result.data.strict === true &&
+          result.data.repoInSync === false)
       ) {
         process.exitCode = EXIT_CODES.BLOCKED;
       }

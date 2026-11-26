@@ -89,6 +89,7 @@ export class PolicyError extends Error {
 }
 
 type StateStoreErrorCode =
+  | "config_missing"
   | "state_path_invalid"
   | "state_not_found"
   | "state_yaml_invalid"
@@ -102,6 +103,7 @@ type StateStoreErrorCode =
 
 function defaultStateExitCode(code: StateStoreErrorCode): ExitCode {
   switch (code) {
+    case "config_missing":
     case "state_blocked":
     case "state_not_found":
       return EXIT_CODES.BLOCKED;

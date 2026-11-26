@@ -93,10 +93,27 @@ describe("release trust and reconciliation contracts", () => {
 });
 
 describe("Buildkite pipeline privilege and release boundaries", () => {
-  test("runs TLC as an advisory job independent from required jobs", () => {
+  test("runs TLC as an advisory job independent from required jobs and skips release commits", () => {
     const tla = stepByKey("formal-tla");
+    const expectedFormalIf =
+      'build.source != "schedule" && build.tag == null && build.branch !~ /^release\\/v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/ && build.message !~ /^chore\\(release\\): v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(\\n|$)/';
     expect(tla.if).toBe(stepByKey("formal-lean").if);
-    expect(tla.if).toBe('build.source != "schedule" && build.tag == null');
+    expect(tla.if).toBe(expectedFormalIf);
+
+    const branchRe = /^release\/v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+    expect(branchRe.test("release/v4.5.0")).toBe(true);
+    expect(branchRe.test("release/v0.0.1")).toBe(true);
+    expect(branchRe.test("release/v4.5.0-beta.1")).toBe(false);
+    expect(branchRe.test("release/v04.5.0")).toBe(false);
+    expect(branchRe.test("feat/release/v4.5.0")).toBe(false);
+
+    const messageRe = /^chore\(release\): v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(\n|$)/;
+    expect(messageRe.test("chore(release): v4.5.0")).toBe(true);
+    expect(messageRe.test("chore(release): v4.5.0\n\nBody")).toBe(true);
+    expect(messageRe.test("chore(release): v4.5.0-rc.1")).toBe(false);
+    expect(messageRe.test("chore(release): v4.5.0 extra")).toBe(false);
+    expect(messageRe.test("feat: mention chore(release): v4.5.0")).toBe(false);
+
     expect(tla.soft_fail).toBe(true);
     expect(tla.timeout_in_minutes).toBe(5);
     expect(tla.commands).toHaveLength(1);
@@ -189,5 +206,70 @@ describe("Buildkite pipeline privilege and release boundaries", () => {
     const depsBody = daggerSource.slice(depsIdx, workspaceIdx);
     expect(depsBody).toContain('["bun", "install", "--frozen-lockfile"]');
     expect(daggerSource).toContain('dag.cacheVolume("forgix-elan-cache")');
+  });
+
+  test("wires automated release phases with strict trigger anchors, dependencies, and credential isolation", () => {
+    const releaseMain = stepByKey("release-main");
+    expect(releaseMain.if).toBe(
+      'build.branch == "main" && build.source != "schedule" && build.tag == null && build.pull_request.id == null',
+    );
+    expect(releaseMain.depends_on).toEqual(["quality-gate", "runtime-smoke", "release-contract"]);
+    expect(releaseMain.concurrency).toBe(1);
+    expect(releaseMain.concurrency_group).toBe("forgix-release-lifecycle");
+    const mainCmd = releaseMain.commands.join("\n");
+    expect(mainCmd).toContain("set -euo pipefail");
+    expect(mainCmd).toContain("https://eu.auth.entire.io");
+    expect(mainCmd).toContain("svc_01M8CHF4WWEXY2Z6R92SBEJSNC");
+    expect(mainCmd).toContain("bun -e");
+    expect(mainCmd).not.toContain("jq ");
+    expect(mainCmd).not.toMatch(/export\s+ENTIRE_TOKEN=/);
+    expect(mainCmd).toContain("export ENTIRE_TOKEN");
+    expect(mainCmd).toContain('FORGIX_PREPARE_FILES_MODE="dagger"');
+    expect(mainCmd).toContain("bun run release:auto main");
+    expect(mainCmd).not.toContain("GITHUB_MIRROR_TOKEN");
+
+    const releaseMerge = stepByKey("release-merge");
+    expect(releaseMerge.if).toBe(
+      'build.branch =~ /^release\\/v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/ && build.source != "schedule" && build.tag == null',
+    );
+    expect(releaseMerge.depends_on).toEqual(["quality-gate", "runtime-smoke", "release-contract"]);
+    expect(releaseMerge.concurrency).toBe(1);
+    expect(releaseMerge.concurrency_group).toBe("forgix-release-lifecycle");
+    const mergeCmd = releaseMerge.commands.join("\n");
+    expect(mergeCmd).toContain("set -euo pipefail");
+    expect(mergeCmd).toContain("svc_01M8CHF4WWEXY2Z6R92SBEJSNC");
+    expect(mergeCmd).toContain("bun -e");
+    expect(mergeCmd).not.toContain("jq ");
+    expect(mergeCmd).not.toMatch(/export\s+ENTIRE_TOKEN=/);
+    expect(mergeCmd).toContain("export ENTIRE_TOKEN");
+    expect(mergeCmd).toContain("bun run release:auto merge");
+    expect(mergeCmd).not.toContain("GITHUB_MIRROR_TOKEN");
+
+    const releaseMirror = stepByKey("release-mirror");
+    expect(releaseMirror.if).toBe(
+      'build.tag =~ /^v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/ && build.source != "schedule"',
+    );
+    expect(releaseMirror.depends_on).toEqual(["quality-gate", "runtime-smoke"]);
+    expect(releaseMirror.concurrency).toBe(1);
+    expect(releaseMirror.concurrency_group).toBe("forgix-release-mirror");
+    const mirrorCmd = releaseMirror.commands.join("\n");
+    expect(mirrorCmd).toContain("set -euo pipefail");
+    expect(mirrorCmd).toContain("buildkite-agent secret get GITHUB_MIRROR_TOKEN");
+    expect(mirrorCmd).not.toMatch(/export\s+GITHUB_MIRROR_TOKEN=/);
+    expect(mirrorCmd).toContain("export GITHUB_MIRROR_TOKEN");
+    expect(mirrorCmd).toContain("bun run release:auto mirror");
+    expect(mirrorCmd).not.toContain("ENTIRE_TOKEN");
+    expect(mirrorCmd).not.toContain("svc_01M8CHF4WWEXY2Z6R92SBEJSNC");
+
+    const tagRe = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+    expect(tagRe.test("v4.5.0")).toBe(true);
+    expect(tagRe.test("v4.5.0-beta.1")).toBe(false);
+    expect(tagRe.test("npm-v4.5.0")).toBe(false);
+
+    const daggerSource = read(".dagger/src/index.ts");
+    expect(daggerSource).toContain("async prepareReleaseFiles(");
+    expect(daggerSource).toContain(
+      '["bun", "scripts/release-auto.ts", "prepare-files", "--version", version]',
+    );
   });
 });

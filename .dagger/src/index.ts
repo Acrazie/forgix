@@ -231,6 +231,31 @@ export class ForgixCi {
   }
 
   @func()
+  async prepareReleaseFiles(
+    @argument({ defaultPath: "/", ignore: RELEASE_IGNORE }) source: Directory,
+    version: string,
+    now = "",
+  ): Promise<Directory> {
+    const args = ["bun", "scripts/release-auto.ts", "prepare-files", "--version", version];
+    if (now) args.push("--now", now);
+    const container = await ciContainer(source, RELEASE_IGNORE, true).withExec(args).sync();
+    let out = dag.directory();
+    for (const file of [
+      "package.json",
+      "bun.lock",
+      ".codex-plugin/plugin.json",
+      ".claude-plugin/plugin.json",
+      "plugin.json",
+      ".claude-plugin/marketplace.json",
+      "dist/forgix.mjs",
+      "CHANGELOG.md",
+    ]) {
+      out = out.withFile(file, container.file(`/workspace/${file}`));
+    }
+    return out;
+  }
+
+  @func()
   async releaseContract(
     @argument({ defaultPath: "/", ignore: RELEASE_IGNORE }) source: Directory,
   ): Promise<Container> {

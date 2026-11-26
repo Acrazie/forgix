@@ -17,6 +17,7 @@ export interface MirrorSyncOptions {
   sourceRef: string;
   tag?: string;
   apply: boolean;
+  token?: string;
 }
 
 export interface MirrorSyncResult {
@@ -33,12 +34,58 @@ export interface MirrorSyncResult {
   tagPushed?: boolean;
 }
 
-function runCommand(program: string, args: readonly string[], cwd: string): string {
-  const result = spawnSync(program, args, { cwd, encoding: "utf8" });
-  if (result.error) throw result.error;
+interface CommandContext {
+  env?: NodeJS.ProcessEnv;
+  secret?: string;
+}
+
+function encodeBasicToken(token: string): string {
+  return Buffer.from(`x-access-token:${token}`, "utf8").toString("base64");
+}
+
+export function redactSecret(text: string, token?: string): string {
+  const secret = token?.trim();
+  if (!secret) return text;
+  const encoded = encodeBasicToken(secret);
+  return text.replaceAll(secret, "[REDACTED]").replaceAll(encoded, "[REDACTED]");
+}
+
+export function buildMirrorGitEnv(
+  target: string,
+  token?: string,
+  baseEnv: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv | undefined {
+  const secret = token?.trim();
+  if (!secret || !target.startsWith("https://")) return undefined;
+  const parsed = new URL(target);
+  if (parsed.protocol !== "https:" || parsed.hostname !== "github.com") {
+    throw new Error(`Refusing to send mirror token to non-GitHub host "${parsed.hostname}".`);
+  }
+  return {
+    ...baseEnv,
+    GIT_TERMINAL_PROMPT: "0",
+    GIT_CONFIG_COUNT: "1",
+    GIT_CONFIG_KEY_0: `http.${parsed.origin}/.extraHeader`,
+    GIT_CONFIG_VALUE_0: `Authorization: Basic ${encodeBasicToken(secret)}`,
+  };
+}
+
+function runCommand(
+  program: string,
+  args: readonly string[],
+  cwd: string,
+  context: CommandContext = {},
+): string {
+  const result = spawnSync(program, args, {
+    cwd,
+    encoding: "utf8",
+    ...(context.env ? { env: context.env } : {}),
+  });
+  if (result.error) throw new Error(redactSecret(result.error.message, context.secret));
   if (result.status !== 0) {
-    const detail = (result.stderr || result.stdout || "").trim();
-    throw new Error(`${program} ${args.join(" ")} failed (${result.status}): ${detail}`);
+    const detail = redactSecret((result.stderr || result.stdout || "").trim(), context.secret);
+    const commandLabel = redactSecret(`${program} ${args.join(" ")}`, context.secret);
+    throw new Error(`${commandLabel} failed (${result.status}): ${detail}`);
   }
   return result.stdout.trim();
 }
@@ -107,19 +154,20 @@ function ensureCommitIdentity(mirrorDir: string, sourceRepoDir: string): void {
   runCommand("git", ["config", "user.email", email], mirrorDir);
 }
 
-function pushMirrorTag(mirrorDir: string, tag: string): boolean {
-  const existing = runCommand(
-    "git",
-    ["ls-remote", "--tags", "origin", `refs/tags/${tag}`],
-    mirrorDir,
+function hasRemoteTag(mirrorDir: string, tag: string, context: CommandContext): boolean {
+  return Boolean(
+    runCommand("git", ["ls-remote", "--tags", "origin", `refs/tags/${tag}`], mirrorDir, context),
   );
-  if (existing) return false;
+}
+
+function pushMirrorTag(mirrorDir: string, tag: string, context: CommandContext): boolean {
+  if (hasRemoteTag(mirrorDir, tag, context)) return false;
   runCommand(
     "git",
     ["-c", "tag.gpgSign=false", "tag", "-a", tag, "-m", `chore(release): ${tag}`],
     mirrorDir,
   );
-  runCommand("git", ["push", "origin", `refs/tags/${tag}`], mirrorDir);
+  runCommand("git", ["push", "origin", `refs/tags/${tag}`], mirrorDir, context);
   return true;
 }
 
@@ -127,10 +175,11 @@ function finalizeUnchangedMirror(
   options: MirrorSyncOptions,
   mirrorDir: string,
   base: Omit<MirrorSyncResult, "status" | "changedFiles" | "pushed">,
+  context: CommandContext,
 ): MirrorSyncResult {
   if (options.apply && options.tag) {
     ensureCommitIdentity(mirrorDir, options.sourceRepoDir);
-    const tagPushed = pushMirrorTag(mirrorDir, options.tag);
+    const tagPushed = pushMirrorTag(mirrorDir, options.tag, context);
     const mirrorCommit = runCommand("git", ["rev-parse", "HEAD"], mirrorDir);
     return {
       status: tagPushed ? "pushed" : "up_to_date",
@@ -156,6 +205,7 @@ function finalizeMirror(
   sourceSha: string,
   preservedGithub: boolean,
   changedFiles: number,
+  context: CommandContext,
 ): MirrorSyncResult {
   const pushBranch = options.pushBranch ?? options.branch;
   const base = {
@@ -166,7 +216,10 @@ function finalizeMirror(
     preservedGithub,
     ...(options.tag ? { tag: options.tag } : {}),
   };
-  if (changedFiles === 0) return finalizeUnchangedMirror(options, mirrorDir, base);
+  if (options.apply && options.tag && hasRemoteTag(mirrorDir, options.tag, context)) {
+    return { status: "up_to_date", ...base, changedFiles: 0, pushed: false, tagPushed: false };
+  }
+  if (changedFiles === 0) return finalizeUnchangedMirror(options, mirrorDir, base, context);
   ensureCommitIdentity(mirrorDir, options.sourceRepoDir);
   const message = options.tag
     ? `chore(release): ${options.tag}`
@@ -183,8 +236,8 @@ function finalizeMirror(
       ...(options.tag ? { tagPushed: false } : {}),
     };
   }
-  runCommand("git", ["push", "origin", `HEAD:refs/heads/${pushBranch}`], mirrorDir);
-  const tagPushed = options.tag ? pushMirrorTag(mirrorDir, options.tag) : undefined;
+  runCommand("git", ["push", "origin", `HEAD:refs/heads/${pushBranch}`], mirrorDir, context);
+  const tagPushed = options.tag ? pushMirrorTag(mirrorDir, options.tag, context) : undefined;
   return {
     status: "pushed",
     ...base,
@@ -196,6 +249,9 @@ function finalizeMirror(
 }
 
 export function syncGithubMirror(options: MirrorSyncOptions): MirrorSyncResult {
+  const token = (options.token ?? process.env.GITHUB_MIRROR_TOKEN ?? "").trim() || undefined;
+  const env = buildMirrorGitEnv(options.target, token);
+  const context: CommandContext = { ...(env ? { env } : {}), ...(token ? { secret: token } : {}) };
   const sandbox = mkdtempSync(join(tmpdir(), "forgix-github-mirror-"));
   const exportDir = join(sandbox, "export");
   const mirrorDir = join(sandbox, "mirror");
@@ -207,6 +263,7 @@ export function syncGithubMirror(options: MirrorSyncOptions): MirrorSyncResult {
       "git",
       ["clone", "--depth", "1", "--branch", options.branch, options.target, mirrorDir],
       sandbox,
+      context,
     );
     const preservedGithub = replaceMirrorTree(mirrorDir, exportDir, githubBackupDir);
     runCommand("git", ["add", "-A"], mirrorDir);
@@ -214,7 +271,7 @@ export function syncGithubMirror(options: MirrorSyncOptions): MirrorSyncResult {
     const changedFiles = runCommand("git", ["status", "--porcelain"], mirrorDir)
       .split("\n")
       .filter(Boolean).length;
-    return finalizeMirror(options, mirrorDir, sourceSha, preservedGithub, changedFiles);
+    return finalizeMirror(options, mirrorDir, sourceSha, preservedGithub, changedFiles, context);
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
   }

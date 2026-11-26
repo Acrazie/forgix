@@ -12,7 +12,8 @@ emitted by every state-transition CLI command. Never claim a transition, Approva
 Assurance Receipt without deterministic evidence.
 
 Exact `$forgix init` (Codex), `/forgix:forgix init` (Claude Code), or `/forgix init`
-(Antigravity) runs Project INIT. Exact `$forgix roadmap` runs Roadmap Ideation; `$forgix run-issue <#num>`
+(Antigravity) runs Project INIT. Exact `$forgix sync` (`/forgix:forgix sync`, `/forgix sync`)
+runs Config SYNC. Exact `$forgix roadmap` runs Roadmap Ideation; `$forgix run-issue <#num>`
 / `$forgix run-roadmap` run Autonomous Roadmap Execution; `$forgix retro` runs `forgix retro`
 and follows `retro-factory` (confirmation required before edits). Parse every other invocation with the bundled CLI before
 acting (never run `npx @acrasie/forgix` during a lifecycle turn):
@@ -44,6 +45,16 @@ Outside task lifecycle and GATE. Use bundled `project-profile` (`inspect`, `vali
 4. After approval, run `forgix init apply` **first** (prefer `adoptPaths` for specific approved
    collisions, or `--adopt`), then `forgix project-profile publish` **second** (idempotent;
    portable shared profile, local paths in `--local`).
+
+## Config SYNC
+
+Outside task lifecycle and GATE. Run read-only `forgix init check`, `forgix init sync --plan`,
+and `forgix project-profile inspect`. If `.forgix/config.yaml` is absent, refuse and direct to
+`$forgix init`. If `inSync: true`, 0 actions, and `project.yaml` is valid/current, report
+"already up to date" (0 prompts, 0 writes). Block on hard conflicts. Else show one consolidated
+preview (bootstrap/hooks/pin, `project.yaml` updates, collision diffs) and ask **one explicit
+approval**. Then run `forgix init sync --apply` (add `--adopt-path=<path>` per approved collision) and
+`forgix project-profile publish` if changed.
 
 ## INTAKE and routing
 

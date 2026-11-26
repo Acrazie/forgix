@@ -106,7 +106,8 @@ Any `Human-Reviewed` trigger below overrides `Fast-Track`, regardless of branch 
    - **Target**: Trail must target `main`.
    - **Create**: Run `entire trail create --assignee "ulid:<accountId>" ...` so the Trail is explicitly assigned to its author.
    - **Link**: Run `entire trail link <trail> ...` followed by `entire trail update <trail> --add-assignee "ulid:<accountId>"` (or `entire trail update --add-assignee "ulid:<accountId>"` on the current branch) — either unconditionally or when `assignees` is empty in `entire trail show <trail> --json`.
-4. **Merge Strategy**: Merge into `main` through Entire (`entire trail merge`) once required checks and any required human review/approvals pass. (Note: `.forgix/config.yaml` sets `merge: never` for automated Forgix runs, keeping `entire trail merge` human-triggered.)
+4. **Merge Strategy**: Merge into `main` through Entire (`entire trail merge`) once required checks and any required human review/approvals pass. (Note: `.forgix/config.yaml` sets `merge: never` for automated Forgix runs, keeping `entire trail merge` human-triggered for all local agents.)
+   - **Scoped Buildkite CI Release Exception** ([ADR 0043](adr/0043-automate-package-releases-on-main-merge.md)): The Buildkite release pipeline (authenticated via OIDC Service Account `forgix/buildkite-release`) is exclusively authorized to run `entire trail merge --branch release/vX.Y.Z --delete-branch` on `patch` and `minor` release branches once `quality-gate`, `runtime-smoke`, and `release-contract` pass, and to push annotated `vX.Y.Z` tags for merged `chore(release): vX.Y.Z` commits. `major` release Trails are never auto-merged and always require explicit human review and merge.
 
 ---
 
@@ -117,4 +118,4 @@ Any `Human-Reviewed` trigger below overrides `Fast-Track`, regardless of branch 
   - For **Fast-Track** changes with passing `bun run check`: pushing the feature branch (`git push -u origin <branch-name>`) and creating/linking/assigning an Entire Trail (`entire trail create --assignee`, `entire trail link`, `entire trail update --add-assignee`).
 - **Approval-Gated / Human-Review Actions**:
   - For any **Human-Reviewed** change (sensitive, strategic, undocumented, or risky): `git push`, `entire trail create` / `entire trail link` / `entire trail update`, and `entire trail merge` all require explicit human confirmation and review.
-  - Merging any Trail (`entire trail merge`), creating or pushing release tags, deleting remote or unmerged branches, or any destructive Git operations (`reset --hard`, `push --force`, etc.) require explicit human confirmation.
+  - For all local AI agents (`.forgix/config.yaml` `merge: never`), merging any Trail (`entire trail merge`), creating or pushing release tags, deleting remote or unmerged branches, or any destructive Git operations (`reset --hard`, `push --force`, etc.) require explicit human confirmation. The scoped Buildkite CI exception in Section 5 applies solely to the CI release pipeline, never to local agents.

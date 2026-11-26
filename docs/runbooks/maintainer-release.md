@@ -1,11 +1,48 @@
 # Maintainer Release Runbook
 
-## One-step release (plugin + npm)
+## Automated release on `main` merge (default)
 
 Every release publishes **plugin manifests and npm (`@acrasie/forgix`) together** under a single
-stable tag `vX.Y.Z`. Separate `npm-v*` and `plugin-v*-codex.*` release modes are retired.
+stable tag `vX.Y.Z` (ADR 0043: `docs/adr/0043-automate-package-releases-on-main-merge.md`). Separate
+`npm-v*` and `plugin-v*-codex.*` release modes are retired.
 npmjs `@acrasie/forgix` remains canonical. No package is renamed.
 GitHub Actions is the intended npm publisher via Trusted Publishing.
+
+By default, releases are automated by Buildkite (`.buildkite/pipeline.yml` + `scripts/release-auto.ts`)
+in three event-driven phases:
+
+1. **Phase 1 — Prepare (`release-main` on `main`)**:
+   - After `quality-gate`, `runtime-smoke`, and `release-contract` pass on `main`, calculates the
+     filtered SemVer bump over `--first-parent` commits since the last `vX.Y.Z` tag:
+     - `!:` or `BREAKING CHANGE:` -> `major`
+     - `feat` -> `minor`
+     - `fix`, `perf`, `revert` -> `patch`
+     - `docs`, `chore`, `ci`, `test`, `refactor`, `style`, `build` only -> `none` (no release)
+   - Generates the 8 `ALLOWED_RELEASE_PATHS` inside Dagger (`prepare-release-files`, pinned
+     `git-cliff 2.14.1` and Node `26.8.1`), commits as `forgix-release[bot]`, pushes
+     `release/vX.Y.Z`, cleans up any superseded unreleased `release/v*` branch, and opens or
+     updates the Entire Trail via OIDC (`forgix/buildkite-release`).
+2. **Phase 2 — Auto-merge (`release-merge` on `release/v*`)**:
+   - Once `quality-gate`, `runtime-smoke`, and `release-contract` pass on `release/vX.Y.Z`:
+     - For `patch` and `minor` bumps: automatically runs
+       `entire trail merge --branch release/vX.Y.Z --delete-branch`.
+     - For `major` bumps: logs an explicit skip and exits `0`, leaving the Trail open for human
+       review and manual merge (`entire trail merge --branch release/vX.Y.Z --delete-branch`).
+3. **Phase 3 — Tag & Mirror (`release-main` + `release-mirror`)**:
+   - **3a (`release-main` on `main`)**: detects any untagged `chore(release): vX.Y.Z` commit on
+     `origin/main` (including ancestors whose build was cancelled), validates manifests on that
+     commit, and pushes annotated tag `vX.Y.Z` to Entire. Re-runs on already-tagged release commits
+     exit `0` immediately (anti-loop guard).
+   - **3b (`release-mirror` on tag `vX.Y.Z`)**: after `quality-gate` (`release-candidate`) and
+     `runtime-smoke` (`scripts/release-smoke.sh`) pass, verifies tag context and `origin/main`
+     ancestry, then runs `scripts/sync-github-mirror.ts --apply` using Buildkite Cluster Secret
+     `GITHUB_MIRROR_TOKEN` to sync `main` + `vX.Y.Z` to `Acrazie/forgix` (preserving `.github/`),
+     triggering `.github/workflows/release.yml` (npm OIDC + GitHub Release).
+
+## Manual fallback (`bun run release`)
+
+`bun run release` (`scripts/release.ts`) remains available as a local maintainer fallback for
+emergency recovery or manual version overrides.
 
 From a clean, up-to-date `main` branch at the repository root:
 

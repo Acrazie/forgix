@@ -10,7 +10,6 @@ import {
   compareVersions,
   createReleasePlan,
   incrementVersion,
-  parsePorcelainPaths,
   parseStableVersion,
   recommendBump,
   ReleaseError,
@@ -19,12 +18,12 @@ import {
   requireCommand,
   restoreFileSnapshots,
   runCommand,
-  unexpectedReleasePaths,
   validateVersions,
   type ReleasePlan,
   type VersionBump,
 } from "./release-lib.ts";
-import { git, notesMetadata, previousTag, renderNotes } from "./release-notes.ts";
+import { assertAllowedReleaseChanges, prependReleaseChangelog } from "./release-files.ts";
+import { git, previousTag } from "./release-notes.ts";
 import { syncGithubMirror } from "./sync-github-mirror.ts";
 
 const DEFAULT_MIRROR_TARGET = "git@github.com:Acrazie/forgix.git";
@@ -173,23 +172,7 @@ async function writeReleaseFiles(
     replaceMarketplacePluginVersion(await readFile(marketPath, "utf8"), "forgix", plan.version),
   );
   validateVersions(root, plan.tag);
-  const changelogPath = resolve(root, "CHANGELOG.md");
-  const changelog = await readFile(changelogPath, "utf8");
-  if (changelog.includes(`## [${plan.tag}] - `)) {
-    throw new ReleaseError("Changelog already contains this release.");
-  }
-  if (!changelog.startsWith("# Changelog\n")) {
-    throw new ReleaseError("Expected canonical changelog header.");
-  }
-  const notes = renderNotes(
-    root,
-    notesMetadata(root, plan.tag, new Date().toISOString().slice(0, 10)),
-  );
-  await writeFile(
-    changelogPath,
-    `# Changelog\n\n${notes}\n${changelog.slice("# Changelog\n".length).replace(/^\n+/, "")}`,
-  );
-  return notes;
+  return prependReleaseChangelog(root, plan.tag, new Date());
 }
 
 function rollbackLocalRelease(
@@ -245,7 +228,7 @@ async function landReleaseOnMain(
   releaseBranch: string,
 ): Promise<void> {
   git(root, ["checkout", "-b", releaseBranch]);
-  git(root, ["add", "--", ...changes]);
+  git(root, ["add", "-f", "--", ...changes]);
   git(root, ["commit", "-m", plan.commitMessage]);
   git(root, ["push", "-u", "origin", releaseBranch]);
   requireCommand(
@@ -343,13 +326,7 @@ async function main(): Promise<void> {
     controller.signal.throwIfAborted();
     await run(root, "bun", ["run", "check"], controller.signal);
     controller.signal.throwIfAborted();
-    const changes = parsePorcelainPaths(
-      git(root, ["status", "--porcelain=v1", "--untracked-files=all"]),
-    );
-    const unexpected = unexpectedReleasePaths(changes);
-    if (unexpected.length > 0) {
-      throw new ReleaseError(`Unexpected changed files during release: ${unexpected.join(", ")}`);
-    }
+    const changes = assertAllowedReleaseChanges(root);
     note(notes, "Release notes");
     if (options.dryRun) {
       outro(`Dry-run complete for ${plan.tag}; all files restored.`);

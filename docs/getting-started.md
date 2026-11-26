@@ -64,7 +64,8 @@ Forgix is agent-first: initialize repositories through your coding agent (`$forg
 Read-only and deterministic backend commands remain available when needed:
 
 ```bash
-npx @acrasie/forgix init check
+npx @acrasie/forgix init check [--strict]
+npx @acrasie/forgix init sync --plan|--apply [--adopt]
 npx @acrasie/forgix status
 npx @acrasie/forgix resume <task-id>
 npx @acrasie/forgix config validate
@@ -286,10 +287,15 @@ session and resumes the exact active question unless its dependency evidence cha
 
 ### Project evidence or harness setup drifted
 
-Run `$forgix init` again. Fingerprints identify stale profile decisions and reconcile only
-their dependent closure, while `forgix init check` surfaces rule, hook, or hygiene drift
-for selective reconciliation. Repository facts are rediscovered; user-owned conventions are
-re-interviewed. Rejected changes leave the shared profile byte-for-byte unchanged.
+Run `$forgix sync` (`/forgix:forgix sync` on Claude Code, `/forgix sync` on Antigravity) to
+incrementally check and update an already-initialized repository after a plugin upgrade or
+configuration drift. `$forgix sync` inspects hooks, `.gitignore`, `.worktreeinclude`,
+`.forgix/factory/**` projections, new `bootstrap` capabilities, the active harness CLI pin, and
+`.forgix/project.yaml` freshness, then presents one consolidated preview before applying changes
+via `forgix init sync --apply` (and `forgix project-profile publish` if the profile changed).
+In CI, run `forgix init check --strict` to verify versioned repository files without requiring a
+machine-local CLI pin. For uninitialized repositories or full re-onboarding, run `$forgix init`.
+Rejected changes leave the shared profile byte-for-byte unchanged.
 
 ### Profile validation or approval failed
 
@@ -342,17 +348,18 @@ harnesses without fallback:
 
 ## Command reference
 
-| Codex                              | Claude Code                               | Antigravity                        | Purpose                                                                                       |
-| ---------------------------------- | ----------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------- |
-| `$forgix <objective>`              | `/forgix:forgix <objective>`              | `/forgix <objective>`              | Start a software change.                                                                      |
-| `$forgix init`                     | `/forgix:forgix init`                     | `/forgix init`                     | Discover conventions, configure `.forgix/config.yaml`, and bootstrap/reconcile rules & hooks. |
-| `$forgix roadmap`                  | `/forgix:forgix roadmap`                  | `/forgix roadmap`                  | Ideate and publish a GitHub Project v2 feature roadmap.                                       |
-| `$forgix run-issue <#num>`         | `/forgix:forgix run-issue <#num>`         | `/forgix run-issue <#num>`         | Run one ready roadmap Work Item in an isolated worktree.                                      |
-| `$forgix run-roadmap [flags]`      | `/forgix:forgix run-roadmap [flags]`      | `/forgix run-roadmap [flags]`      | Execute ready roadmap Work Items (`--limit N`, `--parallel M`).                               |
-| `$forgix resume <task-id>`         | `/forgix:forgix resume <task-id>`         | `/forgix resume <task-id>`         | Resume an interrupted task.                                                                   |
-| `$forgix status [task-id]`         | `/forgix:forgix status [task-id]`         | `/forgix status [task-id]`         | Inspect task status.                                                                          |
-| `$forgix config show [--explain]`  | `/forgix:forgix config show [--explain]`  | `/forgix config show [--explain]`  | Show effective configuration and optional provenance.                                         |
-| `$forgix config validate [--json]` | `/forgix:forgix config validate [--json]` | `/forgix config validate [--json]` | Validate effective configuration.                                                             |
+| Codex                              | Claude Code                               | Antigravity                        | Purpose                                                                                              |
+| ---------------------------------- | ----------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `$forgix <objective>`              | `/forgix:forgix <objective>`              | `/forgix <objective>`              | Start a software change.                                                                             |
+| `$forgix init`                     | `/forgix:forgix init`                     | `/forgix init`                     | Discover conventions, configure `.forgix/config.yaml`, and bootstrap/reconcile rules & hooks.        |
+| `$forgix sync`                     | `/forgix:forgix sync`                     | `/forgix sync`                     | Check and incrementally update existing Forgix config, hooks, factory projections, pin, and profile. |
+| `$forgix roadmap`                  | `/forgix:forgix roadmap`                  | `/forgix roadmap`                  | Ideate and publish a GitHub Project v2 feature roadmap.                                              |
+| `$forgix run-issue <#num>`         | `/forgix:forgix run-issue <#num>`         | `/forgix run-issue <#num>`         | Run one ready roadmap Work Item in an isolated worktree.                                             |
+| `$forgix run-roadmap [flags]`      | `/forgix:forgix run-roadmap [flags]`      | `/forgix run-roadmap [flags]`      | Execute ready roadmap Work Items (`--limit N`, `--parallel M`).                                      |
+| `$forgix resume <task-id>`         | `/forgix:forgix resume <task-id>`         | `/forgix resume <task-id>`         | Resume an interrupted task.                                                                          |
+| `$forgix status [task-id]`         | `/forgix:forgix status [task-id]`         | `/forgix status [task-id]`         | Inspect task status.                                                                                 |
+| `$forgix config show [--explain]`  | `/forgix:forgix config show [--explain]`  | `/forgix config show [--explain]`  | Show effective configuration and optional provenance.                                                |
+| `$forgix config validate [--json]` | `/forgix:forgix config validate [--json]` | `/forgix config validate [--json]` | Validate effective configuration.                                                                    |
 
 Deterministic CLI backend (invoked by agents and hooks; bare `forgix init` refuses):
 `npx @acrasie/forgix init check`, `npx @acrasie/forgix status`,

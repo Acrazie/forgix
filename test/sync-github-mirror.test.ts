@@ -12,7 +12,12 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseMirrorArgs, syncGithubMirror } from "../scripts/sync-github-mirror.ts";
+import {
+  buildMirrorGitEnv,
+  parseMirrorArgs,
+  redactSecret,
+  syncGithubMirror,
+} from "../scripts/sync-github-mirror.ts";
 
 function git(cwd: string, args: readonly string[]): string {
   const res = spawnSync("git", args, { cwd, encoding: "utf8" });
@@ -204,6 +209,86 @@ describe("sync-github-mirror", () => {
           apply: false,
         }),
       ).toThrow(/missing required root plugin file: plugin\.json/);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
+  test("builds scoped HTTPS git auth env without leaking token and redacts raw/base64 secrets", () => {
+    const token = "github_pat_example_secret_12345";
+    const encoded = Buffer.from(`x-access-token:${token}`, "utf8").toString("base64");
+
+    expect(buildMirrorGitEnv("/tmp/bare.git", token, {})).toBeUndefined();
+    expect(buildMirrorGitEnv("git@github.com:Acrazie/forgix.git", token, {})).toBeUndefined();
+    expect(buildMirrorGitEnv("https://github.com/Acrazie/forgix.git", "", {})).toBeUndefined();
+    expect(() => buildMirrorGitEnv("https://evil.example/Acrazie/forgix.git", token, {})).toThrow(
+      /non-GitHub host/,
+    );
+    expect(() =>
+      syncGithubMirror({
+        sourceRepoDir: "/nonexistent",
+        target: "https://evil.example/Acrazie/forgix.git",
+        branch: "main",
+        sourceRef: "HEAD",
+        apply: true,
+        token,
+      }),
+    ).toThrow(/non-GitHub host/);
+
+    const env = buildMirrorGitEnv("https://github.com/Acrazie/forgix.git", token, {});
+    expect(env).toEqual({
+      GIT_TERMINAL_PROMPT: "0",
+      GIT_CONFIG_COUNT: "1",
+      GIT_CONFIG_KEY_0: "http.https://github.com/.extraHeader",
+      GIT_CONFIG_VALUE_0: `Authorization: Basic ${encoded}`,
+    });
+
+    const leaked = `fatal: failed with ${token} and header Basic ${encoded}`;
+    const sanitized = redactSecret(leaked, token);
+    expect(sanitized).not.toContain(token);
+    expect(sanitized).not.toContain(encoded);
+    expect(sanitized).toBe("fatal: failed with [REDACTED] and header Basic [REDACTED]");
+  });
+
+  test("replaying an already-mirrored older tag does not roll back mirror main", () => {
+    const { sandbox, sourceDir, targetBare } = createFixtureRepos();
+    try {
+      git(sourceDir, ["tag", "-a", "v1.0.0", "-m", "v1.0.0"]);
+      syncGithubMirror({
+        sourceRepoDir: sourceDir,
+        target: targetBare,
+        branch: "main",
+        sourceRef: "v1.0.0",
+        tag: "v1.0.0",
+        apply: true,
+      });
+
+      writeFileSync(join(sourceDir, "AGENTS.md"), "# Newer Agents\n");
+      git(sourceDir, ["add", "AGENTS.md"]);
+      git(sourceDir, ["commit", "-m", "feat: newer"]);
+      git(sourceDir, ["tag", "-a", "v2.0.0", "-m", "v2.0.0"]);
+      syncGithubMirror({
+        sourceRepoDir: sourceDir,
+        target: targetBare,
+        branch: "main",
+        sourceRef: "v2.0.0",
+        tag: "v2.0.0",
+        apply: true,
+      });
+      const mirrorHeadAfterV2 = git(targetBare, ["rev-parse", "refs/heads/main"]);
+
+      const replayed = syncGithubMirror({
+        sourceRepoDir: sourceDir,
+        target: targetBare,
+        branch: "main",
+        sourceRef: "v1.0.0",
+        tag: "v1.0.0",
+        apply: true,
+      });
+      expect(replayed.status).toBe("up_to_date");
+      expect(replayed.pushed).toBe(false);
+      expect(replayed.tagPushed).toBe(false);
+      expect(git(targetBare, ["rev-parse", "refs/heads/main"])).toBe(mirrorHeadAfterV2);
     } finally {
       rmSync(sandbox, { recursive: true, force: true });
     }

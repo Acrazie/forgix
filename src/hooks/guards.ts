@@ -487,8 +487,13 @@ function detectBootstrapDrift(workspaceRoot: string, config: HookRuntimeConfig):
   }
 
   if (checkWorktreeInclude) {
-    const worktreeInclude = readTextSafe(join(workspaceRoot, ".worktreeinclude"));
-    if (!worktreeInclude || !worktreeInclude.includes("# forgix:start")) {
+    const wt = readTextSafe(join(workspaceRoot, ".worktreeinclude"));
+    if (
+      !wt ||
+      !wt.includes("# forgix:start") ||
+      !wt.includes(".forgix/project.local.yaml") ||
+      !wt.includes(".forgix/config.local.yaml")
+    ) {
       findings.push(".worktreeinclude drift");
     }
   }
@@ -536,7 +541,9 @@ export function buildSessionStartMessage(
 
   const drift = detectBootstrapDrift(workspaceRoot, config);
   if (drift.length > 0) {
-    parts.push(`Bootstrap drift (${drift.join(", ")}); run \`forgix init check\`.`);
+    parts.push(
+      `Bootstrap drift (${drift.join(", ")}); run $forgix sync (or \`forgix init check\`).`,
+    );
   }
 
   if (config.warning) {

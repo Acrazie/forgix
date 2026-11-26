@@ -213,7 +213,10 @@ async function planStaleManagedRemovals(
   }
 }
 
-async function planLegacyRulesCleanup(ctx: FactoryPlanContext): Promise<void> {
+async function planLegacyRulesCleanup(
+  ctx: FactoryPlanContext,
+  preserveLegacyCanonical: boolean,
+): Promise<void> {
   const pointerPaths = [LEGACY_CLAUDE_RULES_POINTER_PATH, LEGACY_ANTIGRAVITY_RULES_POINTER_PATH];
   const [legacyCanonical, ...pointerProbes] = await Promise.all([
     ctx.safeRead(LEGACY_CANONICAL_RULES_PATH),
@@ -221,7 +224,15 @@ async function planLegacyRulesCleanup(ctx: FactoryPlanContext): Promise<void> {
   ]);
   if (!legacyCanonical.ok) ctx.conflicts.push(legacyCanonical.conflict);
   else if (legacyCanonical.content !== undefined) {
-    pushOp(ctx, LEGACY_CANONICAL_RULES_PATH, legacyCanonical, undefined);
+    if (preserveLegacyCanonical) {
+      ctx.conflicts.push({
+        path: LEGACY_CANONICAL_RULES_PATH,
+        code: "legacy_rules_migration_required",
+        message: `Legacy ${LEGACY_CANONICAL_RULES_PATH} exists with no canonical rules in ${FACTORY_ROOT_DIR}/rules/; migrate via $forgix init before removing.`,
+      });
+    } else {
+      pushOp(ctx, LEGACY_CANONICAL_RULES_PATH, legacyCanonical, undefined);
+    }
   }
   for (let i = 0; i < pointerPaths.length; i += 1) {
     const probe = pointerProbes[i]!;
@@ -256,6 +267,9 @@ export async function planFactoryOperations(
   const stalePaths = previousManagedPaths.filter((p) => !files.has(p));
   await planDesiredFiles([...files.values()], ctx);
   await planStaleManagedRemovals(stalePaths, ctx);
-  await planLegacyRulesCleanup(ctx);
+  if (selection.rules.enabled) {
+    const preserveLegacyCanonical = (selection.rules.items?.length ?? 0) === 0;
+    await planLegacyRulesCleanup(ctx, preserveLegacyCanonical);
+  }
   return { operations: ctx.operations, conflicts: ctx.conflicts, managedPaths };
 }

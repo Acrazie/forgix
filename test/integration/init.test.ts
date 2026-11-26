@@ -40,14 +40,43 @@ describe("agent-first init and hook CLI contract", () => {
       adopt: true,
     });
     expect(parseInvocation(["init", "check"])).toEqual({ command: "init_check" });
+    expect(parseInvocation(["init", "check", "--strict"])).toEqual({
+      command: "init_check",
+      strict: true,
+    });
     expect(parseInvocation(["--harness", "codex", "init", "check"])).toEqual({
       command: "init_check",
       harness: "codex",
+    });
+    expect(parseInvocation(["init", "sync", "--plan"])).toEqual({ command: "init_sync_plan" });
+    expect(parseInvocation(["init", "sync", "--plan", "--adopt"])).toEqual({
+      command: "init_sync_plan",
+      adopt: true,
+    });
+    expect(parseInvocation(["init", "sync", "--apply"])).toEqual({ command: "init_sync_apply" });
+    expect(parseInvocation(["init", "sync", "--apply", "--adopt"])).toEqual({
+      command: "init_sync_apply",
+      adopt: true,
+    });
+    expect(
+      parseInvocation([
+        "init",
+        "sync",
+        "--apply",
+        "--adopt-path=.claude/rules/forgix-core-quality.md",
+      ]),
+    ).toEqual({
+      command: "init_sync_apply",
+      adoptPaths: [".claude/rules/forgix-core-quality.md"],
     });
 
     for (const argv of [
       ["init", "wizard"],
       ["init", "plan", "extra"],
+      ["init", "check", "--unknown"],
+      ["init", "sync"],
+      ["init", "sync", "--adopt"],
+      ["init", "sync", "--plan", "--apply"],
       ["init", "check-build", "auto"],
       ["init", "--global"],
     ]) {

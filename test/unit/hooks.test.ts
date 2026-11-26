@@ -378,3 +378,101 @@ describe("hooks project summary loader", () => {
     }
   });
 });
+
+describe("SessionStart bootstrap drift reminder", () => {
+  test("mentions $forgix sync on drift and stays silent on a healthy repo", async () => {
+    const dir = createTempDir("forgix-session-drift-");
+    try {
+      mkdirSync(join(dir, ".forgix"), { recursive: true });
+      writeFileSync(
+        join(dir, ".forgix", "config.yaml"),
+        [
+          "schemaVersion: 1",
+          "harnesses: [codex]",
+          "hooks:",
+          "  enforcement: balanced",
+          "bootstrap:",
+          "  rules: false",
+          "  agents: false",
+          "  skills: false",
+          "  hooks: false",
+          "  gitignore: true",
+          "  worktreeInclude: false",
+          "",
+        ].join("\n"),
+      );
+
+      // Missing .gitignore -> drift reminder mentions $forgix sync
+      const drifted = await runHook("codex", "session-start", {
+        workspaceRoot: dir,
+        input: JSON.stringify({ cwd: dir }),
+      });
+      expect(drifted.exitCode).toBe(0);
+      const driftedMessage = (JSON.parse(drifted.stdout) as { systemMessage: string })
+        .systemMessage;
+      expect(driftedMessage).toContain("Bootstrap drift");
+      expect(driftedMessage).toContain("$forgix sync");
+
+      // Fix .gitignore -> no Bootstrap drift reminder
+      writeFileSync(
+        join(dir, ".gitignore"),
+        "# forgix:start\n.forgix/config.local.yaml\n# forgix:end\n",
+      );
+      const healthy = await runHook("codex", "session-start", {
+        workspaceRoot: dir,
+        input: JSON.stringify({ cwd: dir }),
+      });
+      expect(healthy.exitCode).toBe(0);
+      const healthyMessage = (JSON.parse(healthy.stdout) as { systemMessage: string })
+        .systemMessage;
+      expect(healthyMessage).not.toContain("Bootstrap drift");
+      expect(healthyMessage).not.toContain("$forgix sync");
+
+      // Missing default .worktreeinclude entry -> drift reminder mentions $forgix sync
+      writeFileSync(
+        join(dir, ".forgix", "config.yaml"),
+        [
+          "schemaVersion: 1",
+          "harnesses: [codex]",
+          "hooks:",
+          "  enforcement: balanced",
+          "bootstrap:",
+          "  rules: false",
+          "  agents: false",
+          "  skills: false",
+          "  hooks: false",
+          "  gitignore: true",
+          "  worktreeInclude: true",
+          "",
+        ].join("\n"),
+      );
+      writeFileSync(
+        join(dir, ".worktreeinclude"),
+        "# forgix:start\n.forgix/config.local.yaml\n# forgix:end\n",
+      );
+      const wtDrift = await runHook("codex", "session-start", {
+        workspaceRoot: dir,
+        input: JSON.stringify({ cwd: dir }),
+      });
+      expect(wtDrift.exitCode).toBe(0);
+      const wtDriftMsg = (JSON.parse(wtDrift.stdout) as { systemMessage: string }).systemMessage;
+      expect(wtDriftMsg).toContain(".worktreeinclude drift");
+      expect(wtDriftMsg).toContain("$forgix sync");
+
+      // Restore missing .forgix/project.local.yaml -> silent
+      writeFileSync(
+        join(dir, ".worktreeinclude"),
+        "# forgix:start\n.forgix/config.local.yaml\n.forgix/project.local.yaml\n# forgix:end\n",
+      );
+      const wtHealthy = await runHook("codex", "session-start", {
+        workspaceRoot: dir,
+        input: JSON.stringify({ cwd: dir }),
+      });
+      expect(
+        (JSON.parse(wtHealthy.stdout) as { systemMessage: string }).systemMessage,
+      ).not.toContain("Bootstrap drift");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

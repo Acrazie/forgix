@@ -1,5 +1,45 @@
 # Changelog
 
+## [v4.5.0] - 2026-11-26
+
+<!-- forgix-release: {"tag":"v4.5.0","date":"2026-11-26","base":"v4.4.0"} -->
+
+### Changes (since v4.4.0)
+
+
+### Bug fixes
+
+- **init:** harden sync harness resolution, profile checks, and safety guards ([78de639](https://entire.com/et/forgix/forgix/commit/78de639637b31cc8dc6abe9963641c1a39b58240))
+
+- **init:** refine sync pin repair, legacy rules opt-out, and path containment ([906544f](https://entire.com/et/forgix/forgix/commit/906544f3aba317349026c99b8e3db1eca0973066))
+
+- **release:** harden OIDC exchange, merge/mirror guards, and branch cleanup ([3b47e6a](https://entire.com/et/forgix/forgix/commit/3b47e6a6e4af578fa0b5abaea360d819cdced379))
+
+- **release:** tighten merge deletion, downgrade, lease, and temp-dir guards ([180b99c](https://entire.com/et/forgix/forgix/commit/180b99c51abb73586fa5b04140c34c49341c32d7))
+
+- **release:** force-add allowlisted ignored dist bundle during release prep ([8d09a20](https://entire.com/et/forgix/forgix/commit/8d09a20f1e1d0f9cf84012b2e72d9a057cfcfe72))
+
+
+### Documentation
+
+- **specs:** add $forgix sync technical specification ([48044a9](https://entire.com/et/forgix/forgix/commit/48044a9b531bd1d5cbf335e488d10a0ee54c1f60))
+
+- **release:** add automated release spec, ADR 0043, and workflow updates ([0786764](https://entire.com/et/forgix/forgix/commit/0786764180605cb4e9c76398a5fdf80b9ea899fe))
+
+- **release:** replace unpacked relative ADR 0043 link in maintainer runbook ([17e78c8](https://entire.com/et/forgix/forgix/commit/17e78c8446f1a12b287052a805773a6f9ec4cde2))
+
+
+### Features
+
+- **init:** add $forgix sync and stateless config drift checks ([6c981ac](https://entire.com/et/forgix/forgix/commit/6c981acf8ca3174378ffea059d85b388134ce6b5))
+
+- **release:** add automated release scripts, mirror HTTPS auth, and tests ([c03ab2f](https://entire.com/et/forgix/forgix/commit/c03ab2fb852495c9be19947219c36538883b13f1))
+
+
+### Maintenance
+
+- **release:** wire automated release phases in Buildkite and Dagger ([0d9a134](https://entire.com/et/forgix/forgix/commit/0d9a13452e35f2a239bd6d1909f21fd654a0093e))
+
 ## [v4.4.0] - 2026-11-26
 
 <!-- forgix-release: {"tag":"v4.4.0","date":"2026-11-26","base":"v4.3.2"} -->

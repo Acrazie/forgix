@@ -77,7 +77,7 @@ steps:
 
   - key: formal-lean
     label: ":dagger: Lean Workflow Pilots"
-    if: build.source != "schedule" && build.tag == null
+    if: 'build.source != "schedule" && build.tag == null && build.branch !~ /^release\/v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/ && build.message !~ /^chore\(release\): v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(\n|$)/'
     soft_fail: true
     timeout_in_minutes: 15
     commands:
@@ -90,7 +90,7 @@ steps:
 
   - key: formal-tla
     label: ":dagger: TLA+ Model Checks"
-    if: build.source != "schedule" && build.tag == null
+    if: 'build.source != "schedule" && build.tag == null && build.branch !~ /^release\/v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/ && build.message !~ /^chore\(release\): v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(\n|$)/'
     soft_fail: true
     timeout_in_minutes: 5
     commands:
@@ -134,3 +134,136 @@ steps:
           curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION="$${DAGGER_VERSION}" BIN_DIR="$${HOME}/.local/bin" sh
         fi
         dagger call release-contract --source=.
+
+  - key: release-main
+    label: ":rocket: Release Tag & Prepare"
+    if: build.branch == "main" && build.source != "schedule" && build.tag == null && build.pull_request.id == null
+    depends_on:
+      - quality-gate
+      - runtime-smoke
+      - release-contract
+    concurrency: 1
+    concurrency_group: forgix-release-lifecycle
+    timeout_in_minutes: 15
+    env:
+      GIT_AUTHOR_NAME: "forgix-release[bot]"
+      GIT_AUTHOR_EMAIL: "forgix-release[bot]@users.noreply.entire.io"
+      GIT_COMMITTER_NAME: "forgix-release[bot]"
+      GIT_COMMITTER_EMAIL: "forgix-release[bot]@users.noreply.entire.io"
+    commands:
+      - |
+        set -euo pipefail
+        export PATH="$${HOME}/.local/bin:$${HOME}/.bun/bin:$${PATH}"
+        if ! command -v entire >/dev/null 2>&1; then
+          curl -fsSL https://entire.io/install.sh | bash
+        fi
+        expected_bun="$$(tr -d '[:space:]' < .bun-version)"
+        if ! command -v bun >/dev/null 2>&1 || [ "$$(bun --version)" != "$${expected_bun}" ]; then
+          curl -fsSL https://bun.sh/install | bash -s "bun-v$${expected_bun}"
+        fi
+        if ! command -v dagger >/dev/null 2>&1 || [ "$$(dagger version | awk '{print $$2}')" != "v$${DAGGER_VERSION}" ]; then
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION="$${DAGGER_VERSION}" BIN_DIR="$${HOME}/.local/bin" sh
+        fi
+        ENTIRE_AUTH_URL="https://eu.auth.entire.io"
+        OIDC_TOKEN="$$(buildkite-agent oidc request-token --audience "$${ENTIRE_AUTH_URL}/api/authz/sts")"
+        [ -n "$${OIDC_TOKEN}" ] || { echo "Empty Buildkite OIDC token" >&2; exit 1; }
+        TOKEN_HTTP="$$(curl -sS -w '\n%{http_code}' -X POST "$${ENTIRE_AUTH_URL}/oauth/token" -u entire-cli: \
+          --data-urlencode grant_type=urn:ietf:params:oauth:grant-type:token-exchange \
+          --data-urlencode subject_token_type=urn:ietf:params:oauth:token-type:jwt \
+          --data-urlencode "subject_token=$${OIDC_TOKEN}" \
+          --data-urlencode "audience=$${ENTIRE_AUTH_URL}" \
+          --data-urlencode resource=svc_01M8CHF4WWEXY2Z6R92SBEJSNC)"
+        ENTIRE_TOKEN="$$(printf '%s' "$${TOKEN_HTTP}" | bun -e '
+          const raw = await Bun.stdin.text();
+          const cut = raw.lastIndexOf("\n");
+          const status = Number(raw.slice(cut + 1).trim());
+          const body = JSON.parse(raw.slice(0, cut));
+          if (status < 200 || status >= 300 || typeof body.access_token !== "string" || !body.access_token) {
+            console.error(body.error_description || body.error || `HTTP ${status}`);
+            process.exit(1);
+          }
+          process.stdout.write(body.access_token);
+        ')"
+        [ -n "$${ENTIRE_TOKEN}" ] || { echo "Empty Entire access token" >&2; exit 1; }
+        export ENTIRE_TOKEN
+        if [ -f "$$(git rev-parse --git-dir)/shallow" ]; then git fetch --unshallow; fi
+        git fetch --tags origin "+refs/heads/main:refs/remotes/origin/main"
+        FORGIX_PREPARE_FILES_MODE="dagger"
+        export FORGIX_PREPARE_FILES_MODE
+        bun run release:auto main
+
+  - key: release-merge
+    label: ":merge: Auto-Merge Release Trail"
+    if: build.branch =~ /^release\/v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/ && build.source != "schedule" && build.tag == null
+    depends_on:
+      - quality-gate
+      - runtime-smoke
+      - release-contract
+    concurrency: 1
+    concurrency_group: forgix-release-lifecycle
+    timeout_in_minutes: 10
+    commands:
+      - |
+        set -euo pipefail
+        export PATH="$${HOME}/.local/bin:$${HOME}/.bun/bin:$${PATH}"
+        if ! command -v entire >/dev/null 2>&1; then
+          curl -fsSL https://entire.io/install.sh | bash
+        fi
+        expected_bun="$$(tr -d '[:space:]' < .bun-version)"
+        if ! command -v bun >/dev/null 2>&1 || [ "$$(bun --version)" != "$${expected_bun}" ]; then
+          curl -fsSL https://bun.sh/install | bash -s "bun-v$${expected_bun}"
+        fi
+        ENTIRE_AUTH_URL="https://eu.auth.entire.io"
+        OIDC_TOKEN="$$(buildkite-agent oidc request-token --audience "$${ENTIRE_AUTH_URL}/api/authz/sts")"
+        [ -n "$${OIDC_TOKEN}" ] || { echo "Empty Buildkite OIDC token" >&2; exit 1; }
+        TOKEN_HTTP="$$(curl -sS -w '\n%{http_code}' -X POST "$${ENTIRE_AUTH_URL}/oauth/token" -u entire-cli: \
+          --data-urlencode grant_type=urn:ietf:params:oauth:grant-type:token-exchange \
+          --data-urlencode subject_token_type=urn:ietf:params:oauth:token-type:jwt \
+          --data-urlencode "subject_token=$${OIDC_TOKEN}" \
+          --data-urlencode "audience=$${ENTIRE_AUTH_URL}" \
+          --data-urlencode resource=svc_01M8CHF4WWEXY2Z6R92SBEJSNC)"
+        ENTIRE_TOKEN="$$(printf '%s' "$${TOKEN_HTTP}" | bun -e '
+          const raw = await Bun.stdin.text();
+          const cut = raw.lastIndexOf("\n");
+          const status = Number(raw.slice(cut + 1).trim());
+          const body = JSON.parse(raw.slice(0, cut));
+          if (status < 200 || status >= 300 || typeof body.access_token !== "string" || !body.access_token) {
+            console.error(body.error_description || body.error || `HTTP ${status}`);
+            process.exit(1);
+          }
+          process.stdout.write(body.access_token);
+        ')"
+        [ -n "$${ENTIRE_TOKEN}" ] || { echo "Empty Entire access token" >&2; exit 1; }
+        export ENTIRE_TOKEN
+        if [ -f "$$(git rev-parse --git-dir)/shallow" ]; then git fetch --unshallow; fi
+        git fetch --tags origin "+refs/heads/main:refs/remotes/origin/main"
+        bun run release:auto merge
+
+  - key: release-mirror
+    label: ":github: Sync Release to GitHub Mirror"
+    if: build.tag =~ /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/ && build.source != "schedule"
+    depends_on:
+      - quality-gate
+      - runtime-smoke
+    concurrency: 1
+    concurrency_group: forgix-release-mirror
+    timeout_in_minutes: 10
+    env:
+      GIT_AUTHOR_NAME: "forgix-release[bot]"
+      GIT_AUTHOR_EMAIL: "forgix-release[bot]@users.noreply.entire.io"
+      GIT_COMMITTER_NAME: "forgix-release[bot]"
+      GIT_COMMITTER_EMAIL: "forgix-release[bot]@users.noreply.entire.io"
+    commands:
+      - |
+        set -euo pipefail
+        export PATH="$${HOME}/.local/bin:$${HOME}/.bun/bin:$${PATH}"
+        expected_bun="$$(tr -d '[:space:]' < .bun-version)"
+        if ! command -v bun >/dev/null 2>&1 || [ "$$(bun --version)" != "$${expected_bun}" ]; then
+          curl -fsSL https://bun.sh/install | bash -s "bun-v$${expected_bun}"
+        fi
+        if [ -f "$$(git rev-parse --git-dir)/shallow" ]; then git fetch --unshallow; fi
+        git fetch --tags origin "+refs/heads/main:refs/remotes/origin/main"
+        GITHUB_MIRROR_TOKEN="$$(buildkite-agent secret get GITHUB_MIRROR_TOKEN)"
+        [ -n "$${GITHUB_MIRROR_TOKEN}" ] || { echo "Empty GITHUB_MIRROR_TOKEN" >&2; exit 1; }
+        export GITHUB_MIRROR_TOKEN
+        bun run release:auto mirror

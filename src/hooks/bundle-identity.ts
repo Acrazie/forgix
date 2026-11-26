@@ -20,7 +20,7 @@ const ANTIGRAVITY_DEFAULT_BUNDLE_SEGMENTS = [
   "forgix.mjs",
 ] as const;
 
-function resolvePinFilePath(
+export function resolvePinFilePath(
   harness: HarnessId,
   env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {

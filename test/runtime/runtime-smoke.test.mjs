@@ -397,6 +397,89 @@ test("packed CLI validates, saves, views, and checks status for a V6 task under 
   assert.equal(statusPayload.data.macroPhase, "INTAKE");
 });
 
+test("packed CLI exposes pluginVersion and executes init check --strict and init sync without external deps", () => {
+  const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+  const workspace = mkdtempSync(join(sandbox, "init-sync-smoke-"));
+  const isolatedHome = join(workspace, ".isolated-home");
+  const isolatedXdg = join(isolatedHome, ".config");
+  mkdirSync(isolatedXdg, { recursive: true });
+  const env = { ...process.env, HOME: isolatedHome, XDG_CONFIG_HOME: isolatedXdg };
+  delete env.FORGIX_CLI_PATH;
+  const run = (args, input) =>
+    spawnSync(process.execPath, [bundle, ...args], {
+      cwd: workspace,
+      env,
+      encoding: "utf8",
+      input,
+      shell: false,
+    });
+
+  // Bare init sync refuses with exit 2
+  const bareSync = run(["init", "sync"]);
+  assert.equal(bareSync.status, 2);
+
+  // Uninitialized repo refuses init sync --plan with exit 6 (config_missing)
+  const missingPlan = run(["init", "sync", "--plan"]);
+  assert.equal(missingPlan.status, 6);
+  const missingPayload = JSON.parse(missingPlan.stdout);
+  assert.equal(missingPayload.data.pluginVersion, manifest.version);
+  assert.equal(missingPayload.data.conflicts[0].code, "config_missing");
+
+  // Bootstrap + publish minimal project.yaml
+  const apply = run(
+    ["init", "apply"],
+    JSON.stringify({
+      schemaVersion: 1,
+      harnesses: ["codex"],
+      rules: { enabled: false },
+      hooks: { enabled: true },
+      gitignore: { enabled: true },
+      worktreeInclude: { enabled: true },
+    }),
+  );
+  assert.equal(apply.status, 0, apply.stderr);
+  const pub = run(
+    ["project-profile", "publish"],
+    JSON.stringify({
+      schemaVersion: 1,
+      profileId: "smoke-app",
+      content: { project: { id: "smoke-app", name: "Smoke App" } },
+    }),
+  );
+  assert.equal(pub.status, 0, pub.stderr);
+
+  // Simulate drift on .worktreeinclude, verify init check --strict exits 6
+  writeFileSync(join(workspace, ".worktreeinclude"), "# forgix:start\n.env\n# forgix:end\n");
+  const strictDrift = run(["--harness", "codex", "init", "check", "--strict"]);
+  assert.equal(strictDrift.status, 6);
+  const driftPayload = JSON.parse(strictDrift.stdout);
+  assert.equal(driftPayload.data.pluginVersion, manifest.version);
+  assert.equal(driftPayload.data.repoInSync, false);
+
+  // Reconcile via init sync --apply (no stdin)
+  const synced = run(["--harness", "codex", "init", "sync", "--apply"]);
+  assert.equal(synced.status, 0, synced.stderr);
+  assert.equal(JSON.parse(synced.stdout).data.pluginVersion, manifest.version);
+
+  // Clean repo passes init check --strict even with fresh empty XDG (CI simulation)
+  const ciHome = join(workspace, ".ci-home");
+  mkdirSync(ciHome, { recursive: true });
+  const ciStrict = spawnSync(
+    process.execPath,
+    [bundle, "--harness", "codex", "init", "check", "--strict"],
+    {
+      cwd: workspace,
+      env: { ...process.env, HOME: ciHome, XDG_CONFIG_HOME: join(ciHome, ".config") },
+      encoding: "utf8",
+      shell: false,
+    },
+  );
+  assert.equal(ciStrict.status, 0, ciStrict.stderr);
+  const ciPayload = JSON.parse(ciStrict.stdout);
+  assert.equal(ciPayload.data.repoInSync, true);
+  assert.equal(ciPayload.data.localInSync, false);
+});
+
 for (const command of ["forgix"]) {
   test(`packed CLI executes through installed ${command} symlink`, () => {
     const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));

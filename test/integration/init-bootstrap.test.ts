@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import {
   lstat,
   mkdir,
@@ -93,6 +94,22 @@ async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
+async function seedValidMinimalProfile(root: string): Promise<void> {
+  const { approveProjectProfile, prepareProjectProfile, renderProjectProfile } =
+    await import("../../src/profile/index.ts");
+  const profile = approveProjectProfile(
+    prepareProjectProfile({
+      schemaVersion: 1,
+      profileId: "demo",
+      revision: 1,
+      content: { project: { id: "demo", name: "Demo" } },
+    }),
+    "2026-11-26T00:00:00.000Z",
+  );
+  await mkdir(join(root, ".forgix"), { recursive: true });
+  await writeFile(join(root, ".forgix", "project.yaml"), renderProjectProfile(profile));
+}
+
 describe("init bootstrap integration (plan | apply | check)", () => {
   test("plan is strictly read-only, fresh apply sets 0o755/0o644 permissions, second apply is idempotent, and check passes", async () => {
     const root = await makeWorkspace();
@@ -183,12 +200,19 @@ describe("init bootstrap integration (plan | apply | check)", () => {
       const secondActions = (secondApply.data as { actions: InitPlanAction[] }).actions;
       expect(secondActions.every((a) => a.kind === "unchanged")).toBe(true);
 
-      // 4. check reports inSync: true
+      // 4. check reports inSync: true once project.yaml is present
+      await seedValidMinimalProfile(root);
       const checkResult = await runInitBootstrap("check", { workspaceRoot: root });
-      expect(checkResult).toEqual({
-        command: "init_check",
-        status: "ok",
-        data: { inSync: true, findings: [] },
+      expect(checkResult.command).toBe("init_check");
+      expect(checkResult.status).toBe("ok");
+      expect(checkResult.data).toMatchObject({
+        inSync: true,
+        repoInSync: true,
+        localInSync: true,
+        findings: [],
+        repoFindings: [],
+        localFindings: [],
+        projectProfile: { status: "ok" },
       });
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -331,12 +355,10 @@ describe("init bootstrap integration (plan | apply | check)", () => {
       });
 
       // check must report zero drift even though hooks and .worktreeinclude block are absent
+      await seedValidMinimalProfile(root);
       const checkDisabled = await runInitBootstrap("check", { workspaceRoot: root });
-      expect(checkDisabled).toEqual({
-        command: "init_check",
-        status: "ok",
-        data: { inSync: true, findings: [] },
-      });
+      expect(checkDisabled.status).toBe("ok");
+      expect(checkDisabled.data).toMatchObject({ inSync: true, findings: [] });
 
       // Now enable everything, then cleanly remove all Forgix artifacts
       await runInitBootstrap("apply", { workspaceRoot: root, input: makeManifest() });
@@ -381,11 +403,8 @@ describe("init bootstrap integration (plan | apply | check)", () => {
 
       // check still inSync with all modules disabled
       const checkAfterRemoval = await runInitBootstrap("check", { workspaceRoot: root });
-      expect(checkAfterRemoval).toEqual({
-        command: "init_check",
-        status: "ok",
-        data: { inSync: true, findings: [] },
-      });
+      expect(checkAfterRemoval.status).toBe("ok");
+      expect(checkAfterRemoval.data).toMatchObject({ inSync: true, findings: [] });
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -602,11 +621,10 @@ describe("init bootstrap integration (plan | apply | check)", () => {
         input: makeManifest(),
       });
       expect(retry.status).toBe("ok");
-      expect(await runInitBootstrap("check", { workspaceRoot: root })).toEqual({
-        command: "init_check",
-        status: "ok",
-        data: { inSync: true, findings: [] },
-      });
+      await seedValidMinimalProfile(root);
+      const retryCheck = await runInitBootstrap("check", { workspaceRoot: root });
+      expect(retryCheck.status).toBe("ok");
+      expect(retryCheck.data).toMatchObject({ inSync: true, findings: [] });
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -731,14 +749,23 @@ describe("init bootstrap integration (plan | apply | check)", () => {
 
     // 1. Fresh repo: init apply -> project-profile publish -> publish --local -> init check -> synced re-run
     const freshRoot = await makeWorkspace();
+    const freshXdg = await makeWorkspace();
+    const isolatedEnv = { HOME: freshXdg, XDG_CONFIG_HOME: freshXdg };
     try {
       const applyRes = await runInvocation(["init", "apply"], {
         workspaceRoot: freshRoot,
+        env: isolatedEnv,
         init: { input: makeManifest({ harnesses: ["codex", "claude", "antigravity"] }) },
       });
       expect(applyRes.status).toBe("ok");
 
+      const agentsHash = `sha256:${createHash("sha256")
+        .update(await readFile(join(freshRoot, "AGENTS.md")))
+        .digest("hex")}`;
       const profile = projectProfileInput();
+      for (const decision of profile.content.decisions ?? []) {
+        decision.sourceFingerprints = [{ sourceRef: "AGENTS.md", value: agentsHash }];
+      }
       const pubRes = await runInvocation(["project-profile", "publish"], {
         workspaceRoot: freshRoot,
         projectProfile: { input: stringify(profile) },
@@ -752,7 +779,10 @@ describe("init bootstrap integration (plan | apply | check)", () => {
       });
       expect(localRes.status).toBe("published");
 
-      const checkRes = await runInvocation(["init", "check"], { workspaceRoot: freshRoot });
+      const checkRes = await runInvocation(["init", "check"], {
+        workspaceRoot: freshRoot,
+        env: isolatedEnv,
+      });
       expect(checkRes.status).toBe("ok");
       expect((checkRes.data as { inSync: boolean }).inSync).toBe(true);
 
@@ -768,11 +798,16 @@ describe("init bootstrap integration (plan | apply | check)", () => {
       });
       expect(repub.status).toBe("unchanged");
     } finally {
-      await rm(freshRoot, { recursive: true, force: true });
+      await Promise.all([
+        rm(freshRoot, { recursive: true, force: true }),
+        rm(freshXdg, { recursive: true, force: true }),
+      ]);
     }
 
     // 2. Greenfield repo with minimal project-only profile and default balanced hooks
     const greenfieldRoot = await makeWorkspace();
+    const greenXdg = await makeWorkspace();
+    const greenEnv = { HOME: greenXdg, XDG_CONFIG_HOME: greenXdg };
     try {
       const greenManifest = JSON.stringify({
         schemaVersion: 1,
@@ -784,6 +819,7 @@ describe("init bootstrap integration (plan | apply | check)", () => {
       });
       const applyGreen = await runInvocation(["init", "apply"], {
         workspaceRoot: greenfieldRoot,
+        env: greenEnv,
         init: { input: greenManifest },
       });
       expect(applyGreen.status).toBe("ok");
@@ -798,10 +834,16 @@ describe("init bootstrap integration (plan | apply | check)", () => {
         projectProfile: { input: stringify(minimalProfile) },
       });
       expect(pubGreen.status).toBe("published");
-      const checkGreen = await runInvocation(["init", "check"], { workspaceRoot: greenfieldRoot });
+      const checkGreen = await runInvocation(["init", "check"], {
+        workspaceRoot: greenfieldRoot,
+        env: greenEnv,
+      });
       expect((checkGreen.data as { inSync: boolean }).inSync).toBe(true);
     } finally {
-      await rm(greenfieldRoot, { recursive: true, force: true });
+      await Promise.all([
+        rm(greenfieldRoot, { recursive: true, force: true }),
+        rm(greenXdg, { recursive: true, force: true }),
+      ]);
     }
   });
 });

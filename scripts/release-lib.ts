@@ -4,6 +4,7 @@ import { spawnSync, type SpawnSyncOptionsWithStringEncoding } from "node:child_p
 import { chmod, readFile, stat, unlink, writeFile } from "node:fs/promises";
 
 export type VersionBump = "patch" | "minor" | "major";
+export type AutomatedBump = VersionBump | "none";
 
 export interface StableVersion {
   major: number;
@@ -42,6 +43,12 @@ export class ReleaseError extends Error {
 const STABLE_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const PLUGIN_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\+codex\.(\d{14})$/;
 const RELEASE_TAG = /^v((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*))$/;
+const RELEASE_COMMIT_SUBJECT =
+  /^chore\(release\): (v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$/;
+const BREAKING_HEADER = /^[a-z]+(?:\([^)]+\))?!:/i;
+const BREAKING_FOOTER = /^BREAKING[ -]CHANGE:/m;
+const FEAT_HEADER = /^feat(?:\([^)]+\))?:/i;
+const PATCH_HEADER = /^(?:fix|perf|revert)(?:\([^)]+\))?:/i;
 
 export const ALLOWED_RELEASE_PATHS: ReadonlySet<string> = new Set([
   "package.json",
@@ -162,11 +169,33 @@ export function formatCachebuster(date: Date): string {
   ].join("");
 }
 
+export function computeAutomatedBump(commits: readonly string[]): AutomatedBump {
+  let hasMinor = false;
+  let hasPatch = false;
+  for (const commit of commits) {
+    const trimmed = commit.trim();
+    if (!trimmed) continue;
+    const subject = trimmed.split("\n", 1)[0] ?? "";
+    if (BREAKING_HEADER.test(subject) || BREAKING_FOOTER.test(trimmed)) return "major";
+    if (FEAT_HEADER.test(subject)) hasMinor = true;
+    else if (PATCH_HEADER.test(subject)) hasPatch = true;
+  }
+  if (hasMinor) return "minor";
+  if (hasPatch) return "patch";
+  return "none";
+}
+
 export function recommendBump(commits: readonly string[]): VersionBump {
-  const text = commits.join("\n");
-  if (/(?:^[a-z]+(?:\([^)]+\))?!:|BREAKING CHANGE:)/im.test(text)) return "major";
-  if (/^feat(?:\([^)]+\))?:/im.test(text)) return "minor";
-  return "patch";
+  const bump = computeAutomatedBump(commits);
+  return bump === "none" ? "patch" : bump;
+}
+
+export function parseReleaseCommitTag(subject: string): string | null {
+  return RELEASE_COMMIT_SUBJECT.exec(subject.trim())?.[1] ?? null;
+}
+
+export function isMajorBump(previousVersion: string, nextVersion: string): boolean {
+  return parseStableVersion(nextVersion).major > parseStableVersion(previousVersion).major;
 }
 
 export function createReleasePlan(input: {

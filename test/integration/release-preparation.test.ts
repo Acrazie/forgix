@@ -33,6 +33,7 @@ function releaseFixture() {
   for (const path of [
     "cliff.toml",
     "scripts/release.ts",
+    "scripts/release-files.ts",
     "scripts/release-lib.ts",
     "scripts/release-notes.ts",
     "scripts/sync-github-mirror.ts",
@@ -55,7 +56,7 @@ function releaseFixture() {
     mkdirSync(dirname(join(directory, path)), { recursive: true });
     writeFileSync(join(directory, path), contents);
   }
-  writeFileSync(join(directory, ".gitignore"), "node_modules/\n.mock/\n");
+  writeFileSync(join(directory, ".gitignore"), "node_modules/\n.mock/\ndist/\n");
 
   const prompt = join(directory, "node_modules/@clack/prompts");
   mkdirSync(prompt, { recursive: true });
@@ -122,6 +123,7 @@ throw new Error('Unexpected entire command: ' + args.join(' '));
   git(["config", "commit.gpgsign", "false"]);
   git(["config", "tag.gpgSign", "false"]);
   git(["add", "."]);
+  git(["add", "-f", "dist/forgix.mjs"]);
   git(["commit", "-m", "feat: fixture"]);
   git(["tag", "v1.0.1"]);
   git(["remote", "add", "origin", originBare]);

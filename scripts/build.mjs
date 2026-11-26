@@ -1,14 +1,20 @@
 import { build } from "vite-plus/pack";
-import { chmod, mkdir, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { distribution } from "../vite.config.ts";
 
 const OUTPUT_PATH = fileURLToPath(new URL("../dist/forgix.mjs", import.meta.url));
+const PACKAGE_JSON_PATH = fileURLToPath(new URL("../package.json", import.meta.url));
 
 export async function createDistributionBundle() {
+  const packageJson = JSON.parse(await readFile(PACKAGE_JSON_PATH, "utf8"));
   const { bundles } = await build({
     ...distribution,
+    define: {
+      ...distribution.define,
+      FORGIX_PLUGIN_VERSION: JSON.stringify(packageJson.version),
+    },
     config: false,
     write: false,
     logLevel: "error",

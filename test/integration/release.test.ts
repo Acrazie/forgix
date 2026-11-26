@@ -7,11 +7,14 @@ import {
   ALLOWED_RELEASE_PATHS,
   captureFileSnapshots,
   compareVersions,
+  computeAutomatedBump,
   createReleasePlan,
   formatCachebuster,
   incrementVersion,
+  isMajorBump,
   normalizeGitOutput,
   parsePorcelainPaths,
+  parseReleaseCommitTag,
   parseStableVersion,
   recommendBump,
   replaceJsonVersion,
@@ -51,6 +54,51 @@ describe("release versioning", () => {
     expect(recommendBump(["fix: repair sync", "feat(release): add preview"])).toBe("minor");
     expect(recommendBump(["feat!: remove legacy tags"])).toBe("major");
     expect(recommendBump(["feat: change API\n\nBREAKING CHANGE: new contract"])).toBe("major");
+  });
+
+  test("computes filtered automated bumps across all fluidise.toml commit types", () => {
+    expect(computeAutomatedBump([])).toBe("none");
+    for (const nonReleasing of [
+      "docs(readme): clarify setup",
+      "chore(deps): bump dev dependency",
+      "ci(buildkite): tune timeout",
+      "test(unit): add edge case",
+      "refactor(core): extract helper",
+      "style: format imports",
+      "build: adjust pack config",
+    ]) {
+      expect(computeAutomatedBump([nonReleasing])).toBe("none");
+    }
+    expect(
+      computeAutomatedBump(["docs: explain\n\nfeat: example in body only", "chore: tidy"]),
+    ).toBe("none");
+    for (const patchCommit of [
+      "fix(init): handle missing config",
+      "perf(hooks): cache manifest read",
+      "revert: undo broken change",
+    ]) {
+      expect(computeAutomatedBump(["docs: note", patchCommit])).toBe("patch");
+    }
+    expect(
+      computeAutomatedBump([
+        "docs(specs): add spec",
+        "feat(init): add $forgix sync",
+        "fix(init): harden checks",
+      ]),
+    ).toBe("minor");
+    expect(computeAutomatedBump(["chore!: drop node 24"])).toBe("major");
+    expect(computeAutomatedBump(["refactor(cli)!: change json shape"])).toBe("major");
+    expect(computeAutomatedBump(["fix: adjust\n\nBREAKING CHANGE: flag removed"])).toBe("major");
+    expect(computeAutomatedBump(["chore: adjust\n\nBREAKING-CHANGE: config format"])).toBe("major");
+  });
+
+  test("parses release commit tags and detects major version bumps", () => {
+    expect(parseReleaseCommitTag("chore(release): v4.5.0")).toBe("v4.5.0");
+    expect(parseReleaseCommitTag("chore(release): v4.5.0-beta.1")).toBeNull();
+    expect(parseReleaseCommitTag("feat: chore(release): v4.5.0")).toBeNull();
+    expect(isMajorBump("4.4.0", "4.4.1")).toBe(false);
+    expect(isMajorBump("4.4.0", "4.5.0")).toBe(false);
+    expect(isMajorBump("4.4.0", "5.0.0")).toBe(true);
   });
 });
 
