@@ -110,57 +110,45 @@ Project INIT is the sole repository initialization and drift-reconciliation entr
 
 ```mermaid
 flowchart TD
-  E[Repository evidence] --> D[Auto-detect harnesses, stack, tools, and conventions]
-  D --> Q{Missing, stale, contradictory, or material decision?}
-  Q -- yes --> I[Ask one question with recommendation]
-  I --> D
-  Q -- no --> V[Validate candidate profile]
-  V --> A{Explicit Profile Approval?}
-  A -- approve --> P[Publish .forgix/project.yaml and preview forgix init plan]
-  P --> B{Confirm bootstrap plan?}
-  B -- confirm --> W[Apply config, rules, hooks, and Git/worktree hygiene]
-  A -- reject --> U[Leave shared profile unchanged]
+  E[Repository evidence] --> D[Auto-discover harnesses, stack, tools, and defaults]
+  D --> V[Validate profile & preview init plan]
+  V --> A{Approve consolidated preview?}
+  A -- approve --> W[Apply bootstrap first, then publish shared profile]
+  A -- adjust --> V
+  A -- reject --> U[Leave repository unchanged]
 ```
 
-It inspects installed harnesses (`.codex/`, `.claude/`, `.agents/`), manifests, quality
-scripts (to propose repo-specific `protectedSurfaces` and `surfaceVerificationRules`),
-existing ecosystem tools (Entire, Dagger, Fallow, Context7, etc.) for `integrations`,
-architecture sources, tests, and representative code before asking. Questions cover only
-unresolved or material decisions and appear one at a time. There is no fixed question count.
+It auto-discovers installed harnesses (`.codex/`, `.claude/`, `.agents/`), manifests, quality
+scripts (proposing repo-specific `protectedSurfaces` and `surfaceVerificationRules`),
+existing ecosystem tools (Entire, Dagger, Fallow, Context7, etc.) for `integrations`, and
+defaults on greenfield repositories with zero upfront questions. If the repository is already
+in sync with no profile change, it reports "already up to date" with zero prompts and zero writes.
 
 An abbreviated interaction can look like this:
 
 ```text
 You:      $forgix init
-Forgix: Discovery found a Node.js API with HTTP handlers and no explicit error envelope.
-          Recommended: one stable JSON error shape at the transport boundary.
-          A. Stable JSON envelope (Recommended)
-          B. Handler-specific payloads
-You:      A
-Forgix: Profile candidate validated. Review summary ...
-          Approve publication of this exact profile digest?
+Forgix:   Discovered Node.js/TypeScript repo (codex, claude, antigravity).
+          Proposed profile (.forgix/project.yaml) + bootstrap plan (.forgix/config.yaml,
+          .forgix/factory/{rules,agents,skills}, harness projections, hooks, .gitignore).
+          Approve and apply these changes? (or request adjustments)
 You:      Approve
-Forgix: Previewing bootstrap plan (forgix init plan):
-          .forgix/config.yaml, .forgix/factory/{rules,agents,skills}, harness projections, hooks, .gitignore ...
-          Apply these changes?
-You:      Apply
+Forgix:   Applied bootstrap and published .forgix/project.yaml.
 ```
 
-The wording and decisions adapt to repository evidence. Explicit Profile Approval authorizes
-`.forgix/project.yaml` publication, and confirmation of `forgix init plan` authorizes
-atomic bootstrap application via `forgix init apply`.
+One explicit approval authorizes atomic bootstrap application (`forgix init apply`) followed by
+idempotent `.forgix/project.yaml` publication (`forgix project-profile publish`).
 
 ### Project INIT outputs
 
 | File                                                               | Content                                                                      | Git policy                      |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------- | ------------------------------- |
-| `.forgix/project.yaml`                                             | Portable shared architecture, topology, stack, and rules.                    | Review and commit when desired. |
+| `.forgix/project.yaml`                                             | Portable shared project identity, optional stack, topology, and conventions. | Review and commit when desired. |
 | `.forgix/config.yaml`                                              | Selected `harnesses`, `hooks.enforcement`, `bootstrap`, `factoryPolicies`.   | Review and commit when desired. |
 | `.forgix/factory/{rules,agents,skills}` + harness projections      | Canonical Factory as Code sources plus Codex/Claude/Antigravity projections. | Review and commit when desired. |
 | `.codex/hooks.json`, `.claude/settings.json`, `.agents/hooks.json` | Non-destructive, fail-open `Harness Lifecycle Hook` entries.                 | Review and commit when desired. |
 | `.gitignore`, `.worktreeinclude`                                   | Delimited `# forgix:start ... # forgix:end` hygiene blocks.                  | Review and commit when desired. |
 | `.forgix/project.local.yaml`                                       | Absolute service paths and personal non-contractual prefs.                   | Gitignored.                     |
-| `.forgix/init/state.yaml`                                          | Compact resumable interview state; no transcript/reasoning.                  | Gitignored and temporary.       |
 | `.forgix/diagrams/*.mermaid.md`                                    | Optional canonical-profile projection.                                       | Commit with shared profile.     |
 
 Secrets, secret-like values, and absolute machine paths are rejected from the shared

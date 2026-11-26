@@ -1,12 +1,9 @@
-import type {
-  LocalProjectProfile,
-  ProjectInitState,
-  ProjectProfileProposal,
-} from "../../src/profile/index.ts";
+import type { LocalProjectProfile, ProjectProfileProposal } from "../../src/profile/index.ts";
 
 const CAPTURED_AT = "2026-08-03T12:00:00.000Z";
 const SOURCE_DIGEST = `sha256:${"a".repeat(64)}`;
-type ProjectProfileCandidate = Omit<ProjectProfileProposal, "contentDigest"> & {
+type ProjectProfileCandidate = Omit<ProjectProfileProposal, "contentDigest" | "revision"> & {
+  revision?: number;
   contentDigest?: string;
 };
 
@@ -72,23 +69,9 @@ export function localProfileInput(root: string): LocalProjectProfile {
   };
 }
 
-export function projectInitState(overrides: Partial<ProjectInitState> = {}): ProjectInitState {
-  return {
-    schemaVersion: 1,
-    sessionId: "init-forgix",
-    profileId: "forgix",
-    revision: 1,
-    status: "discovering",
-    decisions: [],
-    staleDecisionKeys: [],
-    updatedAt: CAPTURED_AT,
-    ...overrides,
-  };
-}
-
 function decision(
   key: string,
-  category: ProjectProfileProposal["content"]["decisions"][number]["category"],
+  category: NonNullable<ProjectProfileProposal["content"]["decisions"]>[number]["category"],
   value: string,
 ) {
   return {

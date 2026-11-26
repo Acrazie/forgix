@@ -104,8 +104,9 @@ test("public skill isolates external skills behind configured allowlists", () =>
   expect(skill).toMatch(/forgix init apply/);
   expect(skill).toMatch(/forgix init check/);
   expect(skill).toMatch(/project-profile validate/);
-  expect(skill).toMatch(/project-profile session-save/);
-  expect(skill).toMatch(/no hard cap/);
+  expect(skill).toMatch(/one explicit approval/);
+  expect(skill).not.toMatch(/project-profile session-(?:view|save|clear)/);
+  expect(skill).not.toMatch(/no hard cap/);
   expect(skill).toMatch(/leaves `\.forgix\/project\.yaml` byte-for-byte unchanged/);
   expect(skill).toMatch(/Do not refresh account, quota, or model data between skills/);
   expect(skill).toMatch(/Never substitute a fallback model or effort/);
@@ -161,7 +162,6 @@ test("npm package contains runtime assets and excludes development files", () =>
       "schemas/config.schema.json",
       "schemas/project-profile.schema.json",
       "schemas/project-profile-local.schema.json",
-      "schemas/project-init-state.schema.json",
       "schemas/roadmap-state.schema.json",
       "skills/forgix/SKILL.md",
       "LICENSE",

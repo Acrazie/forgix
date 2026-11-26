@@ -61,7 +61,6 @@ describe("core/schema", () => {
       "state",
       "project-profile",
       "project-profile-local",
-      "project-init-state",
       "roadmap-state",
     ] as const) {
       const result = validateSchema(schemaName, {});

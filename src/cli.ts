@@ -86,7 +86,6 @@ const {
   createProjectProfileStore,
   diffProjectProfiles,
   reconcileProjectProfile,
-  renderProjectInitState,
   renderProjectProfile,
   validateLocalProjectProfile,
   validateProjectProfileProjections,
@@ -126,7 +125,8 @@ export const HELP_TEXT = `Usage: forgix [--harness auto|codex|claude|antigravity
 
 Commands:
   --help
-  init plan|apply|check
+  init plan|apply [--adopt]
+  init check
   init check-build <codex|claude|antigravity>
   hook <codex|claude|antigravity> <session-start|pre-tool-use|post-tool-use|post-invocation>
   config show [--explain]
@@ -142,7 +142,6 @@ Commands:
   project-profile view [--local]
   project-profile validate [--local]
   project-profile publish [--local]
-  project-profile session-view|session-save|session-clear
   roadmap session-view [--format=tree|mermaid]
   roadmap session-save|session-clear
   roadmap validate [--session]
@@ -219,9 +218,6 @@ export type ParsedInvocation =
       local: boolean;
       harness?: HarnessPreference;
     }
-  | { command: "project_profile_session_view"; harness?: HarnessPreference }
-  | { command: "project_profile_session_save"; harness?: HarnessPreference }
-  | { command: "project_profile_session_clear"; harness?: HarnessPreference }
   | { command: "roadmap_session_view"; format?: RoadmapVisualFormat; harness?: HarnessPreference }
   | { command: "roadmap_session_save"; harness?: HarnessPreference }
   | { command: "roadmap_session_clear"; harness?: HarnessPreference }
@@ -525,15 +521,6 @@ function parseProjectProfileInvocation(
   }
   if (subcommand === "publish") {
     return { command: "project_profile_publish", local, ...harnessField };
-  }
-  if (subcommand === "session-view" && flags.length === 0) {
-    return { command: "project_profile_session_view", ...harnessField };
-  }
-  if (subcommand === "session-save" && flags.length === 0) {
-    return { command: "project_profile_session_save", ...harnessField };
-  }
-  if (subcommand === "session-clear" && flags.length === 0) {
-    return { command: "project_profile_session_clear", ...harnessField };
   }
   throw new InvocationError("Invalid project-profile invocation.");
 }
@@ -851,9 +838,14 @@ export async function runInvocation(
             "Provide a bootstrap manifest JSON/YAML on stdin.",
             options.init,
           );
+    const adopt =
+      invocation.command === "init_plan" || invocation.command === "init_apply"
+        ? invocation.adopt
+        : undefined;
     return runInitBootstrap(action, {
       workspaceRoot,
       ...(input !== undefined ? { input } : {}),
+      ...(adopt ? { adopt } : {}),
       env,
       entrypointPath,
     });
@@ -1202,44 +1194,16 @@ function isRoadmapInvocation(value: ParsedInvocation): value is RoadmapInvocatio
 }
 
 function computeProjectProfileNextActionEnvelope(
-  action: "session_view" | "validate" | "publish",
-  stateStatus?: string,
+  action: "validate" | "publish",
   local = false,
 ): NextActionEnvelope {
-  if (action === "session_view") {
-    const awaiting = stateStatus === "awaiting_approval";
-    return {
-      role: awaiting ? "profile-approval" : "profile-init",
-      phase: stateStatus ?? "discovering",
-      allowedCommands: awaiting
-        ? [
-            "forgix project-profile publish",
-            "forgix project-profile validate",
-            "forgix project-profile session-clear",
-          ]
-        : [
-            "forgix project-profile inspect",
-            "forgix project-profile session-save",
-            "forgix project-profile validate",
-          ],
-      activeInvariants: [
-        "portable_shared_profile_no_local_paths",
-        "single_active_init_question",
-        "init_dir_gitignored",
-      ],
-    };
-  }
   if (action === "validate") {
     return {
       role: "profile-approval",
       phase: "awaiting_approval",
       allowedCommands: local
         ? ["forgix project-profile publish --local", "forgix project-profile view --local"]
-        : [
-            "forgix project-profile session-save",
-            "forgix project-profile publish",
-            "forgix project-profile view",
-          ],
+        : ["forgix project-profile publish", "forgix project-profile view"],
       activeInvariants: [
         "read_only_validation",
         "candidate_digest_bound",
@@ -1252,11 +1216,7 @@ function computeProjectProfileNextActionEnvelope(
     phase: "published",
     allowedCommands: local
       ? ["forgix project-profile view --local", "forgix project-profile inspect"]
-      : [
-          "forgix project-profile session-clear",
-          "forgix project-profile view",
-          "forgix project-profile inspect",
-        ],
+      : ["forgix project-profile view", "forgix project-profile inspect"],
     activeInvariants: [
       "profile_approval_receipt_bound",
       "atomic_projection_and_profile_write",
@@ -1274,13 +1234,13 @@ export function computeNextActionEnvelope(
     | RoadmapRuntimeState
     | {
         domain: "project-profile";
-        action: "session_view" | "validate" | "publish";
+        action: "validate" | "publish";
         status?: string;
         local?: boolean;
       },
 ): NextActionEnvelope {
   if ("domain" in input) {
-    return computeProjectProfileNextActionEnvelope(input.action, input.status, input.local);
+    return computeProjectProfileNextActionEnvelope(input.action, input.local);
   }
   if ("taskId" in input && "status" in input) {
     return computeTaskNextActionEnvelope(input);
@@ -1294,42 +1254,6 @@ async function runProjectProfileInvocation(
   profileOptions: ProjectProfileCommandOptions | undefined,
 ): Promise<CliResult> {
   const profileStore = createProjectProfileStore(workspaceRoot);
-  if (invocation.command === "project_profile_session_view") {
-    const loadedState = (await profileStore.loadInitState(true)) ?? null;
-    return {
-      command: invocation.command,
-      status: "ok",
-      data: {
-        state: loadedState,
-        nextAction: computeProjectProfileNextActionEnvelope(
-          "session_view",
-          loadedState?.status,
-          false,
-        ),
-      },
-    };
-  }
-  if (invocation.command === "project_profile_session_clear") {
-    return {
-      command: invocation.command,
-      status: "ok",
-      data: { cleared: await profileStore.clearInitState() },
-    };
-  }
-  if (invocation.command === "project_profile_session_save") {
-    const raw = await readStructuredTextInput(
-      "project-profile session-save requires YAML or JSON on stdin.",
-      profileOptions,
-    );
-    const saved = await profileStore.saveInitState(
-      parseStructuredInput(raw, "Project profile input"),
-    );
-    return {
-      command: invocation.command,
-      status: "saved",
-      data: { state: saved, yaml: renderProjectInitState(saved) },
-    };
-  }
   if (invocation.command === "project_profile_inspect") {
     const shared = await profileStore.loadShared(true);
     const local = await profileStore.loadLocal(true);
@@ -1344,7 +1268,6 @@ async function runProjectProfileInvocation(
         shared: shared ?? null,
         local: local ?? null,
         localIgnored: await profileStore.isLocalIgnored(),
-        initIgnored: await profileStore.isInitIgnored(),
         ...(reconciliation ? { reconciliation } : {}),
       },
     };
@@ -1381,7 +1304,6 @@ async function runProjectProfileInvocation(
         yaml: renderProjectProfile(local),
         nextAction: computeProjectProfileNextActionEnvelope(
           isPublish ? "publish" : "validate",
-          undefined,
           true,
         ),
       },
@@ -1390,8 +1312,9 @@ async function runProjectProfileInvocation(
 
   const proposal = await profileStore.prepareShared(parsed.profile);
   const projections = validateProjectProfileProjections(proposal, parsed.projections);
-  const previous = await profileStore.loadShared(true);
   if (invocation.command === "project_profile_validate") {
+    const previous = await profileStore.loadShared(true);
+    const unchanged = previous !== undefined && proposal.contentDigest === previous.contentDigest;
     return {
       command: invocation.command,
       status: "valid",
@@ -1400,21 +1323,25 @@ async function runProjectProfileInvocation(
         path: profileStore.sharedPath,
         contentDigest: proposal.contentDigest,
         revision: proposal.revision,
+        unchanged,
         diff: diffProjectProfiles(previous, proposal),
         yaml: renderProjectProfile(proposal),
         projectionPaths: projections.map(({ path }) => path),
-        nextAction: computeProjectProfileNextActionEnvelope("validate", undefined, false),
+        nextAction: computeProjectProfileNextActionEnvelope("validate", false),
       },
     };
   }
 
-  const published = await profileStore.publishShared(parsed.profile, {
-    projections,
-    ...(profileOptions?.approvedAt ? { approvedAt: profileOptions.approvedAt } : {}),
-  });
+  const { profile: published, unchanged } = await profileStore.publishSharedWithStatus(
+    parsed.profile,
+    {
+      projections,
+      ...(profileOptions?.approvedAt ? { approvedAt: profileOptions.approvedAt } : {}),
+    },
+  );
   return {
     command: invocation.command,
-    status: "published",
+    status: unchanged ? "unchanged" : "published",
     data: {
       local: false,
       path: profileStore.sharedPath,
@@ -1423,7 +1350,7 @@ async function runProjectProfileInvocation(
       contentDigest: published.contentDigest,
       approval: published.approval,
       projectionPaths: projections.map(({ path }) => path),
-      nextAction: computeProjectProfileNextActionEnvelope("publish", undefined, false),
+      nextAction: computeProjectProfileNextActionEnvelope("publish", false),
     },
   };
 }

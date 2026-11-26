@@ -254,6 +254,11 @@
           }
         }
       }
+    },
+    "adoptPaths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/safeRelativeGlob" }
     }
   },
   "$defs": {

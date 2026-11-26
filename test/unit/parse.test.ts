@@ -52,9 +52,22 @@ test("treats legacy mode words as objective text and parses read-only subcommand
     command: "project_profile_validate",
     local: true,
   });
-  expect(parseInvocation(["project-profile", "session-view"])).toEqual({
-    command: "project_profile_session_view",
+  expect(parseInvocation(["init", "plan", "--adopt"])).toEqual({
+    command: "init_plan",
+    adopt: true,
   });
+  expect(parseInvocation(["init", "apply", "--adopt"])).toEqual({
+    command: "init_apply",
+    adopt: true,
+  });
+  for (const removed of ["session-view", "session-save", "session-clear"]) {
+    expectThrown(
+      () => parseInvocation(["project-profile", removed]),
+      (error) =>
+        error instanceof schema.InvocationError &&
+        error.exitCode === schema.EXIT_CODES.INVALID_INVOCATION,
+    );
+  }
   expect(parseInvocation(["roadmap", "session-view", "--format=mermaid"])).toEqual({
     command: "roadmap_session_view",
     format: "mermaid",

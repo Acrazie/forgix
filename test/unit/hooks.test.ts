@@ -340,3 +340,41 @@ describe("hooks universal destructive shell command invariants", () => {
     }
   });
 });
+
+describe("hooks project summary loader", () => {
+  test("reads content.{project,stack,protectedSurfaces} from canonical .forgix/project.yaml without unnamed", async () => {
+    const { loadHookProjectSummary } = await import("../../src/hooks/context.js");
+    const dir = createTempDir("forgix-hook-profile-summary-");
+    try {
+      mkdirSync(join(dir, ".forgix"), { recursive: true });
+      writeFileSync(
+        join(dir, ".forgix", "project.yaml"),
+        [
+          "schemaVersion: 1",
+          "profileId: acme-web",
+          "revision: 1",
+          "content:",
+          "  project:",
+          "    id: acme-web",
+          "    name: Acme Web",
+          "  stack:",
+          "    - id: typescript",
+          "      role: language",
+          "      sourceRefs: [package.json]",
+          "  protectedSurfaces:",
+          '    - ".forgix/config.yaml"',
+          '    - "infra/**"',
+          "",
+        ].join("\n"),
+      );
+      expect(loadHookProjectSummary(dir)).toEqual({
+        present: true,
+        projectName: "Acme Web",
+        stackIds: ["typescript"],
+        protectedSurfaces: [".forgix/config.yaml", "infra/**"],
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

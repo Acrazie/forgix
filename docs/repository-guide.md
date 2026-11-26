@@ -176,7 +176,6 @@ All three harnesses share the same `.forgix/` project paths:
 | ------------------------------- | ------------------------------------------------------ | ------------------------------- |
 | `.forgix/project.yaml`          | Shared architecture, stack, and conventions.           | Review and commit when desired. |
 | `.forgix/project.local.yaml`    | Machine-local service paths and personal preferences.  | Gitignored.                     |
-| `.forgix/init/state.yaml`       | Compact resumable **Project INIT** session state.      | Gitignored and temporary.       |
 | `.forgix/diagrams/*.mermaid.md` | Optional projections of approved profile architecture. | Commit with shared profile.     |
 
 Configuration resolves in order of increasing precedence:

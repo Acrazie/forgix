@@ -1,10 +1,4 @@
-import { validateSafeRegexPattern } from "../core/factory-policy.js";
-import type {
-  FactoryArtifactKind,
-  FactoryRuleSpec,
-  FactorySelection,
-} from "../core/factory-types.js";
-import { ConfigValidationError } from "../core/schema.js";
+import type { FactoryArtifactKind, FactorySelection } from "../core/factory-types.js";
 import {
   FACTORY_ROOT_DIR,
   LEGACY_ANTIGRAVITY_RULES_POINTER_PATH,
@@ -41,6 +35,13 @@ export interface FactoryConflict {
   path: string;
   code: string;
   message: string;
+  preview?: string;
+}
+
+export interface FactoryPlanOptions {
+  adoptAll?: boolean;
+  adoptPaths?: ReadonlySet<string>;
+  renderPreview?: (path: string, previous: string | undefined, next: string | undefined) => string;
 }
 
 export type FactorySafeRead = (
@@ -52,67 +53,6 @@ export interface FactoryPlannedOp {
   existingContent: string | undefined;
   existingMode: number | undefined;
   nextContent: string | undefined;
-}
-
-function validateUniqueIdsAndBytes(
-  label: string,
-  items: ReadonlyArray<{ id: string; content: string }>,
-  maxBytes: number,
-): void {
-  const seen = new Set<string>();
-  for (const item of items) {
-    if (seen.has(item.id)) {
-      throw new ConfigValidationError(`Duplicate ${label} "${item.id}".`, "init-bootstrap", []);
-    }
-    seen.add(item.id);
-    if (Buffer.byteLength(item.content, "utf8") > maxBytes) {
-      throw new ConfigValidationError(
-        `${label} "${item.id}" exceeds ${maxBytes} bytes.`,
-        "init-bootstrap",
-        [],
-      );
-    }
-  }
-}
-
-function validateRuleEnforcePatterns(rule: FactoryRuleSpec): void {
-  const patterns: Array<[string, string]> = [
-    ...(rule.enforce?.blockedCommands ?? []).map((c): [string, string] => [
-      "blockedCommands",
-      c.pattern,
-    ]),
-    ...(rule.enforce?.escapeHatchPatterns ?? []).map((h): [string, string] => [
-      "escapeHatchPatterns",
-      h.pattern,
-    ]),
-  ];
-  for (const [field, pattern] of patterns) {
-    const res = validateSafeRegexPattern(pattern);
-    if (!res.ok) {
-      throw new ConfigValidationError(
-        `Invalid ${field} regex in "${rule.id}": ${res.error}`,
-        "init-bootstrap",
-        [],
-      );
-    }
-  }
-}
-
-export function validateFactoryManifestSections(
-  selection: FactorySelection,
-  maxItemBytes: number,
-): void {
-  if (selection.rules.enabled) {
-    const rules = selection.rules.items ?? [];
-    validateUniqueIdsAndBytes("rule", rules, maxItemBytes);
-    for (const rule of rules) validateRuleEnforcePatterns(rule);
-  }
-  if (selection.agents.enabled) {
-    validateUniqueIdsAndBytes("agent", selection.agents.items ?? [], maxItemBytes);
-  }
-  if (selection.skills.enabled) {
-    validateUniqueIdsAndBytes("skill", selection.skills.items ?? [], maxItemBytes);
-  }
 }
 
 function addArtifactEntries(
@@ -176,86 +116,122 @@ export function buildDesiredFactoryFiles(selection: FactorySelection): {
   return { files, managedPaths: [...files.keys()].toSorted() };
 }
 
-function pushCollision(conflicts: FactoryConflict[], path: string, message: string): void {
-  conflicts.push({ path, code: "unmanaged_file_collision", message });
+interface FactoryPlanContext {
+  safeRead: FactorySafeRead;
+  operations: FactoryPlannedOp[];
+  conflicts: FactoryConflict[];
+  options?: FactoryPlanOptions;
+}
+
+function shouldAdopt(path: string, options?: FactoryPlanOptions): boolean {
+  return Boolean(options?.adoptAll || options?.adoptPaths?.has(path));
+}
+
+function pushCollision(
+  ctx: FactoryPlanContext,
+  path: string,
+  message: string,
+  prev: string | undefined,
+  next: string | undefined,
+): void {
+  const preview = ctx.options?.renderPreview?.(path, prev, next);
+  ctx.conflicts.push({
+    path,
+    code: "unmanaged_file_collision",
+    message,
+    ...(preview !== undefined ? { preview } : {}),
+  });
 }
 
 function pushOp(
-  operations: FactoryPlannedOp[],
+  ctx: FactoryPlanContext,
   path: string,
   probe: FactoryReadProbe,
   nextContent: string | undefined,
 ): void {
-  operations.push({ path, existingContent: probe.content, existingMode: probe.mode, nextContent });
+  ctx.operations.push({
+    path,
+    existingContent: probe.content,
+    existingMode: probe.mode,
+    nextContent,
+  });
 }
 
 async function planDesiredFiles(
   desiredList: readonly DesiredFactoryFile[],
-  safeRead: FactorySafeRead,
-  operations: FactoryPlannedOp[],
-  conflicts: FactoryConflict[],
+  ctx: FactoryPlanContext,
 ): Promise<void> {
   const probes = await Promise.all(
-    desiredList.map(async (d) => [d, await safeRead(d.path)] as const),
+    desiredList.map(async (d) => [d, await ctx.safeRead(d.path)] as const),
   );
   for (const [desired, probe] of probes) {
-    if (!probe.ok) conflicts.push(probe.conflict);
+    if (!probe.ok) ctx.conflicts.push(probe.conflict);
     else if (
       !desired.isCanonical &&
       probe.content !== undefined &&
-      !hasManagedMarker(probe.content, desired.kind, desired.id)
+      !hasManagedMarker(probe.content, desired.kind, desired.id) &&
+      !shouldAdopt(desired.path, ctx.options)
     ) {
-      pushCollision(conflicts, desired.path, `${desired.path} lacks Forgix ownership marker.`);
+      pushCollision(
+        ctx,
+        desired.path,
+        `${desired.path} lacks Forgix ownership marker.`,
+        probe.content,
+        desired.content,
+      );
     } else {
-      pushOp(operations, desired.path, probe, desired.content);
+      pushOp(ctx, desired.path, probe, desired.content);
     }
   }
 }
 
 async function planStaleManagedRemovals(
   stalePaths: readonly string[],
-  safeRead: FactorySafeRead,
-  operations: FactoryPlannedOp[],
-  conflicts: FactoryConflict[],
+  ctx: FactoryPlanContext,
 ): Promise<void> {
-  const probes = await Promise.all(stalePaths.map(async (p) => [p, await safeRead(p)] as const));
+  const probes = await Promise.all(
+    stalePaths.map(async (p) => [p, await ctx.safeRead(p)] as const),
+  );
   for (const [stalePath, probe] of probes) {
-    if (!probe.ok) conflicts.push(probe.conflict);
+    if (!probe.ok) ctx.conflicts.push(probe.conflict);
     else if (probe.content === undefined) continue;
-    else if (!stalePath.startsWith(`${FACTORY_ROOT_DIR}/`) && !hasManagedMarker(probe.content)) {
-      pushCollision(conflicts, stalePath, `${stalePath} lacks Forgix ownership marker.`);
+    else if (
+      !stalePath.startsWith(`${FACTORY_ROOT_DIR}/`) &&
+      !hasManagedMarker(probe.content) &&
+      !shouldAdopt(stalePath, ctx.options)
+    ) {
+      pushCollision(
+        ctx,
+        stalePath,
+        `${stalePath} lacks Forgix ownership marker.`,
+        probe.content,
+        undefined,
+      );
     } else {
-      pushOp(operations, stalePath, probe, undefined);
+      pushOp(ctx, stalePath, probe, undefined);
     }
   }
 }
 
-async function planLegacyRulesCleanup(
-  safeRead: FactorySafeRead,
-  operations: FactoryPlannedOp[],
-  conflicts: FactoryConflict[],
-): Promise<void> {
+async function planLegacyRulesCleanup(ctx: FactoryPlanContext): Promise<void> {
   const pointerPaths = [LEGACY_CLAUDE_RULES_POINTER_PATH, LEGACY_ANTIGRAVITY_RULES_POINTER_PATH];
   const [legacyCanonical, ...pointerProbes] = await Promise.all([
-    safeRead(LEGACY_CANONICAL_RULES_PATH),
-    ...pointerPaths.map((p) => safeRead(p)),
+    ctx.safeRead(LEGACY_CANONICAL_RULES_PATH),
+    ...pointerPaths.map((p) => ctx.safeRead(p)),
   ]);
-  if (!legacyCanonical.ok) conflicts.push(legacyCanonical.conflict);
+  if (!legacyCanonical.ok) ctx.conflicts.push(legacyCanonical.conflict);
   else if (legacyCanonical.content !== undefined) {
-    pushOp(operations, LEGACY_CANONICAL_RULES_PATH, legacyCanonical, undefined);
+    pushOp(ctx, LEGACY_CANONICAL_RULES_PATH, legacyCanonical, undefined);
   }
   for (let i = 0; i < pointerPaths.length; i += 1) {
     const probe = pointerProbes[i]!;
-    if (!probe.ok) conflicts.push(probe.conflict);
+    const path = pointerPaths[i]!;
+    if (!probe.ok) ctx.conflicts.push(probe.conflict);
     else if (probe.content === undefined) continue;
-    else if (!isLegacyRulesPointer(probe.content)) {
-      pushCollision(
-        conflicts,
-        pointerPaths[i]!,
-        `${pointerPaths[i]} is not a legacy Forgix pointer.`,
-      );
+    else if (!isLegacyRulesPointer(probe.content) && !shouldAdopt(path, ctx.options)) {
+      pushCollision(ctx, path, `${path} is not a legacy Forgix pointer.`, probe.content, undefined);
     } else {
-      pushOp(operations, pointerPaths[i]!, probe, undefined);
+      pushOp(ctx, path, probe, undefined);
     }
   }
 }
@@ -264,18 +240,22 @@ export async function planFactoryOperations(
   selection: FactorySelection,
   previousManagedPaths: readonly string[],
   safeRead: FactorySafeRead,
+  options?: FactoryPlanOptions,
 ): Promise<{
   operations: FactoryPlannedOp[];
   conflicts: FactoryConflict[];
   managedPaths: string[];
 }> {
   const { files, managedPaths } = buildDesiredFactoryFiles(selection);
-  const operations: FactoryPlannedOp[] = [];
-  const conflicts: FactoryConflict[] = [];
+  const ctx: FactoryPlanContext = {
+    safeRead,
+    operations: [],
+    conflicts: [],
+    ...(options ? { options } : {}),
+  };
   const stalePaths = previousManagedPaths.filter((p) => !files.has(p));
-
-  await planDesiredFiles([...files.values()], safeRead, operations, conflicts);
-  await planStaleManagedRemovals(stalePaths, safeRead, operations, conflicts);
-  await planLegacyRulesCleanup(safeRead, operations, conflicts);
-  return { operations, conflicts, managedPaths };
+  await planDesiredFiles([...files.values()], ctx);
+  await planStaleManagedRemovals(stalePaths, ctx);
+  await planLegacyRulesCleanup(ctx);
+  return { operations: ctx.operations, conflicts: ctx.conflicts, managedPaths };
 }

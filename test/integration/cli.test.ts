@@ -162,11 +162,6 @@ describe("CLI Next-Action Envelope, Autonomous Proof Floor, and Telemetry/Retro"
       expect((gateApproved.data as typeof tvData).nextAction.phase).toBe("BUILD");
       expect((gateApproved.data as typeof tvData).nextAction.role).toBe("build");
 
-      const profileSession = await runInvocation(["project-profile", "session-view"], {
-        workspaceRoot: root,
-      });
-      expect((profileSession.data as typeof tvData).nextAction.role).toBe("profile-init");
-
       const profileValidated = await runInvocation(["project-profile", "validate"], {
         workspaceRoot: root,
         projectProfile: { input: stringify(projectProfileInput()) },

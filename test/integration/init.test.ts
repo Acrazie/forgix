@@ -30,7 +30,15 @@ describe("agent-first init and hook CLI contract", () => {
 
   test("parses `init plan|apply|check` and rejects unsupported init subcommands", () => {
     expect(parseInvocation(["init", "plan"])).toEqual({ command: "init_plan" });
+    expect(parseInvocation(["init", "plan", "--adopt"])).toEqual({
+      command: "init_plan",
+      adopt: true,
+    });
     expect(parseInvocation(["init", "apply"])).toEqual({ command: "init_apply" });
+    expect(parseInvocation(["init", "apply", "--adopt"])).toEqual({
+      command: "init_apply",
+      adopt: true,
+    });
     expect(parseInvocation(["init", "check"])).toEqual({ command: "init_check" });
     expect(parseInvocation(["--harness", "codex", "init", "check"])).toEqual({
       command: "init_check",
@@ -170,7 +178,9 @@ describe("agent-first init and hook CLI contract", () => {
   });
 
   test("HELP_TEXT advertises deterministic init and hook commands instead of interactive wizard", () => {
-    expect(HELP_TEXT).toContain("init plan|apply|check");
+    expect(HELP_TEXT).toContain("init plan|apply [--adopt]");
+    expect(HELP_TEXT).toContain("init check");
+    expect(HELP_TEXT).not.toContain("project-profile session-view");
     expect(HELP_TEXT).toContain(
       "hook <codex|claude|antigravity> <session-start|pre-tool-use|post-tool-use|post-invocation>",
     );

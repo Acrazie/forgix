@@ -75,7 +75,6 @@
     "schemas/config.schema.json",
     "schemas/init-bootstrap.schema.json",
     "schemas/policy.schema.json",
-    "schemas/project-init-state.schema.json",
     "schemas/project-profile-local.schema.json",
     "schemas/project-profile.schema.json",
     "schemas/roadmap-runtime.schema.json",

@@ -19,7 +19,8 @@ import { createWorkspaceStore, type WorkspaceStore } from "../core/store.js";
 import { writeHarnessCliPin } from "../hooks/bundle-identity.js";
 import type { CliResult, HarnessId, HookEnforcementMode, InitBootstrapAction } from "../types.js";
 import { checkFactoryDrift } from "./factory-check.js";
-import { planFactoryOperations, validateFactoryManifestSections } from "./factory-plan.js";
+import { validateFactoryManifestSections } from "./factory-parse.js";
+import { planFactoryOperations } from "./factory-plan.js";
 import { renderCodexAgentsIndexBlock } from "./factory-render.js";
 import {
   HOOK_CONFIG_PATHS,
@@ -84,6 +85,7 @@ export interface InitBootstrapManifest {
     enabled: boolean;
     entries?: string[];
   };
+  adoptPaths?: string[];
 }
 
 export type InitPlanActionKind = "create" | "update" | "remove" | "unchanged";
@@ -98,6 +100,7 @@ export interface InitConflict {
   path: string;
   code: string;
   message: string;
+  preview?: string;
 }
 
 export interface InitCheckFinding {
@@ -109,6 +112,7 @@ export interface InitCheckFinding {
 export interface RunInitBootstrapOptions {
   workspaceRoot: string;
   input?: string;
+  adopt?: boolean;
   store?: WorkspaceStore;
   env?: NodeJS.ProcessEnv;
   entrypointPath?: string;
@@ -187,6 +191,21 @@ function dedupeStrings(entries: readonly string[]): string[] {
   return result;
 }
 
+function appendPreviewSection(
+  target: string[],
+  sourceLines: readonly string[],
+  prefix: "-" | "+",
+  maxSectionLines: number,
+): void {
+  const limit = Math.min(sourceLines.length, maxSectionLines);
+  for (let i = 0; i < limit; i += 1) {
+    target.push(`${prefix}${sourceLines[i]}`);
+  }
+  if (sourceLines.length > maxSectionLines) {
+    target.push("... (truncated)");
+  }
+}
+
 function renderDiffPreview(
   path: string,
   previous: string | undefined,
@@ -198,21 +217,15 @@ function renderDiffPreview(
     `--- ${previous === undefined ? "/dev/null" : `a/${path}`}`,
     `+++ ${next === undefined ? "/dev/null" : `b/${path}`}`,
   ];
-  const maxLines = 80;
-  for (const line of prevLines) {
-    if (lines.length >= maxLines) {
-      lines.push("... (truncated)");
-      return lines.join("\n");
-    }
-    lines.push(`-${line}`);
-  }
-  for (const line of nextLines) {
-    if (lines.length >= maxLines) {
-      lines.push("... (truncated)");
-      return lines.join("\n");
-    }
-    lines.push(`+${line}`);
-  }
+  const totalBudget = 76;
+  const halfBudget = 38;
+  const prevLimit = Math.min(
+    prevLines.length,
+    Math.max(halfBudget, totalBudget - nextLines.length),
+  );
+  const nextLimit = Math.min(nextLines.length, totalBudget - prevLimit);
+  appendPreviewSection(lines, prevLines, "-", prevLimit);
+  appendPreviewSection(lines, nextLines, "+", nextLimit);
   return lines.join("\n");
 }
 
@@ -449,6 +462,7 @@ function buildMergedConfig(
 async function computePlan(
   store: WorkspaceStore,
   manifest: InitBootstrapManifest,
+  adopt = false,
 ): Promise<InternalPlan> {
   const harnessSet = new Set<HarnessId>(manifest.harnesses);
   const selection = extractSelection(manifest);
@@ -485,8 +499,15 @@ async function computePlan(
   const previousManagedPaths = readPreviousManagedPaths(configProbe?.content);
 
   // 1. Canonical factory (.forgix/factory/**) + harness projections + legacy rules cleanup
-  const factoryPlan = await planFactoryOperations(selection, previousManagedPaths, (path) =>
-    safeReadTarget(store, path),
+  const factoryPlan = await planFactoryOperations(
+    selection,
+    previousManagedPaths,
+    (path) => safeReadTarget(store, path),
+    {
+      adoptAll: adopt,
+      ...(manifest.adoptPaths?.length ? { adoptPaths: new Set(manifest.adoptPaths) } : {}),
+      renderPreview: renderDiffPreview,
+    },
   );
   conflicts.push(...factoryPlan.conflicts);
   for (const op of factoryPlan.operations) {
@@ -924,7 +945,7 @@ export async function runInitBootstrap(
   const manifest = parseManifest(options.input);
 
   if (action === "plan") {
-    const plan = await computePlan(store, manifest);
+    const plan = await computePlan(store, manifest, options.adopt);
     return {
       command: "init_plan",
       status: plan.conflicts.length > 0 ? "blocked" : "ok",
@@ -938,7 +959,7 @@ export async function runInitBootstrap(
   if (action === "apply") {
     await store.ensureSafeDirectory(".forgix", { dirMode: VERSIONED_DIR_MODE });
     return store.withWriteLock(INIT_APPLY_LOCK_PATH, async () => {
-      const plan = await computePlan(store, manifest);
+      const plan = await computePlan(store, manifest, options.adopt);
       if (plan.conflicts.length > 0) {
         const summary = plan.conflicts.map((c) => `${c.path}: ${c.message}`).join("; ");
         throw new StateStoreError(

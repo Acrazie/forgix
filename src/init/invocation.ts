@@ -2,8 +2,8 @@ import { InvocationError } from "../core/schema.js";
 import { HARNESS_IDS, type HarnessId, type HarnessPreference } from "../types.js";
 
 export type ParsedInitInvocation =
-  | { command: "init_plan"; harness?: HarnessPreference }
-  | { command: "init_apply"; harness?: HarnessPreference }
+  | { command: "init_plan"; adopt?: boolean; harness?: HarnessPreference }
+  | { command: "init_apply"; adopt?: boolean; harness?: HarnessPreference }
   | { command: "init_check"; harness?: HarnessPreference }
   | { command: "init_check_build"; targetHarness: HarnessId; harness?: HarnessPreference };
 
@@ -16,8 +16,18 @@ export function parseInitInvocation(
       "Forgix is an agent-first plugin and does not provide an interactive terminal wizard. Run $forgix init (Codex), /forgix:forgix init (Claude Code), or /forgix init (Antigravity) inside your AI agent. For deterministic backend operations, use: forgix init plan|apply|check.",
     );
   }
-  if (rest.length === 1 && (rest[0] === "plan" || rest[0] === "apply" || rest[0] === "check")) {
-    return { command: `init_${rest[0]}`, ...harnessField };
+  if (rest[0] === "check" && rest.length === 1) {
+    return { command: "init_check", ...harnessField };
+  }
+  if (
+    (rest[0] === "plan" || rest[0] === "apply") &&
+    (rest.length === 1 || (rest.length === 2 && rest[1] === "--adopt"))
+  ) {
+    return {
+      command: `init_${rest[0]}`,
+      ...(rest[1] === "--adopt" ? { adopt: true } : {}),
+      ...harnessField,
+    };
   }
   const targetHarness = rest[1];
   if (
@@ -33,6 +43,6 @@ export function parseInitInvocation(
     };
   }
   throw new InvocationError(
-    "Usage: forgix init plan|apply|check | init check-build <codex|claude|antigravity>",
+    "Usage: forgix init plan|apply [--adopt] | init check | init check-build <codex|claude|antigravity>",
   );
 }

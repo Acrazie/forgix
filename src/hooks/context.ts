@@ -226,22 +226,23 @@ export function loadHookProjectSummary(workspaceRoot: string): HookProjectSummar
     };
   }
 
-  const projectObj = isRecord(parsed.value.project) ? parsed.value.project : undefined;
+  const content = isRecord(parsed.value.content) ? parsed.value.content : parsed.value;
+  const projectObj = isRecord(content.project) ? content.project : undefined;
   const projectName =
     (typeof projectObj?.name === "string" && projectObj.name) ||
     (typeof projectObj?.id === "string" && projectObj.id) ||
     undefined;
 
   const stackIds: string[] = [];
-  if (Array.isArray(parsed.value.stack)) {
-    for (const entry of parsed.value.stack) {
+  if (Array.isArray(content.stack)) {
+    for (const entry of content.stack) {
       if (isRecord(entry) && typeof entry.id === "string" && entry.id.length > 0) {
         stackIds.push(entry.id);
       }
     }
   }
 
-  const protectedSurfaces = stringList(parsed.value.protectedSurfaces);
+  const protectedSurfaces = stringList(content.protectedSurfaces);
 
   return {
     present: true,

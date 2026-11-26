@@ -9,3 +9,11 @@
 # Forgix local overrides
 .forgix/config.local.yaml
 .forgix/project.local.yaml
+
+# forgix:start
+.env
+.env.local
+.env.*.local
+.forgix/config.local.yaml
+.forgix/project.local.yaml
+# forgix:end

@@ -26,19 +26,22 @@ function writeConfig(dir: string, enforcement: HookEnforcementMode, extraYaml = 
 
 function writeProjectProfile(dir: string, protectedSurfaces: string[]): void {
   mkdirSync(join(dir, ".forgix"), { recursive: true });
-  const surfacesYaml = protectedSurfaces.map((s) => `  - "${s}"`).join("\n");
+  const surfacesYaml = protectedSurfaces.map((s) => `    - "${s}"`).join("\n");
   writeFileSync(
     join(dir, ".forgix", "project.yaml"),
     [
       "schemaVersion: 1",
-      "project:",
-      "  id: demo",
-      "  name: Demo App",
-      "stack:",
-      "  - id: typescript",
-      "    role: language",
-      "    sourceRefs: [package.json]",
-      "protectedSurfaces:",
+      "profileId: demo",
+      "revision: 1",
+      "content:",
+      "  project:",
+      "    id: demo",
+      "    name: Demo App",
+      "  stack:",
+      "    - id: typescript",
+      "      role: language",
+      "      sourceRefs: [package.json]",
+      "  protectedSurfaces:",
       surfacesYaml,
       "",
     ].join("\n"),

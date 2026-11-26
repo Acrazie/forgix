@@ -26,7 +26,6 @@ const installationJourneyMarkers = [
   ".forgix/config.yaml",
   ".forgix/factory/{rules,agents,skills}",
   ".forgix/project.local.yaml",
-  ".forgix/init/state.yaml",
 ];
 
 function relativeLinks(markdown: string): string[] {
@@ -74,6 +73,7 @@ describe("public documentation", () => {
       expect(readme).not.toMatch(
         /accepted next target|implementation pending|not yet implemented/i,
       );
+      expect(readme).not.toContain(".forgix/init/state.yaml");
     }
   });
 

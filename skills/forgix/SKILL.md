@@ -29,25 +29,21 @@ strictly agent-first (never direct human CLI operation); bare `forgix init` refu
 
 ## Project INIT
 
-Outside task lifecycle and GATE. Use bundled `project-profile` (`session-view`, `inspect`,
-`session-save`, `validate`, `publish`, `session-clear`, `view [--local]`) and `init` (`check`,
-`plan`, `apply`):
+Outside task lifecycle and GATE. Use bundled `project-profile` (`inspect`, `validate`, `publish`,
+`view [--local]`) and `init` (`check`, `plan`, `apply`):
 
-1. Run `forgix project-profile session-view`, `forgix project-profile inspect`, and `forgix init check`.
-   Gitignore `.forgix/init/` (and `.forgix/project.local.yaml` for `--local`) before saving.
-2. Auto-detect harnesses (`.codex/`, `.claude/`, `.agents/`), stack/quality scripts (proposing
-   `protectedSurfaces` and `surfaceVerificationRules`), and tools/plugins (`integrations`)
-   without duplicating hooks. Propose `domainDocumentation` lazily when absent.
-3. Ask only missing, contradictory, stale, or material decisions—one question per turn (2–3
-   options, recommended first, consequences, free-form path; no hard cap). Save via
-   `forgix project-profile session-save`. Keep `.forgix/project.yaml` portable; local paths
-   stay in `.forgix/project.local.yaml`.
-4. Validate via `forgix project-profile validate`, obtain explicit Profile Approval over the
-   exact digest, then `forgix project-profile publish`. On re-run, reconcile drift selectively;
-   a rejected update leaves `.forgix/project.yaml` byte-for-byte unchanged.
-5. Preview bootstrap (`harnesses`, `configPatch`, `rules`, `hooks`, `gitignore`, `worktreeInclude`)
-   with `forgix init plan`, obtain user confirmation, then `forgix init apply` and
-   `forgix project-profile session-clear`.
+1. Auto-discover repo facts with zero questions (greenfield defaults: active harness, `balanced`
+   hooks, directory name as project id/name). Run read-only `forgix project-profile inspect`,
+   `forgix init check`, `forgix project-profile validate`, and `forgix init plan`.
+2. If `inSync: true` and profile is `unchanged: true`, report "already up to date" (0 prompts, 0
+   writes). Block on hard safety conflicts (`invalid_json`, `invalid_yaml`, `symlink_or_non_file`,
+   malformed markers).
+3. Present one consolidated preview (profile, bootstrap plan, and any `unmanaged_file_collision`
+   diffs) and ask for **one explicit approval**. On user adjustments, update candidates, re-run
+   read-only `validate`/`plan`, and re-ask. Rejection leaves `.forgix/project.yaml` byte-for-byte unchanged.
+4. After approval, run `forgix init apply` **first** (prefer `adoptPaths` for specific approved
+   collisions, or `--adopt`), then `forgix project-profile publish` **second** (idempotent;
+   portable shared profile, local paths in `--local`).
 
 ## INTAKE and routing
 

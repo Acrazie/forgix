@@ -23,38 +23,28 @@ const SHARED_PROJECT_PROFILE_PATH = ".forgix/project.yaml";
 const LOCAL_PROJECT_PROFILE_PATH = ".forgix/project.local.yaml";
 export const LOCAL_PROJECT_PROFILE_IGNORE_ENTRY = ".forgix/project.local.yaml";
 const PROJECT_DIAGRAM_ROOT = ".forgix/diagrams";
-const PROJECT_INIT_STATE_PATH = ".forgix/init/state.yaml";
-const PROJECT_INIT_IGNORE_ENTRY = ".forgix/init/";
-
-const CORE_PROFILE_CATEGORIES = [
-  "stack",
-  "source_structure",
-  "architecture",
-  "dependency_direction",
-  "naming",
-  "error_handling",
-  "testing",
-  "quality",
-] as const;
-
-const OPTIONAL_PROFILE_CATEGORIES = [
-  "frontend",
-  "api",
-  "data",
-  "security",
-  "concurrency",
-  "performance",
-  "compatibility",
-  "migration",
-  "observability",
-  "deployment",
-  "rollback",
-  "operations",
-] as const;
 
 type ProjectDecisionCategory =
-  | (typeof CORE_PROFILE_CATEGORIES)[number]
-  | (typeof OPTIONAL_PROFILE_CATEGORIES)[number];
+  | "stack"
+  | "source_structure"
+  | "architecture"
+  | "dependency_direction"
+  | "naming"
+  | "error_handling"
+  | "testing"
+  | "quality"
+  | "frontend"
+  | "api"
+  | "data"
+  | "security"
+  | "concurrency"
+  | "performance"
+  | "compatibility"
+  | "migration"
+  | "observability"
+  | "deployment"
+  | "rollback"
+  | "operations";
 
 type ProjectDecisionProvenanceKind =
   | "user"
@@ -100,12 +90,12 @@ interface ProjectProfileDecision {
 
 export interface ProjectProfileContent {
   project: { id: string; name: string };
-  stack: ProjectStackEntry[];
-  topology: {
+  stack?: ProjectStackEntry[];
+  topology?: {
     rootServiceId: string;
     services: ProjectService[];
   };
-  decisions: ProjectProfileDecision[];
+  decisions?: ProjectProfileDecision[];
   domainDocumentation?: {
     contextMode: "single" | "multiple";
     glossaryPath: string;
@@ -119,7 +109,7 @@ export interface ProjectProfileContent {
   };
   protectedSurfaces?: string[];
   surfaceVerificationRules?: SurfaceVerificationRule[];
-  diagramRefs: string[];
+  diagramRefs?: string[];
 }
 
 interface ProfileApprovalReceipt {
@@ -157,41 +147,6 @@ export interface ProjectProfileProjection {
   content: string;
 }
 
-interface ProjectInitDecision {
-  key: string;
-  value: string;
-  source: ProjectDecisionProvenanceKind;
-  sourceRefs: string[];
-  dependsOn: string[];
-}
-
-interface ProjectInitQuestion {
-  id: string;
-  decisionKey: string;
-  prompt: string;
-  evidenceRefs: string[];
-  options: Array<{ id: string; label: string; impact: string }>;
-  recommendedOptionId: string;
-  recommendationBasis: string;
-  recommendationConfidence: "high" | "medium" | "low";
-  parentDecisionKeys: string[];
-  directConsequences: string[];
-}
-
-export interface ProjectInitState {
-  schemaVersion: 1;
-  sessionId: string;
-  profileId: string;
-  revision: number;
-  status: "discovering" | "awaiting_decision" | "awaiting_approval" | "blocked";
-  decisions: ProjectInitDecision[];
-  activeQuestion?: ProjectInitQuestion;
-  staleDecisionKeys: string[];
-  candidateContentDigest?: string;
-  blockedReason?: string;
-  updatedAt: string;
-}
-
 interface ProfileReconciliationResult {
   staleDecisionKeys: string[];
   invalidatedDecisionKeys: string[];
@@ -217,14 +172,12 @@ type ProjectProfileErrorCode =
   | "profile_digest_mismatch"
   | "profile_receipt_invalid"
   | "profile_revision_conflict"
-  | "profile_no_change"
   | "profile_path_invalid"
   | "profile_not_found"
   | "profile_read_failed"
   | "profile_write_failed"
   | "profile_local_not_ignored"
   | "profile_local_conflict"
-  | "profile_session_conflict"
   | "profile_projection_invalid";
 
 export class ProjectProfileError extends Error {
@@ -237,9 +190,7 @@ export class ProjectProfileError extends Error {
     super(message);
     this.name = "ProjectProfileError";
     this.exitCode =
-      code === "profile_revision_conflict" ||
-      code === "profile_no_change" ||
-      code === "profile_session_conflict"
+      code === "profile_revision_conflict"
         ? EXIT_CODES.STATE_CONFLICT
         : code === "profile_write_failed" || code === "profile_read_failed"
           ? EXIT_CODES.INTERNAL_ERROR
@@ -271,7 +222,7 @@ export function prepareProjectProfile(value: unknown): ProjectProfileProposal {
   const proposal = canonicalize({
     schemaVersion: 1,
     profileId: value.profileId,
-    revision: value.revision,
+    revision: value.revision ?? 1,
     contentDigest,
     content: value.content,
   }) as ProjectProfileProposal;
@@ -377,7 +328,7 @@ export function validateLocalProjectProfile(
         "Local profile is bound to a different shared content digest.",
       );
     }
-    const serviceIds = new Set(shared.content.topology.services.map(({ id }) => id));
+    const serviceIds = new Set((shared.content.topology?.services ?? []).map(({ id }) => id));
     for (const mapping of local.servicePaths) {
       if (!serviceIds.has(mapping.serviceId)) {
         throw new ProjectProfileError(
@@ -386,7 +337,7 @@ export function validateLocalProjectProfile(
         );
       }
     }
-    const sharedKeys = new Set(shared.content.decisions.map(({ key }) => key));
+    const sharedKeys = new Set((shared.content.decisions ?? []).map(({ key }) => key));
     for (const preference of local.preferences) {
       if (sharedKeys.has(preference.key)) {
         throw new ProjectProfileError(
@@ -409,13 +360,6 @@ export function renderProjectProfile(
 }
 
 /**
- * Validates and renders compact Project INIT session state as YAML.
- */
-export function renderProjectInitState(value: ProjectInitState): string {
-  return stringify(canonicalize(validateProjectInitState(value)), { lineWidth: 0 });
-}
-
-/**
  * Reconciles observed source fingerprints against a shared profile and computes the transitive
  * closure of invalidated dependent decisions.
  */
@@ -425,7 +369,8 @@ export function reconcileProjectProfile(
 ): ProfileReconciliationResult {
   const stale = new Set<string>();
   const missing = new Set<string>();
-  for (const decision of profile.content.decisions) {
+  const decisions = profile.content.decisions ?? [];
+  for (const decision of decisions) {
     for (const fingerprint of decision.sourceFingerprints) {
       const observed = observedFingerprints[fingerprint.sourceRef];
       if (observed === undefined) missing.add(fingerprint.sourceRef);
@@ -438,9 +383,7 @@ export function reconcileProjectProfile(
     if (observed === undefined) missing.add(fingerprint.sourceRef);
     else if (observed !== fingerprint.value) domainDocumentationStale = true;
   }
-  const invalidatedDecisionKeys = dependencyClosure(decisionsToGraph(profile.content.decisions), [
-    ...stale,
-  ]);
+  const invalidatedDecisionKeys = dependencyClosure(decisionsToGraph(decisions), [...stale]);
   return {
     staleDecisionKeys: [...stale].toSorted(),
     invalidatedDecisionKeys,
@@ -457,20 +400,23 @@ export function diffProjectProfiles(
   previous: ProjectEngineeringProfile | ProjectProfileProposal | undefined,
   next: ProjectProfileProposal,
 ): ProjectProfileDiff {
+  const nextDecisions = next.content.decisions ?? [];
   if (!previous) {
     return {
-      addedDecisionKeys: next.content.decisions.map(({ key }) => key).toSorted(),
+      addedDecisionKeys: nextDecisions.map(({ key }) => key).toSorted(),
       changedDecisionKeys: [],
       removedDecisionKeys: [],
-      topologyChanged: true,
-      stackChanged: true,
+      topologyChanged: Boolean(next.content.topology),
+      stackChanged: Boolean(next.content.stack?.length),
       domainDocumentationChanged: Boolean(next.content.domainDocumentation),
       ...(next.content.protectedSurfaces ? { protectedSurfacesChanged: true } : {}),
       ...(next.content.surfaceVerificationRules ? { surfaceVerificationRulesChanged: true } : {}),
     };
   }
-  const before = new Map(previous.content.decisions.map((decision) => [decision.key, decision]));
-  const after = new Map(next.content.decisions.map((decision) => [decision.key, decision]));
+  const before = new Map(
+    (previous.content.decisions ?? []).map((decision) => [decision.key, decision]),
+  );
+  const after = new Map(nextDecisions.map((decision) => [decision.key, decision]));
   const added = [...after.keys()].filter((key) => !before.has(key)).toSorted();
   const removed = [...before.keys()].filter((key) => !after.has(key)).toSorted();
   const changed = [...after.keys()]
@@ -518,7 +464,7 @@ export function validateProjectProfileProjections(
   proposal: ProjectProfileProposal,
   projections: ProjectProfileProjection[],
 ): ProjectProfileProjection[] {
-  const expected = new Set(proposal.content.diagramRefs);
+  const expected = new Set(proposal.content.diagramRefs ?? []);
   const supplied = new Map<string, string>();
   for (const projection of projections) {
     if (
@@ -545,74 +491,55 @@ export function validateProjectProfileProjections(
   return [...supplied].map(([path, content]) => ({ path, content }));
 }
 
-/**
- * Validates a compact Project INIT interview state against schema, DAG acyclicity, and hygiene.
- */
-export function validateProjectInitState(value: unknown): ProjectInitState {
-  const result = validateSchema("project-init-state", value);
-  if (!result.valid) throw schemaError("Project INIT state", result.errors);
-  const state = canonicalize(value) as ProjectInitState;
-  assertTimestamp(state.updatedAt, "Project INIT state timestamp is invalid.");
-  assertUnique(
-    state.decisions.map(({ key }) => key),
-    "Project INIT decision keys",
-  );
-  const keys = new Set(state.decisions.map(({ key }) => key));
-  for (const decision of state.decisions) {
-    for (const dependency of decision.dependsOn) {
-      if (!keys.has(dependency) || dependency === decision.key) {
-        throw new ProjectProfileError(
-          "profile_invalid",
-          `Project INIT decision ${decision.key} has invalid dependency ${dependency}.`,
-        );
-      }
-    }
-  }
-  assertAcyclicDecisionRecords(state.decisions);
-  for (const key of state.staleDecisionKeys) {
-    if (!keys.has(key)) {
+function resolveNextRevision(
+  rawRevision: number | undefined,
+  previous: ProjectEngineeringProfile | undefined,
+  unchanged: boolean,
+): number {
+  if (!previous) {
+    if (rawRevision !== undefined && rawRevision !== 1) {
       throw new ProjectProfileError(
-        "profile_invalid",
-        `Project INIT stale decision ${key} is not normalized.`,
+        "profile_revision_conflict",
+        "Initial project profile revision must be 1.",
       );
     }
+    return 1;
   }
-  if (state.activeQuestion) {
-    assertUnique(
-      state.activeQuestion.options.map(({ id }) => id),
-      "Project INIT question option IDs",
+  if (rawRevision !== undefined && rawRevision < previous.revision) {
+    throw new ProjectProfileError(
+      "profile_revision_conflict",
+      "Project profile revision cannot be lower than current revision.",
     );
-    if (
-      !state.activeQuestion.options.some(
-        ({ id }) => id === state.activeQuestion?.recommendedOptionId,
-      )
-    ) {
+  }
+  if (unchanged) {
+    if (rawRevision !== undefined && rawRevision > previous.revision + 1) {
       throw new ProjectProfileError(
-        "profile_invalid",
-        "Project INIT recommendation must reference one visible option.",
+        "profile_revision_conflict",
+        "Project profile revision cannot skip ahead of current revision.",
       );
     }
-    for (const parent of state.activeQuestion.parentDecisionKeys) {
-      if (!keys.has(parent)) {
-        throw new ProjectProfileError(
-          "profile_invalid",
-          `Project INIT question parent ${parent} is not normalized.`,
-        );
-      }
-    }
+    return previous.revision;
   }
-  assertProfileHygiene(state, { allowAbsolutePaths: true });
-  return state;
+  if (
+    rawRevision !== undefined &&
+    rawRevision !== previous.revision &&
+    rawRevision !== previous.revision + 1
+  ) {
+    throw new ProjectProfileError(
+      "profile_revision_conflict",
+      "Project profile update must preserve identity and increment revision by one.",
+    );
+  }
+  return previous.revision + 1;
 }
 
 /**
- * Atomic, symlink-safe persistence store for shared/local project profiles and INIT state under `.forgix/`.
+ * Atomic, symlink-safe persistence store for shared and local project profiles under `.forgix/`.
  */
 class ProjectProfileStore {
   readonly workspaceRoot: string;
   readonly sharedPath: string;
   readonly localPath: string;
-  readonly initStatePath: string;
   readonly #store: WorkspaceStore;
 
   constructor(workspaceRoot: string, options: ProjectProfileStoreOptions = {}) {
@@ -627,7 +554,6 @@ class ProjectProfileStore {
     this.workspaceRoot = this.#store.workspaceRoot;
     this.sharedPath = this.#store.resolvePath(SHARED_PROJECT_PROFILE_PATH);
     this.localPath = this.#store.resolvePath(LOCAL_PROJECT_PROFILE_PATH);
-    this.initStatePath = this.#store.resolvePath(PROJECT_INIT_STATE_PATH);
   }
 
   async loadShared(optional = true): Promise<ProjectEngineeringProfile | undefined> {
@@ -641,102 +567,58 @@ class ProjectProfileStore {
     return validateLocalProjectProfile(parsed, await this.loadShared(true));
   }
 
-  async loadInitState(optional = true): Promise<ProjectInitState | undefined> {
-    const parsed = await this.#readYaml(PROJECT_INIT_STATE_PATH, optional);
-    return parsed === undefined ? undefined : validateProjectInitState(parsed);
-  }
-
-  async saveInitState(value: unknown): Promise<ProjectInitState> {
-    const state = validateProjectInitState(value);
-    const shared = await this.loadShared(true);
-    if (shared && state.profileId !== shared.profileId) {
-      throw new ProjectProfileError(
-        "profile_session_conflict",
-        "Project INIT session identity differs from shared profile.",
-      );
-    }
-    const current = await this.loadInitState(true);
-    if (current) {
-      if (
-        state.sessionId !== current.sessionId ||
-        state.profileId !== current.profileId ||
-        state.revision !== current.revision + 1
-      ) {
-        throw new ProjectProfileError(
-          "profile_session_conflict",
-          "Project INIT state must preserve identity and increment revision by one.",
-        );
-      }
-    } else if (state.revision !== 1) {
-      throw new ProjectProfileError(
-        "profile_session_conflict",
-        "Initial Project INIT state revision must be 1.",
-      );
-    }
-    await this.#writeYaml(PROJECT_INIT_STATE_PATH, renderProjectInitState(state));
-    return state;
-  }
-
-  async clearInitState(): Promise<boolean> {
-    try {
-      return await this.#store.removeFile(PROJECT_INIT_STATE_PATH);
-    } catch (error) {
-      throw mapStoreError(error, "write");
-    }
-  }
-
   async prepareShared(value: unknown): Promise<ProjectProfileProposal> {
+    const rawRevision =
+      typeof value === "object" &&
+      value !== null &&
+      !Array.isArray(value) &&
+      typeof (value as Record<string, unknown>).revision === "number"
+        ? ((value as Record<string, unknown>).revision as number)
+        : undefined;
     const proposal = prepareProjectProfile(value);
     const previous = await this.loadShared(true);
-    if (previous) {
-      if (
-        proposal.profileId !== previous.profileId ||
-        proposal.revision !== previous.revision + 1
-      ) {
-        throw new ProjectProfileError(
-          "profile_revision_conflict",
-          "Project profile update must preserve identity and increment revision by one.",
-        );
-      }
-      if (proposal.contentDigest === previous.contentDigest) {
-        throw new ProjectProfileError(
-          "profile_no_change",
-          "Project profile proposal contains no content change.",
-        );
-      }
-    } else if (proposal.revision !== 1) {
+    if (previous && proposal.profileId !== previous.profileId) {
       throw new ProjectProfileError(
         "profile_revision_conflict",
-        "Initial project profile revision must be 1.",
+        "Project profile update must preserve profileId.",
       );
     }
-    return proposal;
+    const unchanged = previous !== undefined && proposal.contentDigest === previous.contentDigest;
+    const revision = resolveNextRevision(rawRevision, previous, unchanged);
+    return revision === proposal.revision ? proposal : { ...proposal, revision };
   }
 
   /**
-   * Publishes an approved shared project profile and its diagram projections, enforcing active INIT
-   * session digest alignment when a session exists.
+   * Publishes an approved shared project profile and its diagram projections atomically.
+   * Returns `{ profile, unchanged }` reflecting whether `.forgix/project.yaml` was written.
+   */
+  async publishSharedWithStatus(
+    value: unknown,
+    options: { approvedAt?: string; projections?: ProjectProfileProjection[] } = {},
+  ): Promise<{ profile: ProjectEngineeringProfile; unchanged: boolean }> {
+    const previous = await this.loadShared(true);
+    const proposal = await this.prepareShared(value);
+    const projections = validateProjectProfileProjections(proposal, options.projections ?? []);
+    const unchanged = previous !== undefined && proposal.contentDigest === previous.contentDigest;
+    const profile = unchanged ? previous : approveProjectProfile(proposal, options.approvedAt);
+    const missingProjections = await this.#planProjectionWrites(projections);
+    await Promise.all(missingProjections.map((projection) => this.#writeProjection(projection)));
+    if (unchanged) {
+      return { profile, unchanged: true };
+    }
+    await this.#writeYaml(SHARED_PROJECT_PROFILE_PATH, renderProjectProfile(profile));
+    return { profile, unchanged: false };
+  }
+
+  /**
+   * Publishes an approved shared project profile and its diagram projections atomically.
+   * Returns the existing profile unchanged when contentDigest matches.
    */
   async publishShared(
     value: unknown,
     options: { approvedAt?: string; projections?: ProjectProfileProjection[] } = {},
   ): Promise<ProjectEngineeringProfile> {
-    const proposal = await this.prepareShared(value);
-    const initState = await this.loadInitState(true);
-    if (
-      initState &&
-      (initState.status !== "awaiting_approval" ||
-        initState.candidateContentDigest !== proposal.contentDigest)
-    ) {
-      throw new ProjectProfileError(
-        "profile_session_conflict",
-        "Project INIT session is not awaiting approval for this exact content digest.",
-      );
-    }
-    const projections = validateProjectProfileProjections(proposal, options.projections ?? []);
-    const profile = approveProjectProfile(proposal, options.approvedAt);
-    await Promise.all(projections.map((projection) => this.#publishProjection(projection)));
-    await this.#writeYaml(SHARED_PROJECT_PROFILE_PATH, renderProjectProfile(profile));
+    const { profile } = await this.publishSharedWithStatus(value, options);
     return profile;
   }
 
@@ -755,14 +637,6 @@ class ProjectProfileStore {
   async isLocalIgnored(): Promise<boolean> {
     try {
       return await this.#store.isGitignored(LOCAL_PROJECT_PROFILE_PATH);
-    } catch (error) {
-      throw mapStoreError(error, "read");
-    }
-  }
-
-  async isInitIgnored(): Promise<boolean> {
-    try {
-      return await this.#store.isGitignored(PROJECT_INIT_IGNORE_ENTRY);
     } catch (error) {
       throw mapStoreError(error, "read");
     }
@@ -791,22 +665,37 @@ class ProjectProfileStore {
     }
   }
 
-  async #publishProjection(projection: ProjectProfileProjection): Promise<void> {
-    let existing: string | undefined;
-    try {
-      existing = await this.#store.readText(projection.path, true);
-    } catch (error) {
-      throw mapStoreError(error, "read");
-    }
-    if (existing !== undefined) {
-      if (existing !== projection.content) {
-        throw new ProjectProfileError(
-          "profile_projection_invalid",
-          "Project diagram projection already exists with different content.",
-        );
+  async #planProjectionWrites(
+    projections: readonly ProjectProfileProjection[],
+  ): Promise<ProjectProfileProjection[]> {
+    const probes = await Promise.all(
+      projections.map(async (projection) => {
+        let existing: string | undefined;
+        try {
+          existing = await this.#store.readText(projection.path, true);
+        } catch (error) {
+          throw mapStoreError(error, "read");
+        }
+        return { projection, existing };
+      }),
+    );
+    const toWrite: ProjectProfileProjection[] = [];
+    for (const { projection, existing } of probes) {
+      if (existing !== undefined) {
+        if (existing !== projection.content) {
+          throw new ProjectProfileError(
+            "profile_projection_invalid",
+            "Project diagram projection already exists with different content.",
+          );
+        }
+      } else {
+        toWrite.push(projection);
       }
-      return;
     }
+    return toWrite;
+  }
+
+  async #writeProjection(projection: ProjectProfileProjection): Promise<void> {
     try {
       await this.#store.writeTextAtomically(projection.path, projection.content);
     } catch (error) {
@@ -883,49 +772,44 @@ function validateProjectProfileStructure(value: unknown, approvalRequired: boole
 }
 
 function validateProfileContent(content: ProjectProfileContent): void {
+  const stack = content.stack ?? [];
   assertUnique(
-    content.stack.map(({ id }) => id),
+    stack.map(({ id }) => id),
     "Stack IDs",
   );
-  const services = new Set(content.topology.services.map(({ id }) => id));
-  if (services.size !== content.topology.services.length) {
-    throw new ProjectProfileError("profile_invalid", "Service IDs must be unique.");
-  }
-  if (!services.has(content.topology.rootServiceId)) {
-    throw new ProjectProfileError(
-      "profile_invalid",
-      "Project topology rootServiceId must reference a declared service.",
-    );
-  }
-  for (const service of content.topology.services) {
-    for (const dependency of service.dependencies) {
-      if (!services.has(dependency) || dependency === service.id) {
-        throw new ProjectProfileError(
-          "profile_invalid",
-          `Service ${service.id} has invalid dependency ${dependency}.`,
-        );
-      }
+  if (content.topology) {
+    const services = new Set(content.topology.services.map(({ id }) => id));
+    if (services.size !== content.topology.services.length) {
+      throw new ProjectProfileError("profile_invalid", "Service IDs must be unique.");
     }
-    for (const sourceRef of service.sourceRefs) assertSharedReference(sourceRef);
-    if (service.profileRef) assertNoLocalPath(service.profileRef, "Service profileRef");
-  }
-  for (const entry of content.stack) {
-    for (const sourceRef of entry.sourceRefs) assertSharedReference(sourceRef);
-  }
-  const decisionKeys = new Set(content.decisions.map(({ key }) => key));
-  if (decisionKeys.size !== content.decisions.length) {
-    throw new ProjectProfileError("profile_invalid", "Project decision keys must be unique.");
-  }
-  const categories = new Set(content.decisions.map(({ category }) => category));
-  for (const category of CORE_PROFILE_CATEGORIES) {
-    if (!categories.has(category)) {
+    if (!services.has(content.topology.rootServiceId)) {
       throw new ProjectProfileError(
         "profile_invalid",
-        `Project profile core category ${category} is missing.`,
+        "Project topology rootServiceId must reference a declared service.",
       );
     }
+    for (const service of content.topology.services) {
+      for (const dependency of service.dependencies) {
+        if (!services.has(dependency) || dependency === service.id) {
+          throw new ProjectProfileError(
+            "profile_invalid",
+            `Service ${service.id} has invalid dependency ${dependency}.`,
+          );
+        }
+      }
+      for (const sourceRef of service.sourceRefs) assertSharedReference(sourceRef);
+      if (service.profileRef) assertNoLocalPath(service.profileRef, "Service profileRef");
+    }
   }
-  for (const decision of content.decisions) {
+  for (const entry of stack) {
+    for (const sourceRef of entry.sourceRefs) assertSharedReference(sourceRef);
+  }
+  const decisions = content.decisions ?? [];
+  const decisionKeys = new Set(decisions.map(({ key }) => key));
+  if (decisionKeys.size !== decisions.length) {
+    throw new ProjectProfileError("profile_invalid", "Project decision keys must be unique.");
+  }
+  for (const decision of decisions) {
     assertTimestamp(
       decision.provenance.capturedAt,
       `Decision ${decision.key} timestamp is invalid.`,
@@ -959,7 +843,7 @@ function validateProfileContent(content: ProjectProfileContent): void {
       }
     }
   }
-  assertAcyclicDecisionRecords(content.decisions);
+  assertAcyclicDecisionRecords(decisions);
   if (content.domainDocumentation) {
     const domain = content.domainDocumentation;
     for (const [label, path] of [
@@ -1039,7 +923,7 @@ function validateProfileContent(content: ProjectProfileContent): void {
       }
     }
   }
-  for (const ref of content.diagramRefs) {
+  for (const ref of content.diagramRefs ?? []) {
     if (ref.includes("\\")) {
       throw new ProjectProfileError(
         "profile_projection_invalid",

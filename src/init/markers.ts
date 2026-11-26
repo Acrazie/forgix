@@ -1,11 +1,13 @@
 export interface MarkerPair {
   readonly start: string;
   readonly end: string;
+  readonly padBlankLines?: boolean;
 }
 
 export const HTML_FORGIX_MARKERS: MarkerPair = {
   start: "<!-- forgix:start -->",
   end: "<!-- forgix:end -->",
+  padBlankLines: true,
 };
 
 export const HASH_FORGIX_MARKERS: MarkerPair = {
@@ -125,7 +127,8 @@ export function formatMarkerBlock(markers: MarkerPair, body: string): string {
   if (!trimmed) {
     return `${markers.start}\n${markers.end}\n`;
   }
-  return `${markers.start}\n${trimmed}\n${markers.end}\n`;
+  const pad = markers.padBlankLines ? "\n" : "";
+  return `${markers.start}\n${pad}${trimmed}\n${pad}${markers.end}\n`;
 }
 
 export function upsertMarkerBlock(

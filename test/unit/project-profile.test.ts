@@ -7,17 +7,12 @@ import {
   reconcileProjectProfile,
   renderProjectProfile,
   validateLocalProjectProfile,
-  validateProjectInitState,
   validateProjectProfile,
   validateProjectProfileProjections,
 } from "../../src/profile/index.ts";
 import { validateSchema } from "../../src/core/schema.ts";
 import { expectThrown } from "../support/expect-error.ts";
-import {
-  localProfileInput,
-  projectInitState,
-  projectProfileInput,
-} from "../support/project-profile.ts";
+import { localProfileInput, projectProfileInput } from "../support/project-profile.ts";
 
 test("project profile canonical digest and approval bind exact durable content", () => {
   const proposal = prepareProjectProfile(projectProfileInput());
@@ -31,7 +26,7 @@ test("project profile canonical digest and approval bind exact durable content",
   expect(renderProjectProfile(proposal)).toContain(`contentDigest: ${proposal.contentDigest}`);
 
   const tampered = structuredClone(approved);
-  tampered.content.decisions[0]!.value = "silently changed";
+  tampered.content.decisions![0]!.value = "silently changed";
   expectThrown(
     () => validateProjectProfile(tampered),
     (error: unknown) =>
@@ -39,40 +34,68 @@ test("project profile canonical digest and approval bind exact durable content",
   );
 });
 
-test("shared profile rejects missing core decisions, local paths, secrets, and false proof", () => {
-  const missingCore = projectProfileInput();
-  missingCore.content.decisions = missingCore.content.decisions.filter(
-    ({ category }) => category !== "quality",
-  );
-  expect(() => prepareProjectProfile(missingCore)).toThrow(/core category quality/);
+test("shared profile accepts minimal project-only content while rejecting local paths, secrets, and false proof", () => {
+  const minimal = prepareProjectProfile({
+    schemaVersion: 1,
+    profileId: "greenfield",
+    content: {
+      project: { id: "greenfield", name: "Greenfield" },
+    },
+  });
+  expect(minimal.revision).toBe(1);
+  expect(validateProjectProfile(approveProjectProfile(minimal)).content.project).toEqual({
+    id: "greenfield",
+    name: "Greenfield",
+  });
+  expect(diffProjectProfiles(undefined, minimal)).toEqual({
+    addedDecisionKeys: [],
+    changedDecisionKeys: [],
+    removedDecisionKeys: [],
+    topologyChanged: false,
+    stackChanged: false,
+    domainDocumentationChanged: false,
+  });
+
+  const emptyArrays = prepareProjectProfile({
+    schemaVersion: 1,
+    profileId: "greenfield",
+    revision: 1,
+    content: {
+      project: { id: "greenfield", name: "Greenfield" },
+      stack: [],
+      decisions: [],
+      diagramRefs: [],
+    },
+  });
+  expect(emptyArrays.content.decisions).toEqual([]);
 
   const wrongIdentity = projectProfileInput();
   wrongIdentity.content.project.id = "another-project";
   expect(() => prepareProjectProfile(wrongIdentity)).toThrow(/identity must match/);
 
   const localPath = projectProfileInput();
-  localPath.content.stack[0]!.sourceRefs = ["/Users/me/project/package.json"];
+  localPath.content.stack![0]!.sourceRefs = ["/Users/me/project/package.json"];
   expect(() => prepareProjectProfile(localPath)).toThrow(/local absolute path/);
 
   const embeddedLocalPath = projectProfileInput();
-  embeddedLocalPath.content.decisions[0]!.value = "Read /home/alice/project/src directly.";
+  embeddedLocalPath.content.decisions![0]!.value = "Read /home/alice/project/src directly.";
   expect(() => prepareProjectProfile(embeddedLocalPath)).toThrow(/absolute filesystem path/);
 
   const secret = projectProfileInput();
-  secret.content.decisions[0]!.value = "token=sk-super-secret-token";
+  secret.content.decisions![0]!.value = "token=sk-super-secret-token";
   expect(() => prepareProjectProfile(secret)).toThrow(/secret-like/);
 
   const asserted = projectProfileInput();
-  asserted.content.decisions[0]!.provenance.kind = "user_asserted";
+  asserted.content.decisions![0]!.provenance.kind = "user_asserted";
   expect(() => prepareProjectProfile(asserted)).toThrow(/cannot carry verified fingerprints/);
 });
 
 test("decision graph is strict and drift invalidates only dependent closure", () => {
   const input = projectProfileInput();
-  for (const decision of input.content.decisions) decision.sourceFingerprints = [];
-  const architecture = input.content.decisions.find(({ key }) => key === "architecture-boundary")!;
-  const tests = input.content.decisions.find(({ key }) => key === "tests")!;
-  const quality = input.content.decisions.find(({ key }) => key === "quality")!;
+  for (const decision of input.content.decisions!) decision.sourceFingerprints = [];
+  const architecture = input.content.decisions!.find(({ key }) => key === "architecture-boundary")!;
+  const tests = input.content.decisions!.find(({ key }) => key === "tests")!;
+  const quality = input.content.decisions!.find(({ key }) => key === "quality")!;
   architecture.sourceFingerprints = [
     { sourceRef: "src/architecture.ts", value: `sha256:${"a".repeat(64)}` },
   ];
@@ -92,8 +115,8 @@ test("decision graph is strict and drift invalidates only dependent closure", ()
   });
 
   const cycle = projectProfileInput();
-  cycle.content.decisions[0]!.dependsOn = [cycle.content.decisions[1]!.key];
-  cycle.content.decisions[1]!.dependsOn = [cycle.content.decisions[0]!.key];
+  cycle.content.decisions![0]!.dependsOn = [cycle.content.decisions![1]!.key];
+  cycle.content.decisions![1]!.dependsOn = [cycle.content.decisions![0]!.key];
   expect(() => prepareProjectProfile(cycle)).toThrow(/contains a cycle/);
 });
 
@@ -111,17 +134,17 @@ test("local overlay maps only declared services and cannot override shared decis
   expect(() => validateLocalProjectProfile(unknown, shared)).toThrow(/unknown service/);
 
   const override = structuredClone(local);
-  override.preferences[0]!.key = shared.content.decisions[0]!.key;
+  override.preferences[0]!.key = shared.content.decisions![0]!.key;
   expect(() => validateLocalProjectProfile(override, shared)).toThrow(/cannot override/);
 });
 
 test("profile diff and generated projections describe exact proposed transaction", () => {
   const initial = prepareProjectProfile(projectProfileInput());
   const changedInput = projectProfileInput({ revision: 2 });
-  changedInput.content.decisions.find(({ key }) => key === "source-layout")!.value =
+  changedInput.content.decisions!.find(({ key }) => key === "source-layout")!.value =
     "Changed source structure.";
-  changedInput.content.decisions.push({
-    ...structuredClone(changedInput.content.decisions[0]!),
+  changedInput.content.decisions!.push({
+    ...structuredClone(changedInput.content.decisions![0]!),
     key: "api-contract",
     category: "api",
     value: "HTTP JSON",
@@ -136,7 +159,7 @@ test("profile diff and generated projections describe exact proposed transaction
   expect(
     validateProjectProfileProjections(changed, [
       {
-        path: changed.content.diagramRefs[0]!,
+        path: changed.content.diagramRefs![0]!,
         content: "```mermaid\nflowchart LR\nA --> B\n```\n",
       },
     ]),
@@ -144,7 +167,7 @@ test("profile diff and generated projections describe exact proposed transaction
   expect(() => validateProjectProfileProjections(changed, [])).toThrow(/Every project diagram/);
   expect(() =>
     validateProjectProfileProjections(changed, [
-      { path: changed.content.diagramRefs[0]!, content: "not Mermaid" },
+      { path: changed.content.diagramRefs![0]!, content: "not Mermaid" },
     ]),
   ).toThrow(/match profile diagramRefs/);
 
@@ -184,42 +207,6 @@ test("optional domain documentation facet is portable, digest-bound, and reconci
   invalid.content.domainDocumentation = { ...input.content.domainDocumentation };
   delete invalid.content.domainDocumentation.contextMapPath;
   expect(() => prepareProjectProfile(invalid)).toThrow(/contextMapPath/);
-});
-
-test("Project INIT state persists normalized decisions and exactly one valid active question", () => {
-  const state = projectInitState({
-    status: "awaiting_decision",
-    decisions: [
-      {
-        key: "architecture",
-        value: "deterministic core",
-        source: "user",
-        sourceRefs: ["conversation:decision/architecture"],
-        dependsOn: [],
-      },
-    ],
-    activeQuestion: {
-      id: "testing-question",
-      decisionKey: "testing",
-      prompt: "Which test boundary should be canonical?",
-      evidenceRefs: ["package.json"],
-      options: [
-        { id: "bun", label: "Bun", impact: "One lightweight runner." },
-        { id: "node", label: "Node", impact: "Separate compatibility runner." },
-      ],
-      recommendedOptionId: "bun",
-      recommendationBasis: "Repository already uses bun:test.",
-      recommendationConfidence: "high",
-      parentDecisionKeys: ["architecture"],
-      directConsequences: ["Test tooling becomes durable convention."],
-    },
-  });
-  expect(validateProjectInitState(state)).toEqual(state);
-  const invalid = structuredClone(state);
-  invalid.activeQuestion!.recommendedOptionId = "missing";
-  expect(() => validateProjectInitState(invalid)).toThrow(/visible option/);
-  const { activeQuestion: _activeQuestion, ...discovering } = state;
-  expect(() => validateProjectInitState({ ...discovering, status: "discovering" })).not.toThrow();
 });
 
 test("project profile supports optional protectedSurfaces and surfaceVerificationRules", () => {

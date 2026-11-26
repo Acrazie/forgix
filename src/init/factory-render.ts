@@ -23,7 +23,7 @@ function renderFrontmatterDocument(
 ): string {
   const yamlBlock = stringifyYaml(frontmatter).trimEnd();
   const trimmedBody = body.trimEnd();
-  const header = marker ? `---\n${yamlBlock}\n---\n${marker}\n\n` : `---\n${yamlBlock}\n---\n\n`;
+  const header = marker ? `---\n${yamlBlock}\n---\n\n${marker}\n\n` : `---\n${yamlBlock}\n---\n\n`;
   return `${header}${trimmedBody}\n`;
 }
 
@@ -134,7 +134,7 @@ export function renderRuleProjections(
         {
           trigger: globs ? "glob" : "always_on",
           description: rule.description,
-          ...(globs ? { globs } : {}),
+          ...(globs ? { globs: globs.join(", ") } : {}),
         },
         rule.content,
         marker,
@@ -202,7 +202,13 @@ export function renderCodexAgentsIndexBlock(selection: FactorySelection): string
   ];
   for (const [title, items, pathOf] of groups) {
     if (!items?.length) continue;
-    lines.push("", `## ${title}`, ...items.map((i) => `- \`${pathOf(i.id)}\`: ${i.description}`));
+    const sorted = items.toSorted((a, b) => a.id.localeCompare(b.id));
+    lines.push(
+      "",
+      `## ${title}`,
+      "",
+      ...sorted.map((i) => `- \`${pathOf(i.id)}\`: ${i.description}`),
+    );
   }
   return lines.join("\n");
 }

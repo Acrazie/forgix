@@ -72,9 +72,8 @@ $forgix init
 
 For Claude Code use `/forgix:forgix init`; for Antigravity use `/forgix init`.
 
-Shared conventions live in `.forgix/project.yaml`, configuration in `.forgix/config.yaml`,
-machine-local preferences in `.forgix/project.local.yaml`, and resumable INIT state in
-`.forgix/init/state.yaml`.
+Shared conventions live in `.forgix/project.yaml`, configuration in `.forgix/config.yaml`, and
+machine-local preferences in `.forgix/project.local.yaml`.
 
 Then give your agent a concrete objective:
 

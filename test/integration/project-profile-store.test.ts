@@ -9,11 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { expectRejected } from "../support/expect-error.ts";
-import {
-  localProfileInput,
-  projectInitState,
-  projectProfileInput,
-} from "../support/project-profile.ts";
+import { localProfileInput, projectProfileInput } from "../support/project-profile.ts";
 
 const workspace = () => mkdtemp(join(tmpdir(), "forgix-project-profile-"));
 
@@ -34,26 +30,42 @@ test("shared profile publishes one digest-bound approved YAML atomically", async
   }
 });
 
-test("revision/no-change conflicts and failed atomic write preserve current profile", async () => {
+test("idempotent publish, auto-revision increment, revision conflicts, and failed atomic write preserve current profile", async () => {
   const root = await workspace();
   try {
     const normal = createProjectProfileStore(root);
-    await normal.publishShared(projectProfileInput());
+    const first = await normal.publishShared(projectProfileInput(), {
+      approvedAt: "2026-08-03T14:00:00.000Z",
+    });
     const before = await readFile(normal.sharedPath, "utf8");
 
+    // Identical content is idempotent, reports unchanged: true, and leaves file untouched
+    const unchanged = await normal.publishSharedWithStatus(projectProfileInput());
+    expect(unchanged).toEqual({ profile: first, unchanged: true });
+    expect(await readFile(normal.sharedPath, "utf8")).toBe(before);
+
+    // Changed content with omitted or equal revision auto-increments to revision + 1
+    const changedAuto = projectProfileInput();
+    delete changedAuto.revision;
+    changedAuto.content.decisions![0]!.value = "Changed with auto revision.";
+    const preparedAuto = await normal.prepareShared(changedAuto);
+    expect(preparedAuto.revision).toBe(2);
+
+    const publishedSecond = await normal.publishShared(changedAuto);
+    expect(publishedSecond.revision).toBe(2);
+
+    // Explicit revision lower than current is rejected
+    const lowerRevision = projectProfileInput({ revision: 1 });
+    lowerRevision.content.decisions![0]!.value = "Stale revision attempt.";
     await expectRejected(
-      () => normal.prepareShared(projectProfileInput()),
+      () => normal.prepareShared(lowerRevision),
       (error: unknown) =>
         error instanceof ProjectProfileError && error.code === "profile_revision_conflict",
     );
-    await expectRejected(
-      () => normal.prepareShared(projectProfileInput({ revision: 2 })),
-      (error: unknown) =>
-        error instanceof ProjectProfileError && error.code === "profile_no_change",
-    );
 
-    const changed = projectProfileInput({ revision: 2 });
-    changed.content.decisions[0]!.value = "Changed after explicit reconciliation.";
+    const beforeFail = await readFile(normal.sharedPath, "utf8");
+    const changed = projectProfileInput({ revision: 3 });
+    changed.content.decisions![0]!.value = "Changed after explicit reconciliation.";
     await writeFile(join(root, ".forgix", ".project.yaml.collision.tmp"), "occupied");
     const failing = createProjectProfileStore(root, { temporaryId: () => "collision" });
     await expectRejected(
@@ -61,7 +73,7 @@ test("revision/no-change conflicts and failed atomic write preserve current prof
       (error: unknown) =>
         error instanceof ProjectProfileError && error.code === "profile_write_failed",
     );
-    expect(await readFile(normal.sharedPath, "utf8")).toBe(before);
+    expect(await readFile(normal.sharedPath, "utf8")).toBe(beforeFail);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -96,8 +108,86 @@ test("diagram projections publish before canonical profile and never follow syml
     input.content.diagramRefs = [diagram];
     const content = "```mermaid\nflowchart LR\nProfile --> Diagram\n```\n";
     const store = createProjectProfileStore(root);
-    await store.publishShared(input, { projections: [{ path: diagram, content }] });
+    const firstPublish = await store.publishSharedWithStatus(input, {
+      projections: [{ path: diagram, content }],
+    });
+    expect(firstPublish.unchanged).toBe(false);
     expect(await readFile(join(root, diagram), "utf8")).toBe(content);
+
+    // Re-publishing unchanged profile with identical diagram succeeds as unchanged
+    const sameDiagram = await store.publishSharedWithStatus(input, {
+      projections: [{ path: diagram, content }],
+    });
+    expect(sameDiagram.unchanged).toBe(true);
+
+    // Re-publishing unchanged profile with modified diagram fails with profile_projection_invalid
+    await expectRejected(
+      () =>
+        store.publishSharedWithStatus(input, {
+          projections: [
+            { path: diagram, content: "```mermaid\nflowchart LR\nA --> Tampered\n```\n" },
+          ],
+        }),
+      (error: unknown) =>
+        error instanceof ProjectProfileError && error.code === "profile_projection_invalid",
+    );
+
+    // Invalid approvedAt rejects before writing any diagram projection to disk
+    const badTsRoot = await workspace();
+    try {
+      const badTsStore = createProjectProfileStore(badTsRoot);
+      await expectRejected(
+        () =>
+          badTsStore.publishSharedWithStatus(input, {
+            approvedAt: "not-a-timestamp",
+            projections: [{ path: diagram, content }],
+          }),
+        (error: unknown) =>
+          error instanceof ProjectProfileError && error.code === "profile_invalid",
+      );
+      await expectRejected(
+        () => readFile(join(badTsRoot, diagram)),
+        (error: unknown) => error instanceof Error && error.message.includes("ENOENT"),
+      );
+    } finally {
+      await rm(badTsRoot, { recursive: true, force: true });
+    }
+
+    // Two-phase projection pre-check: missing diagram A is NOT written when diagram B conflicts
+    const twoDiagRoot = await workspace();
+    try {
+      const diagA = ".forgix/diagrams/a.mermaid.md";
+      const diagB = ".forgix/diagrams/b.mermaid.md";
+      const contentA = "```mermaid\nflowchart LR\nA --> B\n```\n";
+      const contentB = "```mermaid\nflowchart LR\nB --> C\n```\n";
+      const twoInput = projectProfileInput();
+      twoInput.content.diagramRefs = [diagA, diagB];
+      const twoStore = createProjectProfileStore(twoDiagRoot);
+      await twoStore.publishSharedWithStatus(twoInput, {
+        projections: [
+          { path: diagA, content: contentA },
+          { path: diagB, content: contentB },
+        ],
+      });
+      await rm(join(twoDiagRoot, diagA));
+      await expectRejected(
+        () =>
+          twoStore.publishSharedWithStatus(twoInput, {
+            projections: [
+              { path: diagA, content: contentA },
+              { path: diagB, content: "```mermaid\nflowchart LR\nB --> Tampered\n```\n" },
+            ],
+          }),
+        (error: unknown) =>
+          error instanceof ProjectProfileError && error.code === "profile_projection_invalid",
+      );
+      await expectRejected(
+        () => readFile(join(twoDiagRoot, diagA)),
+        (error: unknown) => error instanceof Error && error.message.includes("ENOENT"),
+      );
+    } finally {
+      await rm(twoDiagRoot, { recursive: true, force: true });
+    }
 
     const linkedRoot = await workspace();
     try {
@@ -144,53 +234,5 @@ test("shared profile directory symlink is rejected before any write", async () =
   } finally {
     await rm(root, { recursive: true, force: true });
     await rm(outside, { recursive: true, force: true });
-  }
-});
-
-test("Project INIT session state resumes exact question and clears after publication", async () => {
-  const root = await workspace();
-  try {
-    const store = createProjectProfileStore(root);
-    await store.saveInitState(projectInitState());
-    const awaiting = projectInitState({
-      revision: 2,
-      status: "awaiting_decision",
-      decisions: [
-        {
-          key: "architecture",
-          value: "deterministic core",
-          source: "user",
-          sourceRefs: ["conversation:architecture"],
-          dependsOn: [],
-        },
-      ],
-      activeQuestion: {
-        id: "testing-question",
-        decisionKey: "testing",
-        prompt: "Choose test boundary.",
-        evidenceRefs: ["package.json"],
-        options: [
-          { id: "bun", label: "Bun", impact: "One runner." },
-          { id: "node", label: "Node", impact: "Separate runner." },
-        ],
-        recommendedOptionId: "bun",
-        recommendationBasis: "Current repository evidence.",
-        recommendationConfidence: "high",
-        parentDecisionKeys: ["architecture"],
-        directConsequences: ["Testing convention is durable."],
-      },
-    });
-    await store.saveInitState(awaiting);
-    expect(await store.loadInitState(false)).toEqual(awaiting);
-    await expectRejected(
-      () => store.saveInitState(awaiting),
-      (error: unknown) =>
-        error instanceof ProjectProfileError && error.code === "profile_session_conflict",
-    );
-    expect(await store.clearInitState()).toBe(true);
-    expect(await store.loadInitState(true)).toBeUndefined();
-    expect(await store.clearInitState()).toBe(false);
-  } finally {
-    await rm(root, { recursive: true, force: true });
   }
 });

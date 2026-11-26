@@ -42,3 +42,17 @@ When starting work in a worktree branch, run `git fetch origin main` first and c
 ## Documentation & Library Guidance
 
 Always use Context7 when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
+
+<!-- forgix:start -->
+
+# Forgix Factory
+
+Canonical source: `.forgix/factory/` and `.forgix/project.yaml`. Reconcile with `$forgix init`.
+
+## Rules
+
+- `.forgix/factory/rules/agent-first-plugin.md`: Enforce the Agent-First Plugin invariant, JSON-first CLI, and zero runtime deps/network.
+- `.forgix/factory/rules/git-delivery-workflow.md`: Enforce worktree base verification, Conventional Commits, Full Gate, and Human-Reviewed boundaries.
+- `.forgix/factory/rules/golden-rules-guardrails.md`: Enforce Fallow architecture zones, modularity limits, zero inline Escape Hatches, and test pairing.
+
+<!-- forgix:end -->

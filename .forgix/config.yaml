@@ -10,18 +10,46 @@ subscription:
     unknownPolicy: conservative
 integrations:
   plugins:
-    - impeccable
-    - context-mode
-  skills:
-    - impeccable:frontend-design
+    - context7
+  skills: []
 harnesses:
   - codex
   - claude
   - antigravity
 hooks:
-  enforcement: balanced
+  enforcement: strict
 bootstrap:
-  rules: false
+  rules: true
+  agents: false
+  skills: false
   hooks: true
   gitignore: true
-  worktreeInclude: false
+  worktreeInclude: true
+  managedPaths:
+    - .agents/rules/forgix-agent-first-plugin.md
+    - .agents/rules/forgix-git-delivery-workflow.md
+    - .agents/rules/forgix-golden-rules-guardrails.md
+    - .claude/rules/forgix-agent-first-plugin.md
+    - .claude/rules/forgix-git-delivery-workflow.md
+    - .claude/rules/forgix-golden-rules-guardrails.md
+    - .forgix/factory/rules/agent-first-plugin.md
+    - .forgix/factory/rules/git-delivery-workflow.md
+    - .forgix/factory/rules/golden-rules-guardrails.md
+factoryPolicies:
+  protectedSurfaces:
+    - .buildkite/pipeline.yml
+    - .dagger/**
+    - .fallowrc.json
+    - .forgix/config.yaml
+    - .forgix/policy.yaml
+    - .forgix/project.yaml
+    - .vite-hooks/**
+    - bunfig.toml
+    - docs/golden-rules.md
+    - fallow-baselines/**
+    - fallow-rules/**
+    - formal/**/*.cfg
+    - formal/**/*.lean
+    - formal/**/*.tla
+    - test/artifact-budget.json
+    - vite.config.ts

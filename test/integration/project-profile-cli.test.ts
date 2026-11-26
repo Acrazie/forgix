@@ -8,11 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stringify } from "yaml";
 import { expectRejected } from "../support/expect-error.ts";
-import {
-  localProfileInput,
-  projectInitState,
-  projectProfileInput,
-} from "../support/project-profile.ts";
+import { localProfileInput, projectProfileInput } from "../support/project-profile.ts";
 
 const workspace = () => mkdtemp(join(tmpdir(), "forgix-project-profile-cli-"));
 
@@ -145,49 +141,74 @@ test("project-profile backend bounds stdin and rejects transaction extras", asyn
   }
 });
 
-test("Project INIT session binds publication to validated candidate digest", async () => {
+test("removed session-* subcommands exit with INVALID_INVOCATION; publish is idempotent and auto-increments revision", async () => {
   const root = await workspace();
   try {
-    const profile = projectProfileInput();
-    const validation = await sourceApi.runInvocation(["project-profile", "validate"], {
-      workspaceRoot: root,
-      projectProfile: { input: stringify(profile) },
-    });
-    const state = projectInitState({
-      status: "awaiting_approval",
-      candidateContentDigest: validation.data.contentDigest,
-    });
-    await sourceApi.runInvocation(["project-profile", "session-save"], {
-      workspaceRoot: root,
-      projectProfile: { input: stringify(state) },
-    });
-    const resumed = await sourceApi.runInvocation(["project-profile", "session-view"], {
-      workspaceRoot: root,
-    });
-    expect(resumed.data.state).toEqual(state);
+    await Promise.all(
+      ["session-view", "session-save", "session-clear"].map((sub) =>
+        expectRejected(
+          () => sourceApi.runInvocation(["project-profile", sub], { workspaceRoot: root }),
+          (error) => error instanceof InvocationError && error.exitCode === 2,
+        ),
+      ),
+    );
 
-    const changed = projectProfileInput();
-    changed.content.decisions[0]!.value = "Changed after validation.";
+    const minimal = {
+      schemaVersion: 1,
+      profileId: "greenfield",
+      content: { project: { id: "greenfield", name: "Greenfield App" } },
+    };
+    const first = await sourceApi.runInvocation(["project-profile", "publish"], {
+      workspaceRoot: root,
+      projectProfile: { input: stringify(minimal) },
+    });
+    expect(first.status).toBe("published");
+    expect(first.data.revision).toBe(1);
+
+    // Re-running validate reports unchanged: true; publish returns status: "unchanged"
+    const revalidated = await sourceApi.runInvocation(["project-profile", "validate"], {
+      workspaceRoot: root,
+      projectProfile: { input: stringify(minimal) },
+    });
+    expect(revalidated.status).toBe("valid");
+    expect(revalidated.data.unchanged).toBe(true);
+
+    const republished = await sourceApi.runInvocation(["project-profile", "publish"], {
+      workspaceRoot: root,
+      projectProfile: { input: stringify(minimal) },
+    });
+    expect(republished.status).toBe("unchanged");
+    expect(republished.data.revision).toBe(1);
+
+    // Changing content with omitted or equal revision auto-increments revision to 2
+    const updated = {
+      schemaVersion: 1,
+      profileId: "greenfield",
+      revision: 1,
+      content: { project: { id: "greenfield", name: "Greenfield App v2" } },
+    };
+    const second = await sourceApi.runInvocation(["project-profile", "publish"], {
+      workspaceRoot: root,
+      projectProfile: { input: stringify(updated) },
+    });
+    expect(second.status).toBe("published");
+    expect(second.data.revision).toBe(2);
+
+    // Explicit revision lower than current is rejected
+    const stale = {
+      schemaVersion: 1,
+      profileId: "greenfield",
+      revision: 1,
+      content: { project: { id: "greenfield", name: "Stale" } },
+    };
     await expectRejected(
       () =>
         sourceApi.runInvocation(["project-profile", "publish"], {
           workspaceRoot: root,
-          projectProfile: { input: stringify(changed) },
+          projectProfile: { input: stringify(stale) },
         }),
-      (error) => error instanceof ProjectProfileError && error.code === "profile_session_conflict",
+      (error) => error instanceof ProjectProfileError && error.code === "profile_revision_conflict",
     );
-    expect(
-      (
-        await sourceApi.runInvocation(["project-profile", "publish"], {
-          workspaceRoot: root,
-          projectProfile: { input: stringify(profile) },
-        })
-      ).status,
-    ).toBe("published");
-    const cleared = await sourceApi.runInvocation(["project-profile", "session-clear"], {
-      workspaceRoot: root,
-    });
-    expect(cleared.data.cleared).toBe(true);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

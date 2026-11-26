@@ -160,10 +160,12 @@ describe("init bootstrap integration (plan | apply | check)", () => {
       const agyRule = await readFile(join(root, ".agents/rules/forgix-core-quality.md"), "utf8");
       const agentsMd = await readFile(join(root, "AGENTS.md"), "utf8");
       expect(claudeRule.startsWith("---\n")).toBe(true);
-      expect(claudeRule).toContain('---\n<!-- forgix:managed kind="rule" id="core-quality"');
+      expect(claudeRule).toContain('---\n\n<!-- forgix:managed kind="rule" id="core-quality"');
       expect(claudeRule).toContain("paths:\n  - src/**");
       expect(agyRule.startsWith("---\n")).toBe(true);
       expect(agyRule).toContain("trigger: glob");
+      expect(agyRule).toContain("globs: src/**\n");
+      expect(agyRule).not.toContain("globs:\n");
       expect(agentsMd).toContain(".forgix/factory/rules/core-quality.md");
       expect(agentsMd.split("\n").length).toBeLessThan(30);
 
@@ -607,6 +609,199 @@ describe("init bootstrap integration (plan | apply | check)", () => {
       });
     } finally {
       await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("unmanaged_file_collision blocks by default with diff preview, adopts cleanly via --adopt or adoptPaths, and safety guards still block", async () => {
+    const root = await makeWorkspace();
+    try {
+      await mkdir(join(root, ".claude/rules"), { recursive: true });
+
+      // Default plan blocks and surfaces diff preview (including both - and + on 80+ line files)
+      const longExisting = Array.from(
+        { length: 85 },
+        (_, i) => `# Hand-written line ${i + 1}`,
+      ).join("\n");
+      await writeFile(join(root, ".claude/rules/forgix-core-quality.md"), `${longExisting}\n`);
+      const blockedPlan = await runInitBootstrap("plan", {
+        workspaceRoot: root,
+        input: makeManifest({ harnesses: ["claude"] }),
+      });
+      expect(blockedPlan.status).toBe("blocked");
+      const collisions = (
+        blockedPlan.data as { conflicts: Array<{ code: string; path: string; preview?: string }> }
+      ).conflicts;
+      expect(collisions).toHaveLength(1);
+      expect(collisions[0]?.code).toBe("unmanaged_file_collision");
+      expect(collisions[0]?.preview).toContain("-# Hand-written line 1");
+      expect(collisions[0]?.preview).toContain("... (truncated)");
+      expect(collisions[0]?.preview).toContain("+<!-- forgix:managed");
+
+      // Dynamic preview budget: 1-line file replaced by 50 lines shows all 50 replacement lines
+      await writeFile(join(root, ".claude/rules/forgix-core-quality.md"), "# One line\n");
+      const fiftyLineRuleContent = Array.from({ length: 50 }, (_, i) => `- Rule ${i + 1}`).join(
+        "\n",
+      );
+      const longRuleManifest = JSON.stringify({
+        ...JSON.parse(makeManifest({ harnesses: ["claude"] })),
+        rules: {
+          enabled: true,
+          items: [
+            {
+              id: "core-quality",
+              description: "Long rule",
+              alwaysApply: true,
+              content: fiftyLineRuleContent,
+            },
+          ],
+        },
+      });
+      const dynamicPlan = await runInitBootstrap("plan", {
+        workspaceRoot: root,
+        input: longRuleManifest,
+      });
+      const dynamicPreview = (dynamicPlan.data as { conflicts: Array<{ preview?: string }> })
+        .conflicts[0]?.preview;
+      expect(dynamicPreview).toContain("-# One line");
+      expect(dynamicPreview).toContain("+- Rule 1");
+      expect(dynamicPreview).toContain("+- Rule 50");
+      expect(dynamicPreview).not.toContain("... (truncated)");
+
+      // Default apply rejects with STATE_CONFLICT (exit 5)
+      await expectRejected(
+        () =>
+          runInitBootstrap("apply", {
+            workspaceRoot: root,
+            input: makeManifest({ harnesses: ["claude"] }),
+          }),
+        (error) => error instanceof StateStoreError && error.exitCode === EXIT_CODES.STATE_CONFLICT,
+      );
+
+      // Explicit manifest adoptPaths adopts only the approved collision path
+      const adoptPathManifest = JSON.stringify({
+        ...JSON.parse(makeManifest({ harnesses: ["claude"] })),
+        adoptPaths: [".claude/rules/forgix-core-quality.md"],
+      });
+      const adoptPlan = await runInitBootstrap("plan", {
+        workspaceRoot: root,
+        input: adoptPathManifest,
+      });
+      expect(adoptPlan.status).toBe("ok");
+      expect((adoptPlan.data as { conflicts: unknown[] }).conflicts).toEqual([]);
+
+      const adoptApply = await runInitBootstrap("apply", {
+        workspaceRoot: root,
+        input: adoptPathManifest,
+      });
+      expect(adoptApply.status).toBe("ok");
+      expect(await readFile(join(root, ".claude/rules/forgix-core-quality.md"), "utf8")).toContain(
+        "<!-- forgix:managed",
+      );
+
+      // Explicit --adopt flag also adopts unmanaged collisions
+      await writeFile(join(root, ".claude/rules/forgix-core-quality.md"), "# Overwritten again\n");
+      const flagApply = await runInitBootstrap("apply", {
+        workspaceRoot: root,
+        input: makeManifest({ harnesses: ["claude"] }),
+        adopt: true,
+      });
+      expect(flagApply.status).toBe("ok");
+
+      // Real safety guards (invalid_json) MUST still block even with --adopt
+      await writeFile(join(root, ".claude/settings.json"), "{corrupt json");
+      await expectRejected(
+        () =>
+          runInitBootstrap("apply", {
+            workspaceRoot: root,
+            input: makeManifest({ harnesses: ["claude"] }),
+            adopt: true,
+          }),
+        (error) => error instanceof StateStoreError && error.exitCode === EXIT_CODES.STATE_CONFLICT,
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("single-approval end-to-end sequence works on fresh, greenfield, and synced re-run fixtures", async () => {
+    const { runInvocation } = await import("../../src/cli.ts");
+    const { stringify } = await import("yaml");
+    const { localProfileInput, projectProfileInput } =
+      await import("../support/project-profile.ts");
+
+    // 1. Fresh repo: init apply -> project-profile publish -> publish --local -> init check -> synced re-run
+    const freshRoot = await makeWorkspace();
+    try {
+      const applyRes = await runInvocation(["init", "apply"], {
+        workspaceRoot: freshRoot,
+        init: { input: makeManifest({ harnesses: ["codex", "claude", "antigravity"] }) },
+      });
+      expect(applyRes.status).toBe("ok");
+
+      const profile = projectProfileInput();
+      const pubRes = await runInvocation(["project-profile", "publish"], {
+        workspaceRoot: freshRoot,
+        projectProfile: { input: stringify(profile) },
+      });
+      expect(pubRes.status).toBe("published");
+
+      // --local succeeds without manual .gitignore edits because init apply ran first
+      const localRes = await runInvocation(["project-profile", "publish", "--local"], {
+        workspaceRoot: freshRoot,
+        projectProfile: { input: stringify(localProfileInput(freshRoot)) },
+      });
+      expect(localRes.status).toBe("published");
+
+      const checkRes = await runInvocation(["init", "check"], { workspaceRoot: freshRoot });
+      expect(checkRes.status).toBe("ok");
+      expect((checkRes.data as { inSync: boolean }).inSync).toBe(true);
+
+      // Synced re-run: validate reports unchanged: true, publish returns status: "unchanged"
+      const reval = await runInvocation(["project-profile", "validate"], {
+        workspaceRoot: freshRoot,
+        projectProfile: { input: stringify(profile) },
+      });
+      expect((reval.data as { unchanged: boolean }).unchanged).toBe(true);
+      const repub = await runInvocation(["project-profile", "publish"], {
+        workspaceRoot: freshRoot,
+        projectProfile: { input: stringify(profile) },
+      });
+      expect(repub.status).toBe("unchanged");
+    } finally {
+      await rm(freshRoot, { recursive: true, force: true });
+    }
+
+    // 2. Greenfield repo with minimal project-only profile and default balanced hooks
+    const greenfieldRoot = await makeWorkspace();
+    try {
+      const greenManifest = JSON.stringify({
+        schemaVersion: 1,
+        harnesses: ["antigravity"],
+        rules: { enabled: false },
+        hooks: { enabled: true, enforcement: "balanced" },
+        gitignore: { enabled: true },
+        worktreeInclude: { enabled: true },
+      });
+      const applyGreen = await runInvocation(["init", "apply"], {
+        workspaceRoot: greenfieldRoot,
+        init: { input: greenManifest },
+      });
+      expect(applyGreen.status).toBe("ok");
+
+      const minimalProfile = {
+        schemaVersion: 1,
+        profileId: "new-app",
+        content: { project: { id: "new-app", name: "New App" } },
+      };
+      const pubGreen = await runInvocation(["project-profile", "publish"], {
+        workspaceRoot: greenfieldRoot,
+        projectProfile: { input: stringify(minimalProfile) },
+      });
+      expect(pubGreen.status).toBe("published");
+      const checkGreen = await runInvocation(["init", "check"], { workspaceRoot: greenfieldRoot });
+      expect((checkGreen.data as { inSync: boolean }).inSync).toBe(true);
+    } finally {
+      await rm(greenfieldRoot, { recursive: true, force: true });
     }
   });
 });

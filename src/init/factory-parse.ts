@@ -1,6 +1,12 @@
 import { parse as parseYaml } from "yaml";
-import { parseFactoryPolicies } from "../core/factory-policy.js";
-import type { FactoryAgentSpec, FactoryRuleSpec, FactorySkillSpec } from "../core/factory-types.js";
+import { parseFactoryPolicies, validateSafeRegexPattern } from "../core/factory-policy.js";
+import type {
+  FactoryAgentSpec,
+  FactoryRuleSpec,
+  FactorySelection,
+  FactorySkillSpec,
+} from "../core/factory-types.js";
+import { ConfigValidationError } from "../core/schema.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -106,4 +112,65 @@ export function parseCanonicalSkill(
     ok: true,
     skill: { id: expectedId, name: fm.name, description: fm.description, content: body },
   };
+}
+
+function validateUniqueIdsAndBytes(
+  label: string,
+  items: ReadonlyArray<{ id: string; content: string }>,
+  maxBytes: number,
+): void {
+  const seen = new Set<string>();
+  for (const item of items) {
+    if (seen.has(item.id)) {
+      throw new ConfigValidationError(`Duplicate ${label} "${item.id}".`, "init-bootstrap", []);
+    }
+    seen.add(item.id);
+    if (Buffer.byteLength(item.content, "utf8") > maxBytes) {
+      throw new ConfigValidationError(
+        `${label} "${item.id}" exceeds ${maxBytes} bytes.`,
+        "init-bootstrap",
+        [],
+      );
+    }
+  }
+}
+
+function validateRuleEnforcePatterns(rule: FactoryRuleSpec): void {
+  const patterns: Array<[string, string]> = [
+    ...(rule.enforce?.blockedCommands ?? []).map((c): [string, string] => [
+      "blockedCommands",
+      c.pattern,
+    ]),
+    ...(rule.enforce?.escapeHatchPatterns ?? []).map((h): [string, string] => [
+      "escapeHatchPatterns",
+      h.pattern,
+    ]),
+  ];
+  for (const [field, pattern] of patterns) {
+    const res = validateSafeRegexPattern(pattern);
+    if (!res.ok) {
+      throw new ConfigValidationError(
+        `Invalid ${field} regex in "${rule.id}": ${res.error}`,
+        "init-bootstrap",
+        [],
+      );
+    }
+  }
+}
+
+export function validateFactoryManifestSections(
+  selection: FactorySelection,
+  maxItemBytes: number,
+): void {
+  if (selection.rules.enabled) {
+    const rules = selection.rules.items ?? [];
+    validateUniqueIdsAndBytes("rule", rules, maxItemBytes);
+    for (const rule of rules) validateRuleEnforcePatterns(rule);
+  }
+  if (selection.agents.enabled) {
+    validateUniqueIdsAndBytes("agent", selection.agents.items ?? [], maxItemBytes);
+  }
+  if (selection.skills.enabled) {
+    validateUniqueIdsAndBytes("skill", selection.skills.items ?? [], maxItemBytes);
+  }
 }

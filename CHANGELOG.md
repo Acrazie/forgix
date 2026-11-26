@@ -1,5 +1,45 @@
 # Changelog
 
+## [v4.4.0] - 2026-11-26
+
+<!-- forgix-release: {"tag":"v4.4.0","date":"2026-11-26","base":"v4.3.2"} -->
+
+### Changes (since v4.3.2)
+
+
+### Bug fixes
+
+- **init:** emit formatter-clean markdown and sort AGENTS index ([c99f4d0](https://entire.com/et/forgix/forgix/commit/c99f4d0e995899c52381e9dcf3835ceb12174336))
+
+- **init:** render Antigravity rule globs as comma-separated string ([8cefe91](https://entire.com/et/forgix/forgix/commit/8cefe91355fd3ca6e8cd7e670311bdbbcec42d76))
+
+- **hooks:** read nested content fields in loadHookProjectSummary ([012f458](https://entire.com/et/forgix/forgix/commit/012f458cb871f5506c3554d59f43b818ff8b03cc))
+
+- **init:** enforce diagram checks, sync publish status, and split diff preview ([8b12533](https://entire.com/et/forgix/forgix/commit/8b125330417160349ede28b070767a0b6b56c404))
+
+- **init:** preflight projections before writes and balance diff preview budget ([c01f91a](https://entire.com/et/forgix/forgix/commit/c01f91a4125b4dfc54bf87ef16d9bebbfab6e104))
+
+
+### Documentation
+
+- **init:** document single-approval init flow and add ADR 0042 ([910e1bf](https://entire.com/et/forgix/forgix/commit/910e1bf05467ef1a3a438d25e55820489f6bce5f))
+
+- **init:** fix getting-started flowchart, README, and adoptPaths guidance ([f7421f1](https://entire.com/et/forgix/forgix/commit/f7421f174591491c1e995c8ac23a30124398f95a))
+
+
+### Features
+
+- **init:** simplify init approval, profile publish, and adoption ([c39215e](https://entire.com/et/forgix/forgix/commit/c39215e8f8d20c824f66720971d50e393e88bb74))
+
+
+### Maintenance
+
+- **forgix:** initialize project profile and factory bootstrap ([365785b](https://entire.com/et/forgix/forgix/commit/365785bc8dd536147abbc32c6399202a02863230))
+
+- **build:** rebuild dist/forgix.mjs for formatter-clean init output ([ebdc6d2](https://entire.com/et/forgix/forgix/commit/ebdc6d2e927653507794b47870ff6e8d253cacd0))
+
+- **budget:** remove deleted project-init-state schema from manifest ([5ee801b](https://entire.com/et/forgix/forgix/commit/5ee801b6fd8917149ffd26c5d6e69b828ed49d87))
+
 ## [v4.3.2] - 2026-11-25
 
 <!-- forgix-release: {"tag":"v4.3.2","date":"2026-11-25","base":"v4.3.1"} -->

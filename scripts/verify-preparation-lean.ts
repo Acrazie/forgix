@@ -61,7 +61,9 @@ function verifyShape({ name, evidence, fresh }: ShapeVector): void {
 
 function verifyInit({ decisions, init }: Vectors): void {
   const profile = projectProfileInput();
-  const byKey = new Map(profile.content.decisions.map((decision) => [decision.key, decision]));
+  const byKey = new Map(
+    (profile.content.decisions ?? []).map((decision) => [decision.key, decision]),
+  );
   profile.content.decisions = decisions.map(({ key, dependsOn, sources }) => {
     const template = byKey.get(key)!;
     return {

@@ -95,7 +95,7 @@ async function checkCodexIndexDrift(
   findings: FactoryCheckFinding[],
 ): Promise<void> {
   const agentsProbe = await safeRead(CODEX_AGENTS_PATH);
-  const expectedInner = `${renderCodexAgentsIndexBlock(selection)}\n`;
+  const expectedInner = `\n${renderCodexAgentsIndexBlock(selection)}\n\n`;
   if (!agentsProbe.ok) {
     findings.push(agentsProbe.conflict);
     return;

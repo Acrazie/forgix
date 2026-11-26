@@ -82,7 +82,7 @@ test("project profile and roadmap schemas enforce strict boundaries", async () =
     additionalProperties: boolean;
     required: string[];
     properties: {
-      content: { properties: { decisions: { maxItems: number } } };
+      content: { required: string[]; properties: { decisions: { maxItems: number } } };
       approval: { properties: { actor: { const: string } } };
     };
   };
@@ -95,27 +95,15 @@ test("project profile and roadmap schemas enforce strict boundaries", async () =
     additionalProperties: boolean;
     properties: { servicePaths: { items: { properties: { path: { type: string } } } } };
   };
-  const session = JSON.parse(
-    await readFile(
-      new URL("../../schemas/project-init-state.schema.json", import.meta.url),
-      "utf8",
-    ),
-  ) as {
-    properties: Record<string, unknown> & {
-      activeQuestion: { properties: { options: { maxItems: number } } };
-    };
-  };
   expect(shared.additionalProperties).toBe(false);
   expect(shared.required).toContain("approval");
+  expect(shared.properties.content.required).toEqual(["project"]);
   expect(shared.properties.content.properties.decisions.maxItems).toBe(512);
   expect(shared.properties.approval.properties.actor.const).toBe("user");
   expect(local.additionalProperties).toBe(false);
   expect(local.properties.servicePaths.items.properties.path.type).toBe("string");
-  expect(session.properties.activeQuestion.properties.options.maxItems).toBe(3);
-  expect(session.properties).not.toHaveProperty("transcript");
   expect(validateSchema("project-profile", {}).valid).toBe(false);
   expect(validateSchema("project-profile-local", {}).valid).toBe(false);
-  expect(validateSchema("project-init-state", {}).valid).toBe(false);
   expect(validateSchema("roadmap-state", {}).valid).toBe(false);
 });
 

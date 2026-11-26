@@ -19,7 +19,6 @@ export type SchemaName =
   | "init-bootstrap"
   | "policy"
   | "state"
-  | "project-init-state"
   | "project-profile"
   | "project-profile-local"
   | "roadmap-state"

@@ -13,6 +13,10 @@ import {
   validateSchema,
 } from "../../src/core/schema.ts";
 import { buildHookCommand } from "../../src/hooks/command.ts";
+import {
+  renderCodexAgentsIndexBlock,
+  renderRuleProjections,
+} from "../../src/init/factory-render.ts";
 import { checkHarnessHooksConfig, mergeHarnessHooksConfig } from "../../src/init/hooks-config.ts";
 import {
   MANDATORY_GITIGNORE_ENTRIES,
@@ -289,14 +293,14 @@ describe("init/markers", () => {
     expect(inserted.ok).toBe(true);
     if (!inserted.ok) return;
     expect(inserted.content).toBe(
-      "# Header\n\nCustom user content.\n\n<!-- forgix:start -->\nForgix line 1\n<!-- forgix:end -->\n",
+      "# Header\n\nCustom user content.\n\n<!-- forgix:start -->\n\nForgix line 1\n\n<!-- forgix:end -->\n",
     );
 
     const updated = upsertMarkerBlock(inserted.content, HTML_FORGIX_MARKERS, "Forgix line 2");
     expect(updated.ok).toBe(true);
     if (!updated.ok) return;
     expect(updated.content).toBe(
-      "# Header\n\nCustom user content.\n\n<!-- forgix:start -->\nForgix line 2\n<!-- forgix:end -->\n",
+      "# Header\n\nCustom user content.\n\n<!-- forgix:start -->\n\nForgix line 2\n\n<!-- forgix:end -->\n",
     );
 
     const removed = removeMarkerBlock(updated.content, HTML_FORGIX_MARKERS);
@@ -527,5 +531,40 @@ describe("init/hooks-config", () => {
     expect(scanDiffForFactoryEscapeHatches(diff, compiled, ["src/demo.ts:a-hatch"])).toHaveLength(
       1,
     );
+  });
+
+  test("renders AGENTS.md index with sorted rules and formatter-clean blank lines", () => {
+    const rendered = renderCodexAgentsIndexBlock({
+      harnesses: ["codex"],
+      rules: {
+        enabled: true,
+        items: [
+          { id: "zeta-rule", description: "Zeta", content: "- z" },
+          { id: "alpha-rule", description: "Alpha", content: "- a" },
+        ],
+      },
+      agents: { enabled: false, items: [] },
+      skills: { enabled: false, items: [] },
+    });
+    expect(rendered).toContain(
+      "## Rules\n\n- `.forgix/factory/rules/alpha-rule.md`: Alpha\n- `.forgix/factory/rules/zeta-rule.md`: Zeta",
+    );
+  });
+
+  test("renders Antigravity rule globs as a comma-separated YAML string", () => {
+    const projections = renderRuleProjections(
+      {
+        id: "scoped-rule",
+        description: "Scoped",
+        globs: ["src/**", "scripts/**", "*.ts"],
+        content: "- keep clean",
+      },
+      ["antigravity", "claude"],
+    );
+    const agy = projections.find((p) => p.path === ".agents/rules/forgix-scoped-rule.md");
+    const claude = projections.find((p) => p.path === ".claude/rules/forgix-scoped-rule.md");
+    expect(agy?.content).toContain("globs: src/**, scripts/**, *.ts\n");
+    expect(agy?.content).not.toContain("globs:\n");
+    expect(claude?.content).toContain('paths:\n  - src/**\n  - scripts/**\n  - "*.ts"\n');
   });
 });
